@@ -2,6 +2,7 @@ module AeroModules
 
 using LinearAlgebra
 using Base.Iterators
+using Interpolations
 
 # Solutions to Laplace's equation
 abstract type Solution end
@@ -38,30 +39,38 @@ struct DoubletPanel2D <: Panel2D; start::Tuple{Float64,Float64}; finish::Tuple{F
 
 struct VortexPanel2D <: Panel2D; start::Tuple{Float64,Float64}; finish::Tuple{Float64,Float64} end
 
-# Methods on panels
-colPoint(panel::Panel2D) = ((panel.start[1] + panel.finish[1]) / 2, (panel.start[2] + panel.finish[2]) / 2)
+abstract type Panel3D <: Solution end
 
-function panelLength(panel::Panel2D) 
+struct SourcePanel3D <: Panel3D; start::Tuple{Float64,Float64,Float64}; finish::Tuple{Float64,Float64,Float64} end
+
+struct DoubletPanel3D <: Panel3D; start::Tuple{Float64,Float64,Float64}; finish::Tuple{Float64,Float64,Float64} end
+
+struct VortexPanel3D <: Panel3D; start::Tuple{Float64,Float64,Float64}; finish::Tuple{Float64,Float64,Float64} end
+
+# Methods on panels
+collocation_point(panel::Panel2D) = ((panel.start[1] + panel.finish[1]) / 2, (panel.start[2] + panel.finish[2]) / 2)
+
+function panel_length(panel::Panel2D) 
     (xs, ys) = panel.start
     (xe, ye) = panel.finish
     return norm([xe - xs, ye - ys])x
 end
 
-function panelAngle(panel::Panel2D)
+function panel_lngle(panel::Panel2D)
     (xs, ys) = panel.start
     (xe, ye) = panel.finish
     return atan(ye - ys, xe - xs)
 end 
 
-panelTangent(panel::Panel2D) = rotation(1, 0, -1 * panelAngle(panel))
-panelNormal(panel::Panel2D) = invRotation(0, 1, panelAngle(panel))
-panelLocation(panel::Panel2D) = let angle = panelAngle(panel); (π / 2 <= angle <= π) || (-π <= angle <= -π / 2) ? "lower" : "upper" end
+panel_tangent(panel::Panel2D) = rotation(1, 0, -1 * panel_angle(panel))
+panel_normal(panel::Panel2D) = inverse_rotation(0, 1, panel_angle(panel))
+panel_location(panel::Panel2D) = let angle = panel_angle(panel); (π / 2 <= angle <= π) || (-π <= angle <= -π / 2) ? "lower" : "upper" end
 
-function influencePotential(panel::DoubletPanel2D, x, y)
+function influence_potential(panel::DoubletPanel2D, x, y)
     # Analytical solution
     (x0, y0) = panel.start
-    len = panelLength(panel)
-    angle = panelAngle(panel)
+    len = panel_length(panel)
+    angle = panel_angle(panel)
     (xp, yp) = panelCoords(x, y, x0, y0, angle)
 
     return -1 / (2π) * (atan(yp, xp - len) - atan(yp, xp - 0))
@@ -71,23 +80,23 @@ function influencePotential(panel::DoubletPanel2D, x, y)
     # int = integrand panel potential 1 0 x' y'
     # (x', y') = panelCoords x y x0 y0 angle
     # (x0, y0) = start panel
-    # len = panelLength panel
-    # angle = panelAngle panel
+    # len = panel_length panel
+    # angle = panel_angle panel
 end
 
 function dist2((p1, p2)::Tuple{Panel2D,Panel2D}) 
-    (xc1, yc1) = colPoint(p1)
-    (xc2, yc2) = colPoint(p2)
+    (xc1, yc1) = collocation_point(p1)
+    (xc2, yc2) = collocation_point(p2)
     return norm([ xc2 - xc1, yc2 - yc1 ])
 end
 
 # Solving on list of panels
-function solveStrengths(panels::Array{DoubletPanel2D,1}, uniform::Uniform2D, sources = false) 
+function solve_strengths(panels::Array{DoubletPanel2D,1}, uniform::Uniform2D, sources = false) 
 
     num_panels = length(panels)     # Number of panels
 
     # Doublet matrix
-    doubletMatrix = [ i == j ? 0.5 : influencePotential(panel_j, xc, yc) for (i, (xc, yc)) in enumerate(colPoint.(panels)), (j, panel_j) in enumerate(panels) ]
+    doubletMatrix = [ i == j ? 0.5 : influence_potential(panel_j, xc, yc) for (i, (xc, yc)) in enumerate(collocation_point.(panels)), (j, panel_j) in enumerate(panels) ]
 
     # Morino's velocity Kutta condition
     kutta = zeros(num_panels + 1)
@@ -99,7 +108,7 @@ function solveStrengths(panels::Array{DoubletPanel2D,1}, uniform::Uniform2D, sou
     # Wake vector
     (lastx, lasty) = panels[end].finish
     wokePanel = DoubletPanel2D((lastx, lasty), (100000 * lastx, lasty))
-    wokeVector = [ influencePotential(wokePanel, xc, yc) for (xc, yc) in colPoint.(panels) ]
+    wokeVector = [ influence_potential(wokePanel, xc, yc) for (xc, yc) in collocation_point.(panels) ]
 
     # Influence matrix with explicit Kutta condition
     influenceMatrix = zeros(num_panels + 1, num_panels + 1)
@@ -110,13 +119,13 @@ function solveStrengths(panels::Array{DoubletPanel2D,1}, uniform::Uniform2D, sou
     # Boundary condition
     u = velocity(uniform)
     boundaryCondition = zeros(num_panels + 1)
-    boundaryCondition[1:end - 1] = [ -potential(uniform, xc, yc) for (xc, yc) in colPoint.(panels) ]
+    boundaryCondition[1:end - 1] = [ -potential(uniform, xc, yc) for (xc, yc) in collocation_point.(panels) ]
     
     return influenceMatrix \ boundaryCondition
 end 
 
-function aeroCoefficients(panels::Array{DoubletPanel2D,1}, uniform::Uniform2D)
-    strengths = solveStrengths(panels, uniform)
+function aerocoefficients(panels::Array{DoubletPanel2D,1}, uniform::Uniform2D)
+    strengths = solve_strengths(panels, uniform)
 
     diffpans = dist2.(midgrad(panels))
     diffstrs = [ (str2 - str1) for (str2, str1) in midgrad(take(strengths, length(panels))) ]
@@ -130,9 +139,9 @@ function aeroCoefficients(panels::Array{DoubletPanel2D,1}, uniform::Uniform2D)
     
     tanVels = diffstrs ./ diffpans
 
-    pressCoeffs = [ pressureCoefficient((0, vt), margaret) for vt in tanVels ]
+    pressCoeffs = [ pressure_coefficient((0, vt), margaret) for vt in tanVels ]
     
-    liftCoeff = -sum(pressCoeffs .* (diffpans ./ 2) .* (cos.(panelAngle.(panels))))
+    liftCoeff = -sum(pressCoeffs .* (diffpans ./ 2) .* (cos.(panel_angle.(panels))))
     kuttaCoeff = -2 * strengths[end] / margaret
 
     return (liftCoeff, kuttaCoeff, pressCoeffs)
@@ -152,19 +161,19 @@ function midgrad(xs)
 end
 
 # Transforms (x, y) to the coordinate system with (x_s, y_s) as origin oriented at angle_s.
-panelCoords(x, y, x_s, y_s, angle_s) = rotation(x - x_s, y - y_s, angle_s)
-invRotation(x, y, angle) = (x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle))
+panel_coords(x, y, x_s, y_s, angle_s) = rotation(x - x_s, y - y_s, angle_s)
+inverse_rotation(x, y, angle) = (x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle))
 rotation(x, y, angle) = (x * cos(angle) + y * sin(angle), -x * sin(angle) + y * cos(angle))
 
-pressureCoefficient(vels, mag) = 1 - (norm(vels))^2 / mag^2
+pressure_coefficient(vels, mag) = 1 - (norm(vels))^2 / mag^2
 
 # Performs velocity and potential calculations on a grid
-function gridData(objects::Array{<:Solution,1}, xs, pressure = true)
+function grid_data(objects::Array{<:Solution,1}, xs, pressure = true)
     vels = foldl((v1, v2)->[ u .+ v for (u, v) in zip(v1, v2)], [ velocity(object, xs) for object in objects ])
     pots = foldl((v1, v2)->v1 .+ v2, [ potential(object, xs) for object in objects ])
 end
 
-function gridData(object::Solution, xs)
+function grid_data(object::Solution, xs)
     vels = velocity(object, xs)
     pots = potential(object, xs)
     
@@ -175,68 +184,36 @@ end
 velocity(object::Solution, xs) = [ velocity(object, x...) for x in xs ] 
 potential(object::Solution, xs) = [ potential(object, x...) for x in xs ]
 
-function cosinePanels(x::Array{<:Real}, y::Array{<:Real}, n = 40)
+function cosine_panels(x::Array{<:Real}, y::Array{<:Real}, n = 40)
     """
     Discretises a geometry consisting of x and y coordinates into panels by projecting the x-coordinate of a circle onto the geometry.
     """
-    r = (maximum(x) - minimum(x)) / 2.
+    d = (maximum(x) - minimum(x))
     x_center = (maximum(x) + minimum(x)) / 2.
-    if any(y->y < 0., y)
-        x_circ = x_center .+ r .* cos.(range(-π, stop = 0.0, length = n + 1))
-    else
-        x_circ = x_center .+ r .* cos.(range(0.0, stop = π, length = n + 1))
-    end
+    x_interp = cosineDist(x_center, d, n)
 
-    x_ends = copy(x_circ)
-    y_ends = zeros(length(x_ends))
+    itp = LinearInterpolation(x, y)
+    y_interp = itp(x_interp)
 
-    x, y = push!(x, x[1]), push!(y, y[1])
-
-    j = 1
-    for i in 1:n + 1
-        while j < length(x) - 1
-            if ((x[j] <= x_ends[i] <= x[j + 1]) | (x[j + 1] <= x_ends[i] <= x[j]))
-                break
-            else
-                j += 1
-            end
-        end
-        m = (y[j + 1] - y[j]) / (x[j + 1] - x[j])
-        c = y[j + 1] - m * x[j + 1]
-        y_ends[i] = m * x_ends[i] + c
-        # y_ends[n+1] = y_ends[n]
-    end
-
-    return (x_ends, y_ends)
+    return (x_interp, y_interp)
 end
 
-function cosineAirfoil(x::Array{<:Real}, y::Array{<:Real}, n::Integer = 40)
+function cosine_dist(x_center :: Real, diameter :: Real, n :: Integer = 40)
+    """
+    Provides the projections to the x-axis for a circle of given diameter and center.
+    """
+    return x_center .+ (diameter / 2.) .* cos.(range(-π, stop = 0, length = n))
+
+function cosine_airfoil(x::Array{<:Real}, y::Array{<:Real}, n::Integer = 40)
     """
     Discretises a geometry consisting of x and y coordinates into panels by projecting the x-coordinate of a circle onto the geometry.
     """
-    r = (maximum(x) - minimum(x)) / 2.
+    d = (maximum(x) - minimum(x))
     x_center = (maximum(x) + minimum(x)) / 2.
-    x_circ = x_center .+ r .* cos.(range(0.0, stop = 2π, length = n + 1))
+    x_circ = cosineDist(x_center, d, n)
 
     x_ends = copy(x_circ)
-    y_ends = zeros(length(x_ends))
-
-    # x, y = push!(x, x[1]), push!(y, y[1])
-
-    j = 1
-    for i in 1:n
-        while j < length(x)
-            if ((x[j] <= x_ends[i] <= x[j + 1]) | (x[j + 1] <= x_ends[i] <= x[j]))
-                break
-            else
-                j += 1
-            end
-        end
-        m = (y[j + 1] - y[j]) / (x[j + 1] - x[j])
-        c = y[j + 1] - m * x[j + 1]
-        y_ends[i] = m * x_ends[i] + c
-        y_ends[n + 1] = y_ends[1]
-    end
+    y_ends = interpolate()
 
     return (x_ends, y_ends)
 end
@@ -277,8 +254,8 @@ function NACA4(digits::Tuple, c, n, closed_te = false, split = false)
     end
 
     if split
-        upper = [ (x, y) for (x, y) in zip(x_upper, y_upper) ]
-        lower = [ (x, y) for (x, y) in zip(x_lower, y_lower) ]
+        upper = zip(x_upper, y_upper)
+        lower = zip(x_lower, y_lower)
         return (reverse(upper), lower)
     else  
         (X, Y) = append!(reverse(x_upper), x_lower), append!(reverse(y_upper), y_lower)
