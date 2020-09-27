@@ -7,6 +7,7 @@ setup(
     name='AeroMDAO',
     version="0.0.1dev",
     description='A Python 3 package for investigations into aerodynamic shape optimization, aircraft design, multidisciplinary optimization and surrogate modeling.',
-    packages=['aeromdao',],
-    install_requires=['numpy']
+    packages=find_packages(),
+    install_requires=['numpy', 'scipy', 'matplotlib'],
+    python_requires='>=3.6',
 )

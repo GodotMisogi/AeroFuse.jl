@@ -1,8 +1,8 @@
 import numpy as np
-from xfoil import XFoil
+import xfoil
 import subprocess as sp
 
-class XFoilNoise(XFoil):
+class XFoil(xfoil.XFoil):
 
     def __init__(self):
         super().__init__()
