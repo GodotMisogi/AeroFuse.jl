@@ -53,10 +53,10 @@ collocation_point(panel::Panel2D) = ((panel.start[1] + panel.finish[1]) / 2, (pa
 function panel_length(panel::Panel2D) 
     (xs, ys) = panel.start
     (xe, ye) = panel.finish
-    return norm([xe - xs, ye - ys])x
+    return norm([xe - xs, ye - ys])
 end
 
-function panel_lngle(panel::Panel2D)
+function panel_angle(panel::Panel2D)
     (xs, ys) = panel.start
     (xe, ye) = panel.finish
     return atan(ye - ys, xe - xs)
@@ -74,14 +74,6 @@ function influence_potential(panel::DoubletPanel2D, x, y)
     (xp, yp) = panelCoords(x, y, x0, y0, angle)
 
     return -1 / (2π) * (atan(yp, xp - len) - atan(yp, xp - 0))
-
-    # Numerically integrated solution
-    # (integral int 0 len) where
-    # int = integrand panel potential 1 0 x' y'
-    # (x', y') = panelCoords x y x0 y0 angle
-    # (x0, y0) = start panel
-    # len = panel_length panel
-    # angle = panel_angle panel
 end
 
 function dist2((p1, p2)::Tuple{Panel2D,Panel2D}) 
