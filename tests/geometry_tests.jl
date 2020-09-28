@@ -1,15 +1,15 @@
 include("../src/AeroMDAO.jl")
 
-using .AeroMDAO
+using .AeroMDAO: Point2D, Point3D, Panel, midpoint
 
 # 2D Test
-ps = [ AeroMDAO.Point2D{Float64}(x, y) for (x, y) in zip(range(0, stop=5), range(1, stop=6)) ]
+ps = Point2D{Float64}.(range(0, stop=5), range(1, stop=6))
 
-panels = AeroMDAO.Panel(ps)
-println(AeroMDAO.midpoint(panels))
+panels = Panel(ps)
+println(midpoint(panels))
 
 # 3D Test
-ps = [ AeroMDAO.Point3D{Float64}(x, y, z) for (x, y, z) in zip(range(0, stop=5), range(1, stop=6), range(2, stop = 7)) ]
+ps = Point3D{Float64}.(range(0, stop=5), range(1, stop=6), range(2, stop = 7))
 
-panels = AeroMDAO.Panel(ps)
-println(AeroMDAO.midpoint(panels))
+panels = Panel(ps)
+println(midpoint(panels))
