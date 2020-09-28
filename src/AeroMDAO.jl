@@ -4,6 +4,7 @@ using LinearAlgebra
 using Base.Iterators
 using Interpolations
 using Statistics
+using DelimitedFiles
 
 # Point definitions and methods
 
@@ -60,14 +61,21 @@ struct Wing <: Aircraft
 end
 
 """
+Reads a '.dat' file consisting of 2D coordinates, for an airfoil.
+"""
+function read_foil(path :: String)
+    readdlm(path, skipstart = 1)
+end
+
+"""
 Computes the projected area of a wing given its sections.
 """
 function projected_area(wing :: Wing)
     secs = wing.sections
     chords = getproperty.(secs, :chord)
     spans = getproperty.(getproperty.(secs, :loc), :y) 
-    mean_chords = map(mean, chords, chords[:end-1]) # Mean chord lengths of sections.
-    mean_spans = map(mean, spans, )
+    mean_chords = map(mean, chords[:end-1], chords[2:end]) # Mean chord lengths of sections.
+    mean_spans = map(mean, spans[:end-1], spans[2:end])
     return sum(mean_chords * mean_spans)
 end
 
