@@ -74,7 +74,7 @@ function read_foil(path :: String)
     # Point2D{Float64}.(f[:,1], f[:,2])
 end
 
-slope(c1, c2) = (c2[1] - c1[1])/(c2[0] - c1[0])
+slope(c1, c2) = (c2[2] - c1[2])/(c2[1] - c1[1])
 function split_foil(coords :: Array{<:Real, 2})
     xs = coords[:,1]
     for (i, (xp, x, xn)) in enumerate(zip(xs[1:end-2], xs[2:end-1], xs[3:end]))
