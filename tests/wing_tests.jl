@@ -10,11 +10,11 @@ xs = zeros(num_secs)
 ys = 0:2:num_secs
 zs = zeros(num_secs)
 
-chords = repeat([1.0], num_secs)    # Chord lengths
+chords = repeat([2.0], num_secs)    # Chord lengths
 twists = zeros(num_secs)            # Twists
 coords = read_foil(foilpath)
 foils = [ coords for n in 1:num_secs ]
-airfoils = Foil.(foils, chords) # Airfoils
+# airfoils = Foil.(foils, chords) # Airfoils
 # println(airfoils)
 
 foil = Foil(coords, 1.0)
