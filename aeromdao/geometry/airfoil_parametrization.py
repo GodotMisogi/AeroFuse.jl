@@ -33,9 +33,8 @@ def slope(c1, c2): return (c2[1] - c1[1])/(c2[0] - c1[0]) # m = (y₂ - y₁)/(x
 
 # Splitting airfoil at origin into upper and lower surfaces
 def split_foil(coords):
-    xs = coords[:,0]
-    for (i, (x_prev, x, x_next)) in enumerate(zip(xs[:-2], xs[1:-1], xs[2:])):
-        if x < x_prev and x < x_next:
+    for (i, (coord_prev, coord, coord_next)) in enumerate(zip(coords[:-2], coords[1:-1], coords[2:])):
+        if coord < coord_prev and coord < coord_next:
             i += 1
             if slope(coord, coord_prev) >= slope(coord, coord_next): # Anticlockwise ordering
                 return coords[:i+1], coords[i+1:]

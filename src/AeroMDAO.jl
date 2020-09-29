@@ -12,13 +12,12 @@ using DelimitedFiles
 |>(list_objs :: Array{T}, fields :: Array{Symbol}) where {T <: Any} = list_objs .|> [fields]
 
 # Convert tuple entries to lists
-tupletolist(x) = [ getproperty(x, name) for name in (fieldnames ∘ typeof)(x) ]
+tupletolist(x) = [ getproperty(x, name) for name ∈ (fieldnames ∘ typeof)(x) ]
 
-function splitat(condition, xs)
-    for (i, entry) in enumerate(xs)
-        if condition(entry) return (xs[1:i], xs[i:end]) else continue end
-    end
-end
+# Haskell master race
+span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
+lisa(pred, iter) = span(!pred, iter)
+
 #------------------POINT---------------#
 
 abstract type Point end
@@ -75,20 +74,18 @@ function read_foil(path :: String)
 end
 
 slope(c1, c2) = (c2[2] - c1[2])/(c2[1] - c1[1])
+
 function split_foil(coords :: Array{<:Real, 2})
-    xs = coords[:,1]
-    for (i, (xp, x, xn)) in enumerate(zip(xs[1:end-2], xs[2:end-1], xs[3:end]))
+    xs, ys = coords[:,1], coords[:,2]
+    cods = collect(zip(xs, ys))
+    for (i, ((xp, yp), (x, y), (xn, yn))) ∈ enumerate(zip(cods[1:end-2], cods[2:end-1], cods[3:end]))
         if x < xp && x < xn
-        #     println(i)
             i += 1
-            if slope(x, xp) >= slope(x, xn) # Anticlockwise ordering
-                return coords[1:i+1,:], coords[i+1:end,:]
-            else        # Clockwise ordering
-                return coords[i:end,:], coords[1:i,:]
+            if slope((x, y), (xp, yp)) >= slope((x, y), (xn, yn))
+                return (coords[1:i+1,:], coords[i+1:end,:])
+            else
+                return (coords[1:i,:], coords[i:end,:])
             end
-            
-        else 
-            println("Not found.", xp, x, xn)
         end
     end
 end
@@ -115,8 +112,8 @@ Discretises a geometry consisting of x and y coordinates into panels by projecti
 """
 function cosine_foil(airfoil :: Foil, n :: Integer = 40)
     upper, lower = split_foil(airfoil.foil)
-    upper_cos, lower_cos = cosine_interp.([reverse(upper), lower])
-    Panel([reverse(upper); lower])
+    upper_cos, lower_cos = cosine_interp.([reverse(upper, dims=1), lower])
+    Panel([reverse(upper, dims=1); lower])
 end
 
 #-----------------WING---------------------#
