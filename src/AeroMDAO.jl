@@ -7,41 +7,50 @@ using Interpolations
 using Statistics
 using DelimitedFiles
 
+#--------------------HACKS----------------------#
+
 # "Lenses" to access subfields on lists of objects
 |>(obj, fields :: Array{Symbol}) = foldl(getproperty, fields, init = obj)
 |>(list_objs :: Array{T}, fields :: Array{Symbol}) where {T <: Any} = list_objs .|> [fields]
 
-# Convert tuple entries to lists
-tupletolist(x) = [ getproperty(x, name) for name ∈ (fieldnames ∘ typeof)(x) ]
+# Convert 2D array to list of tuples
+arraytolist(xs) = (collect ∘ zip)([ xs[:,n] for n in 1:length(xs[1,:])]...)
 
-# Haskell master race
+# Copying NumPy's linspace function
+linspace(min, max, step) = min:(max - min)/step:max
+
+#-------------HASKELL MASTER RACE--------------#
+
 span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
+splitat(n, xs) = (xs[1:n,:], xs[n:end,:])  
 lisa(pred, iter) = span(!pred, iter)
 
-#------------------POINT---------------#
+# Zieg Heil!
+
+#----------------VECTOR SPACES?---------------#
+
+# Convert struct entries to lists
+structtolist(x) = [ getproperty(x, name) for name ∈ (fieldnames ∘ typeof)(x) ]
 
 abstract type Point end
 
+*(scale :: Real, point :: Point) = typeof(point)(scale * structtolist(point)...)
++(p1 :: Point, p2 :: Point) = typeof(p1)(structtolist(p1) .+ structtolist(p2)...)
 
-struct Point2D{T <: Real} <: Point
-    x :: T; y :: T;
+struct Point2D <: Point
+    x :: Real; y :: Real;
 end
 
-*(scale :: Real, point :: Point2D) = Point2D(scale * tupletolist(point)...)
-
-struct Point3D{T <: Real} <: Point
-    x :: T; y :: T; z :: T;
+struct Point3D <: Point
+    x :: Real; y :: Real; z :: Real;
 end
 
-*(scale :: Real, point :: Point3D) = Point3D(scale * tupletolist(point)...)
-
-
-#----------------PANEL------------------#
+#----------------PANEL METHODS------------------#
 
 abstract type Panels end
 
 struct Panel <: Panels
-    loc :: Union{Array{<: Real, 2}, Array{Point}}
+    loc :: Array{Point}
 end
 
 """
@@ -59,10 +68,6 @@ Airfoil structure consisting of foil coordinates as an array of points, a chord 
 """
 struct Foil <: Aircraft
     foil :: Union{Array{<: Real, 2}, Array{Point}} # The foil profile as an array of coordinates, must be in Selig format.
-    chord :: Float64  # Chord length of the section.
-    twist :: Float64  # Twist of the profile about the leading edge (in degrees).
-    Foil(foil :: Array{<: Real, 2}, chord :: Real, twist :: Real = 0) = new(chord * foil[:,1:2], chord, deg2rad(twist))
-    # Foil(foil :: Array{Point}, chord :: Real, twist :: Real = 0) = new(chord * foil, chord, deg2rad(twist))
 end
 
 """
@@ -73,35 +78,35 @@ function read_foil(path :: String)
     # Point2D{Float64}.(f[:,1], f[:,2])
 end
 
-slope(c1, c2) = (c2[2] - c1[2])/(c2[1] - c1[1])
+slope(x1, y1, x2, y2) = (y2 - y1)/(x2 - x1)
 
 function split_foil(coords :: Array{<:Real, 2})
-    xs, ys = coords[:,1], coords[:,2]
-    cods = collect(zip(xs, ys))
+    cods = arraytolist(coords) # Convert to list of tuples
     for (i, ((xp, yp), (x, y), (xn, yn))) ∈ enumerate(zip(cods[1:end-2], cods[2:end-1], cods[3:end]))
         if x < xp && x < xn
             i += 1
-            if slope((x, y), (xp, yp)) >= slope((x, y), (xn, yn))
-                return (coords[1:i+1,:], coords[i+1:end,:])
+            if slope(x, y, xp, yp) >= slope(x, y, xn, yn)
+                return splitat(i, coords)
             else
-                return (coords[1:i,:], coords[i:end,:])
+                return (reverse ∘ splitat)(i, coords)
             end
         end
     end
+    (coords, [])
 end
 
 """
 Provides the projections to the x-axis for a circle of given diameter and center.
 """
-cosine_dist(x_center :: Real, diameter :: Real, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(0, stop = π, length = n))
+cosine_dist(x_center :: Real, diameter :: Real, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(-π, stop = 0, length = n))
 
 function cosine_interp(coords :: Array{<:Real, 2}, n :: Integer = 40)
     xs, ys = coords[:,1], coords[:,2]
 
     d = maximum(xs) - minimum(xs)
     x_center = (maximum(xs) + minimum(xs)) / 2
-
     x_circ = cosine_dist(x_center, d, n)
+    
     itp_circ = LinearInterpolation(xs, ys)
     y_circ = itp_circ(x_circ)
     [x_circ y_circ]
@@ -112,56 +117,77 @@ Discretises a geometry consisting of x and y coordinates into panels by projecti
 """
 function cosine_foil(airfoil :: Foil, n :: Integer = 40)
     upper, lower = split_foil(airfoil.foil)
-    upper_cos, lower_cos = cosine_interp.([reverse(upper, dims=1), lower])
-    Panel([reverse(upper, dims=1); lower])
+    upper_cos, lower_cos = cosine_interp.([reverse(upper, dims=1), lower], n)
+    Panel([reverse(upper_cos, dims=1); lower_cos])
 end
 
 #-----------------WING---------------------#
 
 """
-Definition for a wing section consisting of root and tip airfoils, with the span length between them.
+Definition for a wing consisting of airfoils, span lengths, dihedrals, and sweep angles.
 """
-struct WingSection <: Aircraft
-    root :: Foil     # Root airfoil
-    tip :: Foil      # Tip airfoil
-    span :: Float64  # Leading edge to leading edge
+struct HalfWing <: Aircraft
+    foils :: Array{Foil} # Airfoil profiles
+    chords :: Array{<: Real} # Chord lengths (m)
+    spans :: Array{<: Real}  # Leading-edge to leading-edge distance between foils (m)
+    dihedrals :: Array{<: Real} # Dihedral angles (deg)
+    sweeps :: Array{<: Real} # Leading-edge sweep angles (deg)
+    twists :: Array{<: Real} # Twist angles (deg)
+    HalfWing(foils, chords, spans, dihedrals, sweeps, twists) = new(foils, chords, spans, 
+    deg2rad.(dihedrals), deg2rad.(sweeps), deg2rad.(twists)) # Convert to radians
 end
 
-fwdsum(xs, scale = 1) = scale * (xs[1:end-1] .+ xs[2:end])
 aspect_ratio(span, area) = span^2 / area
 mean_geometric_chord(span, area) = area / span
 taper_ratio(root_chord, tip_chord) = tip_chord / root_chord
 area(span, chord) = span * chord
 mean_aerodynamic_chord(chord, taper_ratio) = (2/3) * chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
+quarter_chord(chord) = 0.25 * chord
+
+# Difference operators on lists?
+fwdsum(xs) = xs[2:end] .+ xs[1:end-1]
+fwddiff(xs) = xs[2:end] .- xs[1:end-1]
+cendiff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
+
 
 """
-Definition of a wing consisting of its position and sections.
+Computes the span of a half-wing.
 """
-struct Wing <: Aircraft
-    sections :: Array{WingSection} # Collection of wing sections.
-end
-
-WingPos = Pair(Wing, Point3D)
+span(wing :: HalfWing) = (sum ∘ map)(*, wing.spans, cos.(wing.dihedrals))
 
 """
-Computes the projected area of a wing given its sections.
+Computes the projected area of a half-wing.
 """
-function projected_area(wing :: Wing)
-    secs = wing.sections
-    chords = secs |> [:chord]
-    spans = secs |> [:loc, :y] 
-    mean_chords = fwdsum(chords, 0.5) # Mean chord lengths of sections.
-    mean_spans = fwdsum(spans, 0.5) # Mean span lengths of sections
+function projected_area(wing :: HalfWing)
+    mean_chords =  fwdsum(wing.chords) / 2 # Mean chord lengths of sections.
+    mean_spans = fwdsum(wing.spans) / 2 # Mean span lengths of sections
     sum(mean_chords .* mean_spans)
 end
 
-function mean_aerodynamic_chord(wing :: Wing)
-    secs = wing.sections
-    chords = secs |> [:chord]
-    spans = secs |> [:loc, :y]
-    mean_chords = fwdsum(chords, 0.5)
-    quarter_chords = 0.25 * (chords[1:end-1] .- chords[2:end]) 
-    area = sum(mean_chords .* spans)
+"""
+Computes the mean aerodynamic chord of a half-wing.
+"""
+function mean_aerodynamic_chord(wing :: HalfWing)
+    mean_chords = fwdsum(wing.chords) / 2
+    quarter_chords = quarter_chord.(abs.(fwddiff(wing.chords)))
+    taper_ratios = map(/, wing.chords[2:end], wing.chords)
+    areas = mean_chords .* wing.spans
+    macs = mean_aerodynamic_chord(wing.chords)
+    mac = (sum ∘ map)(*, macs, areas)/sum(areas)
 end
+
+struct Wing <: Aircraft
+    left :: HalfWing
+    Right :: HalfWing
+end
+
+span(wing :: Wing) = span(wing.left) + span(wing.right
+)
+projected_area(wing :: Wing) = projected_area(wing.left) + projected_area(wing.right)
+mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean_aerodynamic_chord(wing.right)) / 2
+aspect_ratio(wing :: Wing) = aspect_ratio(span(wing), projected_area(wing))
+
+# Kleisli-ish composition to transport global coordinates?
+WingPos = Pair(Wing, Point3D)
 
 end

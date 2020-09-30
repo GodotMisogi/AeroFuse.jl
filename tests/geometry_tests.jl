@@ -1,15 +1,24 @@
 include("../src/AeroMDAO.jl")
+include("../src/FoilParametrization.jl")
 
-using .AeroMDAO: Point2D, Point3D, Panel, midpoint
+using .AeroMDAO: Point2D, Point3D, Panel
+using .FoilParametrization: CSTBase, shape_function, cst_coords, naca4
+using PyPlot
 
 # 2D Test
-ps = Point2D{Float64}.(range(0, stop=5), range(1, stop=6))
+ps = Point2D.(0:5, 1:6)
 
 panels = Panel(ps)
-println(midpoint(panels))
 
 # 3D Test
-ps = Point3D{Float64}.(range(0, stop=5), range(1, stop=6), range(2, stop = 7))
+ps = Point3D.(0:5, 1:6, 2:7)
 
 panels = Panel(ps)
-println(midpoint(panels))
+
+# NACA 4-digit airfoils
+coords = naca4((2,4,1,2))
+
+plot(coords[:,1], coords[:,2])
+axis("equal")
+show()
+# CST test

@@ -1,24 +1,22 @@
 include("../src/AeroMDAO.jl")
 
-using .AeroMDAO: read_foil, Point3D, Point2D, WingSection, Wing, projected_area, Foil, cosine_foil, split_foil, cosine_interp
+using .AeroMDAO: read_foil, Point3D, Point2D, Wing, projected_area, Foil, cosine_foil, split_foil, cosine_interp, linspace
 
-foilpath = "airfoil_database/a18.dat"
+foilpath = "airfoil_database/ys930.dat"
 
 # Wing section setup
 num_secs = 5
 xs = zeros(num_secs)
-ys = 0:2:num_secs
+ys = linspace(0, 2, num_secs)
 zs = zeros(num_secs)
 
 chords = repeat([2.0], num_secs)    # Chord lengths
 twists = zeros(num_secs)            # Twists
 coords = read_foil(foilpath)
-foil = Foil(coords, 1.0)
-println(cosine_foil(foil))
+foil = Foil(coords)
 
-# foils = [ coords for n in 1:num_secs ]
-# airfoils = Foil.(foils, chords) # Airfoils
-
+foils = [ coords for n in 1:num_secs ]
+airfoils = Foil.(foils) # Airfoils
 
 
 # secs = [ WingSection(x...) for x in zip(locs, chords, twists, foils) ]
