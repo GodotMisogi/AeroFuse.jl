@@ -16,8 +16,6 @@ using DelimitedFiles
 # Convert 2D array to list of tuples
 arraytolist(xs) = (collect ∘ zip)([ xs[:,n] for n in 1:length(xs[1,:])]...)
 
-# Copying NumPy's linspace function
-linspace(min, max, step) = min:(max - min)/step:max
 
 #-------------HASKELL MASTER RACE--------------#
 
@@ -70,56 +68,6 @@ struct Foil <: Aircraft
     foil :: Union{Array{<: Real, 2}, Array{Point}} # The foil profile as an array of coordinates, must be in Selig format.
 end
 
-"""
-Reads a '.dat' file consisting of 2D coordinates, for an airfoil.
-"""
-function read_foil(path :: String)
-    readdlm(path, skipstart = 1)
-    # Point2D{Float64}.(f[:,1], f[:,2])
-end
-
-slope(x1, y1, x2, y2) = (y2 - y1)/(x2 - x1)
-
-function split_foil(coords :: Array{<:Real, 2})
-    cods = arraytolist(coords) # Convert to list of tuples
-    for (i, ((xp, yp), (x, y), (xn, yn))) ∈ enumerate(zip(cods[1:end-2], cods[2:end-1], cods[3:end]))
-        if x < xp && x < xn
-            i += 1
-            if slope(x, y, xp, yp) >= slope(x, y, xn, yn)
-                return splitat(i, coords)
-            else
-                return (reverse ∘ splitat)(i, coords)
-            end
-        end
-    end
-    (coords, [])
-end
-
-"""
-Provides the projections to the x-axis for a circle of given diameter and center.
-"""
-cosine_dist(x_center :: Real, diameter :: Real, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(-π, stop = 0, length = n))
-
-function cosine_interp(coords :: Array{<:Real, 2}, n :: Integer = 40)
-    xs, ys = coords[:,1], coords[:,2]
-
-    d = maximum(xs) - minimum(xs)
-    x_center = (maximum(xs) + minimum(xs)) / 2
-    x_circ = cosine_dist(x_center, d, n)
-    
-    itp_circ = LinearInterpolation(xs, ys)
-    y_circ = itp_circ(x_circ)
-    [x_circ y_circ]
-end
-
-"""
-Discretises a geometry consisting of x and y coordinates into panels by projecting the x-coordinate of a circle onto the geometry.
-"""
-function cosine_foil(airfoil :: Foil, n :: Integer = 40)
-    upper, lower = split_foil(airfoil.foil)
-    upper_cos, lower_cos = cosine_interp.([reverse(upper, dims=1), lower], n)
-    Panel([reverse(upper_cos, dims=1); lower_cos])
-end
 
 #-----------------WING---------------------#
 
@@ -173,7 +121,7 @@ function mean_aerodynamic_chord(wing :: HalfWing)
     taper_ratios = map(/, wing.chords[2:end], wing.chords)
     areas = mean_chords .* wing.spans
     macs = mean_aerodynamic_chord(wing.chords)
-    mac = (sum ∘ map)(*, macs, areas)/sum(areas)
+    mac = (sum ∘ map)(*, macs, areas) / sum(areas)
 end
 
 struct Wing <: Aircraft

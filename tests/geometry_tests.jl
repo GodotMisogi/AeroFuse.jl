@@ -5,12 +5,12 @@ using .AeroMDAO: Point2D, Point3D, Panel
 using .FoilParametrization: CSTBase, shape_function, cst_coords, naca4
 using PyPlot
 
-# 2D Test
+# 2D Panel test
 ps = Point2D.(0:5, 1:6)
 
 panels = Panel(ps)
 
-# 3D Test
+# 3D Panel test
 ps = Point3D.(0:5, 1:6, 2:7)
 
 panels = Panel(ps)
