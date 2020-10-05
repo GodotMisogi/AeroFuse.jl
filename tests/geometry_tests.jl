@@ -2,7 +2,7 @@ include("../src/AeroMDAO.jl")
 include("../src/FoilParametrization.jl")
 
 using .AeroMDAO: Point2D, Point3D, Panel
-using .FoilParametrization: CSTBase, shape_function, cst_coords, naca4
+using .FoilParametrization: CSTBase, shape_function, cst_coords, naca4, bernstein_class, bernstein_basis, split_foil
 using PyPlot
 
 # 2D Panel test
@@ -21,4 +21,6 @@ coords = naca4((2,4,1,2))
 plot(coords[:,1], coords[:,2])
 axis("equal")
 show()
+
 # CST test
+# kulfan = CSTBase(bernstein_class, bernstein_basis)

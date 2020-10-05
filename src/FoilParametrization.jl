@@ -3,10 +3,23 @@ module FoilParametrization
 include("AeroMDAO.jl")
 using Base.Math
 using Base.Iterators
+using Interpolations
+using DelimitedFiles
 using .AeroMDAO: Foil
 
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
+
+# Convert 2D array to list of tuples
+arraytolist(xs) = (collect ∘ zip)([ xs[:,n] for n in 1:length(xs[1,:])]...)
+
+#-------------HASKELL MASTER RACE--------------#
+
+span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
+splitat(n, xs) = (xs[1:n,:], xs[n+1:end,:])  
+lisa(pred, iter) = span(!pred, iter)
+
+# Zieg Heil!
 
 #------------FOIL PROCESSING------------#
 
@@ -24,15 +37,15 @@ function split_foil(coords :: Array{<:Real, 2})
     cods = arraytolist(coords) # Convert to list of tuples
     for (i, ((xp, yp), (x, y), (xn, yn))) ∈ enumerate(zip(cods[1:end-2], cods[2:end-1], cods[3:end]))
         if x < xp && x < xn
-            i += 1
             if slope(x, y, xp, yp) >= slope(x, y, xn, yn)
                 return splitat(i, coords)
             else
-                return (reverse ∘ splitat)(i, coords)
+                return splitat(i, reverse(coords))
             end
         end
     end
-    (coords, [])
+    return (coords, [])
+    # span(((xp, yp), (x, y), (xn, yn)) -> x < xp && x < xn, zip(cods[1:end-2], cods[2:end-1], cods[3:end]))
 end
 
 """
@@ -55,10 +68,11 @@ end
 """
 Discretises a geometry consisting of x and y coordinates into panels by projecting the x-coordinate of a circle onto the geometry.
 """
-function cosine_foil(airfoil :: Foil, n :: Integer = 40)
-    upper, lower = split_foil(airfoil.foil)
-    upper_cos, lower_cos = cosine_interp.([reverse(upper, dims=1), lower], n)
-    [reverse(upper_cos, dims=1); lower_cos]
+function cosine_foil(airfoil :: Array{<: Real, 2}, n :: Integer = 40)
+    upper, lower = split_foil(airfoil)
+    upper = [upper; lower[1,:]'] # Append leading edge from lower to upper
+    upper_cos, lower_cos = cosine_interp(reverse(upper, dims=1), n), cosine_interp(lower, n)
+    [reverse(upper_cos[2:end,:], dims=1); lower_cos]
 end
 
 #-------------------CST METHOD--------------------#
@@ -118,25 +132,25 @@ function airfoil_CST(alpha_u :: Array{<: Real}, alpha_l  :: Array{<: Real}, dz_u
     xs = cosine_dist(0.5, 1, num_points)
 
     # Upper and lower surface generation
-    upper_surf = [ cst_coords(temp_airfoil, x, alpha_u, dz_u, coeff_LE) for x in xs ]
-    lower_surf = [ cst_coords(temp_airfoil, x, alpha_l, dz_l, coeff_LE) for x in xs ]
+    upper_surf = cst_coords.(temp_airfoil, xs, alpha_u, dz_u, coeff_LE)
+    lower_surf = cst_coords.(temp_airfoil, xs, alpha_l, dz_l, coeff_LE)
 
     # Zipping into coordinates and concatenating 
     # Following counter-clockwise ordering from trailing edge]
     [reverse([xs upper_surf], dims = 1); xs lower_surf]
 end
 
-#--------CAMBER-THICKNESS REPRESENTATION----------#
+#--------------CAMBER-THICKNESS REPRESENTATION----------------#
 
 # Camber-thickness to coordinates and inverse transformations
 """
 Converts coordinates to camber-thickness representation.
 """
-function coords_to_camthick(coords)
-    upper, lower = (split_foil ∘ cosine_foil ∘ Airfoil)(coords)
-    camber = (reverse(upper[:,1]) .+ lower[:,1]) / 2
-    thickness = reverse(upper[:,1]) .- lower[:,1]
-    [upper[:,0] camber thickness]
+function coords_to_camthick(coords :: Array{<: Real, 2})
+    upper, lower = (split_foil ∘ cosine_foil)(coords)
+    camber = (reverse(upper[:,1]) .+ lower[2:end,1]) / 2
+    thickness = reverse(upper[:,1]) .- lower[2:end,1]
+    [lower[:,1] [lower[1,2]; camber] [0; thickness]]
 end
 
 """

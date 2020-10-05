@@ -3,9 +3,7 @@ module AeroMDAO
 using LinearAlgebra
 import Base: *, +
 using Base.Iterators
-using Interpolations
 using Statistics
-using DelimitedFiles
 
 #--------------------HACKS----------------------#
 
@@ -13,17 +11,6 @@ using DelimitedFiles
 |>(obj, fields :: Array{Symbol}) = foldl(getproperty, fields, init = obj)
 |>(list_objs :: Array{T}, fields :: Array{Symbol}) where {T <: Any} = list_objs .|> [fields]
 
-# Convert 2D array to list of tuples
-arraytolist(xs) = (collect ∘ zip)([ xs[:,n] for n in 1:length(xs[1,:])]...)
-
-
-#-------------HASKELL MASTER RACE--------------#
-
-span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
-splitat(n, xs) = (xs[1:n,:], xs[n:end,:])  
-lisa(pred, iter) = span(!pred, iter)
-
-# Zieg Heil!
 
 #----------------VECTOR SPACES?---------------#
 
