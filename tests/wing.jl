@@ -1,8 +1,8 @@
 include("../src/AeroMDAO.jl")
 include("../src/FoilParametrization.jl")
 
-using .AeroMDAO:  Point3D, Point2D, Wing, projected_area, Foil
-using .FoilParametrization: read_foil, linspace, coords_to_camthick, split_foil, cosine_foil
+using .AeroMDAO:  Point3D, Point2D, Wing, projected_area
+using .FoilParametrization: Foil, read_foil, linspace
 using PyPlot
 
 foilpath = "airfoil_database/ys930.dat"
@@ -16,18 +16,10 @@ zs = zeros(num_secs)
 chords = repeat([2.0], num_secs)    # Chord lengths
 twists = zeros(num_secs)            # Twists
 coords = read_foil(foilpath)
-airfoil = Foil(coords)
 
 foils = [ coords for n in 1:num_secs ]
 airfoils = Foil.(foils) # Airfoils
 
-# Camber-thickness transformations
-xs = coords_to_camthick(coords)
-println(xs)
-# plot(xs[:,1], xs[:,2], marker="o")
-# plot(xs[:,1], xs[:,3])
-# axis("equal")
-# show()
 
 # secs = [ WingSection(x...) for x in zip(locs, chords, twists, foils) ]
 

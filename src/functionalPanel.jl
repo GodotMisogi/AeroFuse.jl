@@ -88,60 +88,60 @@ function solve_strengths(panels :: Array{DoubletPanel2D,1}, uniform :: Uniform2D
     num_panels = length(panels)     # Number of panels
 
     # Doublet matrix
-    doubletMatrix = [ i == j ? 0.5 : influence_potential(panel_j, xc, yc) for (i, (xc, yc)) in enumerate(collocation_point.(panels)), (j, panel_j) in enumerate(panels) ]
+    doublet_matrix = [ panel_i === panel_j ? 0.5 : influence_potential(panel_j, xc, yc) for (xc, yc) ∈ collocation_point.(panels), (j, panel_j) ∈ enumerate(panels) ]
 
     # Morino's velocity Kutta condition
     kutta = zeros(num_panels + 1)
     kutta[1] = 1.
     kutta[2] = -1.
-    kutta[end - 2] = 1.
-    kutta[end - 1] = -1.
+    kutta[end-2] = 1.
+    kutta[end-1] = -1.
     
     # Wake vector
     (lastx, lasty) = panels[end].finish
     wokePanel = DoubletPanel2D((lastx, lasty), (100000 * lastx, lasty))
-    wokeVector = [ influence_potential(wokePanel, xc, yc) for (xc, yc) in collocation_point.(panels) ]
+    woke_vector = [ influence_potential(wokePanel, xc, yc) for (xc, yc) in collocation_point.(panels) ]
 
     # Influence matrix with explicit Kutta condition
-    influenceMatrix = zeros(num_panels + 1, num_panels + 1)
-    influenceMatrix[1:end - 1, 1:end - 1] = doubletMatrix
-    influenceMatrix[1:end - 1, end] = wokeVector 
-    influenceMatrix[end, :] = kutta
+    influence_matrix = zeros(num_panels + 1, num_panels + 1)
+    influence_matrix[1:end-1, 1:end-1] = doublet_matrix
+    influence_matrix[1:end-1, end] = woke_vector 
+    influence_matrix[end, :] = kutta
 
     # Boundary condition
     u = velocity(uniform)
-    boundaryCondition = zeros(num_panels + 1)
-    boundaryCondition[1:end - 1] = [ -potential(uniform, xc, yc) for (xc, yc) in collocation_point.(panels) ]
+    boundary_condition = zeros(num_panels + 1)
+    boundary_condition[1:end-1] = [ -potential(uniform, xc, yc) for (xc, yc) in collocation_point.(panels) ]
     
-    return influenceMatrix \ boundaryCondition
+    influence_matrix \ boundary_condition
 end 
 
 function aerocoefficients(panels :: Array{DoubletPanel2D,1}, uniform :: Uniform2D)
     strengths = solve_strengths(panels, uniform)
 
     diffpans = dist2.(midgrad(panels))
-    diffstrs = [ (str2 - str1) for (str2, str1) in midgrad(take(strengths, length(panels))) ]
+    diffstrs = [ (str2 - str1) for (str2, str1) in (midgrad ∘ take)(strengths, length(panels)) ]
 
     u = velocity(uniform)
     margaret = norm(u)
     
     # With sources
     # tandotu = [ u.*panelTangent(panel) for panel in panels ]
-    # tanVels = map((ds, dp, ut) -> ds/dp + ut, zip(diffstrs, diffpans, tandotu))
+    # tan_vels = (diffstr ./ diffpans) .+ tandotu
     
-    tanVels = diffstrs ./ diffpans
+    tan_vels = diffstrs ./ diffpans
 
-    pressCoeffs = [ pressure_coefficient((0, vt), margaret) for vt in tanVels ]
+    pressure_coeffs = [ pressure_coefficient((0, vt), margaret) for vt in tan_vels ]
     
-    liftCoeff = -sum(pressCoeffs .* (diffpans ./ 2) .* cos.(panel_angle.(panels)))
-    kuttaCoeff = -2 * strengths[end] / margaret
+    lift_coeff = -sum(pressure_coeffs .* (diffpans ./ 2) .* cos.(panel_angle.(panels)))
+    kutta_coeff = -2 * last(strengths) / margaret
 
-    return (liftCoeff, kuttaCoeff, pressCoeffs)
+    lift_coeff, kutta_coeff, pressure_coeffs
 end
 
 function parts(xs) 
-    adj = collect(zip(drop(xs, 1), xs))
-    return (first(adj), last(adj))
+    adj = (collect ∘ zip)(drop(xs, 1), xs)
+    first(adj), last(adj)
 end 
 
 adj2(xs) = (collect ∘ zip)(drop(xs, 2), xs)
@@ -149,7 +149,7 @@ adj2(xs) = (collect ∘ zip)(drop(xs, 2), xs)
 function midgrad(xs) 
     (firstpans, lastpans) = parts(xs)
     midpans = adj2(xs)
-    return cat(dims = 1, firstpans, midpans, lastpans)
+    cat(dims = 1, firstpans, midpans, lastpans)
 end
 
 # Transforms (x, y) to the coordinate system with (x_s, y_s) as origin oriented at angle_s.
@@ -163,13 +163,11 @@ pressure_coefficient(vels, mag) = 1 - (norm(vels))^2 / mag^2
 function grid_data(objects :: Array{<:Solution,1}, xs, pressure = true)
     vels = foldl((v1, v2)->[ u .+ v for (u, v) in zip(v1, v2)], [ velocity(object, xs) for object in objects ])
     pots = foldl((v1, v2)->v1 .+ v2, [ potential(object, xs) for object in objects ])
+    vels, pots
 end
 
 function grid_data(object :: Solution, xs)
-    vels = velocity(object, xs)
-    pots = potential(object, xs)
-    
-    return vels, pots
+   velocity(object, xs), potential(object, xs)
 end
 
 # Performs velocity and potential computations for an object on a grid

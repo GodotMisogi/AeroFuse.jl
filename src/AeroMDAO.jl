@@ -1,16 +1,24 @@
 module AeroMDAO
 
+include("FoilParametrization.jl")
 using LinearAlgebra
 import Base: *, +
 using Base.Iterators
 using Statistics
+using .FoilParametrization: Foil
 
 #--------------------HACKS----------------------#
 
-# "Lenses" to access subfields on lists of objects
+"""
+"Lenses" to access subfields on lists of objects.
+"""
 |>(obj, fields :: Array{Symbol}) = foldl(getproperty, fields, init = obj)
 |>(list_objs :: Array{T}, fields :: Array{Symbol}) where {T <: Any} = list_objs .|> [fields]
 
+# Difference operators on lists?
+fwdsum(xs) = xs[2:end] .+ xs[1:end-1]
+fwddiff(xs) = xs[2:end] .- xs[1:end-1]
+cendiff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
 
 #----------------VECTOR SPACES?---------------#
 
@@ -52,9 +60,8 @@ abstract type Aircraft end
 Airfoil structure consisting of foil coordinates as an array of points, a chord length, and twist angle in degrees.
 """
 struct Foil <: Aircraft
-    foil :: Union{Array{<: Real, 2}, Array{Point}} # The foil profile as an array of coordinates, must be in Selig format.
+    coords :: Array{<: Real, 2} # The foil profile as an array of coordinates, must be in Selig format.
 end
-
 
 #-----------------WING---------------------#
 
@@ -79,16 +86,10 @@ area(span, chord) = span * chord
 mean_aerodynamic_chord(chord, taper_ratio) = (2/3) * chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
 quarter_chord(chord) = 0.25 * chord
 
-# Difference operators on lists?
-fwdsum(xs) = xs[2:end] .+ xs[1:end-1]
-fwddiff(xs) = xs[2:end] .- xs[1:end-1]
-cendiff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
-
-
 """
 Computes the span of a half-wing.
 """
-span(wing :: HalfWing) = (sum ∘ map)(*, wing.spans, cos.(wing.dihedrals))
+span(wing :: HalfWing) = sum(wing.spans .* cos.(wing.dihedrals) .* cos.(wing.twists))
 
 """
 Computes the projected area of a half-wing.
@@ -104,11 +105,11 @@ Computes the mean aerodynamic chord of a half-wing.
 """
 function mean_aerodynamic_chord(wing :: HalfWing)
     mean_chords = fwdsum(wing.chords) / 2
-    quarter_chords = quarter_chord.(abs.(fwddiff(wing.chords)))
+    quarter_chords = (quarter_chord ∘ abs).(fwddiff(wing.chords))
     taper_ratios = map(/, wing.chords[2:end], wing.chords)
     areas = mean_chords .* wing.spans
     macs = mean_aerodynamic_chord(wing.chords)
-    mac = (sum ∘ map)(*, macs, areas) / sum(areas)
+    sum(macs .* areas) / sum(areas)
 end
 
 struct Wing <: Aircraft
