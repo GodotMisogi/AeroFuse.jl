@@ -21,7 +21,7 @@ lisa(pred, iter) = span(!pred, iter)
 """
 Reads a '.dat' file consisting of 2D coordinates, for an airfoil.
 """
-function read_foil(path :: String, header = true)
+function read_foil(path :: String; header = true)
     readdlm(path, skipstart = header ? 1 : 0)
     # Point2D{Float64}.(f[:,1], f[:,2])
 end
@@ -63,7 +63,7 @@ end
 """
 Discretises a foil profile into panels by projecting the x-coordinates of a circle onto the geometry.
 """
-function cosine_foil(coords :: Array{<: Real, 2}, n :: Integer = 40)
+function cosine_foil(coords :: Array{<: Real, 2}; n :: Integer = 40)
     upper, lower = split_foil(coords)
     upper = [upper; lower[1,:]'] # Append leading edge from lower to upper
     upper_cos, lower_cos = cosine_interp(reverse(upper, dims=1), n), cosine_interp(lower, n)

@@ -5,7 +5,6 @@ using LinearAlgebra
 import Base: *, +
 using Base.Iterators
 using Statistics
-using .FoilParametrization: Foil
 
 #--------------------HACKS----------------------#
 
@@ -22,7 +21,7 @@ cendiff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2]
 
 #----------------VECTOR SPACES?---------------#
 
-# Convert struct entries to lists
+# Convert homogeneous struct entries to lists
 structtolist(x) = [ getproperty(x, name) for name ∈ (fieldnames ∘ typeof)(x) ]
 
 abstract type Point end
@@ -83,21 +82,21 @@ aspect_ratio(span, area) = span^2 / area
 mean_geometric_chord(span, area) = area / span
 taper_ratio(root_chord, tip_chord) = tip_chord / root_chord
 area(span, chord) = span * chord
-mean_aerodynamic_chord(chord, taper_ratio) = (2/3) * chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
+mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
 quarter_chord(chord) = 0.25 * chord
 
 """
 Computes the span of a half-wing.
 """
-span(wing :: HalfWing) = sum(wing.spans .* cos.(wing.dihedrals) .* cos.(wing.twists))
+span(wing :: HalfWing) = sum(wing.spans .* cos.(wing.dihedrals) .* cos.(fwdsum(wing.twists) / 2))
 
 """
 Computes the projected area of a half-wing.
 """
 function projected_area(wing :: HalfWing)
-    mean_chords =  fwdsum(wing.chords) / 2 # Mean chord lengths of sections.
-    mean_spans = fwdsum(wing.spans) / 2 # Mean span lengths of sections
-    sum(mean_chords .* mean_spans)
+    mean_chords = fwdsum(wing.chords) / 2 # Mean chord lengths of sections.
+    mean_twists = fwdsum(wing.twists) / 2 # Mean twist angles of sections
+    sum(wing.spans .* cos.(wing.dihedrals) .* cos.(wing.sweeps) .* mean_chords .* cos.(mean_twists))
 end
 
 """
@@ -105,16 +104,15 @@ Computes the mean aerodynamic chord of a half-wing.
 """
 function mean_aerodynamic_chord(wing :: HalfWing)
     mean_chords = fwdsum(wing.chords) / 2
-    quarter_chords = (quarter_chord ∘ abs).(fwddiff(wing.chords))
-    taper_ratios = map(/, wing.chords[2:end], wing.chords)
+    taper_ratios = wing.chords[2:end] ./ wing.chords[1:end-1]
     areas = mean_chords .* wing.spans
-    macs = mean_aerodynamic_chord(wing.chords)
+    macs = mean_aerodynamic_chord.(wing.chords[1:end-1], taper_ratios)
     sum(macs .* areas) / sum(areas)
 end
 
 struct Wing <: Aircraft
     left :: HalfWing
-    Right :: HalfWing
+    right :: HalfWing
 end
 
 span(wing :: Wing) = span(wing.left) + span(wing.right

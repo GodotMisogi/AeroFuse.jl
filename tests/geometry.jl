@@ -15,12 +15,5 @@ ps = Point3D.(0:5, 1:6, 2:7)
 
 panels = Panel(ps)
 
-# NACA 4-digit airfoils
-coords = naca4((2,4,1,2))
-
-plot(coords[:,1], coords[:,2])
-axis("equal")
-show()
-
 # CST test
 # kulfan = CSTBase(bernstein_class, bernstein_basis)

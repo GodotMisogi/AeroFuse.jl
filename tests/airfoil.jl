@@ -1,7 +1,7 @@
 include("../src/FoilParametrization.jl")
 
-using .FoilParametrization: Foil, read_foil, linspace, foil_camthick, camthick_foil, cosine_foil, kulfan_CST
-using PyPlot
+using .FoilParametrization: read_foil, foil_camthick, camthick_foil, cosine_foil, kulfan_CST, naca4
+using Plots
 
 foilpath = "airfoil_database/ys930.dat"
 
@@ -22,14 +22,21 @@ alphas = [alpha_u alpha_l]
 dzs = (1e-4, 1e-4)
 cst_foil = kulfan_CST(alphas, dzs, 0.2)
 
-# Plotting
-figure(1)
-plot(cos_foil[:,1], cos_foil[:,2])
-plot(xcamthick[:,1], xcamthick[:,2], marker=".")
-plot(xcamthick[:,1], xcamthick[:,3], marker="x")
-axis("equal")
+# NACA 4-digit airfoils
+naca = naca4((2,4,1,2))
 
-figure(2)
+# Plotting
+# figure(1)
+plot(cos_foil[:,1], cos_foil[:,2])
+plot!(xcamthick[:,1], xcamthick[:,2])
+plot!(xcamthick[:,1], xcamthick[:,3])
+# axis("equal")
+
+# figure(2)
 plot(cst_foil[:,1], cst_foil[:,2])
-axis("equal")
-show()
+# axis("equal")
+
+# figure(3)
+plot(naca[:,1], naca[:,2])
+# axis("equal")
+gui();
