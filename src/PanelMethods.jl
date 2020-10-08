@@ -2,7 +2,6 @@ module PanelMethods
 
 using LinearAlgebra
 using Base.Iterators
-using Interpolations
 
 # Solutions to Laplace's equation
 abstract type Solution end

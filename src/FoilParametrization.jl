@@ -16,7 +16,7 @@ lisa(pred, iter) = span(!pred, iter)
 
 # Zieg Heil!
 
-#------------FOIL PROCESSING------------#
+#-------------FOIL PROCESSING------------------#
 
 """
 Reads a '.dat' file consisting of 2D coordinates, for an airfoil.
@@ -83,7 +83,7 @@ end
 # Computing coordinates
 cst_coords(class_func :: Function, basis_func :: Function, x :: Real, alphas :: Array{<: Real, 1}, dz :: Real, coeff_LE :: Real = 0) = class_func(x) * shape_function(x, basis_func, alphas, coeff_LE) + x * dz
 
-#----------BERNSTEIN BASIS--------------#
+#--------------BERNSTEIN BASIS-----------------#
 
 """
 Bernstein basis for class function.

@@ -1,7 +1,6 @@
 module AeroMDAO
 
 include("FoilParametrization.jl")
-using LinearAlgebra
 import Base: *, +
 using Base.Iterators
 using Statistics
