@@ -48,3 +48,6 @@ Thumbs.db
 *.mov
 *.wmv
 
+# IPython checkpoints
+*/.ipynb_checkpoints/
+
