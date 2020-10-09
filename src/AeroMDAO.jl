@@ -16,7 +16,7 @@ using Statistics
 # Difference operators on lists?
 fwdsum(xs) = xs[2:end] .+ xs[1:end-1]
 fwddiff(xs) = xs[2:end] .- xs[1:end-1]
-cendiff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
+ord2diff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
 
 #----------------VECTOR SPACES?---------------#
 
@@ -73,8 +73,7 @@ struct HalfWing <: Aircraft
     dihedrals :: Array{<: Real} # Dihedral angles (deg)
     sweeps :: Array{<: Real} # Leading-edge sweep angles (deg)
     twists :: Array{<: Real} # Twist angles (deg)
-    HalfWing(foils, chords, spans, dihedrals, sweeps, twists) = new(foils, chords, spans, 
-    deg2rad.(dihedrals), deg2rad.(sweeps), deg2rad.(twists)) # Convert to radians
+    HalfWing(foils, chords, spans, dihedrals, sweeps, twists) = new(foils, chords, spans, deg2rad.(dihedrals), deg2rad.(sweeps), deg2rad.(twists)) # Convert to radians
 end
 
 aspect_ratio(span, area) = span^2 / area
