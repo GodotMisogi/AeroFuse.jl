@@ -138,7 +138,12 @@ camthick_foil(xs, camber, thickness) = [reverse([xs camber .+ thickness / 2], di
 
 #--------NACA PARAMETRIZATION------------#
 
-function naca4(digits :: Tuple, n :: Integer = 40, closed_te :: Bool = false)
+# NACA 4-digit parameter functions
+naca4_thickness(t_by_c, xc, sharp_trailing_edge :: Bool) = 5 * t_by_c * (0.2969 * √xc - 0.1260 * xc - 0.3516 * xc^2 + 0.2843 * xc^3 - (sharp_trailing_edge ? 0.1036 : 0.1015) * xc^4)
+naca4_camberline(pos, cam, xc) = xc < pos ? (cam / pos^2) * xc * (2 * pos - xc) : cam / (1 - pos)^2 * ( (1 - 2 * pos) + 2 * pos * xc - xc^2)
+naca4_gradient(pos, cam, xc) = atan(2 * cam / (xc < pos ? pos^2 : (1 - pos)^2) * (pos - xc))
+
+function naca4(digits :: Tuple, n :: Integer = 40; sharp_trailing_edge :: Bool = false)
     
     # Camber
     cam = digits[1] / 100
@@ -151,7 +156,7 @@ function naca4(digits :: Tuple, n :: Integer = 40, closed_te :: Bool = false)
     xs = cosine_dist(0.5, 1.0, n)
 
     # Thickness distribution
-    thickness = [ 5 * t_by_c * (0.2969 * √xc - 0.1260 * xc - 0.3516 * xc^2 + 0.2843 * xc^3 - (closed_te ? 0.1036 : 0.1015) * xc^4) for xc in xs ]
+    thickness = [ naca4_thickness(t_by_c, xc, sharp_trailing_edge) for xc in xs ]
     
     if pos == 0 || cam == 0
         x_upper = xs
@@ -160,9 +165,9 @@ function naca4(digits :: Tuple, n :: Integer = 40, closed_te :: Bool = false)
         y_lower = -thickness
     else
         # Compute camberline
-        camber = [ xc < pos ? (cam / pos^2) * xc * (2 * pos - xc) : cam / (1 - pos)^2 * ( (1 - 2 * pos) + 2 * pos * xc - xc^2) for xc in xs ]
+        camber = [ naca4_camberline(pos, cam, xc) for xc in xs ]
         # Compute gradients
-        gradients = [ atan(2 * cam / (xc < pos ? pos^2 : (1 - pos)^2) * (pos - xc)) for xc in xs ]
+        gradients = [ naca4_gradient(pos, cam, xc) for xc in xs ]
         # Upper surface
         x_upper = xs .- thickness .* sin.(gradients) 
         y_upper = camber .+ thickness .* cos.(gradients)
