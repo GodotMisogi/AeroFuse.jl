@@ -36,11 +36,11 @@ stream(vor :: Vortex2D, x, y) = -vor.str / (4π) * log((x - vor.x0)^2 + (y - vor
 abstract type Panel2D <: Solution end
 
 mutable struct DoubletPanel2D <: Panel2D
-    strength :: Float64
     start :: Tuple{Float64, Float64}
     finish :: Tuple{Float64, Float64}
     cp :: Float64
-    DoubletPanel2D(start, finish, strength = 0, cp = 0) = new(strength, start, finish, cp)
+    strength :: Float64
+    DoubletPanel2D(start, finish, strength = 0, cp = 0) = new(start, finish, strength, cp)
 end
 
 # Methods on panels
@@ -61,18 +61,16 @@ end
 panel_tangent(panel :: Panel2D) = rotation(1, 0, -1 * panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0, 1, panel_angle(panel))
 panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π / 2 <= angle <= π) || (-π <= angle <= -π / 2) ? "lower" : "upper" end
-
+split_panels(panels) = [ panel for panel in panels if panel_location(panel) == "upper" ], [ panel for panel in panels if panel_location(panel) == "lower" ]
 
 doublet_potential(xp, yp, len) = -1 / (2π) * (atan(yp, xp - len) - atan(yp, xp - 0))
 
 doublet_velocity(str, x, y, xsl, xel) = str / (2π) .* ( - (y / ((x - xsl)^2 + y^2) - y / ((x - xel)^2 + y^2) ), ( (x - xsl) / ((x - xsl)^2 + y^2) - (x - xel) / ((x - xel)^2 + y^2)) )
 
 function potential(panel :: DoubletPanel2D, x, y)
-    # Analytical solution
-    (x0, y0) = panel.start
     len = panel_length(panel)
     angle = panel_angle(panel)
-    (xp, yp) = panel_coords(x, y, x0, y0, angle)
+    (xp, yp) = panel_coords(x, y, panel.start..., angle)
 
     doublet_potential(xp, yp, len)
 end
@@ -115,7 +113,7 @@ function solve_strengths(panels :: Array{DoubletPanel2D}, uniform :: Uniform2D)
     
     # Wake vector
     (lastx, lasty) = panels[end].finish
-    woke_panel = DoubletPanel2D((lastx, lasty), (1e6 * lastx, lasty))
+    woke_panel = DoubletPanel2D((lastx, lasty), (1e5 * lastx, lasty))
     woke_vector = [ potential(woke_panel, pt...) for pt ∈ colpoints ]
 
     # Influence matrix with explicit Kutta condition
@@ -124,10 +122,10 @@ function solve_strengths(panels :: Array{DoubletPanel2D}, uniform :: Uniform2D)
     influence_matrix[1:end-1,end] = woke_vector 
     influence_matrix[end,:] = kutta
 
-    # Boundary condition
+    # # Boundary condition
     boundary_condition = zeros(num_panels + 1)
     boundary_condition[1:end-1] = [ -potential(uniform, pt...) for pt ∈ colpoints ]
-    
+
     strengths = influence_matrix \ boundary_condition
 
     for (panel, strength) in zip(panels, strengths)
@@ -144,14 +142,18 @@ function aero_coefficients(panels :: Array{DoubletPanel2D}, uniform :: Uniform2D
     diffstrs = [ (str2 - str1) for (str2, str1) in (midgrad ∘ take)(strengths, length(panels)) ]
 
     u = velocity(uniform)
-    margaret = norm(u)
+    freestream_speed = norm(u)
     
     tan_vels = diffstrs ./ diffpans
 
-    pressure_coeffs = [ pressure_coefficient((0, vt), margaret) for vt in tan_vels ]
+    pressure_coeffs = [ pressure_coefficient((0, vt), freestream_speed) for vt in tan_vels ]
+
+    for (panel, cp) in zip(panels, pressure_coeffs)
+        panel.cp = cp
+    end
     
     lift_coeff = -sum(pressure_coeffs .* (diffpans ./ 2) .* (cos ∘ panel_angle).(panels))
-    kutta_coeff = -2 * last(strengths) / margaret
+    kutta_coeff = -2 * last(strengths) / freestream_speed
 
     lift_coeff, kutta_coeff, pressure_coeffs
 end
@@ -188,13 +190,21 @@ end
 
 grid_data(object :: Solution, xs) = velocity(object, xs), potential(object, xs)
 
-
 # Performs velocity and potential computations for an object on a grid
 velocity(object :: Solution, xs) = [ velocity(object, x...) for x in xs ] 
 potential(object :: Solution, xs) = [ potential(object, x...) for x in xs ]
 
+doublet_panels(coords :: Array{<: Real, 2}) = reverse([ DoubletPanel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ (collect ∘ eachrow)([coords[2:end,:] coords[1:end-1,:]]) ], dims = 1) 
+
 end
 
+# Influence matrix with implicit Kutta condition
+# influence_matrix = doublet_matrix
+# influence_matrix[:,1] -= woke_vector 
+# influence_matrix[:,end] += woke_vector
+
+# Boundary condition
+# boundary_condition = [ -potential(uniform, pt...) for pt ∈ colpoints ]
 
 # With sources
 # tandotu = [ u.*panel_tangent(panel) for panel in panels ]

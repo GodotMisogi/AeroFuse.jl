@@ -110,7 +110,7 @@ function kulfan_CST(alphas :: Array{<: Real, 2}, (dz_u, dz_l), coeff_LE :: Real 
     lower_surf = [ bernie(x, alphas[:,2], dz_l) for x ∈ xs ]
 
     # Counter-clockwise ordering
-    [reverse([xs upper_surf], dims = 1); xs lower_surf]
+    [reverse([xs upper_surf][2:end,:], dims = 1); xs lower_surf]
 end
 
 #--------------CAMBER-THICKNESS REPRESENTATION----------------#
@@ -175,7 +175,7 @@ function naca4(digits :: Tuple, n :: Integer = 40; sharp_trailing_edge :: Bool =
         x_lower = xs .+ thickness .* sin.(gradients) 
         y_lower = camber .- thickness .* cos.(gradients)
     end
-    [reverse([x_upper y_upper], dims = 1); x_lower y_lower]
+    [reverse([x_upper y_upper][2:end,:], dims = 1); x_lower y_lower]
 end
 
 end
