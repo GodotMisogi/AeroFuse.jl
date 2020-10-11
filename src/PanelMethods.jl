@@ -61,6 +61,8 @@ end
 panel_tangent(panel :: Panel2D) = rotation(1, 0, -1 * panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0, 1, panel_angle(panel))
 panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π / 2 <= angle <= π) || (-π <= angle <= -π / 2) ? "lower" : "upper" end
+
+
 split_panels(panels) = [ panel for panel in panels if panel_location(panel) == "upper" ], [ panel for panel in panels if panel_location(panel) == "lower" ]
 
 doublet_potential(xp, yp, len) = -1 / (2π) * (atan(yp, xp - len) - atan(yp, xp - 0))
@@ -195,6 +197,15 @@ velocity(object :: Solution, xs) = [ velocity(object, x...) for x in xs ]
 potential(object :: Solution, xs) = [ potential(object, x...) for x in xs ]
 
 doublet_panels(coords :: Array{<: Real, 2}) = reverse([ DoubletPanel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ (collect ∘ eachrow)([coords[2:end,:] coords[1:end-1,:]]) ], dims = 1) 
+
+abstract type Panel3D <: Solution end
+
+mutable struct VortexPanel3D <: Panel3D
+    start :: Tuple{Float64, Float64, Float64}
+    finish :: Tuple{Float64, Float64 ,Float64}
+    strength :: Float64
+    cp :: Float64
+end
 
 end
 
