@@ -6,6 +6,9 @@ using Base.Iterators
 ⊗(A, B) = kron(A, B)
 ×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
 
+span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
+lisa(pred, iter) = span(!pred, iter)
+
 # Solutions to Laplace's equation
 abstract type Solution end
 
@@ -124,7 +127,7 @@ function solve_strengths(panels :: Array{DoubletPanel2D}, uniform :: Uniform2D)
     influence_matrix[1:end-1,end] = woke_vector 
     influence_matrix[end,:] = kutta
 
-    # # Boundary condition
+    # Boundary condition
     boundary_condition = zeros(num_panels + 1)
     boundary_condition[1:end-1] = [ -potential(uniform, pt...) for pt ∈ colpoints ]
 
