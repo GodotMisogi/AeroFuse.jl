@@ -6,6 +6,9 @@ using Base.Iterators
 ⊗(A, B) = kron(A, B)
 ×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
 
+span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
+lisa(pred, iter) = span(!pred, iter)
+
 # Solutions to Laplace's equation
 abstract type Solution end
 
@@ -61,7 +64,7 @@ end
 panel_tangent(panel :: Panel2D) = rotation(1, 0, -1 * panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0, 1, panel_angle(panel))
 panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π / 2 <= angle <= π) || (-π <= angle <= -π / 2) ? "lower" : "upper" end
-split_panels(panels) = [ panel for panel in panels if panel_location(panel) == "upper" ], [ panel for panel in panels if panel_location(panel) == "lower" ]
+split_panels(panels) = span(panel -> panel_location(panel_angle) == "lower", panels)
 
 doublet_potential(xp, yp, len) = -1 / (2π) * (atan(yp, xp - len) - atan(yp, xp - 0))
 
@@ -122,7 +125,7 @@ function solve_strengths(panels :: Array{DoubletPanel2D}, uniform :: Uniform2D)
     influence_matrix[1:end-1,end] = woke_vector 
     influence_matrix[end,:] = kutta
 
-    # # Boundary condition
+    # Boundary condition
     boundary_condition = zeros(num_panels + 1)
     boundary_condition[1:end-1] = [ -potential(uniform, pt...) for pt ∈ colpoints ]
 
