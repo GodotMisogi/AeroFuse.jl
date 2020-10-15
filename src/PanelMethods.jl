@@ -332,6 +332,15 @@ velocity(object :: Solution, xs) = [ velocity(object, x...) for x in xs ]
 potential(object :: Solution, xs) = [ potential(object, x...) for x in xs ]
 
 
+abstract type Panel3D <: Solution end
+
+mutable struct VortexPanel3D <: Panel3D
+    start :: Tuple{Float64, Float64, Float64}
+    finish :: Tuple{Float64, Float64 ,Float64}
+    strength :: Float64
+    cp :: Float64
+end
+
 end
 
 # Influence matrix with implicit Kutta condition
