@@ -41,10 +41,23 @@ abstract type Panel2D <: Solution end
 mutable struct DoubletPanel2D <: Panel2D
     start :: Tuple{Float64, Float64}
     finish :: Tuple{Float64, Float64}
-    cp :: Float64
     strength :: Float64
-    DoubletPanel2D(start, finish, strength = 0, cp = 0) = new(start, finish, strength, cp)
+    cp :: Float64
+    DoubletPanel2D(start, finish, strength = 1, cp = 0) = new(start, finish, strength, cp)
 end
+
+doublet_panels(coords :: Array{<: Real, 2}) = reverse([ DoubletPanel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ (collect ∘ eachrow)([coords[2:end,:] coords[1:end-1,:]]) ], dims = 1) 
+
+mutable struct DoubletSourcePanel2D <: Panel2D
+    start :: Tuple{Float64, Float64}
+    finish :: Tuple{Float64, Float64}
+    doublet_strength :: Float64
+    source_strength :: Float64
+    cp :: Float64
+    DoubletSourcePanel2D(start, finish, doublet_strength = 1, source_strength = 1, cp = 0) = new(start, finish, doublet_strength, source_strength, cp)
+end
+
+doublet_source_panels(coords :: Array{<: Real, 2}) = reverse([ DoubletSourcePanel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ (collect ∘ eachrow)([coords[2:end,:] coords[1:end-1,:]]) ], dims = 1) 
 
 # Methods on panels
 collocation_point(panel :: Panel2D) = ((panel.start[1] + panel.finish[1]) / 2, (panel.start[2] + panel.finish[2]) / 2)
@@ -64,29 +77,7 @@ end
 panel_tangent(panel :: Panel2D) = rotation(1, 0, -1 * panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0, 1, panel_angle(panel))
 panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π / 2 <= angle <= π) || (-π <= angle <= -π / 2) ? "lower" : "upper" end
-split_panels(panels) = span(panel -> panel_location(panel_angle) == "lower", panels)
-
-doublet_potential(xp, yp, len) = -1 / (2π) * (atan(yp, xp - len) - atan(yp, xp - 0))
-
-doublet_velocity(str, x, y, xsl, xel) = str / (2π) .* ( - (y / ((x - xsl)^2 + y^2) - y / ((x - xel)^2 + y^2) ), ( (x - xsl) / ((x - xsl)^2 + y^2) - (x - xel) / ((x - xel)^2 + y^2)) )
-
-function potential(panel :: DoubletPanel2D, x, y)
-    len = panel_length(panel)
-    angle = panel_angle(panel)
-    (xp, yp) = panel_coords(x, y, panel.start..., angle)
-
-    doublet_potential(xp, yp, len)
-end
-
-function velocity(panel :: DoubletPanel2D, x0, y0)
-    x1, y1 = panel.start
-    x2, y2 = panel.finish
-    angle = panel_angle(panel)
-    x, y = panel_coords(x0, y0, panel.start..., angle)
-    u, v = doublet_velocity(panel.strength, x, y, x1, x2)
-    
-    inverse_rotation(u, v, angle)
-end
+split_panels(panels) = span(panel -> panel_location(panel) == "lower", panels)
 
 """
 Computes the distance between two panels.
@@ -98,67 +89,210 @@ function dist((p1, p2) :: Tuple{Panel2D,Panel2D})
     norm([xc2 - xc1, yc2 - yc1])
 end
 
-# Solving on list of panels
-function solve_strengths(panels :: Array{DoubletPanel2D}, uniform :: Uniform2D) 
+source_potential(str, x, z, x1, x2) = str / (4π) * ((x - x1) * log((x - x1)^2 + z^2) - (x - x2) * log((x - x2)^2 + z^2) + 2z * (atan(z, x - x2) - atan(z, x - x1)))
 
-    num_panels = length(panels)     # Number of panels
-    colpoints = collocation_point.(panels) # Collocation points
+source_velocity(str, x, z, x1, x2) = ( str / (4π) * log(((x - x1)^2 + z^2) / ((x - x2)^2 + z^2)), doublet_potential(str, x, z, x1, x2) )
 
-    # Doublet submatrix
-    doublet_matrix = [ i == j ? 0.5 : potential(panel_j, pt...) for (i, pt) ∈ enumerate(colpoints), (j, panel_j) ∈ enumerate(panels) ]
+doublet_potential(str, x, z, x1, x2) = str / (2π) * (atan(z, x - x1) - atan(z, x - x2))
 
-    # Morino's velocity Kutta condition
-    kutta = zeros(num_panels + 1)
-    kutta[1] = 1.
-    kutta[2] = -1.
-    kutta[end-2] = 1.
-    kutta[end-1] = -1.
+doublet_velocity(str, x, z, x1, x2) = str / (2π) .* ( - (z / ((x - x1)^2 + z^2) - z / ((x - x2)^2 + z^2) ), ( (x - x1) / ((x - x1)^2 + z^2) - (x - x2) / ((x - x2)^2 + z^2)) )
+
+function influence_matrix(panels)
     
-    # Wake vector
-    (lastx, lasty) = panels[end].finish
-    woke_panel = DoubletPanel2D((lastx, lasty), (1e5 * lastx, lasty))
-    woke_vector = [ potential(woke_panel, pt...) for pt ∈ colpoints ]
+    num_panels = length(panels)
 
     # Influence matrix with explicit Kutta condition
     influence_matrix = zeros(num_panels + 1, num_panels + 1)
-    influence_matrix[1:end-1,1:end-1] = doublet_matrix
-    influence_matrix[1:end-1,end] = woke_vector 
-    influence_matrix[end,:] = kutta
+    influence_matrix[1:end-1,1:end-1] = doublet_matrix(panels)
+    influence_matrix[1:end-1,end] = wake_vector(panels)
+    influence_matrix[end,:] = morino_condition(panels)
 
+    influence_matrix
+end
+
+function boundary_vector(panels, uniform)
     # Boundary condition
-    boundary_condition = zeros(num_panels + 1)
-    boundary_condition[1:end-1] = [ -potential(uniform, pt...) for pt ∈ colpoints ]
+    boundary_vector = zeros(length(panels) + 1)
+    boundary_vector[1:end-1] = boundary_condition(panels, uniform)
 
-    strengths = influence_matrix \ boundary_condition
+    boundary_vector
+end
+
+
+#---------------DOUBLET PANEL METHOD-----------------#
+
+
+function potential(panel :: DoubletPanel2D, x, y)
+    len = panel_length(panel)
+    angle = panel_angle(panel)
+    xp, yp = panel_coords(x, y, panel.start..., angle)
+
+    doublet_potential(panel.strength, xp, yp, 0, len)
+end
+
+function velocity(panel :: DoubletPanel2D, x, y)
+    x1, y1 = panel.start
+    x2, y2 = panel.finish
+    angle = panel_angle(panel)
+    xp, yp = panel_coords(x, y, panel.start..., angle)
+    u, v = doublet_velocity(panel.strength, xp, yp, x1, x2)
+    
+    inverse_rotation(u, v, angle)
+end
+
+doublet_matrix(panels :: Array{DoubletPanel2D}) = [ i == j ? 0.5 : potential(panel_j, pt...) for (i, pt) ∈ enumerate(collocation_point.(panels)), (j, panel_j) ∈ enumerate(panels) ]
+
+boundary_condition(panels :: Array{DoubletPanel2D}, uniform) = [ -potential(uniform, pt...) for pt ∈ collocation_point.(panels) ]
+
+function wake_vector(panels :: Array{DoubletPanel2D})
+    # Wake vector
+    lastx, lasty = panels[end].finish
+    woke_panel = DoubletPanel2D(panels[end].finish, (1e5 * lastx, lasty))
+    
+    [ potential(woke_panel, pt...) for pt ∈ collocation_point.(panels) ]
+end 
+
+function solve_strengths(panels :: Array{DoubletPanel2D}, uniform :: Uniform2D) 
+
+    strengths = influence_matrix(panels) \ boundary_vector(panels, uniform)
 
     for (panel, strength) in zip(panels, strengths)
         panel.strength = strength
     end
 
     strengths
-end 
+end
+
+function panel_velocities(panels :: Array{DoubletPanel2D})
+    strengths = [ panel.strength for panel in panels ]
+    diff_pans = dist.(midgrad(panels))
+    diff_strs = [ (str2 - str1) for (str2, str1) in (midgrad ∘ take)(strengths, length(panels)) ]
+
+    panel_vels = diff_strs ./ diff_pans
+end
+
+lift_coefficient(cp, dist_colpoints, panel_angle) = - cp * dist_colpoints * cos(panel_angle)
+
+lift_coefficient(wake_strength, speed) = - 2 * wake_strength / speed
 
 function aero_coefficients(panels :: Array{DoubletPanel2D}, uniform :: Uniform2D)
     strengths = solve_strengths(panels, uniform)
 
-    diffpans = dist.(midgrad(panels))
-    diffstrs = [ (str2 - str1) for (str2, str1) in (midgrad ∘ take)(strengths, length(panels)) ]
+    freestream_speed = (norm ∘ velocity)(uniform)
 
-    u = velocity(uniform)
-    freestream_speed = norm(u)
-    
-    tan_vels = diffstrs ./ diffpans
+    pressure_coeffs = [ pressure_coefficient((0, vt), freestream_speed) for vt in panel_velocities(panels) ]
 
-    pressure_coeffs = [ pressure_coefficient((0, vt), freestream_speed) for vt in tan_vels ]
+    lift_coeff = sum(lift_coefficient.(pressure_coeffs, dist.(midgrad(panels)) ./ 2, panel_angle.(panels)))
+
+    kutta_coeff = lift_coefficient(last(strengths), freestream_speed)
 
     for (panel, cp) in zip(panels, pressure_coeffs)
         panel.cp = cp
     end
-    
-    lift_coeff = -sum(pressure_coeffs .* (diffpans ./ 2) .* (cos ∘ panel_angle).(panels))
-    kutta_coeff = -2 * last(strengths) / freestream_speed
 
     lift_coeff, kutta_coeff, pressure_coeffs
+end
+
+#---------------DOUBLET-SOURCE PANEL METHOD-----------------#
+
+function doublet_potential(panel :: DoubletSourcePanel2D, x, y)
+    len = panel_length(panel)
+    angle = panel_angle(panel)
+    (xp, yp) = panel_coords(x, y, panel.start..., angle)
+
+    doublet_potential(panel.doublet_strength, xp, yp, 0, len)
+end
+
+function source_potential(panel :: DoubletSourcePanel2D, x, y)
+    len = panel_length(panel)
+    angle = panel_angle(panel)
+    (xp, yp) = panel_coords(x, y, panel.start..., angle)
+
+    source_potential(panel.source_strength, xp, yp, 0, len)
+end
+
+function potential(panel :: DoubletSourcePanel2D, x, y) 
+    len = panel_length(panel)
+    angle = panel_angle(panel)
+    xp, yp = panel_coords(x, y, panel.start..., angle)
+
+    doublet_potential(panel, x, y, 0, len) + souce_potential(panel, x, y, 0, len)
+end
+
+function velocity(panel :: DoubletSourcePanel2D, x, y)
+    x1, y1 = panel.start
+    x2, y2 = panel.finish
+    angle = panel_angle(panel)
+    xp, yp = panel_coords(x, y, panel.start..., angle)
+    u, v = doublet_velocity(panel.doublet_strength, xp, yp, x1, x2) .+ source_velocity(panel.source_strength, xp, yp, x1, x2)
+    
+    inverse_rotation(u, v, angle)
+end
+
+doublet_matrix(panels :: Array{DoubletSourcePanel2D}) = [ i == j ? 0.5 : doublet_potential(panel_j, pt...) for (i, pt) ∈ enumerate(collocation_point.(panels)), (j, panel_j) ∈ enumerate(panels) ]
+
+source_matrix(panels :: Array{DoubletSourcePanel2D}) = [ source_potential(panel_j, pt...) for pt ∈ collocation_point.(panels), panel_j ∈ panels ]
+source_strengths(panels :: Array{DoubletSourcePanel2D}, uniform :: Uniform2D) = [ sum(normal .* velocity(uniform)) for normal in panel_normal.(panels) ]
+
+boundary_condition(panels :: Array{DoubletSourcePanel2D}, uniform :: Uniform2D) = - source_matrix(panels) * source_strengths(panels, uniform)
+
+function wake_vector(panels :: Array{DoubletSourcePanel2D})
+    # Wake vector
+    lastx, lasty = panels[end].finish
+    woke_panel = DoubletSourcePanel2D(panels[end].finish, (1e5 * lastx, lasty))
+    
+    [ doublet_potential(woke_panel, pt...) for pt ∈ collocation_point.(panels) ]
+end
+
+# Morino's velocity Kutta condition
+function morino_condition(panels :: Array{<: Panel2D})
+    num_panels = length(panels)
+    kutta = zeros(num_panels + 1)
+    kutta[1] = 1.
+    kutta[2] = -1.
+    kutta[end-2] = 1.
+    kutta[end-1] = -1.
+
+    kutta
+end
+
+# Solving on list of panels
+function panel_velocities(panels :: Array{DoubletSourcePanel2D}, uniform)
+    strengths = [ panel.doublet_strength for panel in panels ]
+    diff_pans = dist.(midgrad(panels))
+    diff_strs = [ (str2 - str1) for (str2, str1) in (midgrad ∘ take)(strengths, length(panels)) ]
+    tan_dot_u = [ sum(velocity(uniform) .* tangent) for tangent in panel_tangent.(panels) ]
+
+    panel_vels = diff_strs ./ diff_pans .+ tan_dot_u 
+end
+
+function solve_strengths(panels :: Array{DoubletSourcePanel2D}, uniform :: Uniform2D) 
+
+    dub_strengths = influence_matrix(panels) \ boundary_vector(panels, uniform)
+    src_strengths = source_strengths(panels, uniform)
+
+    for (panel, doublet_strength, source_strength) in zip(panels, dub_strengths, src_strengths)
+        panel.doublet_strength = doublet_strength
+        panel.source_strength = source_strength
+    end
+
+    dub_strengths, src_strengths
+end 
+
+function aero_coefficients(panels :: Array{DoubletSourcePanel2D}, uniform :: Uniform2D)
+    dub_strengths, src_strengths = solve_strengths(panels, uniform)
+
+    freestream_speed = (norm ∘ velocity)(uniform)
+    
+    pressure_coeffs = [ pressure_coefficient((0, vt), freestream_speed) for vt in panel_velocities(panels, uniform) ]
+
+    lift_coeff = sum(lift_coefficient.(pressure_coeffs, dist.(midgrad(panels)) ./ 2, panel_angle.(panels)))
+
+    for (panel, cp) in zip(panels, pressure_coeffs)
+        panel.cp = cp
+    end
+
+    lift_coeff, pressure_coeffs
 end
 
 adjn(xs, n) = (collect ∘ zip)(drop(xs, n), xs)
@@ -197,7 +331,6 @@ grid_data(object :: Solution, xs) = velocity(object, xs), potential(object, xs)
 velocity(object :: Solution, xs) = [ velocity(object, x...) for x in xs ] 
 potential(object :: Solution, xs) = [ potential(object, x...) for x in xs ]
 
-doublet_panels(coords :: Array{<: Real, 2}) = reverse([ DoubletPanel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ (collect ∘ eachrow)([coords[2:end,:] coords[1:end-1,:]]) ], dims = 1) 
 
 end
 
@@ -212,31 +345,3 @@ end
 # With sources
 # tandotu = [ u.*panel_tangent(panel) for panel in panels ]
 # tan_vels = (diffstr ./ diffpans) .+ tandotu
-
-# struct SourcePanel2D <: Panel2D
-#     start :: Tuple{Float64, Float64}
-#     finish :: Tuple{Float64, Float64} 
-# end
-
-
-# struct VortexPanel2D <: Panel2D
-#     start :: Tuple{Float64, Float64}
-#     finish :: Tuple{Float64, Float64}
-# end
-
-# abstract type Panel3D <: Solution end
-
-# struct SourcePanel3D <: Panel3D
-#     start :: Tuple{Float64, Float64, Float64}
-#     finish :: Tuple{Float64, Float64 ,Float64}
-# end
-
-# struct DoubletPanel3D <: Panel3D
-#     start :: Tuple{Float64, Float64, Float64}
-#     finish :: Tuple{Float64, Float64 ,Float64}
-# end
-
-# struct VortexPanel3D <: Panel3D
-#     start :: Tuple{Float64, Float64, Float64}
-#     finish :: Tuple{Float64, Float64 ,Float64}
-# end

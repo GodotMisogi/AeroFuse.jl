@@ -55,7 +55,7 @@ abstract type Aircraft end
 #----------------AIRFOIL----------------------#
 
 """
-Airfoil structure consisting of foil coordinates as an array of points, a chord length, and twist angle in degrees.
+Airfoil structure consisting of foil coordinates as an array of points.
 """
 struct Foil <: Aircraft
     coords :: Array{<: Real, 2} # The foil profile as an array of coordinates, must be in Selig format.
