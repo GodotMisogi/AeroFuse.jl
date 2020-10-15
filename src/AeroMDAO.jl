@@ -64,7 +64,7 @@ end
 #-----------------WING---------------------#
 
 """
-Definition for a wing consisting of airfoils, span lengths, dihedrals, and sweep angles.
+Definition for a half-wing consisting of airfoils, span lengths, dihedrals, and sweep angles.
 """
 struct HalfWing <: Aircraft
     foils :: Array{Foil} # Airfoil profiles
@@ -84,7 +84,7 @@ mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + tape
 quarter_chord(chord) = 0.25 * chord
 
 """
-Computes the span of a half-wing.
+Computes the planform span of a half-wing.
 """
 span(wing :: HalfWing) = sum(wing.spans .* cos.(wing.dihedrals) .* cos.(fwdsum(wing.twists) / 2))
 
