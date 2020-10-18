@@ -1,20 +1,12 @@
 module FoilParametrization
 
+include("MathTools.jl")
 using Base.Math
 using Base.Iterators
 using Interpolations
 using DelimitedFiles
+using .MathTools: slope, splitat
 
-# Copying NumPy's linspace function
-linspace(min, max, step) = min:(max - min)/step:max
-
-#-------------HASKELL MASTER RACE--------------#
-
-span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
-splitat(n, xs) = (xs[1:n,:], xs[n+1:end,:])  
-lisa(pred, iter) = span(!pred, iter)
-
-# Zieg Heil!
 
 #-------------FOIL PROCESSING------------------#
 
@@ -26,17 +18,13 @@ function read_foil(path :: String; header = true)
     # Point2D{Float64}.(f[:,1], f[:,2])
 end
 
-slope(x1, y1, x2, y2) = (y2 - y1)/(x2 - x1)
-adj3(xs) = zip(xs, drop(xs, 1), drop(xs, 2))
-
 function split_foil(coords)
-    cods = (collect ∘ eachcol)(coords') # Convert to list of lists
-    for (i, ((xp, yp), (x, y), (xn, yn))) ∈ ( enumerate ∘ adj3)(cods)
+    for (i, (xp, yp, x, y, xn, yn)) ∈ (enumerate ∘ eachrow ∘ adj3)(coords)
         if x < xp && x < xn
             if slope(x, y, xp, yp) >= slope(x, y, xn, yn)
                 return splitat(i, coords)
             else
-                return splitat(i, reverse(coords))
+                return splitat(i, coords[end:-1:1,:])
             end
         end
     end
@@ -57,7 +45,8 @@ function cosine_interp(coords :: Array{<:Real, 2}, n :: Integer = 40)
     
     itp_circ = LinearInterpolation(xs, ys)
     y_circ = itp_circ(x_circ)
-    [x_circ y_circ]
+
+    [ x_circ y_circ ]
 end
 
 """
@@ -66,9 +55,9 @@ Discretises a foil profile into panels by projecting the x-coordinates of a circ
 function cosine_foil(coords :: Array{<: Real, 2}; n :: Integer = 40)
     upper, lower = split_foil(coords)
     upper = [upper; lower[1,:]'] # Append leading edge from lower to upper
-    upper_cos, lower_cos = cosine_interp(reverse(upper, dims=1), n), cosine_interp(lower, n)
+    upper_cos, lower_cos = cosine_interp(upper[end:-1:1,:], n), cosine_interp(lower, n)
 
-    [reverse(upper_cos[2:end,:], dims=1); lower_cos]
+    [ upper_cos[end:-1:2,:]; lower_cos ]
 end
 
 #-------------------CST METHOD--------------------#
@@ -95,7 +84,8 @@ Bernstein basis element.
 """
 bernstein_basis(x, n, k) = binomial(n, k) * bernstein_class(x, k, n - k)
 
-"""Defines a cosine-spaced airfoil using the Class Shape Transformation method on a Bernstein polynomial basis, with support for leading edge modifications.
+"""
+Defines a cosine-spaced airfoil using the Class Shape Transformation method on a Bernstein polynomial basis, with support for leading edge modifications.
 """
 function kulfan_CST(alphas :: Array{<: Real, 2}, (dz_u, dz_l), coeff_LE :: Real = 0, num_points :: Int = 40)
 
@@ -110,7 +100,7 @@ function kulfan_CST(alphas :: Array{<: Real, 2}, (dz_u, dz_l), coeff_LE :: Real 
     lower_surf = [ bernie(x, alphas[:,2], dz_l) for x ∈ xs ]
 
     # Counter-clockwise ordering
-    [reverse([xs upper_surf][2:end,:], dims = 1); xs lower_surf]
+    [ [xs upper_surf][end:-1:2,:]; xs lower_surf ]
 end
 
 #--------------CAMBER-THICKNESS REPRESENTATION----------------#
@@ -123,18 +113,18 @@ function foil_camthick(coords :: Array{<: Real, 2})
     upper, lower = (split_foil ∘ cosine_foil)(coords)
 
     xs, y_LE = lower[:,1], lower[1,2]   # Getting abscissa and leading edge ordinate
-    y_upper, y_lower = reverse(upper[:,2]), lower[2:end,2] # Excluding leading edge point
+    y_upper, y_lower = upper[end:-1:1,2], lower[2:end,2] # Excluding leading edge point
 
     camber = [y_LE; (y_upper .+ y_lower) / 2]
     thickness = [0; y_upper .- y_lower]
 
-    [xs camber thickness]
+    [ xs camber thickness ]
 end
 
 """
 Converts the camber-thickness representation to a Foil.
 """
-camthick_foil(xs, camber, thickness) = [reverse([xs camber .+ thickness / 2], dims = 1); xs camber .- thickness / 2]
+camthick_foil(xs, camber, thickness) = [ [xs camber .+ thickness / 2][end:-1:1,:]; xs camber .- thickness / 2 ]
 
 #--------NACA PARAMETRIZATION------------#
 
@@ -175,7 +165,7 @@ function naca4(digits :: Tuple, n :: Integer = 40; sharp_trailing_edge :: Bool =
         x_lower = xs .+ thickness .* sin.(gradients) 
         y_lower = camber .- thickness .* cos.(gradients)
     end
-    [reverse([x_upper y_upper][2:end,:], dims = 1); x_lower y_lower]
+    [ [x_upper y_upper][end:-1:2,:]; x_lower y_lower ]
 end
 
 end

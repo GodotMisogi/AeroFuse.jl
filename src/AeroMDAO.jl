@@ -1,54 +1,11 @@
 module AeroMDAO
 
-include("FoilParametrization.jl")
+include("MathTools.jl")
+include("Geometry.jl")
 import Base: *, +
 using Base.Iterators
-using Statistics
-
-#--------------------HACKS----------------------#
-
-"""
-"Lenses" to access subfields on lists of objects.
-"""
-|>(obj, fields :: Array{Symbol}) = foldl(getproperty, fields, init = obj)
-|>(list_objs :: Array{T}, fields :: Array{Symbol}) where {T <: Any} = list_objs .|> [fields]
-
-# Difference operators on lists?
-fwdsum(xs) = xs[2:end] .+ xs[1:end-1]
-fwddiff(xs) = xs[2:end] .- xs[1:end-1]
-ord2diff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
-
-#----------------VECTOR SPACES?---------------#
-
-# Convert homogeneous struct entries to lists
-structtolist(x) = [ getproperty(x, name) for name ∈ (fieldnames ∘ typeof)(x) ]
-
-abstract type Point end
-
-*(scale :: Real, point :: Point) = typeof(point)(scale * structtolist(point)...)
-+(p1 :: Point, p2 :: Point) = typeof(p1)(structtolist(p1) .+ structtolist(p2)...)
-
-struct Point2D <: Point
-    x :: Real; y :: Real;
-end
-
-struct Point3D <: Point
-    x :: Real; y :: Real; z :: Real;
-end
-
-#----------------PANEL METHODS------------------#
-
-abstract type Panels end
-
-struct Panel <: Panels
-    loc :: Array{Point}
-end
-
-"""
-Evaluates the midpoint of the coordinates of a panel.
-"""
-# midpoint(panel :: Panel) = 
-
+using .MathTools: fwdsum
+using .Geometry : Point2D, Point3D
 
 abstract type Aircraft end
 
@@ -120,6 +77,6 @@ mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean
 aspect_ratio(wing :: Wing) = aspect_ratio(span(wing), projected_area(wing))
 
 # Kleisli-ish composition to transport global coordinates?
-WingPos = Pair(Wing, Point3D)
+PlanePos = Pair(Aircraft :: Aircraft, Point3D)
 
 end

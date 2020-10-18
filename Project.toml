@@ -5,4 +5,6 @@ version = "0.1.0"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 OrdinaryDiffEq = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
+PlotlyJS = "f0f68f2c-4968-5e81-91da-67840de0976a"

@@ -1,3 +1,5 @@
+module BoundaryLayer
+
 function integral_momentum_equation(dx, x, p, s)
     θ, dθ = x                       # State vector
     ρ_e, u_e, a_e, τ_w, δ_st = p    # Parameters
@@ -7,3 +9,6 @@ function integral_momentum_equation(dx, x, p, s)
     dx[1] = dθ                         # LHS: dθ/ds
     dx[2] = c_f / 2  - (H + 2 - M_e^2) * θ/u_e * ??? # RHS: c_f/2  - (H + 2 - Mₑ²) * θ/uₑ * duₑ/ds
     
+end
+
+end
