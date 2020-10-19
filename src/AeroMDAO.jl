@@ -1,11 +1,12 @@
 module AeroMDAO
 
 include("MathTools.jl")
-include("Geometry.jl")
+# include("Geometry.jl")
 import Base: *, +
-using Base.Iterators
+using Base.Iterators: peel
 using .MathTools: fwdsum
-using .Geometry : Point2D, Point3D
+# using .Geometry: Point2D, Point3D
+using Rotations
 
 abstract type Aircraft end
 
@@ -30,7 +31,7 @@ struct HalfWing <: Aircraft
     dihedrals :: Array{<: Real} # Dihedral angles (deg)
     sweeps :: Array{<: Real} # Leading-edge sweep angles (deg)
     twists :: Array{<: Real} # Twist angles (deg)
-    HalfWing(foils, chords, spans, dihedrals, sweeps, twists) = new(foils, chords, spans, deg2rad.(dihedrals), deg2rad.(sweeps), deg2rad.(twists)) # Convert to radians
+    HalfWing(foils, chords, spans, dihedrals, sweeps, twists) = new(foils, chords, spans, deg2rad.(dihedrals), deg2rad.(sweeps), -deg2rad.(twists)) # Convert to radians
 end
 
 aspect_ratio(span, area) = span^2 / area
@@ -65,6 +66,30 @@ function mean_aerodynamic_chord(wing :: HalfWing)
     sum(macs .* areas) / sum(areas)
 end
 
+function wing_coords(wing :: HalfWing)
+    spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
+    root_chord, tip_chords = peel(wing.chords)
+    root_twist, tip_twists = peel(wing.twists)
+
+    sweeped_spans, dihedraled_spans, cum_spans = cumsum(spans .* sin.(sweeps)), cumsum(spans .* sin.(dihedrals)), cumsum(spans)
+    twisted_chords = tip_chords .* sin.(tip_twists)
+
+    leading_xyz = [ sweeped_spans cum_spans dihedraled_spans ]
+    trailing_xyz = [ (tip_chords .+ sweeped_spans) (cum_spans) (dihedraled_spans .+ twisted_chords) ]
+
+    leading = [ 0 0 0; leading_xyz ]
+    trailing = [ root_chord 0 root_chord * sin(root_twist); trailing_xyz ]
+
+    [ leading; 
+      trailing[end:-1:1,:] ]
+end
+
+wing_sections(wing :: HalfWing) = let coords = wing_coords(wing), len = length(wing.chords); [ [le; te] for (le, te) in zip(coords[1:len+1,:], coords[end:-1:len,:]) ] end
+
+# For horseshoe collocations
+horseshoe_points(wing :: HalfWing) = [ 1/4 * fwdsum(wing.chords) / 2 cumsum(wing.spans / 2) ]
+horseshoe_collocation(wing :: HalfWing) = [ 3/4 * fwdsum(wing.chords) /2 cumsum(wing.spans / 2) ]
+
 struct Wing <: Aircraft
     left :: HalfWing
     right :: HalfWing
@@ -76,7 +101,26 @@ projected_area(wing :: Wing) = projected_area(wing.left) + projected_area(wing.r
 mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean_aerodynamic_chord(wing.right)) / 2
 aspect_ratio(wing :: Wing) = aspect_ratio(span(wing), projected_area(wing))
 
+function wing_coords(wing :: Wing; sections = false)
+    lefty, righty = wing_coords(wing.left), wing_coords(wing.right) 
+    lefty[:,2] .= -lefty[:,2]
+    
+    if sections
+        left_secs, right_secs = wing_sections(wing.left), wing_sections(wing.right)
+        left_secs[:,2] .= -left_secs[:,2]
+    end
+
+    if sections
+        return [ lefty; 
+                 righty[end:-1:1,:] ], [ left_secs; right_secs ] 
+    else
+        return [ lefty; 
+                 righty[end:-1:1,:] ]
+    end
+end
+
+
 # Kleisli-ish composition to transport global coordinates?
-PlanePos = Pair(Aircraft :: Aircraft, Point3D)
+# PlanePos = Pair(Aircraft :: Aircraft, Point3D)
 
 end

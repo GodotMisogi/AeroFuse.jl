@@ -3,6 +3,7 @@ module LiftingLine
 include("AeroMDAO.jl")
 include("MathTools.jl")
 include("PanelMethods.jl")
+
 using .AeroMDAO: HalfWing, Wing
 using .MathTools: <<
 using LinearAlgebra
@@ -46,7 +47,7 @@ struct Line
     r2 :: Array{Float64, 2}
 end
 
-velocity(line :: Line, r, Γ, ε = 1e-6) = let r1 = r .- line.r1, r2 = r .- line.r2, r1_x_r2 = cross(r1, r2);
+velocity(line :: Line, r, Γ, ε = 1e-6) = let r1 = r .- line.r1, r2 = r .- line.r2, r1_x_r2 = r1 × r2;
     (r1 || r2 || r1_x_r2 ) < ε ? [0,0,0] : Γ/(4π) * r1_x_r2 / norm(r1_x_r2) * r1 .- r2 * (r1 / norm(r1) .- r2 / norm(r2)) end
 
 mutable struct Horseshoe
@@ -77,6 +78,7 @@ solve_case(panels :: Array{<: Panel}, uniform :: Uniform3D) = influence_matrix(p
 #-------------------------Force evaluations------------------------------------#
 
 lift_coefficient(Γ, Δy, speed) = 2Γ * Δy / speed
-induced_drag_coefficient()
+# induced_drag_coefficient()
+
 
 end

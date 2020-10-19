@@ -1,5 +1,7 @@
 module MathTools
 
+using Base.Iterators
+
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
 

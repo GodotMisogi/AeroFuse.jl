@@ -3,9 +3,9 @@ module PanelMethods
 include("MathTools.jl")
 using LinearAlgebra
 using Base.Iterators
-using .MathTools: parts, stencil, midgrad, rotation, inverse_rotation, affine_2D
+using .MathTools: parts, stencil, midgrad, rotation, inverse_rotation, affine_2D, <<, span
 
-pressure_coefficient(mag, vels) = 1 - (norm(vels))^2 / mag^2
+pressure_coefficient(mag, vels) = 1 - norm(vels)^2 / mag^2
 
 #------------------- Solutions to Laplace's equation--------------------#
 
@@ -87,7 +87,7 @@ panel_tangent(panel :: Panel2D) = rotation(1, 0, -1 * panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0, 1, panel_angle(panel))
 panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π/2 <= angle <= π) || (-π <= angle <= -π/2) ? "lower" : "upper" end
 
-split_panels(panels :: Array{Panel2D}) = span(panel -> panel_location(panel) == "upper", panels)
+split_panels(panels :: Array{Panel2D}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
 
 panels_xs(panels :: Array{Panel2D}) = (first ∘ collocation_point).(panels)
 panels_ys(panels :: Array{Panel2D}) = (last ∘ collocation_point).(panels)
@@ -102,7 +102,7 @@ struct DoubletSourcePanel2D <: Panel
     cp :: Float64
 end
 
-split_panels(panels :: Array{DoubletSourcePanel2D}) = split_panels(:coords .<< panels)
+split_panels(panels :: Array{DoubletSourcePanel2D}) = collect.(span(panel -> panel_location(panel.coords) == "upper", panels))
 
 #------Integrated solutions in local panel coordinates for lumped distributions------#
 
@@ -137,7 +137,9 @@ end
 
 #----------------------------Influence coefficient matrices assembly-----------------------------#
 
-doublet_matrix(panels :: Array{Panel2D}) = [ i == j ? 0.5 : doublet_potential(panel_j, 1, pt...) for (i, pt) ∈ enumerate(collocation_point.(panels)), (j, panel_j) ∈ enumerate(panels) ]
+influence_coefficient(panel_1 :: Panel2D, panel_2 :: Panel2D) = doublet_potential(panel_1, 1, collocation_point(panel_2)...)
+
+doublet_matrix(panels :: Array{Panel2D}) = [ panel_i === panel_j ? 0.5 : influence_coefficient(panel_j, panel_i) for panel_i ∈ panels, panel_j ∈ panels ]
 
 source_matrix(panels :: Array{Panel2D}) = [ source_potential(panel_j, 1, pt...) for pt ∈ collocation_point.(panels), panel_j ∈ panels ]
 

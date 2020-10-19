@@ -2,11 +2,13 @@
 using Revise
 includet("../src/PanelMethods.jl")
 includet("../src/FoilParametrization.jl")
+includet("../src/MathTools.jl")
 
 ##
 using .PanelMethods: make_panels, collocation_point, split_panels, panels_xs, panels_ys, solve_case, 
-                        Uniform2D, grid_data, pressure_coefficient, ×, <<
-using .FoilParametrization: read_foil, cosine_foil, kulfan_CST, naca4, linspace
+                        Uniform2D, grid_data, pressure_coefficient
+using .FoilParametrization: read_foil, cosine_foil, kulfan_CST, naca4
+using .MathTools: linspace, ×, <<
 using BenchmarkTools
 
 ##
@@ -19,6 +21,20 @@ airfoil = kulfan_CST(alphas, dzs, 0.0, 100)
 ##
 uniform = Uniform2D(1.0, 5.0)
 panels = make_panels(airfoil)
+lower_panels, upper_panels = split_panels(panels)
+
+
+## Plotting libraries
+using Plots, LaTeXStrings
+plotlyjs();
+
+## Airfoil plot
+plot( panels_xs(upper_panels), panels_ys(upper_panels), 
+        label = "Upper", markershape = :circle,
+        xlabel = "x", ylabel = "C_p")
+plot!(panels_xs(lower_panels), panels_ys(lower_panels),
+        label = "Lower", markershape = :circle,
+        xlabel = "x", ylabel = "C_p")
 
 ##
 @time dub_src_panels, cl = solve_case(panels, uniform)
@@ -35,13 +51,10 @@ for alpha in 0:15
     append!(cls, cl)
 end
 
-## Plotting libraries
-using Plots, LaTeXStrings
-plotlyjs();
 
 ## Lift polar
 plot(0:15, cls, 
-        xlabel = "\alpha", ylabel = "C_l")
+        xlabel = L"\alpha", ylabel = L"C_l")
 
 ## Plotting domain
 x_domain, y_domain = (-1, 2), (-1, 1)
@@ -53,14 +66,6 @@ vels, pots = grid_data(dub_src_panels, grid)
 cp = pressure_coefficient.(uniform.mag, vels);
 
 lower_panels, upper_panels = split_panels(dub_src_panels);
-
-## Airfoil plot
-plot( panels_xs(upper_panels), panels_ys(upper_panels), 
-        label = "Upper", markershape = :circle,
-        xlabel = "x", ylabel = "C_p")
-plot!( panels_xs(lower_panels), panels_ys(lower_panels),
-        label = "Lower", markershape = :circle,
-        xlabel = "x", ylabel = "C_p")
 
 ## Pressure coefficient
 plot( panels_xs(upper_panels), :cp .<< upper_panels, 

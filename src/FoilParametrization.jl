@@ -57,7 +57,8 @@ function cosine_foil(coords :: Array{<: Real, 2}; n :: Integer = 40)
     upper = [upper; lower[1,:]'] # Append leading edge from lower to upper
     upper_cos, lower_cos = cosine_interp(upper[end:-1:1,:], n), cosine_interp(lower, n)
 
-    [ upper_cos[end:-1:2,:]; lower_cos ]
+    [ upper_cos[end:-1:2,:]; 
+      lower_cos ]
 end
 
 #-------------------CST METHOD--------------------#
@@ -100,7 +101,8 @@ function kulfan_CST(alphas :: Array{<: Real, 2}, (dz_u, dz_l), coeff_LE :: Real 
     lower_surf = [ bernie(x, alphas[:,2], dz_l) for x ∈ xs ]
 
     # Counter-clockwise ordering
-    [ [xs upper_surf][end:-1:2,:]; xs lower_surf ]
+    [ [xs upper_surf][end:-1:2,:]; 
+       xs lower_surf ]
 end
 
 #--------------CAMBER-THICKNESS REPRESENTATION----------------#
@@ -165,7 +167,8 @@ function naca4(digits :: Tuple, n :: Integer = 40; sharp_trailing_edge :: Bool =
         x_lower = xs .+ thickness .* sin.(gradients) 
         y_lower = camber .- thickness .* cos.(gradients)
     end
-    [ [x_upper y_upper][end:-1:2,:]; x_lower y_lower ]
+    [ [x_upper y_upper][end:-1:2,:]; 
+       x_lower y_lower ]
 end
 
 end
