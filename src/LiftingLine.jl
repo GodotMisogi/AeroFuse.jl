@@ -7,6 +7,7 @@ include("PanelMethods.jl")
 using .AeroMDAO: HalfWing, Wing
 using .MathTools: <<
 using LinearAlgebra
+using StaticArrays
 
 abstract type Laplace end
 
@@ -30,10 +31,10 @@ potential(dub :: Doublet2D, x, y) = -dub.str / (2π) * (y - dub.y0) / ((x - dub.
 abstract type Panel end
 
 struct Panel3D <: Panel
-    p1 :: Tuple{Float64, Float64, Float64}
-    p2 :: Tuple{Float64, Float64 ,Float64}
-    p3 :: Tuple{Float64, Float64, Float64}
-    p4 :: Tuple{Float64, Float64 ,Float64}
+    p1
+    p2
+    p3
+    p4
     # function Panel3D(p1, p2, p3, p4)  # Constructor needed for checking orientation
     #     if 
 end
@@ -51,7 +52,7 @@ velocity(line :: Line, r, Γ, ε = 1e-6) = let r1 = r .- line.r1, r2 = r .- line
     (r1 || r2 || r1_x_r2 ) < ε ? [0,0,0] : Γ/(4π) * r1_x_r2 / norm(r1_x_r2) * r1 .- r2 * (r1 / norm(r1) .- r2 / norm(r2)) end
 
 mutable struct Horseshoe
-    vortex_lines :: Array{Lines}
+    vortex_lines :: Array{Line}
     strength :: Float64
     function Horseshoe(vortex_line :: Line, angle :: Float64, strength = 1, bound = 1e5)
         r1, r2 = vortex_line.r1, vortex_line.r2
@@ -67,9 +68,9 @@ downwash_velocity(horseshoe :: Horseshoe) = let vels = velocity.(horseshoe.vorte
 
 #---------------------------------Matrix setup--------------------------------------#
 
-influence_coefficient(panel_1 :: Panel3D, panel_2 :: Panel3D) = dot(velocity(panel_1, 1, collocation_point(panel_2), panel_normal(panel_2))
+influence_coefficient(panel_1 :: Panel3D, panel_2 :: Panel3D) = dot(velocity(panel_1), 1, collocation_point(panel_2), panel_normal(panel_2))
 
-influence_matrix(panels :: Array{<: Panel}) = [ influence_coefficient(panel_j, panel_i) for panel_j in panels, for panel_i in panels ]
+influence_matrix(panels :: Array{<: Panel}) = [ influence_coefficient(panel_j, panel_i) for panel_j in panels, panel_i in panels ]
 
 boundary_condition(panels :: Array{<: Panel}, uniform :: Uniform3D) = - [ dot(velocity(uniform), panel_normal(panel)) for panel in panels ]
 

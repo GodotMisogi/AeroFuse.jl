@@ -1,6 +1,7 @@
 module MathTools
 
 using Base.Iterators
+using Base: product
 
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
@@ -31,7 +32,8 @@ structtolist(x) = [ name << x for name ∈ (fieldnames ∘ typeof)(x) ]
 
 ⊗(A, B) = kron(A, B)
 dot(V₁,V₂) = sum(V₁ .* V₂)
-×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
+# ×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
+×(xs, ys) = product(xs, ys)
 
 # Transforms (x, y) to the coordinate system with (x_s, y_s) as origin oriented at α_s.
 affine_2D(x, y, x_s, y_s, α_s) = rotation(x - x_s, y - y_s, α_s)

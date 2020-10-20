@@ -3,11 +3,13 @@ using Revise
 includet("../src/AeroMDAO.jl")
 includet("../src/FoilParametrization.jl")
 includet("../src/MathTools.jl")
+includet("../src/Geometry.jl")
 
 ##
-using .AeroMDAO: Foil, HalfWing, Wing, projected_area, span, mean_aerodynamic_chord, horseshoe_points, horseshoe_collocation, wing_coords, wing_sections
+using .AeroMDAO: Foil, HalfWing, Wing, projected_area, span, mean_aerodynamic_chord, horseshoe_points, horseshoe_collocation, wing_coords, wing_sections, make_panels
 using .FoilParametrization: read_foil
 using .MathTools: linspace
+using .Geometry: Point2D, Point3D
 using DelimitedFiles
 using Rotations
 
@@ -31,9 +33,13 @@ wing = Wing(wing_right, wing_right)
 println("Span: ", span(wing), " m")
 println("Area: ", projected_area(wing), " m²")
 println("MAC: ", mean_aerodynamic_chord(wing), " m")
-wingy, wing_secs = wing_coords(wing, sections = true)
-# writedlm(stdout, wingy)
-writedlm(stdout, wing_secs)
+wing_lead, wing_trail = wing_coords(wing_right)
+println("Leading")
+writedlm(stdout, wing_lead)
+println("Trailing")
+writedlm(stdout, wing_trail)
+wing_secs = wing_sections(wing)
+panels = make_panels(wing)
 
 ## Horizontal tail section setup
 tail_secs = 1

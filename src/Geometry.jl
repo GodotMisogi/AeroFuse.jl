@@ -1,4 +1,4 @@
-module AircraftGeometry
+module Geometry
 
 include("MathTools.jl")
 using LinearAlgebra

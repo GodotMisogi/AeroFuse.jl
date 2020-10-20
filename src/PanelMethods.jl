@@ -71,8 +71,10 @@ struct Panel2D <: Panel
 end
 
 struct Panel3D <: Panel
-    start :: Tuple{Float64, Float64, Float64}
-    finish :: Tuple{Float64, Float64 ,Float64}
+    p1
+    p2
+    p3
+    p4
 end
 
 make_panels(coords :: Array{<: Real, 2}) = [ Panel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ eachrow([coords[2:end,:] coords[1:end-1,:]]) ][end:-1:1]
