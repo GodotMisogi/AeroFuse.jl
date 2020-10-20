@@ -33,13 +33,13 @@ wing = Wing(wing_right, wing_right)
 println("Span: ", span(wing), " m")
 println("Area: ", projected_area(wing), " m²")
 println("MAC: ", mean_aerodynamic_chord(wing), " m")
-wing_lead, wing_trail = wing_coords(wing_right)
+wing_lead, wing_trail = wing_coords(wing)
 println("Leading")
 writedlm(stdout, wing_lead)
 println("Trailing")
 writedlm(stdout, wing_trail)
 wing_secs = wing_sections(wing)
-panels = make_panels(wing)
+# panels = make_panels(wing)
 
 ## Horizontal tail section setup
 tail_secs = 1

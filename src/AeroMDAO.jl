@@ -89,7 +89,7 @@ end
 function wing_sections(wing :: HalfWing)
     lead, trail = wing_coords(wing)
     
-    [ [le; te] for (le, te) in zip(lead, trail) ] 
+    [lead trail]
 end
 
 function make_panels(wing :: HalfWing)
