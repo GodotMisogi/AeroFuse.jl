@@ -2,11 +2,12 @@ module AeroMDAO
 
 include("MathTools.jl")
 include("PanelMethods.jl")
+include("Geometry.jl")
 
 import Base: *, +
 using Base.Iterators: peel
-using .MathTools: fwdsum
-using .PanelMethods: Panel3D
+using .MathTools: fwdsum, fwddiff
+using .Geometry: Point2D, Point3D, Panel2D, Panel3D
 using StaticArrays
 using Rotations
 
@@ -82,21 +83,36 @@ function wing_coords(wing :: HalfWing)
     leading = [ 0 0 0; leading_xyz ]
     trailing = [ root_chord 0 root_chord * sin(root_twist); trailing_xyz ]
 
-    SVector.(leading[:,1], leading[:,2], leading[:,3]),
-    SVector.(trailing[:,1], trailing[:,2], trailing[:,3])
+    leading, trailing
 end
+
+# function mesh_wing(wing :: HalfWing, span_panels = 8)
+#     lead, trail = wing_coords(wing)
+
+#     foils = wing.foils
+#     chords = wing.chords
+#     spans = wing.spans
+
+#     span_increments = (fwddiff ∘ cumsum)(spans) / span_panels
+
+
+#     coords = chords .* (:coords .<< foils)
+
+
+# end
 
 function wing_sections(wing :: HalfWing)
     lead, trail = wing_coords(wing)
     
-    [lead trail]
+    zip(eachrow(lead),eachrow(trail))
 end
 
 function make_panels(wing :: HalfWing)
     lead, trail = wing_coords(wing);
-    xs = [ lead[1:end-1] lead[2:end] trail[2:end] trail[1:end-1] ]
-
-    [ Panel3D(pt...) for pt in eachrow(xs) ] 
+    lead = 
+    xs = zip(lead[1:end-1,:], lead[2:end,:], trail[2:end,:], trail[1:end-1,:])
+    println(collect(xs))
+    # [ Panel3D(pt...) for pt in xs ] 
 end
 
 # For horseshoe collocations
@@ -108,8 +124,7 @@ struct Wing <: Aircraft
     right :: HalfWing
 end
 
-span(wing :: Wing) = span(wing.left) + span(wing.right
-)
+span(wing :: Wing) = span(wing.left) + span(wing.right)
 projected_area(wing :: Wing) = projected_area(wing.left) + projected_area(wing.right)
 mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean_aerodynamic_chord(wing.right)) / 2
 aspect_ratio(wing :: Wing) = aspect_ratio(span(wing), projected_area(wing))
@@ -118,20 +133,24 @@ function wing_coords(wing :: Wing)
     left_lead, left_trail = wing_coords(wing.left)
     right_lead, right_trail = wing_coords(wing.right)
 
-    leading = [ left_lead; right_lead ]
-    trailing = [ left_trail; right_trail ]
+    yflip!(left_lead)
+    yflip!(left_trail)
 
-    yflip!(leading), yflip!(trailing)
+    leading = [ left_lead[end:-1:1,:]; right_lead ]
+    trailing = [ left_trail[end:-1:1,:]; right_trail ]
+
+    leading, trailing
 end
 
-function yflip!(xs)
-    print(xs) 
-    xs[:,2] .= -xs[:,2]
+yflip!(xs) = xs[:,2] .= -xs[:,2]
 
-    xs
+function wing_sections(wing :: Wing) 
+    left = wing_sections(wing.left)
+    yflip!(left)
+
+    [ left[end:-1:1,:]; wing_sections(wing.right) ]
 end
-
-wing_sections(wing :: Wing) = yflip!(wing_sections(wing.left)), wing_sections(wing.right)
+# make_panels(wing :: Wing) = make_panels(wing.left)
 
 
 # Kleisli-ish composition to transport global coordinates?

@@ -1,11 +1,16 @@
-module PanelMethods
+module DoubletSource
+
+export solve_case, pressure_coefficient, make_panels, Uniform2D
 
 include("MathTools.jl")
+include("LaplaceSolutions.jl")
 using LinearAlgebra
 using Base.Iterators
-using .MathTools: parts, stencil, midgrad, rotation, inverse_rotation, affine_2D, <<, span
+using StaticArrays
+using .MathTools: parts, stencil, midgrad, rotation, inverse_rotation, affine_2D, <<, span, dot, structtolist
 
 pressure_coefficient(mag, vels) = 1 - norm(vels)^2 / mag^2
+
 
 #------------------- Solutions to Laplace's equation--------------------#
 
@@ -61,39 +66,51 @@ grid_data(object :: Laplace, xs) = velocity(object, xs), potential(object, xs)
 velocity(object :: Laplace, xs) = map(x -> velocity(object, x...), xs) 
 potential(object :: Laplace, xs) = map(x -> potential(object, x...), xs)
 
-#-----------------Panels for singularity method using Green's third identity-----------------#
+#--------------------------Vector spaces------------------------------#
+
+abstract type Point end
+
+struct Point2D <: Point
+    x :: Real; y :: Real;
+end
+
+struct Point3D <: Point
+    x :: Real; y :: Real; z :: Real;
+end
 
 abstract type Panel <: Laplace end
 
-struct Panel2D <: Panel
-    start :: Tuple{Float64, Float64}
-    finish :: Tuple{Float64, Float64}
-end
-
-struct Panel3D <: Panel
-    p1
-    p2
-    p3
-    p4
-end
-
-make_panels(coords :: Array{<: Real, 2}) = [ Panel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ eachrow([coords[2:end,:] coords[1:end-1,:]]) ][end:-1:1]
-
-# Methods on panels
-collocation_point(panel :: Panel2D) = (panel.start .+ panel.finish) ./ 2
-panel_length(panel :: Panel2D) = norm(panel.finish .- panel.start)
+# Methods on panels in N dimensions
+collocation_point(panel :: Panel) = let panel = structtolist(panel); sum(panel) / length(panel) end
 panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) .- collocation_point(panel_1))
+split_panels(panels :: Array{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
 
-panel_angle(panel :: Panel2D) = let (xs, ys) = panel.start, (xe, ye) = panel.finish; atan(ye - ys, xe - xs) end
+struct Panel2D <: Panel
+    p1 :: Tuple{Float64, Float64}
+    p2 :: Tuple{Float64, Float64}
+end
+
+make_panels(coords :: Array{<: Real, 2}) = [ Panel2D(Point2D(xs, ys), Point2D(xe, ye)) for (xs, ys, xe, ye) ∈ eachrow([ coords[2:end,:] coords[1:end-1,:] ]) ][end:-1:1]
+
+panel_length(panel :: Panel2D) = norm(panel.p2 .- panel.p1)
+panel_angle(panel :: Panel2D) = let (xs, ys) = panel.p1, (xe, ye) = panel.p2; atan(ye - ys, xe - xs) end
 panel_tangent(panel :: Panel2D) = rotation(1, 0, -1 * panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0, 1, panel_angle(panel))
 panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π/2 <= angle <= π) || (-π <= angle <= -π/2) ? "lower" : "upper" end
 
-split_panels(panels :: Array{Panel2D}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
+struct Panel3D <: Panel
+    p1 :: Point3D
+    p2 :: Point3D
+    p3 :: Point3D
+    p4 :: Point3D
+end
 
-panels_xs(panels :: Array{Panel2D}) = (first ∘ collocation_point).(panels)
-panels_ys(panels :: Array{Panel2D}) = (last ∘ collocation_point).(panels)
+panel_normal(panel :: Panel3D) = cross(panel.p2 .- panel.p1, panel.p3 .- panel.p2)
 
+struct Line
+    r1 :: Point
+    r2 :: Point
+end
 
 #-----------------------Doublet-source panel method---------------------------#
 
@@ -117,10 +134,10 @@ doublet_potential(str, x, z, x1, x2) = str / (2π) * (atan(z, x - x1) - atan(z, 
 doublet_velocity(str, x, z, x1, x2) = str / (2π) .* ( - (z / ((x - x1)^2 + z^2) - z / ((x - x2)^2 + z^2) ), ( (x - x1) / ((x - x1)^2 + z^2) - (x - x2) / ((x - x2)^2 + z^2)) )
 
 doublet_potential(panel :: Panel2D, strength, x, y) = 
-    doublet_potential(strength, affine_2D(x, y, panel.start..., panel_angle(panel))..., 0, panel_length(panel))
+    doublet_potential(strength, affine_2D(x, y, panel.p1..., panel_angle(panel))..., 0, panel_length(panel))
 
 source_potential(panel :: Panel2D, strength, x, y) =
-    source_potential(strength, affine_2D(x, y, panel.start..., panel_angle(panel))..., 0, panel_length(panel))
+    source_potential(strength, affine_2D(x, y, panel.p1..., panel_angle(panel))..., 0, panel_length(panel))
 
     
 potential(panel :: DoubletSourcePanel2D, x, y) = let len = panel_length(panel.coords);
@@ -128,10 +145,10 @@ potential(panel :: DoubletSourcePanel2D, x, y) = let len = panel_length(panel.co
 end
 
 function velocity(panel :: DoubletSourcePanel2D, x, y)
-    x1, y1 = panel.coords.start
-    x2, y2 = panel.coords.finish
+    x1, y1 = panel.coords.p1
+    x2, y2 = panel.coords.p2
     α = panel_angle(panel.coords)
-    xp, yp = affine_2D(x, y, panel.coords.start..., α)
+    xp, yp = affine_2D(x, y, panel.coords.p1..., α)
     u, v = doublet_velocity(panel.doublet_strength, xp, yp, x1, x2) .+ source_velocity(panel.source_strength, xp, yp, x1, x2)
     
     inverse_rotation(u, v, α)
@@ -153,8 +170,8 @@ boundary_condition(panels :: Array{Panel2D}, uniform :: Uniform2D) = - source_ma
 kutta_condition(panels :: Array{<: Panel2D}) = [ 1, -1, zeros(length(panels) - 4)..., 1, -1 ]
 
 function wake_vector(panels :: Array{Panel2D}, bound = 1e5)
-    lastx, lasty = panels[end].finish
-    woke_panel = Panel2D(panels[end].finish, (bound * lastx, lasty))
+    lastx, lasty = panels[end].p2
+    woke_panel = Panel2D(panels[end].p2, (bound * lastx, lasty))
     
     [ doublet_potential(woke_panel, 1, pt...) for pt ∈ collocation_point.(panels) ]
 end
@@ -188,11 +205,12 @@ end
 
 function solve_case(panels :: Array{Panel2D}, uniform :: Uniform2D)
 
-    # Compute doublet and source strengths, and make panels for plotting
+    # Compute doublet and source strengths
     dub_strengths, src_strengths = solve_strengths(panels, uniform)
     freestream_speed = (norm ∘ velocity)(uniform)
     pressure_coeffs = pressure_coefficient.(freestream_speed, panel_velocities(panels, uniform, dub_strengths[1:end-1]))
 
+    # Make panels for plotting
     dub_src_panels = DoubletSourcePanel2D.(panels, dub_strengths[1:end-1], src_strengths, pressure_coeffs)
 
     # Compute lift coefficient

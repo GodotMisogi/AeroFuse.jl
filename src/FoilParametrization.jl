@@ -5,7 +5,7 @@ using Base.Math
 using Base.Iterators
 using Interpolations
 using DelimitedFiles
-using .MathTools: slope, splitat
+using .MathTools: slope, splitat, adj3
 
 
 #-------------FOIL PROCESSING------------------#

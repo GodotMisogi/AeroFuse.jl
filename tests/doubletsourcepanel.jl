@@ -1,11 +1,14 @@
 ##
 using Revise
-includet("../src/PanelMethods.jl")
+includet("../src/DoubletSource.jl")
 includet("../src/FoilParametrization.jl")
 includet("../src/MathTools.jl")
+# includet("../src/Geometry.jl")
+# includet("../src/LaplaceSolutions.jl")
 
 ##
-using .PanelMethods: make_panels, collocation_point, split_panels, panels_xs, panels_ys, solve_case, Uniform2D, grid_data, pressure_coefficient
+# using .Geometry: make_panels, collocation_point, split_panels
+using .DoubletSource
 using .FoilParametrization: read_foil, cosine_foil, kulfan_CST, naca4
 using .MathTools: linspace, ×, <<
 using BenchmarkTools
@@ -15,12 +18,11 @@ alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
 alpha_l = [-0.2, -0.1, -0.1, -0.001, -0.02]
 alphas = [alpha_u alpha_l]
 dzs = (1e-4, 1e-4)
-airfoil = kulfan_CST(alphas, dzs, 0.0, 100)
+airfoil = kulfan_CST(alphas, dzs, 0.0, 40)
 
 ##
 uniform = Uniform2D(1.0, 5.0)
 panels = make_panels(airfoil)
-lower_panels, upper_panels = split_panels(panels)
 
 ##
 @time dub_src_panels, cl = solve_case(panels, uniform)

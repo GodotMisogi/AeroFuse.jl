@@ -6,7 +6,7 @@ includet("../src/MathTools.jl")
 includet("../src/Geometry.jl")
 
 ##
-using .AeroMDAO: Foil, HalfWing, Wing, projected_area, span, mean_aerodynamic_chord, horseshoe_points, horseshoe_collocation, wing_coords, wing_sections, make_panels
+using .AeroMDAO: Foil, HalfWing, Wing, projected_area, span, mean_aerodynamic_chord, horseshoe_points, horseshoe_collocation, wing_coords, wing_sections, make_panels, mesh_wing
 using .FoilParametrization: read_foil
 using .MathTools: linspace
 using .Geometry: Point2D, Point3D
@@ -33,13 +33,13 @@ wing = Wing(wing_right, wing_right)
 println("Span: ", span(wing), " m")
 println("Area: ", projected_area(wing), " m²")
 println("MAC: ", mean_aerodynamic_chord(wing), " m")
-wing_lead, wing_trail = wing_coords(wing)
+wing_lead, wing_trail = wing_coords(wing_right)
 println("Leading")
 writedlm(stdout, wing_lead)
 println("Trailing")
 writedlm(stdout, wing_trail)
-wing_secs = wing_sections(wing)
-# panels = make_panels(wing)
+# wing_secs = wing_sections(wing_right)
+panels = make_panels(wing_right)
 
 ## Horizontal tail section setup
 tail_secs = 1

@@ -39,14 +39,7 @@ struct Panel3D <: Panel
     #     if 
 end
 
-panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) .- collocation_point(panel_1))
-collocation_point(panel :: Panel3D) = panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4
-panel_normal(panel :: Panel3D) = cross(panel.p2 .- panel.p1, panel.p3 .- panel.p2)
 
-struct Line
-    r1 :: Array{Float64, 2}
-    r2 :: Array{Float64, 2}
-end
 
 velocity(line :: Line, r, Γ, ε = 1e-6) = let r1 = r .- line.r1, r2 = r .- line.r2, r1_x_r2 = r1 × r2;
     (r1 || r2 || r1_x_r2 ) < ε ? [0,0,0] : Γ/(4π) * r1_x_r2 / norm(r1_x_r2) * r1 .- r2 * (r1 / norm(r1) .- r2 / norm(r2)) end
