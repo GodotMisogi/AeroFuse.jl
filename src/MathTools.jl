@@ -42,7 +42,9 @@ rotation(x, y, angle) = (x * cos(angle) + y * sin(angle), -x * sin(angle) + y * 
 
 slope(x1, y1, x2, y2) = (y2 - y1)/(x2 - x1)
 
-#---------------------Improving readiblity with arrays------------------------#
+#---------------------Improving readablity with arrays------------------------#
+
+tuparray(xs) = tuple.(eachcol(xs)...)
 
 stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
 parts(xs) = let adj = stencil(xs, 1); adj[1,:], adj[end,:] end

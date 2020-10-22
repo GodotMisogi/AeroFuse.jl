@@ -3,13 +3,13 @@ using Revise
 includet("../src/AeroMDAO.jl")
 includet("../src/FoilParametrization.jl")
 includet("../src/MathTools.jl")
-includet("../src/Geometry.jl")
+# includet("../src/LiftingLine.jl")
 
 ##
-using .AeroMDAO: Foil, HalfWing, Wing, projected_area, span, mean_aerodynamic_chord, horseshoe_points, horseshoe_collocation, wing_coords, wing_sections, make_panels, mesh_wing
+using .AeroMDAO
+# using .LiftingLine
 using .FoilParametrization: read_foil
 using .MathTools: linspace
-using .Geometry: Point2D, Point3D
 using DelimitedFiles
 using Rotations
 
@@ -30,62 +30,103 @@ wing_sweeps = [0, 5, 10, 10, 15, 20]
 
 wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
 wing = Wing(wing_right, wing_right)
-println("Span: ", span(wing), " m")
-println("Area: ", projected_area(wing), " m²")
-println("MAC: ", mean_aerodynamic_chord(wing), " m")
-wing_lead, wing_trail = wing_coords(wing_right)
-println("Leading")
-writedlm(stdout, wing_lead)
-println("Trailing")
-writedlm(stdout, wing_trail)
-# wing_secs = wing_sections(wing_right)
-panels = make_panels(wing_right)
+print_info(wing)
 
 ## Horizontal tail section setup
 tail_secs = 1
 
-tail_chords = [0.8, 0.4]
-tail_twists = fill(0, tail_secs + 1)
-tail_spans = fill(1, tail_secs)
-tail_dihedrals = [5]
-tail_sweeps = [30]
+htail_chords = [0.8, 0.4]
+htail_twists = fill(0, tail_secs + 1)
+htail_spans = fill(1, tail_secs)
+htail_dihedrals = [0]
+htail_sweeps = [30]
+htail_location = [5 0 0]
 
-tail_right = HalfWing(airfoils, tail_chords, tail_spans, tail_dihedrals, tail_sweeps, tail_twists)
-tail = Wing(tail_right, tail_right)
-println("Span: ", span(tail), " m")
-println("Area: ", projected_area(tail), " m²")
-println("MAC: ", mean_aerodynamic_chord(tail), " m")
-htaily = wing_coords(tail) .+ [5 0 0]
-writedlm(stdout, htaily)
+htail_right = HalfWing(airfoils, htail_chords, htail_spans, htail_dihedrals, htail_sweeps, htail_twists)
+htail = Wing(htail_right, htail_right)
+print_info(htail)
+
 
 ## Vertical tail setup
 vtail_secs = 1
 
-vtail_chords = [0.8, 0.4]
+vtail_chords = [0.4, 0.2]
 vtail_twists = fill(0, vtail_secs + 1)
-vtail_spans = fill(0.4, vtail_secs)
+vtail_spans = fill(0.3, vtail_secs)
 vtail_dihedrals = [0.0]
 vtail_sweeps = [60]
 
-vtail_right = HalfWing(airfoils, vtail_chords, vtail_spans, vtail_dihedrals, vtail_sweeps, vtail_twists)
-println("Span: ", span(vtail_right), " m")
-println("Area: ", projected_area(vtail_right), " m²")
-println("MAC: ", mean_aerodynamic_chord(vtail_right), " m")
-vtaily = wing_coords(vtail_right) * AngleAxis{Float64}(π/2, 1, 0, 0)' .+ [5 0 0]
+
+vtail = HalfWing(airfoils, vtail_chords, vtail_spans, vtail_dihedrals, vtail_sweeps, vtail_twists)
+print_info(vtail)
+
+vtail1_angle = AngleAxis{Float64}(π/4, 1, 0, 0)
+vtail1_location = [5 + sin(π/6) 1 0]
+
+vtail2_angle = AngleAxis{Float64}(3π/4, 1, 0, 0)
+vtail2_location = [5 + sin(π/6) -1 0]
+
+## Panelling
+wing_panels = make_panels(wing)
+htail_panels = make_panels(htail, translation = htail_location)
+vtail1_panels = make_panels(vtail, rotation = vtail1_angle, translation = vtail1_location)
+vtail2_panels = make_panels(vtail, rotation = vtail2_angle, translation = vtail2_location)
+
+## Horseshoe testing
+wing_pts = horseshoe_vortex.(wing_panels)
+wing_collocs = horseshoe_collocation.(wing_panels)
+
+htail_pts = horseshoe_vortex.(htail_panels)
+htail_collocs = horseshoe_collocation.(htail_panels)
+
+vtail1_pts = horseshoe_vortex.(vtail1_panels)
+vtail1_collocs = horseshoe_collocation.(vtail1_panels)
+
+vtail2_pts = horseshoe_vortex.(vtail2_panels)
+vtail2_collocs = horseshoe_collocation.(vtail2_panels)
+
+## Solution for wing
+uniform = Uniform3D(5.0, 3.0, 4.0)
+@time lift, drag = solve_case(wing_panels, uniform)
 
 ## Plotting
 using Plots, LaTeXStrings
 plotlyjs()
 
-plot(wingy[:,1], wingy[:,2], wingy[:,3], label = "Wing")
-plot!(htaily[:,1], htaily[:,2], htaily[:,3], label = "Horizontal Tail")
-plot!(vtaily[:,1], vtaily[:,2], vtaily[:,3], label = "Vertical Tail",
+wing_plot = plot_setup(coordinates(wing))
+htail_plot = plot_setup(coordinates(htail, translation = htail_location))
+vtail1_plot = plot_setup(coordinates(vtail, rotation = vtail1_angle, translation = vtail1_location))
+vtail2_plot = plot_setup(coordinates(vtail, rotation = vtail2_angle, translation = vtail2_location))
+
+wing_sects = plot_setup.(sections(wing))
+htail_sects = plot_setup.(sections(htail, translation = htail_location))
+vtail1_sects = plot_setup.(sections(vtail, rotation = vtail1_angle, translation = vtail1_location))
+vtail2_sects = plot_setup.(sections(vtail, rotation = vtail2_angle, translation = vtail2_location))
+
+# Objects
+plot(wing_plot, label = "Wing", fill = :blue)
+plot!(htail_plot, label = "Horizontal Tail")
+plot!(vtail1_plot, label = "Vertical Tail 1")
+plot!(vtail2_plot, label = "Vertical Tail 2",
       xaxis = L"x", yaxis = L"y", zaxis = L"z", zlim = (-0.1, 5), aspect_ratio=:equal)
 
-plot!(wing_secs[:,1], wing_secs[:,2], wing_secs[:,3], color = "black", label = nothing)
+# Sections
+plot!.(wing_sects, color = "black", label = nothing)
+plot!.(htail_sects, color = "orange", label = nothing)
+plot!.(vtail1_sects, color = "brown", label = nothing)
+plot!.(vtail2_sects, color = "brown", label = nothing)
 
-## Horseshoe testing
-pts = horseshoe_points(wing_right)
-collocs = horseshoe_collocation(wing_right)
-println("Horseshoe Points: ", pts)
-println("Horseshoe Collocations: ", collocs)
+# Points
+plot!.(wing_pts, c = :black, label = nothing)
+scatter!(wing_collocs, c = :grey, markersize = 1, label = "Wing Collocation Points")
+
+plot!.(htail_pts, c = :black, label = nothing)
+scatter!(htail_collocs, c = :grey, markersize = 1, label = "Horizontal Tail Collocation Points")
+
+plot!.(vtail1_pts, c = :black, label = nothing)
+scatter!(vtail1_collocs, c = :grey, markersize = 1, label = "Vertical Tail 1 Collocation Points")
+
+plot!.(vtail2_pts, c = :black, label = nothing)
+scatter!(vtail2_collocs, c = :grey, markersize = 1, label = "Vertical Tail 2 Collocation Points")
+
+gui();

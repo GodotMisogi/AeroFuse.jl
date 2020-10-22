@@ -1,13 +1,12 @@
 module LiftingLine
 
-include("AeroMDAO.jl")
 include("MathTools.jl")
-include("PanelMethods.jl")
 
-using .AeroMDAO: HalfWing, Wing
 using .MathTools: <<
 using LinearAlgebra
 using StaticArrays
+
+export Panel3D, horseshoe_collocation, horseshoe_point, horseshoe_vortex
 
 abstract type Laplace end
 
@@ -31,18 +30,28 @@ potential(dub :: Doublet2D, x, y) = -dub.str / (2π) * (y - dub.y0) / ((x - dub.
 abstract type Panel end
 
 struct Panel3D <: Panel
-    p1
-    p2
-    p3
-    p4
-    # function Panel3D(p1, p2, p3, p4)  # Constructor needed for checking orientation
-    #     if 
+    p1 :: Tuple{Float64, Float64, Float64}
+    p2 :: Tuple{Float64, Float64, Float64}
+    p3 :: Tuple{Float64, Float64, Float64}
+    p4 :: Tuple{Float64, Float64, Float64}
 end
 
+collocation_point(panel :: Panel3D) = (panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4) ./ 4
+panel_normal(panel :: Panel3D) = cross(panel.p2 .- panel.p1, panel.p3 .- panel.p2)
 
+horseshoe_point(p1, p2, p3, p4) = ( (3 * p1[1] + p4[1] + 3 * p2[1] + p3[1]) / 8, (p1[2] + p2[2]) / 2, (p1[3] + p4[3] + p2[3] + p3[3]) / 4 )
+collocation_point(p1, p2, p3, p4) = ( ( p1[1] + 3 * p4[1] + p2[1] + 3 * p3[1]) / 8, (p1[2] + p2[2]) / 2, (p1[3] + p4[3] + p2[3] + p3[3]) / 4 )
+horseshoe_vortex(panel :: Panel3D) = horseshoe_point(panel.p1, panel.p2, panel.p3, panel.p4)
+horseshoe_collocation(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, panel.p3, panel.p4)
+
+struct Line
+    r1 :: Tuple{Float64, Float64, Float64}
+    r2 :: Tuple{Float64, Float64, Float64}
+end
 
 velocity(line :: Line, r, Γ, ε = 1e-6) = let r1 = r .- line.r1, r2 = r .- line.r2, r1_x_r2 = r1 × r2;
     (r1 || r2 || r1_x_r2 ) < ε ? [0,0,0] : Γ/(4π) * r1_x_r2 / norm(r1_x_r2) * r1 .- r2 * (r1 / norm(r1) .- r2 / norm(r2)) end
+
 
 mutable struct Horseshoe
     vortex_lines :: Array{Line}

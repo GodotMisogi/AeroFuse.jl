@@ -18,7 +18,7 @@ alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
 alpha_l = [-0.2, -0.1, -0.1, -0.001, -0.02]
 alphas = [alpha_u alpha_l]
 dzs = (1e-4, 1e-4)
-airfoil = kulfan_CST(alphas, dzs, 0.0, 40)
+airfoil = kulfan_CST(alphas, dzs, 0.0, 100)
 
 ##
 uniform = Uniform2D(1.0, 5.0)
@@ -59,18 +59,18 @@ cp = pressure_coefficient.(uniform.mag, vels);
 lower_panels, upper_panels = split_panels(dub_src_panels);
 
 ## Airfoil plot
-plot( panels_xs(upper_panels), panels_ys(upper_panels), 
+plot( (first ∘ collocation_point).(upper_panels), (last ∘ collocation_point).(upper_panels), 
         label = "Upper", markershape = :circle,
         xlabel = "x", ylabel = "C_p")
-plot!(panels_xs(lower_panels), panels_ys(lower_panels),
+plot!((first ∘ collocation_point).(lower_panels), (last ∘ collocation_point).(lower_panels),
         label = "Lower", markershape = :circle,
         xlabel = "x", ylabel = "C_p")
 
 ## Pressure coefficient
-plot( panels_xs(upper_panels), :cp .<< upper_panels, 
+plot( (first ∘ collocation_point).(upper_panels), :cp .<< upper_panels, 
         label = "Upper", markershape = :circle, 
         xlabel = "x", ylabel = "C_p")
-plot!(panels_xs(upper_panels), :cp .<< lower_panels, 
+plot!((first ∘ collocation_point).(upper_panels), :cp .<< lower_panels, 
         label = "Lower", markershape = :circle, yaxis = :flip)
 
 ## Control volume
