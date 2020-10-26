@@ -7,51 +7,22 @@ include("LaplaceSolutions.jl")
 using LinearAlgebra
 using Base.Iterators
 using StaticArrays
-using .MathTools: parts, stencil, midgrad, rotation, inverse_rotation, affine_2D, <<, span, dot, structtolist
+using .MathTools: parts, stencil, midgrad, rotation, inverse_rotation, affine_2D, <<, span, dot
 
 pressure_coefficient(mag, vels) = 1 - norm(vels)^2 / mag^2
-
 
 #------------------- Solutions to Laplace's equation--------------------#
 
 abstract type Laplace end
-
-struct Source2D <: Laplace
-    str :: Float64
-    x0 :: Float64
-    y0 :: Float64 
-end
 
 struct Uniform2D <: Laplace
     mag :: Float64
     ang :: Float64 
 end
 
-struct Doublet2D <: Laplace
-    str :: Float64
-    x0 :: Float64
-    y0 :: Float64 
-end 
-
-struct Vortex2D <: Laplace
-    str :: Float64
-    x0 :: Float64
-    y0 :: Float64 
-end
-
-velocity(src :: Source2D, x, y) = (src.str / (2π) * (x - src.x0) / ((x - src.x0)^2 + (y - src.y0)^2), str / (2π) * (y - src.y0) / ((x - src.x0)^2 + (y - src.y0)^2))
 velocity(uni :: Uniform2D) = let ang = deg2rad(uni.ang); (uni.mag * cos(ang), uni.mag * sin(ang)) end
-velocity(dub :: Doublet2D, x, y) = (dub.str / (2π) * ((x - dub.x0)^2 - (y - dub.y0)^2) / ((x - dub.x0)^2 + (y - dub.y0)^2)^2, - dub.str / (2π) * 2 * (x - dub.x0) * (y - dub.y0) / ((x - dub.x0)^2 + (y - dub.y0)^2)^2)
-velocity(vor :: Vortex2D, x, y) = (-vor.str / (2π) * (y - vor.y0) / ((x - vor.x0)^2 + (y - vor.y0)^2), str / (2π) * (x - vor.x0) / ((x - vor.x0)^2 + (y - vor.y0)^2))
 
-potential(src :: Source2D, x, y) = src.str / (4π) * log((x - src.x0)^2 + (y - src.y0)^2)
 potential(uni :: Uniform2D, x, y) = let ang = deg2rad(uni.ang); uni.mag * (x * cos(ang) + y * sin(ang)) end
-potential(dub :: Doublet2D, x, y) = -dub.str / (2π) * (y - dub.y0) / ((x - dub.x0)^2 + (y - dub.y0)^2)
-potential(vor :: Vortex2D, x, y) = vor.str / (2π) * atan(y - vor.y0, x - vor.x0)
-
-stream(src :: Source2D, x, y) = src.str / (2π) * atan(y - src.y0, x - src.x0)
-stream(dub :: Doublet2D, x, y) = -dub.str / (2π) * (y - dub.y0) / ((x - dub.x0)^2 + (y - dub.y0)^2)
-stream(vor :: Vortex2D, x, y) = -vor.str / (4π) * log((x - vor.x0)^2 + (y - vor.y0)^2)
 
 # Performs velocity and potential calculations on a grid
 function grid_data(objects :: Array{<: Laplace}, xs)
@@ -66,20 +37,8 @@ grid_data(object :: Laplace, xs) = velocity(object, xs), potential(object, xs)
 velocity(object :: Laplace, xs) = map(x -> velocity(object, x...), xs) 
 potential(object :: Laplace, xs) = map(x -> potential(object, x...), xs)
 
-#--------------------------Vector spaces------------------------------#
-
-abstract type Point end
-
-struct Point2D <: Point
-    x :: Real; y :: Real;
-end
-
-struct Point3D <: Point
-    x :: Real; y :: Real; z :: Real;
-end
 
 abstract type Panel <: Laplace end
-
 
 struct Panel2D <: Panel
     p1 :: Tuple{Float64, Float64}
@@ -87,32 +46,17 @@ struct Panel2D <: Panel
 end
 
 # Methods on panels in N dimensions
-collocation_point(panel :: Panel2D) = (panel.p1 .+ panel.p2) ./ 2
 panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) .- collocation_point(panel_1))
 split_panels(panels :: Array{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
 
 make_panels(coords :: Array{<: Real, 2}) = [ Panel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ eachrow([ coords[2:end,:] coords[1:end-1,:] ]) ][end:-1:1]
 
+collocation_point(panel :: Panel2D) = (panel.p1 .+ panel.p2) ./ 2
 panel_length(panel :: Panel2D) = norm(panel.p2 .- panel.p1)
 panel_angle(panel :: Panel2D) = let (xs, ys) = panel.p1, (xe, ye) = panel.p2; atan(ye - ys, xe - xs) end
 panel_tangent(panel :: Panel2D) = rotation(1, 0, -1 * panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0, 1, panel_angle(panel))
 panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π/2 <= angle <= π) || (-π <= angle <= -π/2) ? "lower" : "upper" end
-
-struct Panel3D <: Panel
-    p1 :: Tuple{Float64, Float64, Float64}
-    p2 :: Tuple{Float64, Float64, Float64}
-    p3 :: Tuple{Float64, Float64, Float64}
-    p4 :: Tuple{Float64, Float64, Float64}
-end
-
-collocation_point(panel :: Panel3D) = (panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4) ./ 4
-panel_normal(panel :: Panel3D) = cross(panel.p2 .- panel.p1, panel.p3 .- panel.p2)
-
-struct Line
-    r1 :: Point
-    r2 :: Point
-end
 
 #-----------------------Doublet-source panel method---------------------------#
 
@@ -221,7 +165,5 @@ function solve_case(panels :: Array{Panel2D}, uniform :: Uniform2D)
 
     dub_src_panels, cl
 end
-
-#------------------------------------------------------------------#
 
 end
