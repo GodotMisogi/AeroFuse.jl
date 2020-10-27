@@ -23,9 +23,9 @@ foils = [ coords for n in 1:num_secs ]
 airfoils = Foil.(foils)
 
 wing_chords = [2, 2, 1.5, 1, 0.8, 0.7, 0.5]
-wing_twists = fill(1, num_secs + 1)
+wing_twists = fill(0, num_secs + 1)
 wing_spans = fill(1, num_secs)
-wing_dihedrals = 0.5 * [0, 5, 10, 10, 15, 20]
+wing_dihedrals = 0.0 * [0, 5, 10, 10, 15, 20]
 wing_sweeps = [0, 5, 10, 10, 15, 20]
 
 wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
@@ -85,9 +85,19 @@ vtail1_collocs = horseshoe_collocation.(vtail1_panels)
 vtail2_pts = horseshoe_vortex.(vtail2_panels)
 vtail2_collocs = horseshoe_collocation.(vtail2_panels)
 
+wing_lines = horseshoe_lines.(wing_panels)
+
 ## Solution for wing
-uniform = Uniform3D(5.0, 3.0, 4.0)
+uniform = Uniform3D(5.0, 4.0, 0.0)
 @time lift, drag = solve_case(wing_panels, uniform)
+
+V = uniform.mag
+ρ = 1.225
+S = projected_area(wing)
+cl = lift/(ρ/2 * V^2 * S)
+cdi = drag/(ρ/2 * V^2 * S)
+println("Lift: $lift, Drag: $drag")
+println("Lift Coefficient: $cl, Drag Coefficient: $cdi")
 
 ## Plotting
 using Plots, LaTeXStrings
