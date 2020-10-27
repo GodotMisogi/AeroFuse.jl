@@ -169,7 +169,7 @@ struct Panel3D <: Panel
     p4 :: SVector{3,Float64}
 end
 
-collocation_point(panel :: Panel3D) = [ panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4 ] / 4
+collocation_point(panel :: Panel3D) = (panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4) / 4
 panel_normal(panel :: Panel3D) = let p21 = panel.p2 .- panel.p1, p41 = panel.p4 .- panel.p1, p21_x_p41 = p21 × p41;
                                  p21_x_p41 / norm(p21_x_p41) end
 
