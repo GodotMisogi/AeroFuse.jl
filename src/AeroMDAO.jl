@@ -1,6 +1,6 @@
 module AeroMDAO
 
-export make_panels, sections, coordinates, print_info, plot_setup, Wing, HalfWing, Foil, Panel3D, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform3D, solve_case, projected_area
+export make_panels, sections, coordinates, print_info, plot_setup, Wing, HalfWing, Foil, Panel3D, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines
 
 include("MathTools.jl")
 # include("DoubletSource.jl")
@@ -82,7 +82,7 @@ function wing_coords(wing :: HalfWing, rotation, translation)
     root_chord, tip_chords = peel(wing.chords)
     root_twist, tip_twists = peel(wing.twists)
 
-    sweeped_spans, dihedraled_spans, cum_spans = cumsum(spans .* sin.(sweeps)), cumsum(spans .* sin.(dihedrals)), cumsum(spans)
+    sweeped_spans, dihedraled_spans, cum_spans = cumsum(spans .* tan.(sweeps)), cumsum(spans .* tan.(dihedrals)), cumsum(spans)
     twisted_chords = tip_chords .* sin.(tip_twists)
 
     leading_xyz = [ sweeped_spans cum_spans dihedraled_spans ]
@@ -147,18 +147,14 @@ struct Uniform3D <: Laplace
     mag :: Float64
     α :: Float64 
     β :: Float64
+
 end
 
-velocity(uni :: Uniform3D) = let α = deg2rad(uni.α), β = deg2rad(uni.β); 
-    uni.mag .* (cos(α) * cos(β), cos(α) * sin(β), sin(α)) end
+Uniform(mag, α_deg, β_deg) = Uniform3D(mag, deg2rad(α_deg), deg2rad(β_deg))
 
-struct Doublet2D <: Laplace
-    str :: Float64
-    x0 :: Float64
-    y0 :: Float64 
-end
+projection_3D(r, θ, φ) = r .* (cos(θ) * cos(φ), cos(θ) * sin(φ), sin(θ))
 
-potential(dub :: Doublet2D, x, y) = -dub.str / (2π) * (y - dub.y0) / ((x - dub.x0)^2 + (y - dub.y0)^2)
+velocity(uni :: Uniform3D) = projection_3D(uni.mag, uni.α, uni.β) 
 
 abstract type Panel end
 
@@ -181,7 +177,6 @@ three_quarter_point(p1, p2) = weighted_point(p1, p2, 3/4, 0, 1/2)
 horseshoe_line(p1, p2, p3, p4) = [ quarter_point(p1, p2); quarter_point(p4, p3) ]
 collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) .+ three_quarter_point(p4, p3) ) ./ 2
 
-
 struct Line
     r1 :: SVector{3,Float64}
     r2 :: SVector{3,Float64}
@@ -190,29 +185,31 @@ end
 function velocity(r, line :: Line, Γ, ε = 1e-6)
     r1 = r .- line.r1
     r2 = r .- line.r2
-    r0 = r1 .- r2
+    r0 = line.r2 .- line.r1
     r1_x_r2 = r1 × r2
 
-    any(<(ε), norm.([r1, r2, r1_x_r2])) ? [0,0,0] : Γ/(4π) * r1_x_r2 / norm(r1_x_r2) * dot(r0, r1 / norm(r1) .- r2 / norm(r2))
+    any(<(ε), norm.([r1, r2, r1_x_r2])) ? [0,0,0] : Γ / (4π) * dot(r0, r1 / norm(r1) .- r2 / norm(r2)) * r1_x_r2 / norm(r1_x_r2) 
 end
 
 
 struct Horseshoe
     vortex_lines :: Array{Line}
-    function Horseshoe(vortex_line :: Line, α :: Float64, β :: Float64, bound :: Float64 = 1e5)
-        r1, r2 = vortex_line.r1, vortex_line.r2
-        tline_1 = Line([ bound, r1[2] + r1[1] * sin(β), r1[3] - r1[1] * sin(α) ], r1)
-        tline_2 = Line(r2, [ bound, r2[2] + r2[1] * sin(β), r2[3] - r2[1] * sin(α) ])
+end
 
-        new([ tline_1, vortex_line, tline_2 ])
-    end
+function Horseshoe(vortex_line :: Line, uniform :: Uniform3D, bound :: Float64 = 30.)
+    r1, r2 = vortex_line.r1, vortex_line.r2
+    vel = bound .* velocity(uniform) ./ uniform.mag
+    tline_1 = Line(r1 .+ vel, r1)
+    tline_2 = Line(r2, r2 .+ vel)
+
+    Horseshoe([ tline_1, vortex_line, tline_2 ])
 end
 
 horseshoe_vortex(panel :: Panel3D) = horseshoe_line(panel.p1, panel.p2, panel.p3, panel.p4)
 
 horseshoe_collocation(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, panel.p3, panel.p4)
 
-horseshoe_lines(panel :: Panel3D, α, β) = Horseshoe(Line(horseshoe_vortex(panel)...), α, β)
+horseshoe_lines(panel :: Panel3D, uniform :: Uniform3D) = Horseshoe(Line(horseshoe_vortex(panel)...), uniform)
 
 velocity(r, horseshoe :: Horseshoe, Γ) = sum([ velocity(r, line, Γ) for line in horseshoe.vortex_lines ])
 
@@ -235,28 +232,31 @@ boundary_condition(normals, velocity) = - [ dot(velocity, normal) for normal in 
 lift(Γ, Δy, speed, ρ = 1.225) = ρ * speed * Γ * Δy
 induced_drag(Γ, Δy, w_ind, ρ = 1.225) = -ρ * w_ind * Γ * Δy
 
-function solve_case(panels :: Array{<: Panel}, uniform :: Uniform3D) 
+# Trefftz plane evaluations
+# downwash(xi, xj, zi, zj) = -1/(2π) * (xj - xi) / ( (zj - zi)^2 + (xj - xi)^2 )
+# trefftz_plane(horseshoes :: Array{Horseshoes}) = [ [ horseshoe.vortex_lines[1].r1 for horseshoe in horseshoes ]; 
+#                                                    [ horseshoe.vortex_lines[3].r2 for horseshoe in horseshoes ] ]
+# function downwash(horseshoes :: Array{Horseshoes}) 
+#     coords = trefftz_plane(horseshoes)
+#     carts = product(coords, coords)
+#     [ [ i == j ? 0 : downwash(x1, x2, z1, z2) for (i, (x1,y1,z1)) in enumerate(coords) ] for (j, (x2,y2,z2)) in enumerate(coords) ] 
+# end
+
+function solve_case(panels :: Array{<: Panel}, uniform :: Uniform3D, ρ = 1.225) 
     
-    horseshoes = horseshoe_lines.(panels, uniform.α, uniform.β)
+    horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ]
     colpoints = horseshoe_collocation.(panels)
     normals = panel_normal.(panels)
     horsies = horseshoe_vortex.(panels) 
     vel = velocity(uniform)
 
-    inf = influence_matrix(colpoints, horseshoes, normals)
-    boco = boundary_condition(normals, vel)
-    Γs = inf \ boco
-
-    println(inf)
-    println(boco)
-    
-    w_ind = induced_matrix(colpoints, horseshoes, normals) * Γs
-
+    Γs = influence_matrix(colpoints, horseshoes, normals) \ boundary_condition(normals, vel)
+    w_inds = induced_matrix(colpoints, horseshoes, normals) * Γs
     Δys = (abs ∘ norm).([ line[2] .- line[1] for line in horsies ])
-    gammyind = zip(Γs, Δys, w_ind)
- 
-    Lift = sum([ lift(Γ, Δy, uniform.mag) for (Γ, Δy, w_ind) in gammyind ] )
-    Induced_drag = sum([ induced_drag(pt..., uniform.mag) for pt in gammyind ])
+
+    Lift = sum(lift.(Γs, Δys, uniform.mag, ρ))
+    Induced_drag = sum(induced_drag.(Γs, Δys, w_inds, ρ))
+    Trefftz_drag = 
 
     Lift, Induced_drag
 end

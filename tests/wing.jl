@@ -9,7 +9,7 @@ includet("../src/MathTools.jl")
 using .AeroMDAO
 # using .LiftingLine
 using .FoilParametrization: read_foil
-using .MathTools: linspace
+using .MathTools: linspace, tuparray
 using DelimitedFiles
 using Rotations
 
@@ -24,9 +24,9 @@ airfoils = Foil.(foils)
 
 wing_chords = [2, 2, 1.5, 1, 0.8, 0.7, 0.5]
 wing_twists = fill(0, num_secs + 1)
-wing_spans = fill(1, num_secs)
-wing_dihedrals = 0.0 * [0, 5, 10, 10, 15, 20]
-wing_sweeps = [0, 5, 10, 10, 15, 20]
+wing_spans = [1, 1, 1, 1, 1, 0.2]
+wing_dihedrals = [0, 0, 0, 0, 0, 45]
+wing_sweeps = [0, 5, 10, 10, 15, 60]
 
 wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
 wing = Wing(wing_right, wing_right)
@@ -56,15 +56,14 @@ vtail_spans = fill(0.3, vtail_secs)
 vtail_dihedrals = [0.0]
 vtail_sweeps = [60]
 
+vtail1_angle = AngleAxis{Float64}(π/4, 1, 0, 0)
+vtail1_location = [5 + tan(π/6) 1 0]
+
+vtail2_angle = AngleAxis{Float64}(3π/4, 1, 0, 0)
+vtail2_location = [5 + tan(π/6) -1 0]
 
 vtail = HalfWing(airfoils, vtail_chords, vtail_spans, vtail_dihedrals, vtail_sweeps, vtail_twists)
 print_info(vtail)
-
-vtail1_angle = AngleAxis{Float64}(π/4, 1, 0, 0)
-vtail1_location = [5 + sin(π/6) 1 0]
-
-vtail2_angle = AngleAxis{Float64}(3π/4, 1, 0, 0)
-vtail2_location = [5 + sin(π/6) -1 0]
 
 ## Panelling
 wing_panels = make_panels(wing)
@@ -85,19 +84,19 @@ vtail1_collocs = horseshoe_collocation.(vtail1_panels)
 vtail2_pts = horseshoe_vortex.(vtail2_panels)
 vtail2_collocs = horseshoe_collocation.(vtail2_panels)
 
-wing_lines = horseshoe_lines.(wing_panels)
 
 ## Solution for wing
-uniform = Uniform3D(5.0, 4.0, 0.0)
-@time lift, drag = solve_case(wing_panels, uniform)
+ρ = 1.225
+uniform = Uniform(10.0, 5.0, 5.0)
+@time lift, drag = solve_case(wing_panels, uniform, ρ)
 
 V = uniform.mag
-ρ = 1.225
 S = projected_area(wing)
 cl = lift/(ρ/2 * V^2 * S)
 cdi = drag/(ρ/2 * V^2 * S)
 println("Lift: $lift, Drag: $drag")
 println("Lift Coefficient: $cl, Drag Coefficient: $cdi")
+println("Lift-to-Drag Ratio (L/D): $(cl/cdi)")
 
 ## Plotting
 using Plots, LaTeXStrings
@@ -114,14 +113,14 @@ vtail1_sects = plot_setup.(sections(vtail, rotation = vtail1_angle, translation 
 vtail2_sects = plot_setup.(sections(vtail, rotation = vtail2_angle, translation = vtail2_location))
 
 # Objects
-plot(wing_plot, label = "Wing", fill = :blue)
+plot(wing_plot, label = "Wing", fill = :blue, xaxis = L"x", yaxis = L"y", zaxis = L"z", zlim = (-0.1, 10), aspect_ratio=:equal)
 plot!(htail_plot, label = "Horizontal Tail")
 plot!(vtail1_plot, label = "Vertical Tail 1")
-plot!(vtail2_plot, label = "Vertical Tail 2",
-      xaxis = L"x", yaxis = L"y", zaxis = L"z", zlim = (-0.1, 5), aspect_ratio=:equal)
+plot!(vtail2_plot, label = "Vertical Tail 2")
+
 
 # Sections
-plot!.(wing_sects, color = "black", label = nothing)
+plot!.(wing_sects, color = :black, label = nothing)
 plot!.(htail_sects, color = "orange", label = nothing)
 plot!.(vtail1_sects, color = "brown", label = nothing)
 plot!.(vtail2_sects, color = "brown", label = nothing)
@@ -138,5 +137,22 @@ scatter!(vtail1_collocs, c = :grey, markersize = 1, label = "Vertical Tail 1 Col
 
 plot!.(vtail2_pts, c = :black, label = nothing)
 scatter!(vtail2_collocs, c = :grey, markersize = 1, label = "Vertical Tail 2 Collocation Points")
+
+# Horseshoe lines
+wing_lines = [ horseshoe_lines(panel, uniform) for panel in wing_panels ]
+lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in wing_lines ]
+[ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
+
+htail_lines = [ horseshoe_lines(panel, uniform) for panel in htail_panels ]
+lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in htail_lines ]
+[ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
+
+vtail1_lines = [ horseshoe_lines(panel, uniform) for panel in vtail1_panels ]
+lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in vtail1_lines ]
+[ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
+
+vtail2_lines = [ horseshoe_lines(panel, uniform) for panel in vtail2_panels ]
+lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in vtail2_lines ]
+[ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
 
 gui();
