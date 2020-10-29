@@ -7,7 +7,7 @@ include("MathTools.jl")
 
 import Base: *, +
 using Base.Iterators: peel
-using .MathTools: fwdsum, fwddiff, tuparray, dot
+using .MathTools: fwdsum, fwddiff, tuparray, dot, linspace
 # using .DoubletSource: Point2D, Point3D, Panel2D, collocation_point
 using StaticArrays
 using LinearAlgebra
@@ -77,7 +77,7 @@ function mean_aerodynamic_chord(wing :: HalfWing)
     sum(macs .* areas) / sum(areas)
 end
 
-function wing_coords(wing :: HalfWing, rotation, translation)
+function wing_coords(wing :: HalfWing)
     spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
     root_chord, tip_chords = peel(wing.chords)
     root_twist, tip_twists = peel(wing.twists)
@@ -88,11 +88,22 @@ function wing_coords(wing :: HalfWing, rotation, translation)
     leading_xyz = [ sweeped_spans cum_spans dihedraled_spans ]
     trailing_xyz = [ (tip_chords .+ sweeped_spans) (cum_spans) (dihedraled_spans .+ twisted_chords) ]
 
-    leading = [ 0 0 0; leading_xyz ] * rotation' .+ translation
-    trailing = [ root_chord 0 root_chord * sin(root_twist); trailing_xyz ] * rotation' .+ translation
+    leading = [ 0 0 0; leading_xyz ]
+    trailing = [ root_chord 0 root_chord * sin(root_twist); trailing_xyz ]
 
     leading, trailing
 end
+
+chopper(ys, divisions) = [ ([ linspace(y1, y2, divisions)[1:end-1] for (y1, y2) in zip(ys, ys[2:end]) ]...)... ]
+
+function span_chopper(coords, divisions)    
+    new_coords = kron(coords, ones(divisions))
+    new_coords[:,2] = chopper(coords[:,2], divisions)
+
+    new_coords
+end
+
+transform(lead, trail, rotation, translation) = lead * rotation' .+ translation, trail * rotation' .+ translation
 
 sections(lead, trail) = [ [ le'; te' ] for (le, te) in zip(eachrow(lead), eachrow(trail)) ]
 coordinates(lead, trail) = [ lead[end:-1:1,:]; trail ]
@@ -115,9 +126,9 @@ projected_area(wing :: Wing) = projected_area(wing.left) + projected_area(wing.r
 mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean_aerodynamic_chord(wing.right)) / 2
 aspect_ratio(wing :: Union{Wing, HalfWing}) = aspect_ratio(span(wing), projected_area(wing))
 
-function wing_coords(wing :: Wing, rotation, translation)
-    left_lead, left_trail = wing_coords(wing.left, rotation, translation)
-    right_lead, right_trail = wing_coords(wing.right, rotation, translation)
+function wing_coords(wing :: Wing)
+    left_lead, left_trail = wing_coords(wing.left)
+    right_lead, right_trail = wing_coords(wing.right)
 
     yflip!(left_lead)
     yflip!(left_trail)
@@ -128,9 +139,13 @@ function wing_coords(wing :: Wing, rotation, translation)
     leading, trailing
 end
 
-make_panels(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = make_panels(wing_coords(obj, rotation, translation)...)
-sections(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = sections(wing_coords(obj, rotation, translation)...)
-coordinates(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = coordinates(wing_coords(obj, rotation, translation)...)
+make_panels(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = make_panels(transform(wing_coords(obj)..., rotation, translation)...)
+sections(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = sections(transform(wing_coords(obj)..., rotation, translation)...)
+coordinates(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = coordinates(transform(wing_coords(obj)..., rotation, translation)...)
+
+# Axes definitions
+stability_axes(obj :: Union{Wing, HalfWing}, uni :: Uniform3D) = coordinates(obj, rotation = RotY{Float64}(-uni.α))
+wind_axes(obj :: Union{Wing, HalfWing}, uni :: Uniform3D) = coordinates(obj, rotation = RotZY{Float64}(-uni.β, -uni.α))
 
 function print_info(wing :: Union{Wing, HalfWing})
     println("Span: ", span(wing), " m")
@@ -147,14 +162,13 @@ struct Uniform3D <: Laplace
     mag :: Float64
     α :: Float64 
     β :: Float64
-
 end
 
 Uniform(mag, α_deg, β_deg) = Uniform3D(mag, deg2rad(α_deg), deg2rad(β_deg))
 
-projection_3D(r, θ, φ) = r .* (cos(θ) * cos(φ), cos(θ) * sin(φ), sin(θ))
+freestream_to_cartesian(r, θ, φ) = r .* (cos(θ) * cos(φ), cos(θ) * sin(φ), sin(θ))
 
-velocity(uni :: Uniform3D) = projection_3D(uni.mag, uni.α, uni.β) 
+velocity(uni :: Uniform3D) = freestream_to_cartesian(uni.mag, uni.α, uni.β) 
 
 abstract type Panel end
 

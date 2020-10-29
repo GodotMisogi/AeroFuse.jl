@@ -70,25 +70,13 @@ wing_panels = make_panels(wing)
 htail_panels = make_panels(htail, translation = htail_location)
 vtail1_panels = make_panels(vtail, rotation = vtail1_angle, translation = vtail1_location)
 vtail2_panels = make_panels(vtail, rotation = vtail2_angle, translation = vtail2_location)
-
-## Horseshoe testing
-wing_pts = horseshoe_vortex.(wing_panels)
-wing_collocs = horseshoe_collocation.(wing_panels)
-
-htail_pts = horseshoe_vortex.(htail_panels)
-htail_collocs = horseshoe_collocation.(htail_panels)
-
-vtail1_pts = horseshoe_vortex.(vtail1_panels)
-vtail1_collocs = horseshoe_collocation.(vtail1_panels)
-
-vtail2_pts = horseshoe_vortex.(vtail2_panels)
-vtail2_collocs = horseshoe_collocation.(vtail2_panels)
+panels = [ wing_panels; vtail1_panels; vtail2_panels ]
 
 
 ## Solution for wing
 ρ = 1.225
 uniform = Uniform(10.0, 5.0, 5.0)
-@time lift, drag = solve_case(wing_panels, uniform, ρ)
+@time lift, drag = solve_case(panels, uniform, ρ)
 
 V = uniform.mag
 S = projected_area(wing)
@@ -112,12 +100,24 @@ htail_sects = plot_setup.(sections(htail, translation = htail_location))
 vtail1_sects = plot_setup.(sections(vtail, rotation = vtail1_angle, translation = vtail1_location))
 vtail2_sects = plot_setup.(sections(vtail, rotation = vtail2_angle, translation = vtail2_location))
 
+## Horseshoe testing
+wing_pts = horseshoe_vortex.(wing_panels)
+wing_collocs = horseshoe_collocation.(wing_panels)
+
+htail_pts = horseshoe_vortex.(htail_panels)
+htail_collocs = horseshoe_collocation.(htail_panels)
+
+vtail1_pts = horseshoe_vortex.(vtail1_panels)
+vtail1_collocs = horseshoe_collocation.(vtail1_panels)
+
+vtail2_pts = horseshoe_vortex.(vtail2_panels)
+vtail2_collocs = horseshoe_collocation.(vtail2_panels)
+
 # Objects
 plot(wing_plot, label = "Wing", fill = :blue, xaxis = L"x", yaxis = L"y", zaxis = L"z", zlim = (-0.1, 10), aspect_ratio=:equal)
 plot!(htail_plot, label = "Horizontal Tail")
 plot!(vtail1_plot, label = "Vertical Tail 1")
 plot!(vtail2_plot, label = "Vertical Tail 2")
-
 
 # Sections
 plot!.(wing_sects, color = :black, label = nothing)
@@ -155,4 +155,4 @@ vtail2_lines = [ horseshoe_lines(panel, uniform) for panel in vtail2_panels ]
 lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in vtail2_lines ]
 [ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
 
-gui();
+gui()
