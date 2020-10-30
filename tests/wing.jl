@@ -66,16 +66,16 @@ vtail = HalfWing(airfoils, vtail_chords, vtail_spans, vtail_dihedrals, vtail_swe
 print_info(vtail)
 
 ## Panelling
-wing_panels = make_panels(wing)
-htail_panels = make_panels(htail, translation = htail_location)
-vtail1_panels = make_panels(vtail, rotation = vtail1_angle, translation = vtail1_location)
-vtail2_panels = make_panels(vtail, rotation = vtail2_angle, translation = vtail2_location)
+wing_panels = make_panels(wing, spanwise_panels = 3)
+htail_panels = make_panels(htail, translation = htail_location, spanwise_panels = 4)
+vtail1_panels = make_panels(vtail, rotation = vtail1_angle, translation = vtail1_location, spanwise_panels = 4)
+vtail2_panels = make_panels(vtail, rotation = vtail2_angle, translation = vtail2_location, spanwise_panels = 4)
 panels = [ wing_panels; vtail1_panels; vtail2_panels ]
 
 
 ## Solution for wing
 ρ = 1.225
-uniform = Uniform(10.0, 5.0, 5.0)
+uniform = Uniform(10.0, 5.0, 0.0)
 @time lift, drag = solve_case(panels, uniform, ρ)
 
 V = uniform.mag
@@ -90,69 +90,61 @@ println("Lift-to-Drag Ratio (L/D): $(cl/cdi)")
 using Plots, LaTeXStrings
 plotlyjs()
 
+# Wing
 wing_plot = plot_setup(coordinates(wing))
-htail_plot = plot_setup(coordinates(htail, translation = htail_location))
-vtail1_plot = plot_setup(coordinates(vtail, rotation = vtail1_angle, translation = vtail1_location))
-vtail2_plot = plot_setup(coordinates(vtail, rotation = vtail2_angle, translation = vtail2_location))
-
 wing_sects = plot_setup.(sections(wing))
-htail_sects = plot_setup.(sections(htail, translation = htail_location))
-vtail1_sects = plot_setup.(sections(vtail, rotation = vtail1_angle, translation = vtail1_location))
-vtail2_sects = plot_setup.(sections(vtail, rotation = vtail2_angle, translation = vtail2_location))
-
-## Horseshoe testing
 wing_pts = horseshoe_vortex.(wing_panels)
 wing_collocs = horseshoe_collocation.(wing_panels)
 
-htail_pts = horseshoe_vortex.(htail_panels)
-htail_collocs = horseshoe_collocation.(htail_panels)
-
-vtail1_pts = horseshoe_vortex.(vtail1_panels)
-vtail1_collocs = horseshoe_collocation.(vtail1_panels)
-
-vtail2_pts = horseshoe_vortex.(vtail2_panels)
-vtail2_collocs = horseshoe_collocation.(vtail2_panels)
-
-# Objects
 plot(wing_plot, label = "Wing", fill = :blue, xaxis = L"x", yaxis = L"y", zaxis = L"z", zlim = (-0.1, 10), aspect_ratio=:equal)
-plot!(htail_plot, label = "Horizontal Tail")
-plot!(vtail1_plot, label = "Vertical Tail 1")
-plot!(vtail2_plot, label = "Vertical Tail 2")
-
-# Sections
 plot!.(wing_sects, color = :black, label = nothing)
-plot!.(htail_sects, color = "orange", label = nothing)
-plot!.(vtail1_sects, color = "brown", label = nothing)
-plot!.(vtail2_sects, color = "brown", label = nothing)
-
-# Points
 plot!.(wing_pts, c = :black, label = nothing)
 scatter!(wing_collocs, c = :grey, markersize = 1, label = "Wing Collocation Points")
-
-plot!.(htail_pts, c = :black, label = nothing)
-scatter!(htail_collocs, c = :grey, markersize = 1, label = "Horizontal Tail Collocation Points")
-
-plot!.(vtail1_pts, c = :black, label = nothing)
-scatter!(vtail1_collocs, c = :grey, markersize = 1, label = "Vertical Tail 1 Collocation Points")
-
-plot!.(vtail2_pts, c = :black, label = nothing)
-scatter!(vtail2_collocs, c = :grey, markersize = 1, label = "Vertical Tail 2 Collocation Points")
-
-# Horseshoe lines
 wing_lines = [ horseshoe_lines(panel, uniform) for panel in wing_panels ]
 lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in wing_lines ]
 [ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
 
+# Horizontal tail
+htail_plot = plot_setup(coordinates(htail, translation = htail_location))
+htail_sects = plot_setup.(sections(htail, translation = htail_location))
+htail_pts = horseshoe_vortex.(htail_panels)
+htail_collocs = horseshoe_collocation.(htail_panels)
+
+plot!(htail_plot, label = "Horizontal Tail")
+plot!.(htail_sects, color = "orange", label = nothing)
+plot!.(htail_pts, c = :black, label = nothing)
+scatter!(htail_collocs, c = :grey, markersize = 1, label = "Horizontal Tail Collocation Points")
 htail_lines = [ horseshoe_lines(panel, uniform) for panel in htail_panels ]
 lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in htail_lines ]
 [ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
 
+# Vertical tail 1
+vtail1_plot = plot_setup(coordinates(vtail, rotation = vtail1_angle, translation = vtail1_location))
+vtail1_sects = plot_setup.(sections(vtail, rotation = vtail1_angle, translation = vtail1_location))
+vtail1_pts = horseshoe_vortex.(vtail1_panels)
+vtail1_collocs = horseshoe_collocation.(vtail1_panels)
+
+plot!(vtail1_plot, label = "Vertical Tail 1")
+plot!.(vtail1_sects, color = "brown", label = nothing)
+plot!.(vtail1_pts, c = :black, label = nothing)
+scatter!(vtail1_collocs, c = :grey, markersize = 1, label = "Vertical Tail 1 Collocation Points")
 vtail1_lines = [ horseshoe_lines(panel, uniform) for panel in vtail1_panels ]
 lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in vtail1_lines ]
 [ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
 
+# Vertical tail 2
+vtail2_plot = plot_setup(coordinates(vtail, rotation = vtail2_angle, translation = vtail2_location))
+vtail2_sects = plot_setup.(sections(vtail, rotation = vtail2_angle, translation = vtail2_location))
+vtail2_pts = horseshoe_vortex.(vtail2_panels)
+vtail2_collocs = horseshoe_collocation.(vtail2_panels)
+
+plot!(vtail2_plot, label = "Vertical Tail 2")
+plot!.(vtail2_sects, color = "brown", label = nothing)
+plot!.(vtail2_pts, c = :black, label = nothing)
+scatter!(vtail2_collocs, c = :grey, markersize = 1, label = "Vertical Tail 2 Collocation Points")
 vtail2_lines = [ horseshoe_lines(panel, uniform) for panel in vtail2_panels ]
 lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in vtail2_lines ]
 [ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
+
 
 gui()

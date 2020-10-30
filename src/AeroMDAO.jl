@@ -1,6 +1,6 @@
 module AeroMDAO
 
-export make_panels, sections, coordinates, print_info, plot_setup, Wing, HalfWing, Foil, Panel3D, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines
+export make_panels, sections, coordinates, print_info, plot_setup, Wing, HalfWing, Foil, Panel3D, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines, transform
 
 include("MathTools.jl")
 # include("DoubletSource.jl")
@@ -94,18 +94,21 @@ function wing_coords(wing :: HalfWing)
     leading, trailing
 end
 
-chopper(ys, divisions) = [ ([ linspace(y1, y2, divisions)[1:end-1] for (y1, y2) in zip(ys, ys[2:end]) ]...)... ]
-
-function span_chopper(coords, divisions)    
-    new_coords = kron(coords, ones(divisions))
-    new_coords[:,2] = chopper(coords[:,2], divisions)
-
-    new_coords
-end
-
-transform(lead, trail, rotation, translation) = lead * rotation' .+ translation, trail * rotation' .+ translation
+chopper(xs, divs) = [ ([ [ x1 + μ*(x2 - x1) for μ in 0:1/divs:1 ][1:end-1] for (x2, x1) in zip(xs[2:end], xs) ]...); xs[end] ]
 
 sections(lead, trail) = [ [ le'; te' ] for (le, te) in zip(eachrow(lead), eachrow(trail)) ]
+
+coords_chopper(coords, divs) = [ chopper(coords[:,1], divs) chopper(coords[:,2], divs) chopper(coords[:,3], divs) ]
+
+chord_chopper(lead, trail, chordwise_panels) = coords_chopper.(sections(lead, trail), chordwise_panels)
+
+span_chopper(lead, trail, spanwise_panels) = coords_chopper(lead, spanwise_panels), coords_chopper(trail, spanwise_panels)
+
+wing_chopper(lead, trail, spanwise_panels, chordwise_panels) = chord_chopper(coords_chopper(lead, spanwise_panels), coords_chopper(trail, spanwise_panels), chordwise_panels)
+
+transform(lead, trail; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = lead * rotation' .+ translation, trail * rotation' .+ translation
+
+
 coordinates(lead, trail) = [ lead[end:-1:1,:]; trail ]
 
 function make_panels(lead, trail)
@@ -139,13 +142,12 @@ function wing_coords(wing :: Wing)
     leading, trailing
 end
 
-make_panels(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = make_panels(transform(wing_coords(obj)..., rotation, translation)...)
-sections(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = sections(transform(wing_coords(obj)..., rotation, translation)...)
-coordinates(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = coordinates(transform(wing_coords(obj)..., rotation, translation)...)
+make_panels(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ], spanwise_panels = 1) = make_panels(wing_chopper(transform(wing_coords(obj)..., rotation = rotation, translation = translation)..., spanwise_panels)...)
 
-# Axes definitions
-stability_axes(obj :: Union{Wing, HalfWing}, uni :: Uniform3D) = coordinates(obj, rotation = RotY{Float64}(-uni.α))
-wind_axes(obj :: Union{Wing, HalfWing}, uni :: Uniform3D) = coordinates(obj, rotation = RotZY{Float64}(-uni.β, -uni.α))
+sections(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = sections(transform(wing_coords(obj)..., rotation = rotation, translation = translation)...)
+
+coordinates(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = coordinates(transform(wing_chopper(wing_coords(obj)...)..., rotation = rotation, translation = translation)...)
+
 
 function print_info(wing :: Union{Wing, HalfWing})
     println("Span: ", span(wing), " m")
@@ -168,7 +170,11 @@ Uniform(mag, α_deg, β_deg) = Uniform3D(mag, deg2rad(α_deg), deg2rad(β_deg))
 
 freestream_to_cartesian(r, θ, φ) = r .* (cos(θ) * cos(φ), cos(θ) * sin(φ), sin(θ))
 
-velocity(uni :: Uniform3D) = freestream_to_cartesian(uni.mag, uni.α, uni.β) 
+velocity(uni :: Uniform3D) = freestream_to_cartesian(uni.mag, uni.α, uni.β)
+
+# Axes definitions
+stability_axes(obj :: Union{Wing, HalfWing}, uni :: Uniform3D) = coordinates(obj, rotation = RotY{Float64}(-uni.α))
+wind_axes(obj :: Union{Wing, HalfWing}, uni :: Uniform3D) = coordinates(obj, rotation = RotZY{Float64}(-uni.β, -uni.α))
 
 abstract type Panel end
 
@@ -184,7 +190,8 @@ panel_normal(panel :: Panel3D) = let p21 = panel.p2 .- panel.p1, p41 = panel.p4 
                                  p21_x_p41 / norm(p21_x_p41) end
 
 
-weighted_point((x1, y1, z1), (x2, y2, z2), wx, wy, wz) = ( (1 - wx) * x1 + wx * x2, (1 - wy) * y1 + wy * y2, (1 - wz) * z1 + wz * z2 )
+weighted(x1, x2, wx) = (1 - wx) * x1 + wx * x2
+weighted_point((x1, y1, z1), (x2, y2, z2), wx, wy, wz) = (weighted(x1, x2, wx), weighted(y1, y2, wy), weighted(z1, z2, wz))
 quarter_point(p1, p2) = weighted_point(p1, p2, 1/4, 0, 1/2)
 three_quarter_point(p1, p2) = weighted_point(p1, p2, 3/4, 0, 1/2)
 
