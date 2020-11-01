@@ -29,12 +29,8 @@ wing = Wing(wing_right, wing_right)
 print_info(wing_right)
 
 ## Assembly
-wing_panels = make_panels(wing, spanwise_panels = 5, chordwise_panels = 1)
+wing_panels = make_panels(wing_right, spanwise_panels = 1, chordwise_panels = 5)
 test_panels = mesh_wing(wing, spanwise_panels = 1, chordwise_panels = 15)
-# test_panels = wing_coords(wing_right, 15, 1)
-# panels = assemble(wing_chopper()
-# pan_coords = tuparray.(panel_coords.(panels))
-# pan_coords[1]
 
 ## Panel case
 ρ = 1.225
@@ -45,38 +41,34 @@ V = uniform.mag
 S = projected_area(wing_right)
 cl = lift/(ρ/2 * V^2 * S)
 cdi = drag/(ρ/2 * V^2 * S)
-println("Lift: $(sum(lift)), Drag: $(sum(drag))")
+println("Lift: $(sum(lift)) N")
+println("Drag: $(sum(drag)) N")
 println("Lift Coefficient: $(sum(cl)), Drag Coefficient: $(sum(cdi))")
 println("Lift-to-Drag Ratio (L/D): $(sum(cl)/sum(cdi))")
 
 
 ##
-using Plots, LaTeXStrings
+using Plotly
 ##
-plotly()
-
+plotlyjs()
 
 
 ## Wing
-# wing_plot = plot_setup(coordinates(wing))
-# wing_sects = plot_setup.(sections(wing))
 # wing_pts = horseshoe_vortex.(wing_panels)
 wing_collocs = horseshoe_collocation.(wing_panels)
 pan_coords = (tuparray ∘ panel_coords).(test_panels)
 spans = [ pt[2] for pt in wing_collocs ]
 
 plot(spans, cl)
-
-##
 plot(spans, cdi)
 
 ##
 plot(xaxis = "x", yaxis = "y", zaxis = "z")
 plot!.(pan_coords, line = :dash, color = :black, label = :none)
 
-# plot!.(wing_pts, c = :black, label = :none)
-
 scatter!(wing_collocs, c = :grey, label = "Wing Collocation Points")
+
+# plot!.(wing_pts, c = :black, label = :none)
 
 # wing_lines = [ horseshoe_lines(panel, uniform) for panel in wing_panels ]
 
