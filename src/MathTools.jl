@@ -1,5 +1,6 @@
 module MathTools
 
+using StaticArrays
 using Base.Iterators
 using Base: product
 
@@ -42,9 +43,10 @@ rotation(x, y, angle) = (x * cos(angle) + y * sin(angle), -x * sin(angle) + y * 
 
 slope(x1, y1, x2, y2) = (y2 - y1)/(x2 - x1)
 
-#---------------------Improving readablity with arrays------------------------#
+#---------------------Improving readablity and functionality with arrays------------------------#
 
 tuparray(xs) = tuple.(eachcol(xs)...)
+vectarray(xs) = SVector.(eachcol(xs)...)
 
 stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
 parts(xs) = let adj = stencil(xs, 1); adj[1,:], adj[end,:] end
@@ -60,6 +62,7 @@ end
 # Difference operators
 fwdsum(xs) = xs[2:end] .+ xs[1:end-1]
 fwddiff(xs) = xs[2:end] .- xs[1:end-1]
+fwddiv(xs) = xs[2:end] ./ xs[1:end-1]
 ord2diff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
 
 

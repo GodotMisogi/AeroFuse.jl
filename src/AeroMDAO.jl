@@ -1,14 +1,14 @@
 module AeroMDAO
 
-export make_panels, sections, coordinates, print_info, plot_setup, Wing, HalfWing, Foil, Panel3D, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines, transform
+export make_panels, coordinates, print_info, plot_setup, Wing, HalfWing, Foil, Panel3D, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines, transform, chord_sections, assemble, chopper, coords_chopper, chord_chopper, span_chopper, wing_chopper, wing_coords, panel_coords, read_foil, foil_camthick, cut_foil, cambers, mesh_wing, wing_coords
 
 include("MathTools.jl")
-# include("DoubletSource.jl")
+include("FoilParametrization.jl")
 
 import Base: *, +
 using Base.Iterators: peel
-using .MathTools: fwdsum, fwddiff, tuparray, dot, linspace
-# using .DoubletSource: Point2D, Point3D, Panel2D, collocation_point
+using .MathTools: fwdsum, fwddiff, fwddiv, tuparray, vectarray, dot, linspace
+using .FoilParametrization: read_foil, cosine_foil, foil_camthick
 using StaticArrays
 using LinearAlgebra
 using Rotations
@@ -28,7 +28,12 @@ struct Foil <: Aircraft
     coords :: Array{<: Real, 2} # The foil profile as an array of coordinates, must be in Selig format.
 end
 
-coordinates(foil :: Foil; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = foil.coords * rotation' .+ translation
+scale_foil(foil :: Foil, chord) = chord * foil.coords
+shift_foil(foil :: Foil, x, y, z) = [ x y z ] .+ foil.coords 
+cut_foil(foil :: Foil, num) = Foil(cosine_foil(foil.coords, n = num))
+cambers(foil :: Foil, num) = foil_camthick(cut_foil(foil, num))[:,1:2]
+
+coordinates(foil :: Foil) = [ foil.coords[:,1] (zeros ∘ length)(foil.coords[:,1]) foil.coords[:,2] ]
 
 #-----------------WING---------------------#
 
@@ -71,7 +76,7 @@ Computes the mean aerodynamic chord of a half-wing.
 """
 function mean_aerodynamic_chord(wing :: HalfWing)
     mean_chords = fwdsum(wing.chords) / 2
-    taper_ratios = wing.chords[2:end] ./ wing.chords[1:end-1]
+    taper_ratios = fwddiv(wing.chords)
     areas = mean_chords .* wing.spans
     macs = mean_aerodynamic_chord.(wing.chords[1:end-1], taper_ratios)
     sum(macs .* areas) / sum(areas)
@@ -94,30 +99,60 @@ function wing_coords(wing :: HalfWing)
     leading, trailing
 end
 
-chopper(xs, divs) = [ ([ [ x1 + μ*(x2 - x1) for μ in 0:1/divs:1 ][1:end-1] for (x2, x1) in zip(xs[2:end], xs) ]...); xs[end] ]
+vector_point(x1, x2, μ) = x1 .+ μ .* (x2 .- x1)
+foil_interpolation(set1, set2, μ) = vector_point.(set1, set2, μ)
+chop_sections(set1, set2, divs) = [ foil_interpolation(set1, set2, μ) for μ in 0:1/divs:1 ][1:end-1]
 
-sections(lead, trail) = [ [ le'; te' ] for (le, te) in zip(eachrow(lead), eachrow(trail)) ]
+function wing_coords(wing :: HalfWing, chordwise_panels :: Int64, spanwise_panels :: Int64, flip :: Bool = false)
+    spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
+
+    sweeped_spans = [ 0; cumsum(spans .* tan.(sweeps)) ]
+    dihedraled_spans = [ 0; cumsum(spans .* tan.(dihedrals)) ]
+    cum_spans = [ 0; cumsum(spans) ]
+    
+    leading_xyz = SVector.(sweeped_spans, flip ? -cum_spans : cum_spans, dihedraled_spans)
+    
+    scaled_foils = wing.chords .* coordinates.(cut_foil.(wing.foils, chordwise_panels))
+    foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) in zip(scaled_foils, wing.twists, leading_xyz) ]
+
+    [ (chop_sections.(foil_coords[1:end-1], foil_coords[2:end], spanwise_panels)...)..., foil_coords[end] ]
+end
+
+chopper(xs, divs) = [ ([ vector_point(x1, x2, μ) for μ in 0:1/divs:1 ][1:end-1] for (x1, x2) in zip(xs, xs[2:end]))...; xs[end] ]
+
+chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) in zip(eachrow(lead), eachrow(trail)) ]
 
 coords_chopper(coords, divs) = [ chopper(coords[:,1], divs) chopper(coords[:,2], divs) chopper(coords[:,3], divs) ]
 
-chord_chopper(lead, trail, chordwise_panels) = coords_chopper.(sections(lead, trail), chordwise_panels)
+chord_chopper(xs, chordwise_panels) = coords_chopper(xs, chordwise_panels)
 
 span_chopper(lead, trail, spanwise_panels) = coords_chopper(lead, spanwise_panels), coords_chopper(trail, spanwise_panels)
 
-wing_chopper(lead, trail, spanwise_panels, chordwise_panels) = chord_chopper(coords_chopper(lead, spanwise_panels), coords_chopper(trail, spanwise_panels), chordwise_panels)
+wing_chopper(lead, trail, spanwise_panels, chordwise_panels) = chord_chopper.(chord_sections(span_chopper(lead, trail, spanwise_panels)...), chordwise_panels)
 
-transform(lead, trail; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = lead * rotation' .+ translation, trail * rotation' .+ translation
+# wing_chopper(wing :: Union{HalfWing, Wing}; spanwise_panels, chordwise_panels) = chopper.(wing.spans .* cambers.(wing.foils, chordwise_panels), spanwise_panels) 
 
 
 coordinates(lead, trail) = [ lead[end:-1:1,:]; trail ]
 
-function make_panels(lead, trail)
-    lead, trail = tuparray(lead), tuparray(trail)
+# function make_panels(lead, trail)
+#     lead, trail = vectarray(lead), vectarray(trail)
     
-    panel_coords = zip(lead, trail[1:end-1], trail[2:end], lead[2:end])
+#     panel_coords = zip(lead, trail[1:end-1], trail[2:end], lead[2:end])
 
-    [ Panel3D(x...) for x in panel_coords ]
+#     [ Panel3D(x...) for x in panel_coords ]
+# end
+
+function make_panels(coords) 
+    spanlist = vectarray.(coords)    
+    secs1secs2 = zip(spanlist, spanlist[2:end])
+    sux = [ ([ zip(root, root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) in secs1secs2 ]...)... ]
+    [ Panel3D(x...) for x in sux ]
 end
+
+mesh_wing(wing :: HalfWing; chordwise_panels :: Int64 = 20, spanwise_panels:: Int64 = 3, flip = false) = make_panels(wing_coords(wing, chordwise_panels, spanwise_panels, flip))
+
+transform(lead, trail; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = lead * rotation' .+ translation, trail * rotation' .+ translation
 
 struct Wing <: Aircraft
     left :: HalfWing
@@ -142,11 +177,18 @@ function wing_coords(wing :: Wing)
     leading, trailing
 end
 
-make_panels(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ], spanwise_panels = 1) = make_panels(wing_chopper(transform(wing_coords(obj)..., rotation = rotation, translation = translation)..., spanwise_panels)...)
+make_panels(obj :: Union{Wing, HalfWing}; spanwise_panels = 1, chordwise_panels = 1) = make_panels(wing_chopper(wing_coords(obj)..., spanwise_panels, chordwise_panels))
 
-sections(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = sections(transform(wing_coords(obj)..., rotation = rotation, translation = translation)...)
+function mesh_wing(wing :: Wing; chordwise_panels = 20, spanwise_panels = 3)
+    left_panels = mesh_wing(wing.left, chordwise_panels = chordwise_panels, spanwise_panels = spanwise_panels, flip = true)
+    right_panels = mesh_wing(wing.right, chordwise_panels = chordwise_panels, spanwise_panels = spanwise_panels)
 
-coordinates(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = coordinates(transform(wing_chopper(wing_coords(obj)...)..., rotation = rotation, translation = translation)...)
+    [ left_panels; right_panels ] 
+end
+
+# sections(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = sections(transform(wing_coords(obj)..., rotation = rotation, translation = translation)...)
+
+# coordinates(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = coordinates(transform(wing_chopper(wing_coords(obj)...)..., rotation = rotation, translation = translation)...)
 
 
 function print_info(wing :: Union{Wing, HalfWing})
@@ -183,7 +225,14 @@ struct Panel3D <: Panel
     p2 :: SVector{3,Float64}
     p3 :: SVector{3,Float64}
     p4 :: SVector{3,Float64}
+    #    p1 —→—— p4
+    #    |      |
+    #   ↓      ↓
+    #  |      |
+    # p2 —→— p3
 end
+
+panel_coords(panel :: Panel3D) = [ panel.p1'; panel.p2'; panel.p3'; panel.p4'; panel.p1' ] 
 
 collocation_point(panel :: Panel3D) = (panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4) / 4
 panel_normal(panel :: Panel3D) = let p21 = panel.p2 .- panel.p1, p41 = panel.p4 .- panel.p1, p21_x_p41 = p21 × p41;
@@ -213,7 +262,7 @@ function velocity(r, line :: Line, Γ, ε = 1e-6)
 end
 
 
-struct Horseshoe
+struct VortexRing
     vortex_lines :: Array{Line}
 end
 
@@ -223,8 +272,10 @@ function Horseshoe(vortex_line :: Line, uniform :: Uniform3D, bound :: Float64 =
     tline_1 = Line(r1 .+ vel, r1)
     tline_2 = Line(r2, r2 .+ vel)
 
-    Horseshoe([ tline_1, vortex_line, tline_2 ])
+    VortexRing([ tline_1, vortex_line, tline_2 ])
 end
+
+# function VortexRing()
 
 horseshoe_vortex(panel :: Panel3D) = horseshoe_line(panel.p1, panel.p2, panel.p3, panel.p4)
 
@@ -232,19 +283,19 @@ horseshoe_collocation(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, 
 
 horseshoe_lines(panel :: Panel3D, uniform :: Uniform3D) = Horseshoe(Line(horseshoe_vortex(panel)...), uniform)
 
-velocity(r, horseshoe :: Horseshoe, Γ) = sum([ velocity(r, line, Γ) for line in horseshoe.vortex_lines ])
+velocity(r, horseshoe :: VortexRing, Γ) = sum([ velocity(r, line, Γ) for line in horseshoe.vortex_lines ])
 
-downwash_velocity(r, horseshoe :: Horseshoe, Γ) = let vels = [ velocity(r, line, Γ) for line in horseshoe.vortex_lines ]; first(vels) + last(vels) end
+downwash_velocity(r, horseshoe :: VortexRing, Γ) = let vels = [ velocity(r, line, Γ) for line in horseshoe.vortex_lines ]; first(vels) + last(vels) end
 
 #---------------------------------Matrix setup--------------------------------------#
 
-influence_coefficient(collocation_point, horseshoe :: Horseshoe, panel_normal) = dot(velocity(collocation_point, horseshoe, 1.), panel_normal)
+influence_coefficient(collocation_point, horseshoe :: VortexRing, panel_normal) = dot(velocity(collocation_point, horseshoe, 1.), panel_normal)
 
-induced_coefficient(collocation_point, horseshoe :: Horseshoe, panel_normal) = dot(downwash_velocity(collocation_point, horseshoe, 1.), panel_normal)
+induced_coefficient(collocation_point, horseshoe :: VortexRing, panel_normal) = dot(downwash_velocity(collocation_point, horseshoe, 1.), panel_normal)
 
-influence_matrix(colpoints, horseshoes :: Array{<: Horseshoe}, normals) = [ influence_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in horseshoes ]
+influence_matrix(colpoints, horseshoes :: Array{<: VortexRing}, normals) = [ influence_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in horseshoes ]
 
-induced_matrix(colpoints, horseshoes :: Array{<: Horseshoe}, normals)  = [ induced_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in horseshoes ]
+induced_matrix(colpoints, horseshoes :: Array{<: VortexRing}, normals)  = [ induced_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in horseshoes ]
 
 boundary_condition(normals, velocity) = - [ dot(velocity, normal) for normal in normals ]
 
@@ -263,6 +314,8 @@ induced_drag(Γ, Δy, w_ind, ρ = 1.225) = -ρ * w_ind * Γ * Δy
 #     [ [ i == j ? 0 : downwash(x1, x2, z1, z2) for (i, (x1,y1,z1)) in enumerate(coords) ] for (j, (x2,y2,z2)) in enumerate(coords) ] 
 # end
 
+#------------------------Case setup and solution--------------------------#
+
 function solve_case(panels :: Array{<: Panel}, uniform :: Uniform3D, ρ = 1.225) 
     
     horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ]
@@ -275,11 +328,11 @@ function solve_case(panels :: Array{<: Panel}, uniform :: Uniform3D, ρ = 1.225)
     w_inds = induced_matrix(colpoints, horseshoes, normals) * Γs
     Δys = (abs ∘ norm).([ line[2] .- line[1] for line in horsies ])
 
-    Lift = sum(lift.(Γs, Δys, uniform.mag, ρ))
-    Induced_drag = sum(induced_drag.(Γs, Δys, w_inds, ρ))
-    Trefftz_drag = 
+    Lifts = lift.(Γs, Δys, uniform.mag, ρ)
+    Induced_drags = induced_drag.(Γs, Δys, w_inds, ρ)
+    # Trefftz_drag = 
 
-    Lift, Induced_drag
+    Lifts, Induced_drags
 end
 
 end
