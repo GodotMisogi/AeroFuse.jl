@@ -2,20 +2,24 @@
 using Revise
 includet("../src/AeroMDAO.jl")
 includet("../src/MathTools.jl")
+includet("../src/FoilParametrization.jl")
 
 ##
+using .FoilParametrization: read_foil, foil_camthick, camthick_foil, cosine_foil, kulfan_CST, naca4
 using .AeroMDAO
 using .MathTools: linspace, tuparray
 using DelimitedFiles
 using Rotations
 
 ## Wing section setup
-foilpath = "airfoil_database/ys930.dat"
+alpha_u = [0.1, 0.3, 0.2, 0.15, 0.2]
+alpha_l = [-0.1, -0.1, -0.1, -0.001, -0.02]
+alphas = [alpha_u alpha_l]
+dzs = (1e-4, 1e-4)
+cst_foil = kulfan_CST(alphas, dzs, 0.2)
 
 num_secs = 3
-
-coords = read_foil(foilpath)
-foils = [ coords for i in 1:num_secs ]
+foils = [ cst_foil for i in 1:num_secs ]
 airfoils = Foil.(foils)
 
 wing_chords = [1, 0.5, 0.2]
@@ -29,14 +33,14 @@ wing = Wing(wing_right, wing_right)
 print_info(wing_right)
 
 ## Assembly
-test_panels = mesh_wing(wing, spanwise_panels = 5, chordwise_panels = 5)
-cam_panels = mesh_cambers(wing_right, spanwise_panels = 1, chordwise_panels = 2)
-# wing_panels = make_panels(wing_right, spanwise_panels = 5, chordwise_panels = 1)
+wing_panels = mesh_wing(wing, spanwise_panels = 5, chordwise_panels = 20)
+camber_panels = mesh_cambers(wing, spanwise_panels = 1, chordwise_panels = 20)
+horseshoe_panels = mesh_horseshoes(wing_right, spanwise_panels = 5, chordwise_panels = 20)
 
 ## Panel case
 ρ = 1.225
 uniform = Uniform(10.0, 5.0, 0.0)
-@time lift, drag = solve_case(wing_panels, uniform, ρ)
+@time lift, drag = solve_case(horseshoe_panels, uniform, ρ)
 
 V = uniform.mag
 S = projected_area(wing_right)
@@ -55,28 +59,31 @@ plotlyjs()
 
 
 ## Wing
-# wing_pts = horseshoe_vortex.(wing_panels)
-# wing_collocs = horseshoe_collocation.(cam_panels)
-pan_coords = (tuparray ∘ panel_coords).(test_panels)
-cam_coords = (tuparray ∘ panel_coords).(cam_panels)
+wing_collocs = horseshoe_collocation.(horseshoe_panels)
+
+##
 # spans = [ pt[2] for pt in wing_collocs ];
+# plot(spans, cl)
+# plot(spans, cdi)
 
 ##
-plot(spans, cl)
-plot(spans, cdi)
+pan_coords = (tuparray ∘ panel_coords).(wing_panels)
+wing_coords = (tuparray ∘ panel_coords).(horseshoe_panels)
+cam_coords = (tuparray ∘ panel_coords).(camber_panels)
+
 
 ##
-plot(xaxis = "x", yaxis = "y", zaxis = "z", aspect_ratio = :equal, zlim = (-0.5, 5.0))
+plot(xaxis = "x", yaxis = "y", zaxis = "z", aspect_ratio = :equal, zlim = (-0.5, 5.0), size=(800, 600))
 plot!.(pan_coords, color = :black,label = :none)
 plot!.(cam_coords, color = :grey,label = :none)
+plot!.(wing_coords, color = :grey,label = :none)
 
 scatter!(wing_collocs, c = :grey, markersize = 1, label = "Wing Collocation Points")
 
-# plot!.(wing_pts, c = :black, label = :none)
+##
+wing_lines = [ horseshoe_lines(panel, uniform) for panel in horseshoe_panels ]
 
-# wing_lines = [ horseshoe_lines(panel, uniform) for panel in wing_panels ]
-
-# lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in wing_lines ]
-# [ [ plot!(line, c = :darkblue, label = :none) for line in horseshoe ] for horseshoe in lines ]
+lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in wing_lines ]
+[ [ plot!(line, c = :darkblue, label = :none) for line in horseshoe ] for horseshoe in lines ]
 
 gui();

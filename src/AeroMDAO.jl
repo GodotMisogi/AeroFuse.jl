@@ -1,6 +1,6 @@
 module AeroMDAO
 
-export Foil, Wing, HalfWing, Panel3D, Uniform, make_panels, coordinates, print_info, plot_setup, transform, panel_coords, read_foil, mesh_wing, mesh_cambers, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines
+export Foil, Wing, HalfWing, Panel3D, Uniform, coordinates, print_info, plot_setup, transform, panel_coords, read_foil, mesh_horseshoes, mesh_wing, mesh_cambers, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines
 
 include("MathTools.jl")
 include("FoilParametrization.jl")
@@ -81,8 +81,7 @@ function mean_aerodynamic_chord(wing :: HalfWing)
 end
 
 vector_point(x1, x2, μ) = x1 .+ μ .* (x2 .- x1)
-foil_interpolation(set1, set2, μ) = vector_point.(set1, set2, μ)
-chop_sections(set1, set2, divs) = [ foil_interpolation(set1, set2, μ) for μ in 0:1/divs:1 ][1:end-1]
+chop_sections(set1, set2, divs) = [ vector_point.(set1, set2, μ) for μ in 0:1/divs:1 ][1:end-1]
 
 function lead_wing(wing :: HalfWing, flip :: Bool = false)
     spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
@@ -94,7 +93,7 @@ function lead_wing(wing :: HalfWing, flip :: Bool = false)
     SVector.(sweeped_spans, flip ? -cum_spans : cum_spans, dihedraled_spans)
 end
 
-function wing_coords(wing :: HalfWing, flip :: Bool = false)
+function wing_bounds(wing :: HalfWing, flip :: Bool = false)
     chords = wing.chords
     twisted_chords = chords .* sin.(wing.twists)
     
@@ -124,27 +123,15 @@ function camber_coords(wing :: HalfWing, chordwise_panels :: Int64, spanwise_pan
     coords_chopper(foil_coords, spanwise_panels)
 end
 
-chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) in zip(eachrow(lead), eachrow(trail)) ]
+chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) in zip(lead, trail) ]
 
+chord_chopper(coords, divs) = [ [ vector_point(chord[1,:], chord[2,:], μ) for μ in 0:1/divs:1 ] for chord in coords ]
 
-chord_chopper(xs, chordwise_panels) = coords_chopper(xs, chordwise_panels)
+span_chopper(lead, trail, div) = coords_chopper(lead, div), coords_chopper(trail, div)
 
-span_chopper(lead, trail, spanwise_panels) = coords_chopper(lead, spanwise_panels), coords_chopper(trail, spanwise_panels)
-
-wing_chopper(lead, trail, spanwise_panels, chordwise_panels) = chord_chopper.(chord_sections(span_chopper(lead, trail, spanwise_panels)...), chordwise_panels)
-
-# wing_chopper(wing :: Union{HalfWing, Wing}; spanwise_panels, chordwise_panels) = chopper.(wing.spans .* cambers.(wing.foils, chordwise_panels), spanwise_panels) 
-
+wing_chopper(lead, trail, spanwise_panels, chordwise_panels) = chord_chopper(chord_sections(span_chopper(lead, trail, spanwise_panels)...), chordwise_panels)
 
 coordinates(lead, trail) = [ lead[end:-1:1,:]; trail ]
-
-# function make_panels(lead, trail)
-#     lead, trail = vectarray(lead), vectarray(trail)
-    
-#     panel_coords = zip(lead, trail[1:end-1], trail[2:end], lead[2:end])
-
-#     [ Panel3D(x...) for x in panel_coords ]
-# end
 
 function make_panels(coords) 
     spanlist = vectarray.(coords)    
@@ -152,6 +139,8 @@ function make_panels(coords)
     sux = [ ([ zip(root, root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) in secs1secs2 ]...)... ]
     [ Panel3D(x...) for x in sux ]
 end
+
+mesh_horseshoes(obj :: HalfWing; spanwise_panels = 1, chordwise_panels = 1, flip = false) = make_panels(wing_chopper(wing_bounds(obj, flip)..., spanwise_panels, chordwise_panels))
 
 mesh_wing(wing :: HalfWing; chordwise_panels :: Int64 = 20, spanwise_panels:: Int64 = 3, flip = false) = make_panels(wing_coords(wing, chordwise_panels, spanwise_panels, flip))
 
@@ -169,9 +158,9 @@ projected_area(wing :: Wing) = projected_area(wing.left) + projected_area(wing.r
 mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean_aerodynamic_chord(wing.right)) / 2
 aspect_ratio(wing :: Union{Wing, HalfWing}) = aspect_ratio(span(wing), projected_area(wing))
 
-function wing_coords(wing :: Wing)
-    left_lead, left_trail = wing_coords(wing.left, true)
-    right_lead, right_trail = wing_coords(wing.right)
+function wing_bounds(wing :: Wing)
+    left_lead, left_trail = wing_bounds(wing.left, true)
+    right_lead, right_trail = wing_bounds(wing.right)
 
     leading = [ left_lead[end:-1:2,:]; right_lead ]
     trailing = [ left_trail[end:-1:2,:]; right_trail ]
@@ -179,7 +168,12 @@ function wing_coords(wing :: Wing)
     leading, trailing
 end
 
-make_panels(obj :: Union{Wing, HalfWing}; spanwise_panels = 1, chordwise_panels = 1) = make_panels(wing_chopper(wing_coords(obj)..., spanwise_panels, chordwise_panels))
+function mesh_horseshoes(wing :: Wing; chordwise_panels = 20, spanwise_panels = 3)
+    left_panels = mesh_horseshoes(wing.left, chordwise_panels = chordwise_panels, spanwise_panels = spanwise_panels, flip = true)
+    right_panels = mesh_horseshoes(wing.right, chordwise_panels = chordwise_panels, spanwise_panels = spanwise_panels)
+
+    [ left_panels; right_panels ] 
+end
 
 function mesh_wing(wing :: Wing; chordwise_panels = 20, spanwise_panels = 3)
     left_panels = mesh_wing(wing.left, chordwise_panels = chordwise_panels, spanwise_panels = spanwise_panels, flip = true)
