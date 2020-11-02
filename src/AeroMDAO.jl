@@ -1,6 +1,6 @@
 module AeroMDAO
 
-export make_panels, coordinates, print_info, plot_setup, Wing, HalfWing, Foil, Panel3D, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines, transform, chord_sections, assemble, chopper, coords_chopper, chord_chopper, span_chopper, wing_chopper, wing_coords, panel_coords, read_foil, foil_camthick, cut_foil, cambers, mesh_wing, wing_coords
+export Foil, Wing, HalfWing, Panel3D, Uniform, make_panels, coordinates, print_info, plot_setup, transform, panel_coords, read_foil, mesh_wing, mesh_cambers, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines
 
 include("MathTools.jl")
 include("FoilParametrization.jl")
@@ -13,8 +13,6 @@ using StaticArrays
 using LinearAlgebra
 using Rotations
 
-
-yflip!(xs) = xs[:,2] .= -xs[:,2]
 plot_setup(coords) = tuparray(coords)
 
 abstract type Aircraft end
@@ -31,7 +29,7 @@ end
 scale_foil(foil :: Foil, chord) = chord * foil.coords
 shift_foil(foil :: Foil, x, y, z) = [ x y z ] .+ foil.coords 
 cut_foil(foil :: Foil, num) = Foil(cosine_foil(foil.coords, n = num))
-cambers(foil :: Foil, num) = foil_camthick(cut_foil(foil, num))[:,1:2]
+cambers(foil :: Foil, num) = Foil(foil_camthick(cut_foil(foil, num).coords))
 
 coordinates(foil :: Foil) = [ foil.coords[:,1] (zeros ∘ length)(foil.coords[:,1]) foil.coords[:,2] ]
 
@@ -82,47 +80,52 @@ function mean_aerodynamic_chord(wing :: HalfWing)
     sum(macs .* areas) / sum(areas)
 end
 
-function wing_coords(wing :: HalfWing)
-    spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
-    root_chord, tip_chords = peel(wing.chords)
-    root_twist, tip_twists = peel(wing.twists)
-
-    sweeped_spans, dihedraled_spans, cum_spans = cumsum(spans .* tan.(sweeps)), cumsum(spans .* tan.(dihedrals)), cumsum(spans)
-    twisted_chords = tip_chords .* sin.(tip_twists)
-
-    leading_xyz = [ sweeped_spans cum_spans dihedraled_spans ]
-    trailing_xyz = [ (tip_chords .+ sweeped_spans) (cum_spans) (dihedraled_spans .+ twisted_chords) ]
-
-    leading = [ 0 0 0; leading_xyz ]
-    trailing = [ root_chord 0 root_chord * sin(root_twist); trailing_xyz ]
-
-    leading, trailing
-end
-
 vector_point(x1, x2, μ) = x1 .+ μ .* (x2 .- x1)
 foil_interpolation(set1, set2, μ) = vector_point.(set1, set2, μ)
 chop_sections(set1, set2, divs) = [ foil_interpolation(set1, set2, μ) for μ in 0:1/divs:1 ][1:end-1]
 
-function wing_coords(wing :: HalfWing, chordwise_panels :: Int64, spanwise_panels :: Int64, flip :: Bool = false)
+function lead_wing(wing :: HalfWing, flip :: Bool = false)
     spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
 
     sweeped_spans = [ 0; cumsum(spans .* tan.(sweeps)) ]
     dihedraled_spans = [ 0; cumsum(spans .* tan.(dihedrals)) ]
     cum_spans = [ 0; cumsum(spans) ]
     
-    leading_xyz = SVector.(sweeped_spans, flip ? -cum_spans : cum_spans, dihedraled_spans)
+    SVector.(sweeped_spans, flip ? -cum_spans : cum_spans, dihedraled_spans)
+end
+
+function wing_coords(wing :: HalfWing, flip :: Bool = false)
+    chords = wing.chords
+    twisted_chords = chords .* sin.(wing.twists)
+    
+    leading = lead_wing(wing, flip)
+    trailing = SVector.(chords, (zeros ∘ length)(chords), twisted_chords) .+ leading
+
+    leading, trailing
+end
+
+coords_chopper(coords, divs) = [ (chop_sections.(coords[1:end-1], coords[2:end], divs)...)..., coords[end] ]
+
+function wing_coords(wing :: HalfWing, chordwise_panels :: Int64, spanwise_panels :: Int64, flip :: Bool = false)
+    leading_xyz = lead_wing(wing, flip)
     
     scaled_foils = wing.chords .* coordinates.(cut_foil.(wing.foils, chordwise_panels))
     foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) in zip(scaled_foils, wing.twists, leading_xyz) ]
 
-    [ (chop_sections.(foil_coords[1:end-1], foil_coords[2:end], spanwise_panels)...)..., foil_coords[end] ]
+    coords_chopper(foil_coords, spanwise_panels)
 end
 
-chopper(xs, divs) = [ ([ vector_point(x1, x2, μ) for μ in 0:1/divs:1 ][1:end-1] for (x1, x2) in zip(xs, xs[2:end]))...; xs[end] ]
+function camber_coords(wing :: HalfWing, chordwise_panels :: Int64, spanwise_panels :: Int64, flip :: Bool = false)
+    leading_xyz = lead_wing(wing, flip)
+    
+    scaled_foils = wing.chords .* coordinates.(cambers.(wing.foils, chordwise_panels))
+    foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) in zip(scaled_foils, wing.twists, leading_xyz) ]
+
+    coords_chopper(foil_coords, spanwise_panels)
+end
 
 chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) in zip(eachrow(lead), eachrow(trail)) ]
 
-coords_chopper(coords, divs) = [ chopper(coords[:,1], divs) chopper(coords[:,2], divs) chopper(coords[:,3], divs) ]
 
 chord_chopper(xs, chordwise_panels) = coords_chopper(xs, chordwise_panels)
 
@@ -152,6 +155,8 @@ end
 
 mesh_wing(wing :: HalfWing; chordwise_panels :: Int64 = 20, spanwise_panels:: Int64 = 3, flip = false) = make_panels(wing_coords(wing, chordwise_panels, spanwise_panels, flip))
 
+mesh_cambers(wing :: HalfWing; chordwise_panels :: Int64 = 20, spanwise_panels:: Int64 = 3, flip = false) = make_panels(camber_coords(wing, chordwise_panels, spanwise_panels, flip))
+
 transform(lead, trail; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = lead * rotation' .+ translation, trail * rotation' .+ translation
 
 struct Wing <: Aircraft
@@ -165,11 +170,8 @@ mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean
 aspect_ratio(wing :: Union{Wing, HalfWing}) = aspect_ratio(span(wing), projected_area(wing))
 
 function wing_coords(wing :: Wing)
-    left_lead, left_trail = wing_coords(wing.left)
+    left_lead, left_trail = wing_coords(wing.left, true)
     right_lead, right_trail = wing_coords(wing.right)
-
-    yflip!(left_lead)
-    yflip!(left_trail)
 
     leading = [ left_lead[end:-1:2,:]; right_lead ]
     trailing = [ left_trail[end:-1:2,:]; right_trail ]
@@ -186,10 +188,17 @@ function mesh_wing(wing :: Wing; chordwise_panels = 20, spanwise_panels = 3)
     [ left_panels; right_panels ] 
 end
 
+function mesh_cambers(wing :: Wing; chordwise_panels = 20, spanwise_panels = 3)
+    left_panels = mesh_cambers(wing.left, chordwise_panels = chordwise_panels, spanwise_panels = spanwise_panels, flip = true)
+    right_panels = mesh_cambers(wing.right, chordwise_panels = chordwise_panels, spanwise_panels = spanwise_panels)
+
+    [ left_panels; right_panels ] 
+end
+
+
 # sections(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = sections(transform(wing_coords(obj)..., rotation = rotation, translation = translation)...)
 
 # coordinates(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = coordinates(transform(wing_chopper(wing_coords(obj)...)..., rotation = rotation, translation = translation)...)
-
 
 function print_info(wing :: Union{Wing, HalfWing})
     println("Span: ", span(wing), " m")
@@ -197,6 +206,7 @@ function print_info(wing :: Union{Wing, HalfWing})
     println("MAC: ", mean_aerodynamic_chord(wing), " m")
     println("Aspect Ratio: ", aspect_ratio(wing))
 end
+
 
 #--------------Lifting line code-------------------#
 
@@ -213,6 +223,7 @@ Uniform(mag, α_deg, β_deg) = Uniform3D(mag, deg2rad(α_deg), deg2rad(β_deg))
 freestream_to_cartesian(r, θ, φ) = r .* (cos(θ) * cos(φ), cos(θ) * sin(φ), sin(θ))
 
 velocity(uni :: Uniform3D) = freestream_to_cartesian(uni.mag, uni.α, uni.β)
+
 
 # Axes definitions
 stability_axes(obj :: Union{Wing, HalfWing}, uni :: Uniform3D) = coordinates(obj, rotation = RotY{Float64}(-uni.α))
@@ -316,7 +327,7 @@ induced_drag(Γ, Δy, w_ind, ρ = 1.225) = -ρ * w_ind * Γ * Δy
 
 #------------------------Case setup and solution--------------------------#
 
-function solve_case(panels :: Array{<: Panel}, uniform :: Uniform3D, ρ = 1.225) 
+function solve_case(panels :: Array{Panel3D}, uniform :: Uniform3D, ρ = 1.225) 
     
     horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ]
     colpoints = horseshoe_collocation.(panels)
@@ -335,23 +346,5 @@ function solve_case(panels :: Array{<: Panel}, uniform :: Uniform3D, ρ = 1.225)
     Lifts, Induced_drags
 end
 
+
 end
-
-
-# Kleisli-ish composition to transport global coordinates?
-# PlanePos = Pair(Aircraft :: Aircraft, Point3D)
-
-# function mesh_wing(wing :: HalfWing, span_panels = 8)
-#     lead, trail = wing_coords(wing)
-
-#     foils = wing.foils
-#     chords = wing.chords
-#     spans = wing.spans
-
-#     span_increments = (fwddiff ∘ cumsum)(spans) / span_panels
-
-
-#     coords = chords .* (:coords .<< foils)
-
-
-# end

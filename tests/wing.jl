@@ -18,19 +18,20 @@ coords = read_foil(foilpath)
 foils = [ coords for i in 1:num_secs ]
 airfoils = Foil.(foils)
 
-wing_chords = [1, 1, 0.2]
-wing_twists = [0, 0, 0]
-wing_spans = [2, 1]
+wing_chords = [1, 0.5, 0.2]
+wing_twists = [5, 2, 0]
+wing_spans = [2, 0.5]
 wing_dihedrals = [0, 45]
-wing_sweeps = [0, 30]
+wing_sweeps = [15, 30]
 
 wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
 wing = Wing(wing_right, wing_right)
 print_info(wing_right)
 
 ## Assembly
-wing_panels = make_panels(wing_right, spanwise_panels = 1, chordwise_panels = 5)
-test_panels = mesh_wing(wing, spanwise_panels = 1, chordwise_panels = 15)
+test_panels = mesh_wing(wing, spanwise_panels = 5, chordwise_panels = 5)
+cam_panels = mesh_cambers(wing_right, spanwise_panels = 1, chordwise_panels = 2)
+# wing_panels = make_panels(wing_right, spanwise_panels = 5, chordwise_panels = 1)
 
 ## Panel case
 ρ = 1.225
@@ -48,25 +49,28 @@ println("Lift-to-Drag Ratio (L/D): $(sum(cl)/sum(cdi))")
 
 
 ##
-using Plotly
+using Plots
 ##
 plotlyjs()
 
 
 ## Wing
 # wing_pts = horseshoe_vortex.(wing_panels)
-wing_collocs = horseshoe_collocation.(wing_panels)
+# wing_collocs = horseshoe_collocation.(cam_panels)
 pan_coords = (tuparray ∘ panel_coords).(test_panels)
-spans = [ pt[2] for pt in wing_collocs ]
+cam_coords = (tuparray ∘ panel_coords).(cam_panels)
+# spans = [ pt[2] for pt in wing_collocs ];
 
+##
 plot(spans, cl)
 plot(spans, cdi)
 
 ##
-plot(xaxis = "x", yaxis = "y", zaxis = "z")
-plot!.(pan_coords, line = :dash, color = :black, label = :none)
+plot(xaxis = "x", yaxis = "y", zaxis = "z", aspect_ratio = :equal, zlim = (-0.5, 5.0))
+plot!.(pan_coords, color = :black,label = :none)
+plot!.(cam_coords, color = :grey,label = :none)
 
-scatter!(wing_collocs, c = :grey, label = "Wing Collocation Points")
+scatter!(wing_collocs, c = :grey, markersize = 1, label = "Wing Collocation Points")
 
 # plot!.(wing_pts, c = :black, label = :none)
 
