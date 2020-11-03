@@ -7,7 +7,7 @@ includet("../src/FoilParametrization.jl")
 ##
 using .FoilParametrization: read_foil, foil_camthick, camthick_foil, cosine_foil, kulfan_CST, naca4
 using .AeroMDAO
-using .MathTools: linspace, tuparray
+using .MathTools: linspace, tuparray, tupvector
 using DelimitedFiles
 using Rotations
 
@@ -33,14 +33,15 @@ wing = Wing(wing_right, wing_right)
 print_info(wing_right)
 
 ## Assembly
-wing_panels = mesh_wing(wing, spanwise_panels = 5, chordwise_panels = 20)
-camber_panels = mesh_cambers(wing, spanwise_panels = 1, chordwise_panels = 20)
-horseshoe_panels = mesh_horseshoes(wing_right, spanwise_panels = 5, chordwise_panels = 20)
+wing_panels = mesh_wing(wing, spanwise_panels = 3, chordwise_panels = 3)
+# horseshoe_panels = mesh_horseshoes(wing_right, spanwise_panels = 10, chordwise_panels = 2)
+# camber_panels = mesh_cambers(wing_right, spanwise_panels = 5, chordwise_panels = 5)
+
 
 ## Panel case
 ρ = 1.225
 uniform = Uniform(10.0, 5.0, 0.0)
-@time lift, drag = solve_case(horseshoe_panels, uniform, ρ)
+@time lift, drag = solve_case(camber_panels, uniform, ρ)
 
 V = uniform.mag
 S = projected_area(wing_right)
@@ -53,32 +54,33 @@ println("Lift-to-Drag Ratio (L/D): $(sum(cl)/sum(cdi))")
 
 
 ##
-using Plots
+using Plots, LaTeXStrings
 ##
 plotlyjs()
 
 
 ## Wing
-wing_collocs = horseshoe_collocation.(horseshoe_panels)
+wing_collocs = horseshoe_collocation.(camber_panels)
 
 ##
 # spans = [ pt[2] for pt in wing_collocs ];
-# plot(spans, cl)
-# plot(spans, cdi)
+# plot(spans, cl, label = L"C_L")
+# plot!(spans, cdi, label = L"C_{D_i}")
 
 ##
-pan_coords = (tuparray ∘ panel_coords).(wing_panels)
-wing_coords = (tuparray ∘ panel_coords).(horseshoe_panels)
-cam_coords = (tuparray ∘ panel_coords).(camber_panels)
-
+wing_coords = (tuparray ∘ panel_coords).(wing_panels)
+horseshoe_coords = (tuparray ∘ panel_coords).(horseshoe_panels)
+camber_coords = (tuparray ∘ panel_coords).(camber_panels)
+vortex_rings = (tupvector ∘ vortex_ring).(camber_panels)
 
 ##
-plot(xaxis = "x", yaxis = "y", zaxis = "z", aspect_ratio = :equal, zlim = (-0.5, 5.0), size=(800, 600))
-plot!.(pan_coords, color = :black,label = :none)
-plot!.(cam_coords, color = :grey,label = :none)
-plot!.(wing_coords, color = :grey,label = :none)
+plot(xaxis = L"x", yaxis = L"y", zaxis = L"z", aspect_ratio = :equal, zlim = (-0.5, 5.0), size=(800, 600))
+# plot!.(wing_coords, color = :black,label = :none)
+# plot!.(horseshoe_coords, color = :grey, label = :none)
+plot!.(camber_coords, color = :grey, label = :none)
+plot!.(vortex_rings, color = :black, label = :none)
 
-scatter!(wing_collocs, c = :grey, markersize = 1, label = "Wing Collocation Points")
+scatter!(wing_collocs, c = :grey, markersize = 1, label = L"Wing Collocation Points")
 
 ##
 wing_lines = [ horseshoe_lines(panel, uniform) for panel in horseshoe_panels ]

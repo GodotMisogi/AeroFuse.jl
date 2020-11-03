@@ -88,7 +88,7 @@ bernstein_basis(x, n, k) = binomial(n, k) * bernstein_class(x, k, n - k)
 """
 Defines a cosine-spaced airfoil using the Class Shape Transformation method on a Bernstein polynomial basis, with support for leading edge modifications.
 """
-function kulfan_CST(alphas :: Array{<: Real, 2}, (dz_u, dz_l), coeff_LE :: Real = 0, num_points :: Int = 40)
+function kulfan_CST(alphas :: Array{<: Real, 2}, (dz_u, dz_l), coeff_LE :: Real = 0, num_points :: Integer = 40)
 
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
@@ -111,8 +111,8 @@ end
 """
 Converts an airfoil to its camber-thickness representation in cosine spacing.
 """
-function foil_camthick(coords :: Array{<: Real, 2})
-    upper, lower = (split_foil ∘ cosine_foil)(coords)
+function foil_camthick(coords :: Array{<: Real, 2}, num :: Integer = 40)
+    upper, lower = split_foil(cosine_foil(coords, n = num))
 
     xs, y_LE = lower[:,1], lower[1,2]   # Getting abscissa and leading edge ordinate
     y_upper, y_lower = upper[end:-1:1,2], lower[2:end,2] # Excluding leading edge point

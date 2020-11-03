@@ -1,6 +1,6 @@
 module AeroMDAO
 
-export Foil, Wing, HalfWing, Panel3D, Uniform, coordinates, print_info, plot_setup, transform, panel_coords, read_foil, mesh_horseshoes, mesh_wing, mesh_cambers, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines
+export Foil, Wing, HalfWing, Panel3D, Uniform, coordinates, print_info, plot_setup, transform, cut_foil, panel_coords, read_foil, mesh_horseshoes, mesh_wing, mesh_cambers, horseshoe_collocation, horseshoe_point, horseshoe_vortex, Uniform, solve_case, projected_area, horseshoe_lines
 
 include("MathTools.jl")
 include("FoilParametrization.jl")
@@ -29,7 +29,7 @@ end
 scale_foil(foil :: Foil, chord) = chord * foil.coords
 shift_foil(foil :: Foil, x, y, z) = [ x y z ] .+ foil.coords 
 cut_foil(foil :: Foil, num) = Foil(cosine_foil(foil.coords, n = num))
-cambers(foil :: Foil, num) = Foil(foil_camthick(cut_foil(foil, num).coords))
+cambers(foil :: Foil, num) = Foil(foil_camthick(cosine_foil(foil.coords), num + 1))
 
 coordinates(foil :: Foil) = [ foil.coords[:,1] (zeros ∘ length)(foil.coords[:,1]) foil.coords[:,2] ]
 
@@ -105,7 +105,7 @@ end
 
 coords_chopper(coords, divs) = [ (chop_sections.(coords[1:end-1], coords[2:end], divs)...)..., coords[end] ]
 
-function wing_coords(wing :: HalfWing, chordwise_panels :: Int64, spanwise_panels :: Int64, flip :: Bool = false)
+function wing_coords(wing :: HalfWing, chordwise_panels :: Integer, spanwise_panels :: Integer, flip :: Bool = false)
     leading_xyz = lead_wing(wing, flip)
     
     scaled_foils = wing.chords .* coordinates.(cut_foil.(wing.foils, chordwise_panels))
@@ -114,10 +114,10 @@ function wing_coords(wing :: HalfWing, chordwise_panels :: Int64, spanwise_panel
     coords_chopper(foil_coords, spanwise_panels)
 end
 
-function camber_coords(wing :: HalfWing, chordwise_panels :: Int64, spanwise_panels :: Int64, flip :: Bool = false)
+function camber_coords(wing :: HalfWing, chordwise_panels :: Integer, spanwise_panels :: Integer, flip :: Bool = false)
     leading_xyz = lead_wing(wing, flip)
     
-    scaled_foils = wing.chords .* coordinates.(cambers.(wing.foils, chordwise_panels))
+    scaled_foils = wing.chords .* (coordinates ∘ cambers).(wing.foils, chordwise_panels)
     foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) in zip(scaled_foils, wing.twists, leading_xyz) ]
 
     coords_chopper(foil_coords, spanwise_panels)
@@ -136,15 +136,15 @@ coordinates(lead, trail) = [ lead[end:-1:1,:]; trail ]
 function make_panels(coords) 
     spanlist = vectarray.(coords)    
     secs1secs2 = zip(spanlist, spanlist[2:end])
-    sux = [ ([ zip(root, root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) in secs1secs2 ]...)... ]
-    [ Panel3D(x...) for x in sux ]
+    sux = [ (collect ∘ zip)(root, root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) in secs1secs2 ]
+    # [ Panel3D(x...) for x in sux ]
 end
 
-mesh_horseshoes(obj :: HalfWing; spanwise_panels = 1, chordwise_panels = 1, flip = false) = make_panels(wing_chopper(wing_bounds(obj, flip)..., spanwise_panels, chordwise_panels))
+mesh_horseshoes(obj :: HalfWing; spanwise_panels = 1, chordwise_panels = 1, flip = false) = (make_panels ∘ wing_chopper)(wing_bounds(obj, flip)..., spanwise_panels, chordwise_panels)
 
-mesh_wing(wing :: HalfWing; chordwise_panels :: Int64 = 20, spanwise_panels:: Int64 = 3, flip = false) = make_panels(wing_coords(wing, chordwise_panels, spanwise_panels, flip))
+mesh_wing(wing :: HalfWing; chordwise_panels :: Integer = 20, spanwise_panels:: Integer = 3, flip = false) = (make_panels ∘ wing_coords)(wing, chordwise_panels, spanwise_panels, flip)
 
-mesh_cambers(wing :: HalfWing; chordwise_panels :: Int64 = 20, spanwise_panels:: Int64 = 3, flip = false) = make_panels(camber_coords(wing, chordwise_panels, spanwise_panels, flip))
+mesh_cambers(wing :: HalfWing; chordwise_panels :: Integer = 20, spanwise_panels:: Integer = 3, flip = false) = (make_panels ∘ camber_coords)(wing, chordwise_panels, spanwise_panels, flip)
 
 transform(lead, trail; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = lead * rotation' .+ translation, trail * rotation' .+ translation
 
@@ -188,11 +188,6 @@ function mesh_cambers(wing :: Wing; chordwise_panels = 20, spanwise_panels = 3)
 
     [ left_panels; right_panels ] 
 end
-
-
-# sections(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = sections(transform(wing_coords(obj)..., rotation = rotation, translation = translation)...)
-
-# coordinates(obj :: Union{Wing, HalfWing}; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = coordinates(transform(wing_chopper(wing_coords(obj)...)..., rotation = rotation, translation = translation)...)
 
 function print_info(wing :: Union{Wing, HalfWing})
     println("Span: ", span(wing), " m")
@@ -266,21 +261,18 @@ function velocity(r, line :: Line, Γ, ε = 1e-6)
     any(<(ε), norm.([r1, r2, r1_x_r2])) ? [0,0,0] : Γ / (4π) * dot(r0, r1 / norm(r1) .- r2 / norm(r2)) * r1_x_r2 / norm(r1_x_r2) 
 end
 
-
-struct VortexRing
+struct VortexArray
     vortex_lines :: Array{Line}
 end
 
 function Horseshoe(vortex_line :: Line, uniform :: Uniform3D, bound :: Float64 = 30.)
     r1, r2 = vortex_line.r1, vortex_line.r2
     vel = bound .* velocity(uniform) ./ uniform.mag
-    tline_1 = Line(r1 .+ vel, r1)
-    tline_2 = Line(r2, r2 .+ vel)
+    trailing_vortex_line_1 = Line(r1 .+ vel, r1)
+    trailing_vortex_line_2 = Line(r2, r2 .+ vel)
 
-    VortexRing([ tline_1, vortex_line, tline_2 ])
+    VortexArray([ trailing_vortex_line_1, vortex_line, trailing_vortex_line_2 ])
 end
-
-# function VortexRing()
 
 horseshoe_vortex(panel :: Panel3D) = horseshoe_line(panel.p1, panel.p2, panel.p3, panel.p4)
 
@@ -288,19 +280,38 @@ horseshoe_collocation(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, 
 
 horseshoe_lines(panel :: Panel3D, uniform :: Uniform3D) = Horseshoe(Line(horseshoe_vortex(panel)...), uniform)
 
-velocity(r, horseshoe :: VortexRing, Γ) = sum([ velocity(r, line, Γ) for line in horseshoe.vortex_lines ])
+function vortex_ring(p1, p2, p3, p4)
+    v1, v4 = SVector(quarter_point(p1, p2)...), SVector(quarter_point(p4, p3)...)
+    v2, v3 = v1 .+ p2 .- p1, v4 .+ p3 .- p4
+    [ v1, v2, v3, v4 ]
+end 
 
-downwash_velocity(r, horseshoe :: VortexRing, Γ) = let vels = [ velocity(r, line, Γ) for line in horseshoe.vortex_lines ]; first(vels) + last(vels) end
+vortex_ring(panel :: Panel3D) = vortex_ring(panel.p1, panel.p2, panel.p3, panel.p4)
+
+function VortexArray(panel :: Panel3D)
+    v1, v2, v3, v4 = vortex_ring(panel)
+
+    vortex_line = Line(v4, v1)
+    left_line = Line(v1, v2)
+    right_line = Line(v2, v3)
+    back_line = Line(v3, v4)
+
+    VortexArray([ vortex_line, left_line, back_line, right_line ])
+end
+
+velocity(r, vortex_line :: VortexArray, Γ) = sum([ velocity(r, line, Γ) for line in vortex_line.vortex_lines ])
+
+downwash_velocity(r, vortex_line :: VortexArray, Γ) = let vels = [ velocity(r, line, Γ) for line in vortex_line.vortex_lines ]; first(vels) + last(vels) end
 
 #---------------------------------Matrix setup--------------------------------------#
 
-influence_coefficient(collocation_point, horseshoe :: VortexRing, panel_normal) = dot(velocity(collocation_point, horseshoe, 1.), panel_normal)
+influence_coefficient(collocation_point, vortex_line :: VortexArray, panel_normal) = dot(velocity(collocation_point, vortex_line, 1.), panel_normal)
 
-induced_coefficient(collocation_point, horseshoe :: VortexRing, panel_normal) = dot(downwash_velocity(collocation_point, horseshoe, 1.), panel_normal)
+induced_coefficient(collocation_point, vortex_line :: VortexArray, panel_normal) = dot(downwash_velocity(collocation_point, vortex_line, 1.), panel_normal)
 
-influence_matrix(colpoints, horseshoes :: Array{<: VortexRing}, normals) = [ influence_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in horseshoes ]
+influence_matrix(colpoints, vortex_lines :: Array{<: VortexArray}, normals) = [ influence_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in vortex_lines ]
 
-induced_matrix(colpoints, horseshoes :: Array{<: VortexRing}, normals)  = [ induced_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in horseshoes ]
+induced_matrix(colpoints, vortex_lines :: Array{<: VortexArray}, normals)  = [ induced_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in vortex_lines ]
 
 boundary_condition(normals, velocity) = - [ dot(velocity, normal) for normal in normals ]
 
@@ -323,7 +334,8 @@ induced_drag(Γ, Δy, w_ind, ρ = 1.225) = -ρ * w_ind * Γ * Δy
 
 function solve_case(panels :: Array{Panel3D}, uniform :: Uniform3D, ρ = 1.225) 
     
-    horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ]
+    # horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ]
+    horseshoes = VortexArray.(panels)
     colpoints = horseshoe_collocation.(panels)
     normals = panel_normal.(panels)
     horsies = horseshoe_vortex.(panels) 

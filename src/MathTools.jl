@@ -45,6 +45,7 @@ slope(x1, y1, x2, y2) = (y2 - y1)/(x2 - x1)
 
 #---------------------Improving readablity and functionality with arrays------------------------#
 
+tupvector(xs) = [ tuple(x...) for x in xs ]
 tuparray(xs) = tuple.(eachcol(xs)...)
 vectarray(xs) = SVector.(eachcol(xs)...)
 
