@@ -133,11 +133,13 @@ wing_chopper(lead, trail, spanwise_panels, chordwise_panels) = chord_chopper(cho
 
 coordinates(lead, trail) = [ lead[end:-1:1,:]; trail ]
 
+panel(root_lead, root_trail, tip_trail, tip_lead) = [ root_lead  tip_lead;
+                                                      root_trail tip_trail ]
+
 function make_panels(coords) 
     spanlist = vectarray.(coords)    
     secs1secs2 = zip(spanlist, spanlist[2:end])
-    sux = [ (collect ∘ zip)(root, root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) in secs1secs2 ]
-    # [ Panel3D(x...) for x in sux ]
+    hcat([ Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) in secs1secs2 ]...)
 end
 
 mesh_horseshoes(obj :: HalfWing; spanwise_panels = 1, chordwise_panels = 1, flip = false) = (make_panels ∘ wing_chopper)(wing_bounds(obj, flip)..., spanwise_panels, chordwise_panels)
@@ -235,9 +237,10 @@ end
 panel_coords(panel :: Panel3D) = [ panel.p1'; panel.p2'; panel.p3'; panel.p4'; panel.p1' ] 
 
 collocation_point(panel :: Panel3D) = (panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4) / 4
-panel_normal(panel :: Panel3D) = let p21 = panel.p2 .- panel.p1, p41 = panel.p4 .- panel.p1, p21_x_p41 = p21 × p41;
-                                 p21_x_p41 / norm(p21_x_p41) end
-
+panel_normal(panel :: Panel3D) = let p21 = panel.p2 .- panel.p1, 
+                                     p41 = panel.p4 .- panel.p1, 
+                                     p21_x_p41 = p21 × p41;
+                                     p21_x_p41 / norm(p21_x_p41) end
 
 weighted(x1, x2, wx) = (1 - wx) * x1 + wx * x2
 weighted_point((x1, y1, z1), (x2, y2, z2), wx, wy, wz) = (weighted(x1, x2, wx), weighted(y1, y2, wy), weighted(z1, z2, wz))
@@ -296,7 +299,7 @@ function VortexArray(panel :: Panel3D)
     right_line = Line(v2, v3)
     back_line = Line(v3, v4)
 
-    VortexArray([ vortex_line, left_line, back_line, right_line ])
+    VortexArray([ left_line, vortex_line, back_line, right_line ])
 end
 
 velocity(r, vortex_line :: VortexArray, Γ) = sum([ velocity(r, line, Γ) for line in vortex_line.vortex_lines ])
@@ -315,6 +318,11 @@ induced_matrix(colpoints, vortex_lines :: Array{<: VortexArray}, normals)  = [ i
 
 boundary_condition(normals, velocity) = - [ dot(velocity, normal) for normal in normals ]
 
+function wake_panel(panel :: Panel3D, uniform :: Uniform3D, bound = 10.)
+    wake = bound * norm(panel.p2 .- panel.p1) .* velocity(uniform) ./ uniform.mag
+    Panel3D(panel.p2, panel.p2 .+ wake, panel.p3 .+ wake, panel.p3)
+end
+
 #-------------------------Force evaluations------------------------------------#
 
 lift(Γ, Δy, speed, ρ = 1.225) = ρ * speed * Γ * Δy
@@ -332,16 +340,37 @@ induced_drag(Γ, Δy, w_ind, ρ = 1.225) = -ρ * w_ind * Γ * Δy
 
 #------------------------Case setup and solution--------------------------#
 
-function solve_case(panels :: Array{Panel3D}, uniform :: Uniform3D, ρ = 1.225) 
+function accumap(f, n, xs)
+    data = [ xs ]
+    while n > 0
+        println(n)
+        ys = map(f, xs)
+        data = [ data..., ys ]
+        xs = ys
+        n = n - 1
+    end
+    return hcat(data...)
+end
+
+function solve_case(panels :: Array{Panel3D}, uniform :: Uniform3D, wake_num = 10, ρ = 1.225) 
     
-    # horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ]
-    horseshoes = VortexArray.(panels)
-    colpoints = horseshoe_collocation.(panels)
-    normals = panel_normal.(panels)
-    horsies = horseshoe_vortex.(panels) 
     vel = velocity(uniform)
 
-    Γs = influence_matrix(colpoints, horseshoes, normals) \ boundary_condition(normals, vel)
+    wake_panels = permutedims(accumap(panel -> wake_panel(panel, uniform), wake_num, panels[end,:]))
+    panels = [ panels; 
+               wake_panels ]
+
+    horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ][:]
+    horseshoes = VortexArray.(panels)[:]
+    colpoints = horseshoe_collocation.(panels)[:]
+    normals = panel_normal.(panels)[:]
+    horsies = horseshoe_vortex.(panels)[:]
+
+    inf = influence_matrix(colpoints, horseshoes, normals)
+    boco = boundary_condition(normals, vel)
+
+    Γs =  inf \ boco 
+
     w_inds = induced_matrix(colpoints, horseshoes, normals) * Γs
     Δys = (abs ∘ norm).([ line[2] .- line[1] for line in horsies ])
 
@@ -349,7 +378,7 @@ function solve_case(panels :: Array{Panel3D}, uniform :: Uniform3D, ρ = 1.225)
     Induced_drags = induced_drag.(Γs, Δys, w_inds, ρ)
     # Trefftz_drag = 
 
-    Lifts, Induced_drags
+    Lifts, Induced_drags, panels
 end
 
 
