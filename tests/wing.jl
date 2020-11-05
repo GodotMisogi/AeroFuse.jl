@@ -23,7 +23,7 @@ foils = [ cst_foil for i in 1:num_secs ]
 airfoils = Foil.(foils)
 
 wing_chords = [1, 0.5, 0.2]
-wing_twists = [5, 2, 0]
+wing_twists = [0, 0, 0]
 wing_spans = [2, 0.5]
 wing_dihedrals = [0, 45]
 wing_sweeps = [15, 30]
@@ -33,16 +33,32 @@ wing = Wing(wing_right, wing_right)
 print_info(wing_right)
 
 ## Assembly
-wing_panels = mesh_wing(wing, spanwise_panels = 3, chordwise_panels = 20)
-horseshoe_panels = mesh_horseshoes(wing_right, spanwise_panels = 3, chordwise_panels = 3)
-camber_panels = mesh_cambers(wing_right, spanwise_panels = 5, chordwise_panels = 20)
-
-
-## Panel case
 ρ = 1.225
-uniform = Uniform(10.0, 5.0, 0.0)
-@time lift, drag, camber_panels = solve_case(camber_panels, uniform, 3, ρ)
+uniform = Uniform(10.0, 3.0, 0.0)
 
+## Panel method: TO DO
+wing_panels = mesh_wing(wing, spanwise_panels = 5, chordwise_panels = 10)
+
+# ## Horseshoe method
+# horseshoe_panels = mesh_horseshoes(wing_right, spanwise_panels = 3, chordwise_panels = 3)
+# @time lift, drag = solve_horseshoes(horseshoe_panels, uniform, ρ)
+
+# # Post-processing
+# V = uniform.mag
+# S = projected_area(wing_right)
+# cl = lift/(ρ/2 * V^2 * S)
+# cdi = drag/(ρ/2 * V^2 * S)
+# println("Lift: $(sum(lift)) N")
+# println("Drag: $(sum(drag)) N")
+# println("Lift Coefficient: $(sum(cl)), Drag Coefficient: $(sum(cdi))")
+# println("Lift-to-Drag Ratio (L/D): $(sum(cl)/sum(cdi))")
+
+
+## Vortex lattice method
+camber_panels = mesh_cambers(wing_right, spanwise_panels = 5, chordwise_panels = 20)
+@time lift, drag, camber_panels = solve_vortex_rings(camber_panels, uniform, 10, 2.0, ρ)
+
+# Post-processing
 V = uniform.mag
 S = projected_area(wing_right)
 cl = lift/(ρ/2 * V^2 * S)
@@ -69,14 +85,14 @@ camber_collocs = horseshoe_collocation.(camber_panels)[:]
 # plot!(spans, cdi, label = L"C_{D_i}")
 
 ##
-# wing_coords = (tuparray ∘ panel_coords).(wing_panels)[:]
+wing_coords = (tuparray ∘ panel_coords).(wing_panels)[:]
 # horseshoe_coords = tuparray.(panel_coords.(horseshoe_panels)[:])
 camber_coords = (tuparray ∘ panel_coords).(camber_panels)[:]
 # vortex_rings = (tupvector ∘ vortex_ring).(camber_panels)
 
 ##
-plot(xaxis = L"x", yaxis = L"y", zaxis = L"z", aspect_ratio = :equal, zlim = (-0.5, 5.0), size=(800, 600))
-# plot!.(wing_coords, color = :black, label = :none)
+plot(xaxis = L"x", yaxis = L"y", zaxis = L"z", aspect_ratio = :equal, zlim = (-0.5, 5.0), size=(1280, 720))
+plot!.(wing_coords, color = :black, label = :none)
 # plot!.(horseshoe_coords, color = :grey, label = :none)
 plot!.(camber_coords, color = :grey, label = :none)
 # plot!.(vortex_rings, color = :black, label = :none)
@@ -84,7 +100,7 @@ plot!.(camber_coords, color = :grey, label = :none)
 # gui();
 
 # scatter!(horseshoe_collocs, c = :grey, markersize = 1, label = L"Wing Collocation Points")
-scatter!(camber_collocs, c = :grey, markersize = 1, label = L"Wing Collocation Points")
+scatter!(camber_collocs, c = :grey, markersize = 1, label = "Wing Collocation Points")
 
 ##
 wing_lines = [ horseshoe_lines(panel, uniform) for panel in horseshoe_panels ]
