@@ -1,6 +1,6 @@
 module AeroMDAO
 
-export Foil, Wing, HalfWing, Panel3D, Uniform, coordinates, print_info, plot_setup, transform, cut_foil, panel_coords, read_foil, mesh_horseshoes, mesh_wing, mesh_cambers, horseshoe_collocation, horseshoe_point, bound_vortex, Uniform, solve_horseshoes, solve_vortex_rings, projected_area, mean_aerodynamic_chord, horseshoe_lines, force_coefficient, moment_coefficient
+export Foil, Wing, HalfWing, Panel3D, Uniform, coordinates, print_info, plot_setup, transform, cut_foil, panel_coords, read_foil, mesh_horseshoes, mesh_wing, mesh_cambers, horseshoe_collocation, horseshoe_point, bound_vortex, Uniform, solve_horseshoes, solve_vortex_rings, projected_area, span, mean_aerodynamic_chord, horseshoe_lines, force_coefficient, moment_coefficient
 
 include("MathTools.jl")
 include("FoilParametrization.jl")
@@ -212,7 +212,7 @@ end
 
 Uniform(mag, α_deg, β_deg) = Uniform3D(mag, deg2rad(α_deg), deg2rad(β_deg))
 
-freestream_to_cartesian(r, θ, φ) = r .* (cos(θ) * cos(φ), cos(θ) * sin(φ), sin(θ))
+freestream_to_cartesian(r, θ, φ) = r .* (cos(θ) * cos(φ), -sin(φ), sin(θ) * cos(φ))
 
 velocity(uni :: Uniform3D) = freestream_to_cartesian(uni.mag, uni.α, uni.β)
 
@@ -235,6 +235,7 @@ struct Panel3D <: Panel
     # p2 —→— p3
 end
 
+area(panel :: Panel3D) = (abs ∘ norm)((panel.p2 - panel.p1) .* (panel.p3 - panel.p2))
 panel_coords(panel :: Panel3D) = [ panel.p1'; panel.p2'; panel.p3'; panel.p4'; panel.p1' ] 
 
 collocation_point(panel :: Panel3D) = (panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4) / 4
@@ -259,10 +260,10 @@ end
 function velocity(r, line :: Line, Γ, ε = 1e-6)
     r1 = r .- line.r1
     r2 = r .- line.r2
-    r0 = line.r2 .- line.r1
     r1_x_r2 = r1 × r2
+    nr1, nr2 = norm(r1), norm(r2)
 
-    any(<(ε), norm.([r1, r2, r1_x_r2])) ? [0,0,0] : Γ / (4π) * dot(r0, r1 / norm(r1) .- r2 / norm(r2)) * r1_x_r2 / norm(r1_x_r2) 
+    any(<(ε), norm.([r1, r2, r1_x_r2])) ? [0,0,0] : Γ/(4π) * (1/nr1 + 1/nr2) * (r1_x_r2) / ( nr1 * nr2 + dot(r1, r2) )
 end
 
 abstract type AbstractVortexArray <: Aircraft end
@@ -290,6 +291,14 @@ struct VortexRing <: AbstractVortexArray
     vortex_lines :: Array{Line}
 end
 
+function vortex_ring(p1, p2, p3, p4)
+    v1, v4 = SVector(quarter_point(p1, p2)...), SVector(quarter_point(p4, p3)...)
+    v2, v3 = v1 .+ p2 .- p1, v4 .+ p3 .- p4
+    [ v1, v2, v3, v4 ]
+end 
+
+vortex_ring(panel :: Panel3D) = vortex_ring(panel.p1, panel.p2, panel.p3, panel.p4)
+
 function VortexRing(panel :: Panel3D)
     v1, v2, v3, v4 = vortex_ring(panel)
 
@@ -301,22 +310,13 @@ function VortexRing(panel :: Panel3D)
     VortexRing([ left_line, vortex_line, back_line, right_line ])
 end
 
-function vortex_ring(p1, p2, p3, p4)
-    v1, v4 = SVector(quarter_point(p1, p2)...), SVector(quarter_point(p4, p3)...)
-    v2, v3 = v1 .+ p2 .- p1, v4 .+ p3 .- p4
-    [ v1, v2, v3, v4 ]
-end 
+bound_vortex_center(vortex_ring :: AbstractVortexArray) = let bound_vortex = vortex_ring.vortex_lines[2]; (bound_vortex.r1 .+ bound_vortex.r2) / 2 end
 
-vortex_ring(panel :: Panel3D) = vortex_ring(panel.p1, panel.p2, panel.p3, panel.p4)
-ring_coords
+bound_vortex_vector(vortex_ring :: AbstractVortexArray) = let bound_vortex = vortex_ring.vortex_lines[2]; (bound_vortex.r2 .- bound_vortex.r1) end
 
-bound_vortex_center(horseshoe :: Horseshoe) = let bound_vortex = horseshoe.vortex_lines[2]; (bound_vortex.r1 .+ bound_vortex.r2) / 2 end
+velocity(r, vortex_line :: AbstractVortexArray, Γ) = sum(velocity(r, line, Γ) for line in vortex_line.vortex_lines)
 
-bound_vortex_vector(horseshoe :: Horseshoe) = let bound_vortex = horseshoe.vortex_lines[2]; (bound_vortex.r2 .- bound_vortex.r1) end
-
-velocity(r, vortex_line :: AbstractVortexArray, Γ) = sum([ velocity(r, line, Γ) for line in vortex_line.vortex_lines ])
-
-downwash_velocity(r, vortex_line :: AbstractVortexArray, Γ) = let vels = [ velocity(r, line, Γ) for line in vortex_line.vortex_lines ]; first(vels) + last(vels) end
+downwash_velocity(r, vortex_line :: AbstractVortexArray, Γ) = let trailing_lines = [ first(vortex_line.vortex_lines), last(vortex_line.vortex_lines) ]; sum(velocity(r, line, Γ) for line in vortex_line.vortex_lines) end
 
 #---------------------------------Matrix setup--------------------------------------#
 
@@ -360,14 +360,14 @@ end
 # end
 
 # Horseshoe forces and moments
-kutta_force(Γ, horseshoe :: AbstractVortexArray, uniform :: Uniform3D, ρ = 1.225) = ρ * Γ * (velocity(uniform) .+ velocity(bound_vortex_center(horseshoe), horseshoe, Γ)) × bound_vortex_vector(horseshoe)
-
-function horseshoe_forces(horseshoes :: Array{Horseshoe}, colpoints, normals, Γs, uniform :: Uniform3D, ρ)
-    w_inds = induced_matrix(colpoints, horseshoes, normals) * Γs
-    forces = [ kutta_force(Γ, horseshoe, uniform, ρ) for (Γ, horseshoe) in zip(Γs, horseshoes) ]
+function kutta_force(Γs, vortices :: Array{<: AbstractVortexArray}, uniform :: Uniform3D, ρ = 1.225)
+    Γ_rings = zip(Γs, vortices)
+    [ sum(velocity(uniform) .+ downwash_velocity(bound_vortex_center(vortex_focus), vortex, Γ) for (Γ, vortex) in Γ_rings) × bound_vortex_vector(vortex_focus) * ρ * Γ_focus for (Γ_focus, vortex_focus) in Γ_rings ] 
 end
 
-horseshoe_moments(horseshoes :: Array{Horseshoe}, forces, r_ref) = [ (r_ref .- bound_vortex_vector(horseshoe)) × force for (force, horseshoe) in zip(forces, horseshoes) ]
+# forces(vortex_rings :: Array{<: AbstractVortexArray}, Γs, uniform :: Uniform3D, ρ) = [ kutta_force(Γ, vortex_ring, uniform, ρ) for (Γ, vortex_ring) in zip(Γs, vortex_rings) ]
+
+moments(vortex_rings :: Array{<: AbstractVortexArray}, forces, r_ref) = [ (bound_vortex_center(vortex_ring) .- r_ref) × force for (force, vortex_ring) in zip(forces, vortex_rings) ]
 
 # Aerodynamic coefficients
 force_coefficient(F, ρ, V, S) = F / (0.5 * ρ * V^2 * S)
@@ -386,43 +386,63 @@ function solve_horseshoes(panels :: Array{Panel3D}, uniform :: Uniform3D, r_ref 
     inf = influence_matrix(colpoints, horseshoes, normals)
     boco = boundary_condition(normals, vel)
 
-    Γs =  inf \ boco
+    Γs = inf \ boco
 
-    forces = horseshoe_forces(horseshoes, colpoints, normals, Γs, uniform, ρ)
-    moments = horseshoe_moments(horseshoes, forces, r_ref)
+    # Force computations
+    geom_forces = kutta_force(Γs, horseshoes, uniform, ρ)
+    geom_moments = moments(horseshoes, geom_forces, r_ref)
 
-    force, moment = sum(forces), sum(moments)
+    force, moment = sum(geom_forces), sum(geom_moments)
     drag = dot(force, vel ./ uniform.mag)
     
     stable_forces = stability_axes(force, uniform)
     stable_moments = stability_axes([ -moment[1], moment[2], -moment[3] ], uniform)
 
-    forces, moments, stable_forces, stable_moments, drag
+    geom_forces, geom_moments, stable_forces, stable_moments, drag
 end
 
-function solve_vortex_rings(panels :: Array{Panel3D}, uniform :: Uniform3D, wake_num = 10, wake_length = 0.5, ρ = 1.225) 
+function solve_vortex_rings(panels :: Array{Panel3D}, uniform :: Uniform3D, wake_num = 10, wake_length = 30., r_ref = (0.25, 0, 0), ρ = 1.225) 
     
     vel = velocity(uniform)
 
     first_panels = panels[1,:]
     last_panels = panels[end,:]
 
-    wake_panels = (permutedims ∘ accumap)(panel -> wake_panel(panel, uniform, wake_length), wake_num, last_panels)
-    panels = [ panels; 
-               wake_panels ]
+    wake_panels = (permutedims ∘ accumap)(panel -> wake_panel(panel, uniform, wake_length / wake_num), wake_num, last_panels)
+    woke_panels = [ panels; 
+                    wake_panels ]
 
-    horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ][:]
-    horseshoes = VortexRing.(panels)[:]
-    colpoints = horseshoe_collocation.(panels)[:]
-    normals = panel_normal.(panels)[:]
-    horsies = bound_vortex.(panels)[:]
+    vortex_rings_2D = VortexRing.(woke_panels)
+    vortex_rings = vortex_rings_2D[:]
+    colpoints = horseshoe_collocation.(woke_panels)[:]
+    normals = panel_normal.(woke_panels)[:]
+    horsies = bound_vortex.(woke_panels)[:]
 
-    inf = influence_matrix(colpoints, horseshoes, normals)
+    inf = influence_matrix(colpoints, vortex_rings, normals)
     boco = boundary_condition(normals, vel)
 
     Γs =  inf \ boco
-    Γs = reshape(Γs, (length(panels[:,1]), length(panels[1,:])))
-    Γs, panels
+
+    # # Force computations
+    Γs = reshape(Γs, (length(woke_panels[:,1]), length(woke_panels[1,:])))[1:end-wake_num,:]
+    vortex_rings_2D = vortex_rings_2D[1:end-wake_num,:]
+
+    le_forces = kutta_force(Γs[1,:], vortex_rings_2D[1,:], uniform, ρ)
+    trailing_forces = kutta_force(map(-, Γs[3:end,:], Γs[2:end-1,:]), vortex_rings_2D[2:end-1,:], uniform, ρ)
+
+    geom_forces = [ permutedims(le_forces); trailing_forces ][:]
+    
+    geom_moments = moments(vortex_rings, geom_forces, r_ref)
+
+    pressures = geom_forces ./ area.(panels[:])
+
+    force, moment = sum(geom_forces), sum(geom_moments)
+    drag = dot(force, vel ./ uniform.mag)
+    
+    stable_forces = stability_axes(force, uniform)
+    stable_moments = stability_axes([ -moment[1], moment[2], -moment[3] ], uniform)
+
+    geom_forces, geom_moments, stable_forces, stable_moments, pressures, drag, woke_panels[:]
 end
 
 end
