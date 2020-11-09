@@ -3,6 +3,7 @@ module MathTools
 using StaticArrays
 using Base.Iterators
 using Base: product
+using Interpolations
 
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
@@ -68,6 +69,27 @@ ord2diff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2]
 
 
 adj3(xs) = [ xs[1:end-2,:] xs[2:end-1,:] xs[3:end,:] ]
+
+
+#-----------Spacing formulas---------------------------#
+
+"""
+Provides the projections to the x-axis for a circle of given diameter and center.
+"""
+cosine_dist(x_center :: Real, diameter :: Real, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(-π, stop = 0, length = n))
+
+function cosine_interp(coords :: Array{<:Real, 2}, n :: Integer = 40)
+    xs, ys = coords[:,1], coords[:,2]
+
+    d = maximum(xs) - minimum(xs)
+    x_center = (maximum(xs) + minimum(xs)) / 2
+    x_circ = cosine_dist(x_center, d, n)
+    
+    itp_circ = LinearInterpolation(xs, ys)
+    y_circ = itp_circ(x_circ)
+
+    [ x_circ y_circ ]
+end
 
 
 end

@@ -1,13 +1,13 @@
 module AeroMDAO
 
-export Foil, Wing, HalfWing, Panel3D, Uniform, coordinates, print_info, plot_setup, transform, cut_foil, panel_coords, read_foil, mesh_horseshoes, mesh_wing, mesh_cambers, horseshoe_collocation, horseshoe_point, bound_vortex, Uniform, solve_horseshoes, solve_vortex_rings, projected_area, span, mean_aerodynamic_chord, horseshoe_lines, force_coefficient, moment_coefficient
+export Foil, Wing, HalfWing, Panel3D, Uniform, coordinates, print_info, plot_setup, transform, cut_foil, panel_coords, read_foil, mesh_horseshoes, mesh_wing, mesh_cambers, vortex_collocation, horseshoe_point, bound_leg, Uniform, solve_horseshoes, solve_vortex_legs, projected_area, span, mean_aerodynamic_chord, horseshoe_lines, print_dynamics, streamlines
 
 include("MathTools.jl")
 include("FoilParametrization.jl")
 
 import Base: *, +
 using Base.Iterators: peel
-using .MathTools: fwdsum, fwddiff, fwddiv, tuparray, vectarray, dot, linspace
+using .MathTools: fwdsum, fwddiff, fwddiv, tuparray, vectarray, dot, linspace, cosine_dist
 using .FoilParametrization: read_foil, cosine_foil, foil_camthick
 using StaticArrays
 using LinearAlgebra
@@ -29,7 +29,7 @@ end
 scale_foil(foil :: Foil, chord) = chord * foil.coords
 shift_foil(foil :: Foil, x, y, z) = [ x y z ] .+ foil.coords 
 cut_foil(foil :: Foil, num) = Foil(cosine_foil(foil.coords, n = num))
-cambers(foil :: Foil, num) = Foil(foil_camthick(cosine_foil(foil.coords), num + 1))
+camber(foil :: Foil, num) = Foil(foil_camthick(cosine_foil(foil.coords), num + 1))
 
 coordinates(foil :: Foil) = [ foil.coords[:,1] (zeros ∘ length)(foil.coords[:,1]) foil.coords[:,2] ]
 
@@ -81,7 +81,7 @@ function mean_aerodynamic_chord(wing :: HalfWing)
 end
 
 vector_point(x1, x2, μ) = x1 .+ μ .* (x2 .- x1)
-chop_sections(set1, set2, divs) = [ vector_point.(set1, set2, μ) for μ in 0:1/divs:1 ][1:end-1]
+chop_sections(set1, set2, divs) = [ vector_point.(set1, set2, μ) for μ in cosine_dist(0.5, 1, divs + 1) ][1:end-1]
 
 function lead_wing(wing :: HalfWing, flip :: Bool = false)
     spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
@@ -108,7 +108,7 @@ coords_chopper(coords, divs) = [ (chop_sections.(coords[1:end-1], coords[2:end],
 function wing_coords(wing :: HalfWing, chordwise_panels :: Integer, spanwise_panels :: Integer, flip :: Bool = false)
     leading_xyz = lead_wing(wing, flip)
     
-    scaled_foils = wing.chords .* coordinates.(cut_foil.(wing.foils, chordwise_panels))
+    scaled_foils = wing.chords .* (coordinates ∘ cut_foil).(wing.foils, chordwise_panels)
     foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) in zip(scaled_foils, wing.twists, leading_xyz) ]
 
     coords_chopper(foil_coords, spanwise_panels)
@@ -117,7 +117,7 @@ end
 function camber_coords(wing :: HalfWing, chordwise_panels :: Integer, spanwise_panels :: Integer, flip :: Bool = false)
     leading_xyz = lead_wing(wing, flip)
     
-    scaled_foils = wing.chords .* (coordinates ∘ cambers).(wing.foils, chordwise_panels)
+    scaled_foils = wing.chords .* (coordinates ∘ camber).(wing.foils, chordwise_panels)
     foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) in zip(scaled_foils, wing.twists, leading_xyz) ]
 
     coords_chopper(foil_coords, spanwise_panels)
@@ -125,7 +125,7 @@ end
 
 chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) in zip(lead, trail) ]
 
-chord_chopper(coords, divs) = [ [ vector_point(chord[1,:], chord[2,:], μ) for μ in 0:1/divs:1 ] for chord in coords ]
+chord_chopper(coords, divs) = [ [ vector_point(chord[1,:], chord[2,:], μ) for μ in cosine_dist(0.5, 1, divs + 1) ] for chord in coords ]
 
 span_chopper(lead, trail, div) = coords_chopper(lead, div), coords_chopper(trail, div)
 
@@ -249,7 +249,7 @@ weighted_point((x1, y1, z1), (x2, y2, z2), wx, wy, wz) = (weighted(x1, x2, wx), 
 quarter_point(p1, p2) = weighted_point(p1, p2, 1/4, 0, 1/4)
 three_quarter_point(p1, p2) = weighted_point(p1, p2, 3/4, 0, 3/4)
 
-horseshoe_line(p1, p2, p3, p4) = [ quarter_point(p1, p2); quarter_point(p4, p3) ]
+bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2); quarter_point(p4, p3) ]
 collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) .+ three_quarter_point(p4, p3) ) ./ 2
 
 struct Line
@@ -264,6 +264,7 @@ function velocity(r, line :: Line, Γ, ε = 1e-6)
     nr1, nr2 = norm(r1), norm(r2)
 
     any(<(ε), norm.([r1, r2, r1_x_r2])) ? [0,0,0] : Γ/(4π) * (1/nr1 + 1/nr2) * (r1_x_r2) / ( nr1 * nr2 + dot(r1, r2) )
+    # Γ/(4π) * (r1_x_r2) / norm(r1_x_r2)^2 * dot(r1 - r2, r1 / nr1 - r2/nr2)
 end
 
 abstract type AbstractVortexArray <: Aircraft end
@@ -272,20 +273,20 @@ struct Horseshoe <: AbstractVortexArray
     vortex_lines :: Array{Line}
 end
 
-function Horseshoe(vortex_line :: Line, uniform :: Uniform3D, bound :: Float64 = 30.)
-    r1, r2 = vortex_line.r1, vortex_line.r2
-    vel = bound .* velocity(uniform) ./ uniform.mag
+function Horseshoe(bound_leg :: Line, direction :: NTuple{3, Float64}, bound :: Float64 = 30.)
+    r1, r2 = bound_leg.r1, bound_leg.r2
+    vel = bound .* direction
     left_line = Line(r1 .+ vel, r1)
     right_line = Line(r2, r2 .+ vel)
 
-    Horseshoe([ left_line, vortex_line, right_line ])
+    Horseshoe([ left_line, bound_leg, right_line ])
 end
 
-bound_vortex(panel :: Panel3D) = horseshoe_line(panel.p1, panel.p2, panel.p3, panel.p4)
+bound_leg(panel :: Panel3D) = bound_leg(panel.p1, panel.p2, panel.p3, panel.p4)
 
-horseshoe_collocation(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, panel.p3, panel.p4)
+vortex_collocation(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, panel.p3, panel.p4)
 
-horseshoe_lines(panel :: Panel3D, uniform :: Uniform3D) = Horseshoe(Line(bound_vortex(panel)...), uniform)
+horseshoe_lines(panel :: Panel3D, uniform :: Uniform3D) = Horseshoe(Line(bound_leg(panel)...), velocity(uniform) ./ uniform.mag)
 
 struct VortexRing <: AbstractVortexArray
     vortex_lines :: Array{Line}
@@ -302,21 +303,23 @@ vortex_ring(panel :: Panel3D) = vortex_ring(panel.p1, panel.p2, panel.p3, panel.
 function VortexRing(panel :: Panel3D)
     v1, v2, v3, v4 = vortex_ring(panel)
 
-    vortex_line = Line(v1, v4)
+    bound_leg = Line(v1, v4)
     left_line = Line(v2, v1)
     right_line = Line(v3, v2)
     back_line = Line(v4, v3)
 
-    VortexRing([ left_line, vortex_line, back_line, right_line ])
+    VortexRing([ left_line, bound_leg, back_line, right_line ])
 end
 
-bound_vortex_center(vortex_ring :: AbstractVortexArray) = let bound_vortex = vortex_ring.vortex_lines[2]; (bound_vortex.r1 .+ bound_vortex.r2) / 2 end
+bound_leg_center(vortex_ring :: AbstractVortexArray) = let bound_leg = vortex_ring.vortex_lines[2]; (bound_leg.r1 .+ bound_leg.r2) / 2 end
 
-bound_vortex_vector(vortex_ring :: AbstractVortexArray) = let bound_vortex = vortex_ring.vortex_lines[2]; (bound_vortex.r2 .- bound_vortex.r1) end
+bound_leg_vector(vortex_ring :: AbstractVortexArray) = let bound_leg = vortex_ring.vortex_lines[2]; (bound_leg.r2 .- bound_leg.r1) end
 
-velocity(r, vortex_line :: AbstractVortexArray, Γ) = sum(velocity(r, line, Γ) for line in vortex_line.vortex_lines)
+sum_vortices(r, vortex_lines :: Array{Line}, Γ) = sum(velocity(r, line, Γ) for line in vortex_lines)
 
-downwash_velocity(r, vortex_line :: AbstractVortexArray, Γ) = let trailing_lines = [ first(vortex_line.vortex_lines), last(vortex_line.vortex_lines) ]; sum(velocity(r, line, Γ) for line in vortex_line.vortex_lines) end
+velocity(r, vortex_ring :: AbstractVortexArray, Γ) = sum_vortices(r, vortex_ring.vortex_lines, Γ)
+
+downwash_velocity(r, vortex_ring :: AbstractVortexArray, Γ) = let trailing_lines = [ first(vortex_ring.vortex_lines), last(vortex_ring.vortex_lines) ]; sum_vortices(r, trailing_lines, Γ) end
 
 #---------------------------------Matrix setup--------------------------------------#
 
@@ -324,19 +327,18 @@ influence_coefficient(collocation_point, vortex_line :: AbstractVortexArray, pan
 
 induced_coefficient(collocation_point, vortex_line :: AbstractVortexArray, panel_normal) = dot(downwash_velocity(collocation_point, vortex_line, 1.), panel_normal)
 
-influence_matrix(colpoints, vortex_lines :: Array{<: AbstractVortexArray}, normals) = [ influence_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in vortex_lines ]
+influence_matrix(colpoints, vortex_lines :: Array{<: AbstractVortexArray}, normals) = [ influence_coefficient(colpoint_i, horsie_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsie_j in vortex_lines ]
 
-induced_matrix(colpoints, vortex_lines :: Array{<: AbstractVortexArray}, normals)  = [ induced_coefficient(colpoint_i, horsey_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsey_j in vortex_lines ]
+induced_matrix(colpoints, vortex_lines :: Array{<: AbstractVortexArray}, normals)  = [ induced_coefficient(colpoint_i, horsie_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsie_j in vortex_lines ]
 
 boundary_condition(normals, velocity) = - [ dot(velocity, normal) for normal in normals ]
 
 function accumap(f, n, xs)
     data = [ xs ]
-    while n > 0
+    for i = 1:n
         ys = map(f, xs)
         data = [ data..., ys ]
         xs = ys
-        n = n - 1
     end
     return hcat(data...)
 end
@@ -345,6 +347,8 @@ function wake_panel(panel :: Panel3D, uniform :: Uniform3D, bound = 1.)
     wake = bound .* velocity(uniform) ./ uniform.mag
     Panel3D(panel.p2, panel.p2 .+ wake, panel.p3 .+ wake, panel.p3)
 end
+
+make_wake(last_panels :: Array{Panel3D}, uniform :: Uniform3D, wake_length, wake_num) = (permutedims ∘ accumap)(panel -> wake_panel(panel, uniform, wake_length / wake_num), wake_num, last_panels)
 
 
 #-------------------------Force evaluations------------------------------------#
@@ -362,16 +366,16 @@ end
 # Horseshoe forces and moments
 function kutta_force(Γs, vortices :: Array{<: AbstractVortexArray}, uniform :: Uniform3D, ρ = 1.225)
     Γ_rings = zip(Γs, vortices)
-    [ sum(velocity(uniform) .+ downwash_velocity(bound_vortex_center(vortex_focus), vortex, Γ) for (Γ, vortex) in Γ_rings) × bound_vortex_vector(vortex_focus) * ρ * Γ_focus for (Γ_focus, vortex_focus) in Γ_rings ] 
+    [ sum(velocity(uniform) .+ velocity(bound_leg_center(vortex_focus), vortex, Γ) for (Γ, vortex) in Γ_rings) × bound_leg_vector(vortex_focus) * ρ * Γ_focus for (Γ_focus, vortex_focus) in Γ_rings ] 
 end
 
-# forces(vortex_rings :: Array{<: AbstractVortexArray}, Γs, uniform :: Uniform3D, ρ) = [ kutta_force(Γ, vortex_ring, uniform, ρ) for (Γ, vortex_ring) in zip(Γs, vortex_rings) ]
+# forces(vortex_legs :: Array{<: AbstractVortexArray}, Γs, uniform :: Uniform3D, ρ) = [ kutta_force(Γ, vortex_ring, uniform, ρ) for (Γ, vortex_ring) in zip(Γs, vortex_legs) ]
 
-moments(vortex_rings :: Array{<: AbstractVortexArray}, forces, r_ref) = [ (bound_vortex_center(vortex_ring) .- r_ref) × force for (force, vortex_ring) in zip(forces, vortex_rings) ]
+moments(vortex_legs :: Array{<: AbstractVortexArray}, forces, r_ref) = [ (bound_leg_center(vortex_ring) .- r_ref) × force for (force, vortex_ring) in zip(forces, vortex_legs) ]
 
 # Aerodynamic coefficients
 force_coefficient(F, ρ, V, S) = F / (0.5 * ρ * V^2 * S)
-moment_coefficient(M, ρ, V, S, c) = M / (0.5 * ρ * V^2 * S * c)
+moment_coefficient(M, ρ, V, S, ref_length) = M / (0.5 * ρ * V^2 * S * ref_length)
 
 #------------------------Case setup and solution--------------------------#
 
@@ -379,16 +383,25 @@ function solve_horseshoes(panels :: Array{Panel3D}, uniform :: Uniform3D, r_ref 
     
     vel = velocity(uniform)
     horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ][:]
-    colpoints = horseshoe_collocation.(panels)[:]
+    colpoints = vortex_collocation.(panels)[:]
     normals = panel_normal.(panels)[:]
-    horsies = bound_vortex.(panels)[:]
+    horsies = bound_leg.(panels)[:]
 
     inf = influence_matrix(colpoints, horseshoes, normals)
+    
     boco = boundary_condition(normals, vel)
 
     Γs = inf \ boco
 
-    # Force computations
+    println(Γs)
+
+    # w_inds = induced_matrix(colpoints, horseshoes, normals) * Γs
+    # Δys = (norm ∘ bound_leg_vector).(horseshoes)
+    # lols = zip(Γs, Δys, w_inds)
+    # lift = [ ρ*uniform.mag*Γj*Δyj for (Γj, Δyj, w_indj) in lols ]
+    # drag = [ -ρ*uniform.mag*w_indj*Γj*Δyj for (Γj, Δyj, w_indj) in lols ]
+
+    # # Force computations
     geom_forces = kutta_force(Γs, horseshoes, uniform, ρ)
     geom_moments = moments(horseshoes, geom_forces, r_ref)
 
@@ -396,43 +409,53 @@ function solve_horseshoes(panels :: Array{Panel3D}, uniform :: Uniform3D, r_ref 
     drag = dot(force, vel ./ uniform.mag)
     
     stable_forces = stability_axes(force, uniform)
-    stable_moments = stability_axes([ -moment[1], moment[2], -moment[3] ], uniform)
+    stable_moments = stability_axes([ moment[1], -moment[2], moment[3] ], uniform)
 
-    geom_forces, geom_moments, stable_forces, stable_moments, drag
+    geom_forces, geom_moments, stable_forces, stable_moments, drag, Γs, horseshoes
+    # lift, drag
 end
 
-function solve_vortex_rings(panels :: Array{Panel3D}, uniform :: Uniform3D, wake_num = 10, wake_length = 30., r_ref = (0.25, 0, 0), ρ = 1.225) 
+function streamlines(point, uniform :: Uniform3D, horseshoes, Γs, length, num_steps = 100)
+    streamlines = [point]
+    for i in 1:num_steps
+        update = velocity(uniform) .+ sum(velocity(streamlines[end], horseshoe, Γ) for (horseshoe, Γ) in zip(horseshoes, Γs))
+        streamlines = [ streamlines..., streamlines[end] .+ (update/norm(update) * length / num_steps)  ]
+    end
+    streamlines
+end
+
+function solve_vortex_rings(panels :: Array{Panel3D}, uniform :: Uniform3D, wake_num = 10, wake_length = 30., r_ref = (0.25, 0, 0)) 
     
     vel = velocity(uniform)
 
     first_panels = panels[1,:]
     last_panels = panels[end,:]
 
-    wake_panels = (permutedims ∘ accumap)(panel -> wake_panel(panel, uniform, wake_length / wake_num), wake_num, last_panels)
-    woke_panels = [ panels; 
+    wake_panels = make_wake(last_panels, uniform, wake_length, wake_num)
+    woke_panels = [ panels;
                     wake_panels ]
 
-    vortex_rings_2D = VortexRing.(woke_panels)
-    vortex_rings = vortex_rings_2D[:]
-    colpoints = horseshoe_collocation.(woke_panels)[:]
+    vortex_legs_2D = VortexRing.(woke_panels)
+    vortex_legs = vortex_legs_2D[:]
+    colpoints = vortex_collocation.(woke_panels)[:]
     normals = panel_normal.(woke_panels)[:]
-    horsies = bound_vortex.(woke_panels)[:]
+    horsies = bound_leg.(woke_panels)[:]
 
-    inf = influence_matrix(colpoints, vortex_rings, normals)
+    inf = influence_matrix(colpoints, vortex_legs, normals)
     boco = boundary_condition(normals, vel)
 
     Γs =  inf \ boco
 
     # # Force computations
     Γs = reshape(Γs, (length(woke_panels[:,1]), length(woke_panels[1,:])))[1:end-wake_num,:]
-    vortex_rings_2D = vortex_rings_2D[1:end-wake_num,:]
+    vortex_legs_2D = vortex_legs_2D[1:end-wake_num,:]
 
-    le_forces = kutta_force(Γs[1,:], vortex_rings_2D[1,:], uniform, ρ)
-    trailing_forces = kutta_force(map(-, Γs[3:end,:], Γs[2:end-1,:]), vortex_rings_2D[2:end-1,:], uniform, ρ)
+    le_forces = kutta_force(Γs[1,:], vortex_legs_2D[1,:], uniform, ρ)
+    trailing_forces = kutta_force(map(-, Γs[3:end,:], Γs[2:end-1,:]), vortex_legs_2D[2:end-1,:], uniform, ρ)
 
     geom_forces = [ permutedims(le_forces); trailing_forces ][:]
     
-    geom_moments = moments(vortex_rings, geom_forces, r_ref)
+    geom_moments = moments(vortex_legs, geom_forces, r_ref)
 
     pressures = geom_forces ./ area.(panels[:])
 
@@ -443,6 +466,26 @@ function solve_vortex_rings(panels :: Array{Panel3D}, uniform :: Uniform3D, wake
     stable_moments = stability_axes([ -moment[1], moment[2], -moment[3] ], uniform)
 
     geom_forces, geom_moments, stable_forces, stable_moments, pressures, drag, woke_panels[:]
+end
+
+function print_dynamics(force, moment, drag, V, S, b, c, ρ = 1.225)
+    CDi = force_coefficient(drag, ρ, V, S)
+    CY = force_coefficient(force[2], ρ, V, S)
+    CL = force_coefficient(force[3], ρ, V, S)
+
+    Cl = moment_coefficient(moment[1], ρ, V, S, b)
+    Cm = moment_coefficient(moment[2], ρ, V, S, c)
+    Cn = moment_coefficient(moment[3], ρ, V, S, b)
+
+    println("Total Force: $force N")
+    println("Total Moment: $moment N-m")
+    println("Lift Coefficient (CL): $CL")
+    println("Drag Coefficient (CDi): $CDi")
+    println("Side Force Coefficient (CY): $CY")
+    println("Lift-to-Drag Ratio (L/D): $(CL/CDi)")
+    println("Rolling Moment Coefficient (Cl): $Cl")
+    println("Pitching Moment Coefficient (Cm): $Cm")
+    println("Yawing Moment Coefficient (Cn): $Cn")
 end
 
 end

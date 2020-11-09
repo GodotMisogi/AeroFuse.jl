@@ -3,9 +3,8 @@ module FoilParametrization
 include("MathTools.jl")
 using Base.Math
 using Base.Iterators
-using Interpolations
 using DelimitedFiles
-using .MathTools: slope, splitat, adj3
+using .MathTools: slope, splitat, adj3, cosine_interp, cosine_dist
 
 
 #-------------FOIL PROCESSING------------------#
@@ -29,24 +28,6 @@ function split_foil(coords)
         end
     end
     (coords, [])
-end
-
-"""
-Provides the projections to the x-axis for a circle of given diameter and center.
-"""
-cosine_dist(x_center :: Real, diameter :: Real, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(-π, stop = 0, length = n))
-
-function cosine_interp(coords :: Array{<:Real, 2}, n :: Integer = 40)
-    xs, ys = coords[:,1], coords[:,2]
-
-    d = maximum(xs) - minimum(xs)
-    x_center = (maximum(xs) + minimum(xs)) / 2
-    x_circ = cosine_dist(x_center, d, n)
-    
-    itp_circ = LinearInterpolation(xs, ys)
-    y_circ = itp_circ(x_circ)
-
-    [ x_circ y_circ ]
 end
 
 """

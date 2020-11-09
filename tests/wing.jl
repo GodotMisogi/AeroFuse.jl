@@ -22,11 +22,11 @@ num_secs = 3
 foils = [ cst_foil for i in 1:num_secs ]
 airfoils = Foil.(foils)
 
-wing_chords = [1, 0.5, 0.2]
-wing_twists = [3, 2, 0]
-wing_spans = [2, 0.5]
-wing_dihedrals = [0, 45]
-wing_sweeps = [15, 30]
+wing_chords = [0.18, 0.16, 0.08]
+wing_twists = [2, 0, -2]
+wing_spans = [0.5, 0.5]
+wing_dihedrals = [0, 5]
+wing_sweeps = [0, 30]
 
 wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
 wing = Wing(wing_right, wing_right)
@@ -34,61 +34,30 @@ print_info(wing_right)
 
 ## Assembly
 ρ = 1.225
-uniform = Uniform(10.0, 3.0, 0.0)
+uniform = Uniform(10.0, 5.0, 0.0)
 V = uniform.mag
 S = projected_area(wing_right)
 b = span(wing_right)
 c = mean_aerodynamic_chord(wing_right);
 
 ## Horseshoe method
-horseshoe_panels = mesh_horseshoes(wing_right, spanwise_panels = 15, chordwise_panels = 1)
-@time forces, moments, stable_force, stable_moment, drag = solve_horseshoes(horseshoe_panels, uniform, ρ)
+horseshoe_panels = mesh_horseshoes(wing, spanwise_panels = 5, chordwise_panels = 5)
+@time forces, moments, stable_force, stable_moment, drag, gammas, horseshoes = solve_horseshoes(horseshoe_panels, uniform)
 
+# print(forces)
 # Post-processing
-CDi = force_coefficient(drag, ρ, V, S)
-CY = force_coefficient(stable_force[2], ρ, V, S)
-CL = force_coefficient(stable_force[3], ρ, V, S)
-
-Cl = moment_coefficient(stable_moment[1], ρ, V, S, b)
-Cm = moment_coefficient(stable_moment[2], ρ, V, S, c)
-Cn = moment_coefficient(stable_moment[3], ρ, V, S, b)
-
-println("Total Force: $stable_force N")
-println("Total Moment: $stable_moment N-m")
-println("Lift Coefficient (CL): $CL")
-println("Drag Coefficient (CDi): $CDi")
-println("Side Force Coefficient (CY): $CY")
-println("Lift-to-Drag Ratio (L/D): $(CL/CDi)")
-println("Rolling Moment Coefficient (Cl): $Cl")
-println("Pitching Moment Coefficient (Cm): $Cm")
-println("Yawing Moment Coefficient (Cn): $Cn")
-
+print_dynamics(stable_force, stable_moment, drag, V, S, b, c, ρ)
 
 ## Vortex lattice method
-camber_panels = mesh_cambers(wing_right, spanwise_panels = 5, chordwise_panels = 5)
-@time forces, moments, stable_force, stable_moment, pressures, drag, camber_panels = solve_vortex_rings(camber_panels, uniform, 10, 30, (0.25, 0, 0), ρ)
+# camber_panels = mesh_cambers(wing_right, spanwise_panels = 5, chordwise_panels = 5)
+# @time forces, moments, stable_force, stable_moment, pressures, drag, camber_panels = solve_vortex_rings(camber_panels, uniform, 10, 30, (0.25, 0, 0))
 
 ## Post-processing
-CDi = force_coefficient(drag, ρ, V, S)
-CY = force_coefficient(stable_force[2], ρ, V, S)
-CL = force_coefficient(stable_force[3], ρ, V, S)
+# print_dynamics(stable_force, stable_moment, drag, V, S, b, c, ρ)
 
-Cl = moment_coefficient(stable_moment[1], ρ, V, S, b)
-Cm = moment_coefficient(stable_moment[2], ρ, V, S, c)
-Cn = moment_coefficient(stable_moment[3], ρ, V, S, b)
-
-println("Total Force: $stable_force N")
-println("Total Moment: $stable_moment N-m")
-println("Lift Coefficient (CL): $CL")
-println("Drag Coefficient (CDi): $CDi")
-println("Side Force Coefficient (CY): $CY")
-println("Lift-to-Drag Ratio (L/D): $(CL/CDi)")
-println("Rolling Moment Coefficient (Cl): $Cl")
-println("Pitching Moment Coefficient (Cm): $Cm")
-println("Yawing Moment Coefficient (Cn): $Cn")
 
 ## Panel method: TO DO
-wing_panels = mesh_wing(wing, spanwise_panels = 5, chordwise_panels = 10);
+wing_panels = mesh_wing(wing, spanwise_panels = 5, chordwise_panels = 10)
 
 ##
 using Plots, LaTeXStrings
@@ -97,13 +66,16 @@ plotlyjs()
 
 
 ## Wing
-horseshoe_collocs = horseshoe_collocation.(horseshoe_panels)[:]
-# camber_collocs = horseshoe_collocation.(camber_panels)[:]
+horseshoe_collocs = vortex_collocation.(horseshoe_panels)[:]
+# camber_collocs = vortex_collocation.(camber_panels)[:]
+
+## Streamlines
+streams = [ tupvector(streamlines(SVector(hs), uniform, horseshoes, gammas, 5, 100)) for hs in horseshoe_collocs ]
 
 ##
-# spans = [ pt[2] for pt in horseshoe_collocs ];
-# plot(spans, cl, label = L"C_L")
-# plot!(spans, cdi, label = L"C_{D_i}")
+spans = [ pt[2] for pt in horseshoe_collocs ];
+plot(spans, lift, label = L"C_L")
+plot!(spans, drag, label = L"C_{D_i}")
 
 ##
 # wing_coords = (tuparray ∘ panel_coords).(wing_panels)[:]
@@ -113,8 +85,9 @@ horseshoe_coords = tuparray.(panel_coords.(horseshoe_panels)[:])
 
 ##
 plot(xaxis = "x", yaxis = "y", zaxis = "z", aspect_ratio = :equal, zlim = (-0.5, 5.0), size=(1280, 720))
-# plot!.(wing_coords, color = :black, label = :none)
+plot!.(wing_coords, color = :black, label = :none)
 plot!.(horseshoe_coords, color = :grey, label = :none)
+plot!.(streams, color = :lightblue, label = :none)
 # plot!.(camber_coords, color = :grey, label = :none)
 # plot!.(vortex_rings, color = :black, label = :none)
 
