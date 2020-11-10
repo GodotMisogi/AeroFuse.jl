@@ -91,5 +91,17 @@ function cosine_interp(coords :: Array{<:Real, 2}, n :: Integer = 40)
     [ x_circ y_circ ]
 end
 
+#-------------Iterator methods-----------------------$
+
+function accumap(f, n, xs)
+    data = [ xs ]
+    for i = 1:n
+        ys = map(f, xs)
+        data = [ data..., ys ]
+        xs = ys
+    end
+    return hcat(data...)
+end
+
 
 end

@@ -4,6 +4,7 @@ export solve_case, pressure_coefficient, make_panels, Uniform2D, grid_data, spli
 
 include("MathTools.jl")
 include("LaplaceSolutions.jl")
+
 using LinearAlgebra
 using Base.Iterators
 using StaticArrays
