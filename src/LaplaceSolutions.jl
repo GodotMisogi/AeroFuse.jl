@@ -45,8 +45,8 @@ stream(vor :: Vortex2D, x, y) = -vor.str / (4π) * log((x - vor.x0)^2 + (y - vor
 
 # Performs velocity and potential calculations on a grid
 function grid_data(objects :: Array{<: Laplace}, xs)
-    vels = foldl((v1, v2) -> [ u .+ v for (u, v) ∈ zip(v1, v2) ], [ velocity(object, xs) for object ∈ objects ])
-    pots = foldl((v1, v2) -> v1 + v2, [ potential(object, xs) for object ∈ objects ])
+    vels = foldl((v1, v2) -> [ u .+ v for (u, v) ∈ zip(v1, v2) ], velocity(object, xs) for object ∈ objects)
+    pots = foldl((v1, v2) -> v1 + v2, potential(object, xs) for object ∈ objects)
     
     vels, pots
 end
