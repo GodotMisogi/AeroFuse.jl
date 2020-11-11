@@ -20,7 +20,7 @@ dzs = (1e-4, 1e-4)
 cst_foil = kulfan_CST(alphas, dzs, 0.2)
 
 num_secs = 3
-foils = [ cst_foil for i in 1:num_secs ]
+foils = [ cst_foil for i ∈ 1:num_secs ]
 airfoils = Foil.(foils)
 
 wing_chords = [1, 0.5, 0.1]
@@ -65,7 +65,7 @@ mesh3d!.(horseshoe_coords, intensity = norm_Γs, color = :coolwarm, label = :non
 plot!.(streams, color = :green, label = :none)
 
 gui();
-# wing_lines = [ horseshoe_lines(panel, uniform) for panel in horseshoe_panels ]
-# lines = [ [ tuparray([line.r1'; line.r2']) for line in horseshoe.vortex_lines ] for horseshoe in wing_lines ]
-# [ [ plot!(line, c = :darkblue, label = nothing) for line in horseshoe ] for horseshoe in lines ]
+# wing_lines = [ horseshoe_lines(panel, uniform) for panel ∈ horseshoe_panels ]
+# lines = [ [ tuparray([line.r1'; line.r2']) for line ∈ horseshoe.vortex_lines ] for horseshoe ∈ wing_lines ]
+# [ [ plot!(line, c = :darkblue, label = nothing) for line ∈ horseshoe ] for horseshoe ∈ lines ]
 
