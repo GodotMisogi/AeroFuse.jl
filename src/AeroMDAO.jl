@@ -2,16 +2,16 @@ module AeroMDAO
 
 export 
 Foil, Wing, HalfWing, projected_area, span, mean_aerodynamic_chord, 
-Panel3D, Uniform, print_info, plot_setup, panel_coords, read_foil, 
-mesh_horseshoes, mesh_wing, mesh_cambers, 
-solve_case, streamlines,
-plot_panels, plot_streamlines
+Panel3D, Uniform, print_info, plot_setup, panel_coords, panel_normal, read_foil, 
+mesh_horseshoes, mesh_wing, mesh_cambers, lead_wing, wing_bounds,
+solve_case, streamlines, tupvector,
+plot_panels, plot_streamlines, horseshoe_lines
 
 #----------------------IMPORTS--------------------------------#
 
 include("MathTools.jl")
 include("FoilParametrization.jl")
-include("LiftingLine.jl")
+includet("LiftingLine.jl")
 
 import Base: *, +
 using Base.Iterators: peel
@@ -76,11 +76,34 @@ struct HalfWing <: Aircraft
     HalfWing(foils, chords, spans, dihedrals, sweeps, twists) = new(foils, chords, spans, deg2rad.(dihedrals), deg2rad.(sweeps), -deg2rad.(twists)) # Convert to radians
 end
 
+"""
+Computes the aspect ratio given a span and area.
+"""
 aspect_ratio(span, area) = span^2 / area
+
+"""
+Computes the mean geometric chord given a span and area.
+"""
 mean_geometric_chord(span, area) = area / span
+
+"""
+Computes the taper ratio given root and tip chords.
+"""
 taper_ratio(root_chord, tip_chord) = tip_chord / root_chord
+
+"""
+Computes the area given a span and chord.
+"""
 area(span, chord) = span * chord
+
+"""
+Computes the mean aerodynamic chord, essentially a root-mean-square chord, given a root chord and taper ratio.
+"""
 mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
+
+"""
+Computes the quarter-chord length given a chord.
+"""
 quarter_chord(chord) = 0.25 * chord
 
 """
@@ -116,7 +139,7 @@ vector_point(x1, x2, μ) = x1 .+ μ .* (x2 .- x1)
 """
 Divides two vectors into `n' sections with cosine spacing. TODO: Upgrade to generic spacing functions.
 """
-chop_sections(set1, set2, n) = [ vector_point.(set1, set2, μ) for μ in cosine_dist(0.5, 1, n + 1) ][1:end-1]
+chop_sections(set1, set2, n) = [ vector_point.(set1, set2, μ) for μ ∈ cosine_dist(0.5, 1., n + 1) ][1:end-1]
 
 """
 Divides a set of directional vectors into `n' sections with cosine spacing.
@@ -133,7 +156,9 @@ function lead_wing(wing :: HalfWing, flip :: Bool = false)
     dihedraled_spans = [ 0; cumsum(spans .* tan.(dihedrals)) ]
     cum_spans = [ 0; cumsum(spans) ]
     
-    SVector.(sweeped_spans, flip ? -cum_spans : cum_spans, dihedraled_spans)
+    leading = SVector.(sweeped_spans, flip ? -cum_spans : cum_spans, dihedraled_spans)
+
+    flip ? leading[end:-1:1] : leading
 end
 
 """
@@ -144,19 +169,23 @@ function wing_bounds(wing :: HalfWing, flip :: Bool = false)
     twisted_chords = chords .* sin.(wing.twists)
     
     leading = lead_wing(wing, flip)
-    trailing = SVector.(chords, (zeros ∘ length)(chords), twisted_chords) .+ leading
+    trailing = SVector.(chords, (zeros ∘ length)(chords), twisted_chords) 
 
-    leading, trailing
+    leading, (flip ? trailing[end:-1:1] : trailing) .+ leading
 end
 
 """
 Computes the coordinates of a HalfWing consisting of Foils and relevant geometric quantities. Requires specification of number of spanwise and chordwise panels. Optionally flips the signs of the y-coordinates.
 """
-function wing_coords(wing :: HalfWing, chord_num :: Integer, span_num :: Integer, flip :: Bool = false)
+function wing_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
     leading_xyz = lead_wing(wing, flip)
     
     scaled_foils = wing.chords .* (coordinates ∘ cut_foil).(wing.foils, chord_num)
-    foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) in zip(scaled_foils, wing.twists, leading_xyz) ]
+    
+    scaled_foils = flip ? scaled_foils[end:-1:1] : scaled_foils
+    twists = flip ? wing.twists[end:-1:1] : wing.twists
+
+    foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) ∈ zip(scaled_foils, twists, leading_xyz) ]
 
     coords_chopper(foil_coords, span_num)
 end
@@ -164,24 +193,28 @@ end
 """
 Computes the coordinates of a HalfWing consisting of camber distributions of Foils and relevant geometric quantities. Requires specification of number of spanwise and chordwise panels. Optionally flips the signs of the y-coordinates.
 """
-function camber_coords(wing :: HalfWing, chord_num :: Integer, span_num :: Integer, flip :: Bool = false)
+function camber_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
     leading_xyz = lead_wing(wing, flip)
     
     scaled_foils = wing.chords .* (coordinates ∘ camber_thickness).(wing.foils, chord_num)
-    foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) in zip(scaled_foils, wing.twists, leading_xyz) ]
+
+    scaled_foils = flip ? scaled_foils[end:-1:1] : scaled_foils
+    twists = flip ? wing.twists[end:-1:1] : wing.twists
+
+    foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) ∈ zip(scaled_foils, twists, leading_xyz) ]
 
     coords_chopper(foil_coords, span_num)
 end
 
 """
-Zips leading and trailing edge coordinates.
+Zips leading and trailing edge coordinates into an array of arrays.
 """
-chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) in zip(lead, trail) ]
+chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) ∈ zip(lead, trail) ]
 
 """
 Returns an array of cosine distributed coordinates 
 """
-chord_chopper(coords, divs) = [ [ vector_point(chord[1,:], chord[2,:], μ) for μ in cosine_dist(0.5, 1, divs + 1) ] for chord in coords ]
+chord_chopper(coords, n) = [ [ vector_point(chord[1,:], chord[2,:], μ) for μ ∈cosine_dist(0.5, 1., n + 1)  ] for chord ∈ coords ]
 
 """
 Applies spanwise spacing divisions on leading and trailing edge coordinates.
@@ -205,23 +238,23 @@ Converts an array of "wing-ordered" coordinates into panels.
 function make_panels(coords) 
     spanlist = vectarray.(coords)    
     secs1secs2 = zip(spanlist, spanlist[2:end])
-    hcat([ Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) in secs1secs2 ]...)
+    hcat([ Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ secs1secs2 ]...)
 end
 
 """
 Meshes a HalfWing into panels meant for lifting-line analyses using horseshoe elements.
 """
-mesh_horseshoes(obj :: HalfWing; span_num :: Integer = 1, chord_num :: Integer = 1, flip = false) = (make_panels ∘ wing_chopper)(wing_bounds(obj, flip)..., span_num, chord_num)
+mesh_horseshoes(obj :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ wing_chopper)(wing_bounds(obj, flip)..., span_num, chord_num)
 
 """
 Meshes a HalfWing into panels meant for full 3D analyses using doublet-source elements. Also works as a surface mesh. TODO: Tip meshing.
 """
-mesh_wing(wing :: HalfWing; chord_num :: Integer = 1, span_num :: Integer = 1, flip = false) = (make_panels ∘ wing_coords)(wing, chord_num, span_num, flip)
+mesh_wing(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ wing_coords)(wing, span_num, chord_num, flip)
 
 """
 Meshes a HalfWing into panels meant for vortex lattice analyses using vortex rings.
 """
-mesh_cambers(wing :: HalfWing; chord_num :: Integer = 1, span_num :: Integer = 1, flip = false) = (make_panels ∘ camber_coords)(wing, chord_num, span_num, flip)
+mesh_cambers(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ camber_coords)(wing, span_num, chord_num, flip)
 
 """
 Performs an affine transformation on a list of coordinates.
@@ -234,7 +267,7 @@ Performs an affine transformation on the leading and trailing edges of a HalfWin
 transform(lead, trail; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = transform(lead, rotation, translation), transform(trail, rotation', translation)
 
 """
-A composite type consisting of two HalfWings. `left' is meant to have its y-coordinates flipped in Cartesian representation.
+A composite type consisting of two HalfWings. `left' is meant to have its y-coordinates flipped ∈ Cartesian representation.
 """
 struct Wing <: Aircraft
     left :: HalfWing
@@ -262,31 +295,31 @@ end
 """
 Meshes a Wing into panels meant for lifting-line analyses using horseshoe elements.
 """
-function mesh_horseshoes(wing :: Wing; chord_num = 20, span_num = 3)
-    left_panels = mesh_horseshoes(wing.left, chord_num = chord_num, span_num = span_num, flip = true)
-    right_panels = mesh_horseshoes(wing.right, chord_num = chord_num, span_num = span_num)
+function mesh_horseshoes(wing :: Wing, span_num, chord_num)
+    left_panels = mesh_horseshoes(wing.left, span_num, chord_num, flip = true)
+    right_panels = mesh_horseshoes(wing.right, span_num, chord_num)
 
-    [ left_panels; right_panels ] 
+    [ left_panels..., right_panels... ] 
 end
 
 """
 Meshes a HalfWing into panels meant for full 3D analyses using doublet-source elements. Also works as a surface mesh. TODO: Tip meshing.
 """
-function mesh_wing(wing :: Wing; chord_num = 20, span_num = 3)
-    left_panels = mesh_wing(wing.left, chord_num = chord_num, span_num = span_num, flip = true)
-    right_panels = mesh_wing(wing.right, chord_num = chord_num, span_num = span_num)
+function mesh_wing(wing :: Wing, span_num, chord_num)
+    left_panels = mesh_wing(wing.left, span_num, chord_num, flip = true)
+    right_panels = mesh_wing(wing.right, span_num, chord_num)
 
-    [ left_panels; right_panels ] 
+    [ left_panels..., right_panels... ] 
 end
 
 """
 Meshes a HalfWing into panels meant for vortex lattice analyses using vortex rings.
 """
-function mesh_cambers(wing :: Wing; chord_num = 20, span_num = 3)
-    left_panels = mesh_cambers(wing.left, chord_num = chord_num, span_num = span_num, flip = true)
-    right_panels = mesh_cambers(wing.right, chord_num = chord_num, span_num = span_num)
+function mesh_cambers(wing :: Wing, span_num, chord_num)
+    left_panels = mesh_cambers(wing.left, span_num, chord_num, flip = true)
+    right_panels = mesh_cambers(wing.right, span_num, chord_num)
 
-    [ left_panels; right_panels ] 
+    [ left_panels..., right_panels... ] 
 end
 
 """
@@ -302,10 +335,11 @@ end
 function solve_case(wing :: Aircraft, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5)
 
     # Make panels
-    horseshoe_panels = mesh_horseshoes(wing, span_num = span_num, chord_num = chord_num)
+    horseshoe_panels = mesh_horseshoes(wing, span_num, chord_num)
+    camber_panels = mesh_cambers(wing, span_num, chord_num)
     
     # Solve system
-    Γs, horseshoes = solve_horseshoes(horseshoe_panels, uniform)
+    Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, uniform)
 
     # Compute forces
     geom_forces, geom_moments = dynamic_computations(Γs, horseshoes, uniform, r_ref, ρ)

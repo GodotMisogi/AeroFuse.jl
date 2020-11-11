@@ -11,7 +11,7 @@ export Laplace, Uniform3D, Uniform, velocity,
 Panel, Panel3D, stability_axes, area, panel_coords, midpoint, panel_normal,
 stability_axes, wind_axes,
 solve_horseshoes, dynamic_computations, nearfield_drag, 
-streamlines, print_dynamics
+streamlines, print_dynamics, horseshoe_lines
 
 #--------------Lifting line code-------------------#
 
@@ -88,7 +88,7 @@ area(panel :: Panel3D) = (abs ∘ norm)((panel.p2 - panel.p1) .* (panel.p3 - pan
 """
 Computes the coordinates of a Panel3D for plotting purposes (closes the loop).
 """
-panel_coords(panel :: Panel3D) = [ panel.p1'; panel.p2'; panel.p3'; panel.p4'; panel.p1' ] 
+panel_coords(panel :: Panel3D) = [ panel.p1'; panel.p2'; panel.p3'; panel.p4' ] 
 
 
 """
@@ -247,7 +247,7 @@ bound_leg_vector(vortex_ring :: AbstractVortexArray) = let bound_leg = vortex_ri
 """
 Sums the velocities evaluated at a point `r` of vortex lines with uniform strength Γ.
 """
-sum_vortices(r, vortex_lines :: Array{Line}, Γ) = sum(velocity(r, line, Γ) for line in vortex_lines)
+sum_vortices(r, vortex_lines :: Array{Line}, Γ) = sum(velocity(r, line, Γ) for line ∈ vortex_lines)
 
 """
 Computes the induced velocities at a point `r` of a Vortex Ring with uniform strength Γ.
@@ -269,12 +269,12 @@ influence_coefficient(collocation_point, vortex_line :: AbstractVortexArray, pan
 """
 Assembles the Aerodynamic Influence Coefficient (AIC) matrix given vortex lines, collocation points and associated normal vectors.
 """
-influence_matrix(colpoints, vortex_lines :: Array{<: AbstractVortexArray}, normals) = [ influence_coefficient(colpoint_i, horsie_j, normal_i) for (colpoint_i, normal_i) in zip(colpoints, normals), horsie_j in vortex_lines ]
+influence_matrix(colpoints, vortex_lines :: Array{<: AbstractVortexArray}, normals) = [ influence_coefficient(colpoint_i, horsie_j, normal_i) for (colpoint_i, normal_i) ∈ zip(colpoints, normals), horsie_j ∈ vortex_lines ]
 
 """
 Computes the projection of a velocity vector with respect to normals. Corresponds to construction of the boundary condition for the RHS of the AIC system.
 """
-boundary_condition(normals, velocity) = - [ dot(velocity, normal) for normal in normals ]
+boundary_condition(normals, velocity) = - [ dot(velocity, normal) for normal ∈ normals ]
 
 """
 Generates a wake Panel3D aligned with a normalised direction vector.
@@ -292,11 +292,11 @@ make_wake(last_panels :: Array{Panel3D}, uniform :: Uniform3D, wake_length, wake
 """
 Solves the AIC matrix with the boundary condition given Panel3Ds and a freestream velocity.
 """
-function solve_horseshoes(panels :: Array{Panel3D}, uniform :: Uniform3D) 
+function solve_horseshoes(horseshoe_panels :: Array{Panel3D}, camber_panels :: Array{Panel3D}, uniform :: Uniform3D) 
 
-    horseshoes = [ horseshoe_lines(panel, uniform) for panel in panels ][:]
-    colpoints = collocation_point.(panels)[:]
-    normals = panel_normal.(panels)[:]
+    horseshoes = [ horseshoe_lines(panel, uniform) for panel ∈ horseshoe_panels ][:]
+    colpoints = collocation_point.(horseshoe_panels)[:]
+    normals = panel_normal.(camber_panels)[:]
 
     Γs = influence_matrix(colpoints, horseshoes, normals) \ boundary_condition(normals, velocity(uniform))
 
@@ -307,12 +307,12 @@ end
 
 # Trefftz plane evaluations
 # downwash(xi, xj, zi, zj) = -1/(2π) * (xj - xi) / ( (zj - zi)^2 + (xj - xi)^2 )
-# trefftz_plane(horseshoes :: Array{Horseshoes}) = [ [ horseshoe.vortex_lines[1].r1 for horseshoe in horseshoes ]; 
-#                                                    [ horseshoe.vortex_lines[3].r2 for horseshoe in horseshoes ] ]
+# trefftz_plane(horseshoes :: Array{Horseshoes}) = [ [ horseshoe.vortex_lines[1].r1 for horseshoe ∈ horseshoes ]; 
+#                                                    [ horseshoe.vortex_lines[3].r2 for horseshoe ∈ horseshoes ] ]
 # function downwash(horseshoes :: Array{Horseshoes}) 
 #     coords = trefftz_plane(horseshoes)
 #     carts = product(coords, coords)
-#     [ [ i == j ? 0 : downwash(x1, x2, z1, z2) for (i, (x1,y1,z1)) in enumerate(coords) ] for (j, (x2,y2,z2)) in enumerate(coords) ] 
+#     [ [ i == j ? 0 : downwash(x1, x2, z1, z2) for (i, (x1,y1,z1)) ∈ enumerate(coords) ] for (j, (x2,y2,z2)) ∈ enumerate(coords) ] 
 # end
 
 """
@@ -320,13 +320,13 @@ Computes the local Kutta-Jowkowski forces given an array of horseshoes, their as
 """
 function kutta_force(Γs, vortices :: Array{<: AbstractVortexArray}, uniform :: Uniform3D, ρ)
     Γ_rings = zip(Γs, vortices)
-    [ ρ * (sum(velocity(bound_leg_center(vortex_i), vortex_j, Γ) for (Γ, vortex_j) in Γ_rings) .+ velocity(uniform)) × bound_leg_vector(vortex_i) * Γ_focus for (Γ_focus, vortex_i) in Γ_rings ] 
+    [ ρ * (sum(velocity(bound_leg_center(vortex_i), vortex_j, Γ) for (Γ, vortex_j) ∈ Γ_rings) .+ velocity(uniform)) × bound_leg_vector(vortex_i) * Γ_focus for (Γ_focus, vortex_i) ∈ Γ_rings ] 
 end
 
 """
 Placeholder. Unsure whether to change this to a generic moment computation function.
 """
-moments(vortex_legs :: Array{<: AbstractVortexArray}, forces, r_ref) = [ (bound_leg_center(vortex_ring) .- r_ref) × force for (force, vortex_ring) in zip(forces, vortex_legs) ]
+moments(vortex_legs :: Array{<: AbstractVortexArray}, forces, r_ref) = [ (bound_leg_center(vortex_ring) .- r_ref) × force for (force, vortex_ring) ∈ zip(forces, vortex_legs) ]
 
 """
 Computes the non-dimensional force coefficient corresponding to standard aerodynamics.
@@ -366,8 +366,8 @@ Computes the streamlines from a given starting point, a Uniform3D, Horseshoes an
 """
 function streamlines(point, uniform :: Uniform3D, horseshoes, Γs, length, num_steps)
     streamlines = [point]
-    for i in 1:num_steps
-        update = velocity(uniform) .+ sum(velocity(streamlines[end], horseshoe, Γ) for (horseshoe, Γ) in zip(horseshoes, Γs))
+    for i ∈ 1:num_steps
+        update = velocity(uniform) .+ sum(velocity(streamlines[end], horseshoe, Γ) for (horseshoe, Γ) ∈ zip(horseshoes, Γs))
         streamlines = [ streamlines..., streamlines[end] .+ (update/norm(update) * length / num_steps)  ]
     end
     streamlines
@@ -376,7 +376,7 @@ end
 """
 Computes the streamlines from the collocation points of given Horseshoes with the relevant previous inputs.
 """
-streamlines(uniform :: Uniform3D, horseshoe_panels, horseshoes, Γs, length, num_steps) = [ streamlines(SVector(hs), uniform, horseshoes, Γs, length, num_steps) for hs in collocation_point.(horseshoe_panels)[:] ]
+streamlines(uniform :: Uniform3D, horseshoe_panels, horseshoes, Γs, length, num_steps) = [ streamlines(SVector(hs), uniform, horseshoes, Γs, length, num_steps) for hs ∈ collocation_point.(horseshoe_panels)[:] ]
 
 """
 Prints the relevant aerodynamic/flight dynamics information.
