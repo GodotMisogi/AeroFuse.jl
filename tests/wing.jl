@@ -48,7 +48,7 @@ wing_panels = mesh_wing(wing, 5, 5);
 wing_coords = plot_panels(wing_panels)[:]
 camber_coords = plot_panels(camber_panels)[:]
 horseshoe_coords = plot_panels(horseshoe_panels)[:]
-streams = plot_streamlines.(streamlines(uniform, horseshoe_panels, horseshoes, Γs, 3, 50));
+streams = plot_streamlines.(streamlines(uniform, horseshoe_panels[end,:], horseshoes[end,:], Γs[end,:], 5, 100));
 
 ##
 min_Γ, max_Γ = extrema(Γs)
