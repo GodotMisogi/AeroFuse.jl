@@ -11,13 +11,13 @@ plot_panels, plot_streamlines, horseshoe_lines
 
 include("MathTools.jl")
 include("FoilParametrization.jl")
-includet("LiftingLine.jl")
+include("VortexLattice.jl")
 
 import Base: *, +
 using Base.Iterators: peel
 using .MathTools: fwdsum, fwddiff, fwddiv, tuparray, vectarray, tupvector, dot, linspace, cosine_dist
 using .FoilParametrization: read_foil, cosine_foil, foil_camthick
-using .LiftingLine
+using .VortexLattice
 using StaticArrays
 using LinearAlgebra
 using Rotations
@@ -299,7 +299,7 @@ function mesh_horseshoes(wing :: Wing, span_num, chord_num)
     left_panels = mesh_horseshoes(wing.left, span_num, chord_num, flip = true)
     right_panels = mesh_horseshoes(wing.right, span_num, chord_num)
 
-    [ left_panels..., right_panels... ] 
+    [ left_panels right_panels ] 
 end
 
 """
@@ -309,7 +309,7 @@ function mesh_wing(wing :: Wing, span_num, chord_num)
     left_panels = mesh_wing(wing.left, span_num, chord_num, flip = true)
     right_panels = mesh_wing(wing.right, span_num, chord_num)
 
-    [ left_panels..., right_panels... ] 
+    [ left_panels right_panels ] 
 end
 
 """
@@ -319,7 +319,7 @@ function mesh_cambers(wing :: Wing, span_num, chord_num)
     left_panels = mesh_cambers(wing.left, span_num, chord_num, flip = true)
     right_panels = mesh_cambers(wing.right, span_num, chord_num)
 
-    [ left_panels..., right_panels... ] 
+    [ left_panels right_panels ] 
 end
 
 """
@@ -334,31 +334,28 @@ end
 
 function solve_case(wing :: Aircraft, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5)
 
+    vel = velocity(uniform)
+
     # Make panels
     horseshoe_panels = mesh_horseshoes(wing, span_num, chord_num)
     camber_panels = mesh_cambers(wing, span_num, chord_num)
     
     # Solve system
-    Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, uniform)
+    Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, vel / uniform.mag)
 
-    # Compute forces
-    geom_forces, geom_moments = dynamic_computations(Γs, horseshoes, uniform, r_ref, ρ)
-    
-    # Stability axes transformation
+    # Scale vortex strengths
+    Γs = uniform.mag * Γs
+
+    # Compute near-field forces
+    geom_forces, geom_moments = dynamic_computations(Γs, horseshoes, vel, r_ref, ρ)
     force, moment = sum(geom_forces), sum(geom_moments)
     stable_forces, stable_moments = stability_axes(force, moment, uniform)
     drag = nearfield_drag(force, uniform)
 
-    # Non-dimensionalisation parameters
-    V = uniform.mag
-    S = projected_area(wing)
-    b = span(wing)
-    c = mean_aerodynamic_chord(wing);
-
     # Print data
-    print_dynamics(force, moment, drag, V, S, b, c, ρ)
+    print_dynamics(force, moment, drag, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
 
-    horseshoe_panels, horseshoes, Γs
+    horseshoe_panels, camber_panels, horseshoes, Γs
 end
 
 plot_panels(panels :: Array{Panel3D}) = (tuparray ∘ panel_coords).(panels)

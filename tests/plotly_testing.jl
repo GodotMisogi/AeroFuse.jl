@@ -1,4 +1,23 @@
 ##
+using PlotlyJS
+#
+layout = Layout(;
+                title = "Penguins",
+                xaxis_title = "x",
+                yaxis_title = "y",
+                aspectratio = attr(x=1, y=1, z=1)
+                )
+
+t = mesh3d(
+    x = [-1, 1, 1, 1],
+    y = [1, 2, 3, 4],
+    z = [1, 2, 1, -1],
+    colorscale = :coolwarm,
+    intensity = [0.2, -2.1, 0.3, 0.4]
+)
+plot(t, layout)
+
+##
 # coords_xs = [ [ c[1] for c in panel ] for panel in horseshoe_coords ]
 # coords_ys = [ [ c[2] for c in panel ] for panel in horseshoe_coords ]
 # coords_zs = [ [ c[3] for c in panel ] for panel in horseshoe_coords ]
@@ -7,13 +26,6 @@
 # streams_zs = [ [ c[3] for c in panel ] for panel in streams ]
 
 
-##
-# layout = Layout(;
-#                 title = "Penguins",
-#                 xaxis_title = "x",
-#                 yaxis_title = "y",
-#                 aspectratio = attr(x=1, y=15, z=15)
-#                 )
 
 # trace_coords = [ mesh3d(
 #                         x = x,
