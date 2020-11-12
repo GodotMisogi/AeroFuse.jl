@@ -32,13 +32,13 @@ wing_sweeps = [1.14, 8]
 
 wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
 wing = Wing(wing_right, wing_right)
-print_info(wing)
-ref = (0.25 * mean_aerodynamic_chord(wing), 0, 0)
+print_info(wing_right)
 
 ## Assembly
 ρ = 1.225
+ref = (0.25 * mean_aerodynamic_chord(wing_right), 0, 0)
 uniform = Uniform(10.0, 5.0, 0.0)
-@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 25, chord_num = 25);
+@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing_right, uniform, ref, span_num = 10, chord_num = 5);
 
 ## Panel method: TO DO
 
@@ -48,7 +48,7 @@ wing_panels = mesh_wing(wing, 5, 5);
 wing_coords = plot_panels(wing_panels)[:]
 camber_coords = plot_panels(camber_panels)[:]
 horseshoe_coords = plot_panels(horseshoe_panels)[:]
-streams = plot_streamlines.(streamlines(uniform, horseshoe_panels, horseshoes, Γs, 3, 100));
+streams = plot_streamlines.(streamlines(uniform, horseshoe_panels, horseshoes, Γs, 3, 50));
 
 ##
 min_Γ, max_Γ = extrema(Γs)
@@ -73,7 +73,6 @@ streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
 ##
 layout = Layout(
                 title = "Penguins",
-                autosize = false,
                 scene=attr(aspectmode="manual", aspectratio=attr(x=1,y=1,z=1))
                 )
 
@@ -85,6 +84,15 @@ trace_horses = [ mesh3d(
                         text = norm_Γ,
                         showscale = false,
                         ) for (x, y, z, norm_Γ) in zip(horse_xs, horse_ys, horse_zs, norm_Γs) ]
+
+trace_horsies = [ scatter3d(
+                            x = x,
+                            y = y,
+                            z = z,
+                            mode = :lines, 
+                            line = attr(color =:black),
+                            showlegend = false,
+                            ) for (x, y, z) in zip(horse_xs, horse_ys, horse_zs) ]
 
 trace_cambers = [ scatter3d(
                        x = x,
@@ -105,7 +113,8 @@ trace_streams = [ scatter3d(
                             ) for (x, y, z) in zip(streams_xs, streams_ys, streams_zs) ]
 
 plot([ 
-        [ trace for trace in trace_horses ]..., 
+        [ trace for trace in trace_horses ]...,
+        [ trace for trace in trace_horsies ]..., 
         [ trace for trace in trace_cambers ]...,
         [ trace for trace in trace_streams ]... 
      ], 
