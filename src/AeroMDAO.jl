@@ -238,7 +238,7 @@ Converts an array of "wing-ordered" coordinates into panels.
 function make_panels(coords) 
     spanlist = vectarray.(coords)    
     secs1secs2 = zip(spanlist, spanlist[2:end])
-    hcat([ Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ secs1secs2 ]...)
+    hcat((Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ secs1secs2 )...)
 end
 
 """

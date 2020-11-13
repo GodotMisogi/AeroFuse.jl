@@ -7,6 +7,7 @@ using Interpolations
 
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
+columns(M) = [ M[:,i] for i in 1:size(M, 2) ]
 
 #-------------HASKELL MASTER RACE--------------#
 
@@ -33,7 +34,7 @@ structtolist(x) = [ name << x for name ∈ (fieldnames ∘ typeof)(x) ]
 #--------------------------Convenient math------------------------#
 
 ⊗(A, B) = kron(A, B)
-dot(V₁,V₂) = sum(V₁ .* V₂)
+dot(V₁, V₂) = sum(V₁ .* V₂)
 # ×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
 ×(xs, ys) = product(xs, ys)
 
@@ -71,7 +72,7 @@ ord2diff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2]
 adj3(xs) = [ xs[1:end-2,:] xs[2:end-1,:] xs[3:end,:] ]
 
 
-#-----------Spacing formulas---------------------------#
+#------------------------------Spacing formulas---------------------------#
 
 """
 Provides the projections to the x-axis for a circle of given diameter and center.

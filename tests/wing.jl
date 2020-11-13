@@ -38,7 +38,7 @@ print_info(wing_right)
 ρ = 1.225
 ref = (0.25 * mean_aerodynamic_chord(wing_right), 0, 0)
 uniform = Uniform(10.0, 5.0, 0.0)
-@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing_right, uniform, ref, span_num = 10, chord_num = 5);
+@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing_right, uniform, ref, span_num = 10, chord_num = 5)
 
 ## Panel method: TO DO
 
