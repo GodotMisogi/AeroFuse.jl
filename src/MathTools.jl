@@ -7,7 +7,7 @@ using Interpolations
 
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
-columns(M) = [ M[:,i] for i in 1:size(M, 2) ]
+columns(M) = [ view(M, :, i) for i in 1:size(M, 2) ]
 
 #-------------HASKELL MASTER RACE--------------#
 
