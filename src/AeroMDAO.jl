@@ -238,7 +238,7 @@ Converts an array of "wing-ordered" coordinates into panels.
 function make_panels(coords) 
     spanlist = vectarray.(coords)    
     secs1secs2 = zip(spanlist, spanlist[2:end])
-    hcat([ Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ secs1secs2 ]...)
+    hcat((Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ secs1secs2 )...)
 end
 
 """
@@ -332,9 +332,11 @@ function print_info(wing :: Union{Wing, HalfWing})
     println("Aspect Ratio: ", aspect_ratio(wing))
 end
 
-function solve_case(wing :: Aircraft, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5)
+function solve_case(wing :: Aircraft, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5, print = true)
 
     vel = velocity(uniform)
+
+    wing = wing.left === wing.right ? wing.right : wing
 
     # Make panels
     horseshoe_panels = mesh_horseshoes(wing, span_num, chord_num)
@@ -353,7 +355,7 @@ function solve_case(wing :: Aircraft, uniform :: Uniform3D, r_ref = (0.25, 0, 0)
     drag = nearfield_drag(force, uniform)
 
     # Print data
-    print_dynamics(force, moment, drag, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
+    print ? print_dynamics(force, moment, drag, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ) : nothing
 
     horseshoe_panels, camber_panels, horseshoes, Γs
 end

@@ -10,6 +10,7 @@ using .MathTools: linspace, tuparray, tupvector
 using AeroMDAO
 using DelimitedFiles
 using Rotations
+using BenchmarkTools
 
 ## Wing section setup
 # alpha_u = [0.1, 0.3, 0.2, 0.15, 0.2]
@@ -32,13 +33,13 @@ wing_sweeps = [1.14, 8]
 
 wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
 wing = Wing(wing_right, wing_right)
-print_info(wing_right)
+print_info(wing)
 
 ## Assembly
 ρ = 1.225
-ref = (0.25 * mean_aerodynamic_chord(wing_right), 0, 0)
+ref = (0.25 * mean_aerodynamic_chord(wing), 0, 0)
 uniform = Uniform(10.0, 5.0, 0.0)
-@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing_right, uniform, ref, span_num = 10, chord_num = 5);
+@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 10, chord_num = 5, print = true);
 
 ## Panel method: TO DO
 
@@ -90,7 +91,7 @@ trace_horsies = [ scatter3d(
                             y = y,
                             z = z,
                             mode = :lines, 
-                            line = attr(color =:black),
+                            line = attr(color = :black),
                             showlegend = false,
                             ) for (x, y, z) in zip(horse_xs, horse_ys, horse_zs) ]
 
@@ -99,7 +100,7 @@ trace_cambers = [ scatter3d(
                        y = y,
                        z = z,
                        mode = :lines, 
-                       line = attr(color =:black),
+                       line = attr(color = :black),
                        showlegend = false,
                        ) for (x, y, z) in zip(camber_xs, camber_ys, camber_zs) ]
 
@@ -108,7 +109,7 @@ trace_streams = [ scatter3d(
                             y = y, 
                             z = z, 
                             mode = :lines, 
-                            line = attr(color =:lightblue),
+                            line = attr(color = :lightblue),
                             showlegend = false,
                             ) for (x, y, z) in zip(streams_xs, streams_ys, streams_zs) ]
 

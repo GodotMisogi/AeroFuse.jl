@@ -112,7 +112,7 @@ weighted(x1, x2, wx) = (1 - wx) * x1 + wx * x2
 """
 Computes the weighted point between two points in a given direction.
 """
-weighted_point((x1, y1, z1), (x2, y2, z2), wx, wy, wz) = (weighted(x1, x2, wx), weighted(y1, y2, wy), weighted(z1, z2, wz))
+weighted_point((x1, y1, z1), (x2, y2, z2), wx, wy, wz) = SVector(weighted(x1, x2, wx), weighted(y1, y2, wy), weighted(z1, z2, wz))
 
 """
 Computes the quarter point between two points in the x-z plane.
@@ -127,7 +127,7 @@ three_quarter_point(p1, p2) = weighted_point(p1, p2, 3/4, 0, 3/4)
 """
 Helper function to compute the bound leg of Panel3D for horseshoes/vortex rings, which is the quarter point on each side in the x-z plane.
 """
-bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2); quarter_point(p4, p3) ]
+bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2), quarter_point(p4, p3) ]
 
 """
 Helper function to compute the collocation point of Panel3D for horseshoes/vortex rings, which is the 3-quarter point on each side in the x-z plane.
@@ -200,7 +200,7 @@ end
 Helper function to compute the vortex ring given four points following Panel3D ordering.
 """
 function vortex_ring(p1, p2, p3, p4)
-    v1, v4 = SVector(quarter_point(p1, p2)...), SVector(quarter_point(p4, p3)...)
+    v1, v4 = quarter_point(p1, p2), quarter_point(p4, p3)
     v2, v3 = v1 .+ p2 .- p1, v4 .+ p3 .- p4
     [ v1, v2, v3, v4 ]
 end
@@ -262,8 +262,10 @@ velocity(r, vortex_ring :: VortexRing, Γ) = sum_vortices(r, structolist(vortex_
 """
 Computes the influence coefficient of the velocity of a vortex line at a collocation point projected to a normal vector.
 """
-influence_coefficient(collocation_point, horseshoe :: Horseshoe, panel_normal, norm_vel) = dot(velocity(collocation_point, horseshoe, 1., norm_vel), panel_normal)
-
+function influence_coefficient(collocation_point, horseshoe :: Horseshoe, panel_normal, norm_vel, symmetry = false) 
+    mirror_point = SVector(collocation_point[1], -collocation_point[2], collocation_point[3])
+    dot(velocity(collocation_point, horseshoe, 1., norm_vel), panel_normal)
+end
 """
 Assembles the Aerodynamic Influence Coefficient (AIC) matrix given vortex lines, collocation points and associated normal vectors.
 """
@@ -297,9 +299,9 @@ function solve_horseshoes(horseshoe_panels :: Array{Panel3D}, camber_panels :: A
     
     AIC = influence_matrix(colpoints[:], horseshoes[:], normals[:], norm_vel) 
     boco = boundary_condition(normals[:], norm_vel)
-    Γs = reshape(AIC \ boco, (length(horseshoes[:,1]), length(horseshoes[1,:])))
+    Γs = AIC \ boco
 
-    Γs, horseshoes
+    reshape(Γs, (length(horseshoes[:,1]), length(horseshoes[1,:]))), horseshoes
 end
 #-------------------------Force evaluations------------------------------------#
 

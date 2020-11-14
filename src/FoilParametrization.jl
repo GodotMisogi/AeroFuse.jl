@@ -4,7 +4,7 @@ include("MathTools.jl")
 using Base.Math
 using Base.Iterators
 using DelimitedFiles
-using .MathTools: slope, splitat, adj3, cosine_interp, cosine_dist
+using .MathTools: slope, splitat, adj3, cosine_interp, cosine_dist, columns
 
 
 #-------------FOIL PROCESSING------------------#
@@ -47,7 +47,7 @@ end
 # Basic shape function
 function shape_function(x :: Real, basis_func :: Function, coeffs :: Array{<: Real, 1}, coeff_LE :: Real = 0)
     n = length(coeffs)
-    terms = [ basis_func(x, n, i) for i in 0:n-1 ]
+    terms = [ basis_func(x, n - 1, i) for i in 0:n-1 ]
     sum(coeffs .* terms) + coeff_LE * (x^0.5) * (1 - x)^(n - 0.5)
 end
 
@@ -86,6 +86,41 @@ function kulfan_CST(alphas :: Array{<: Real, 2}, (dz_u, dz_l), coeff_LE :: Real 
        xs lower_surf ]
 end
 
+function camber_CST(alphas :: Array{<: Real, 2}, (dz_cam, dz_thicc), coeff_LE :: Real = 0, num_points :: Integer = 40)
+
+    # Cosine spacing for airfoil of unit chord length
+    xs = cosine_dist(0.5, 1, num_points)
+
+    # λ-function for Bernstein polynomials
+    bernie = (x, alphas, dz) -> cst_coords(bernstein_class, bernstein_basis, x, alphas, dz, coeff_LE)
+
+    # Upper and lower surface generation
+    cam = [ bernie(x, alphas[:,1], dz_cam) for x ∈ xs ]
+    thicc = [ bernie(x, alphas[:,2], dz_thicc) for x ∈ xs ]
+
+    camthick_foil(xs, cam, thicc)
+end
+
+function coords_to_CST(coords, num_dvs)
+
+    S_matrix = hcat((bernstein_class.(coords[:,1]) .* bernstein_basis.(coords[:,1], num_dvs - 1, i) for i in 0:num_dvs - 1)...)
+
+    alphas = S_matrix \ coords[:,2]
+    
+    return alphas
+end
+
+function camthick_to_CST(coords, num_dvs)
+
+    xs, camber, thickness = (columns ∘ foil_camthick)(coords)
+
+    
+    alpha_cam = coords_to_CST([ xs camber ], num_dvs)
+    alpha_thick = coords_to_CST([ xs thickness ], num_dvs)
+    
+    [ alpha_cam alpha_thick ]
+end
+
 #--------------CAMBER-THICKNESS REPRESENTATION----------------#
 
 
@@ -98,14 +133,14 @@ function foil_camthick(coords :: Array{<: Real, 2}, num :: Integer = 40)
     xs, y_LE = lower[:,1], lower[1,2]   # Getting abscissa and leading edge ordinate
     y_upper, y_lower = upper[end:-1:1,2], lower[2:end,2] # Excluding leading edge point
 
-    camber = [y_LE; (y_upper .+ y_lower) / 2]
-    thickness = [0; y_upper .- y_lower]
+    camber = [ y_LE; (y_upper .+ y_lower) / 2 ]
+    thickness = [ 0; y_upper .- y_lower ]
 
     [ xs camber thickness ]
 end
 
 """
-Converts the camber-thickness representation to a Foil.
+Converts the camber-thickness representation to coordinates.
 """
 camthick_foil(xs, camber, thickness) = [ [xs camber .+ thickness / 2][end:-1:1,:]; xs camber .- thickness / 2 ]
 
