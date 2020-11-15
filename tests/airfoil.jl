@@ -24,25 +24,24 @@ num_dv = 8
 # Coordinates fitting
 up, low = split_foil(cos_foil)
 alpha_u, alpha_l = coords_to_CST(up, num_dv), coords_to_CST(low, num_dv)
-cst_foil = kulfan_CST([ alpha_u alpha_l ], [ 1e-4, -1e-4 ], 0.0)
+cst_foil = kulfan_CST(alpha_u, alpha_l, (1e-4, -1e-4), 0.0)
 
 ## Camber-thickness fitting
 alphas = camthick_to_CST(cos_foil, num_dv)
-cam_foil = camber_CST(alphas, [0, 2e-4], 0)
+cam_foil = camber_CST(alphas..., (0., 2e-4), 0)
 
 ## Kulfan CST
 alpha_u = [0.1, 0.3, 0.2, 0.15, 0.2]
 alpha_l = [-0.1, -0.1, -0.1, -0.001, -0.02]
-alphas = [alpha_u alpha_l]
 dzs = (1e-4, 1e-4)
-foil = kulfan_CST(alphas, dzs, 0.2)
+foil = kulfan_CST(alpha_u, alpha_l, dzs, 0.2)
 
 ## NACA 4-digit airfoils
 naca = naca4((2,4,1,2))
 
 ## Plotting library
 using Plots
-plotly();
+plotlyjs();
 
 ## Cosine and camber-thickness
 plot(cos_foil[:,1], cos_foil[:,2],
@@ -58,7 +57,7 @@ plot!(cam_foil[:,1], cam_foil[:,2],
 
 ## CST
 plot(foil[:,1], foil[:,2], 
-    label = "CST")
+    label = "CST", aspectratio = 1)
 
 ## NACA
 plot(naca[:,1], naca[:,2], 

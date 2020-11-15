@@ -15,8 +15,8 @@ using BenchmarkTools
 
 ##
 alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
-alpha_l = [-0.2, -0.1, -0.1, -0.001, -0.02]
-alphas = [alpha_u alpha_l]
+alpha_l = [-0.2, -0.1, -0.1, -0.001]
+alphas = [alpha_u,alpha_l]
 dzs = (1e-4, 1e-4)
 airfoil = kulfan_CST(alphas, dzs, 0.0, 100)
 

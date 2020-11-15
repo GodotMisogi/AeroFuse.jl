@@ -15,8 +15,7 @@ span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
 splitat(n, xs) = (xs[1:n,:], xs[n+1:end,:])  
 lisa(pred, iter) = span(!pred, iter)
 
-# Zieg Heil!
-
+# Sieg Heil!
 
 #--------------------HACKS----------------------#
 
@@ -40,10 +39,10 @@ dot(V₁, V₂) = sum(V₁ .* V₂)
 
 # Transforms (x, y) to the coordinate system with (x_s, y_s) as origin oriented at α_s.
 affine_2D(x, y, x_s, y_s, α_s) = rotation(x - x_s, y - y_s, α_s)
-inverse_rotation(x, y, angle) = (x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle))
-rotation(x, y, angle) = (x * cos(angle) + y * sin(angle), -x * sin(angle) + y * cos(angle))
+inverse_rotation(x, y, angle) = SVector(x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle))
+rotation(x, y, angle) = SVector(x * cos(angle) + y * sin(angle), -x * sin(angle) + y * cos(angle))
 
-slope(x1, y1, x2, y2) = (y2 - y1)/(x2 - x1)
+slope(x1, y1, x2, y2) = (y2 - y1) / (x2 - x1)
 
 #---------------------Improving readablity and functionality with arrays------------------------#
 

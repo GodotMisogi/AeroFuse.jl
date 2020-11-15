@@ -5,13 +5,13 @@ include("MathTools.jl")
 using LinearAlgebra
 using StaticArrays
 using Rotations
-using .MathTools: accumap, dot, structtolist
+using .MathTools: accumap, structtolist
 
 export Laplace, Uniform3D, Uniform, velocity, 
 Panel, Panel3D, area, panel_coords, midpoint, panel_normal,
 stability_axes, wind_axes,
 solve_horseshoes, dynamic_computations, nearfield_drag, 
-streamlines, print_dynamics, horseshoe_lines
+streamlines, aerodynamic_coefficients, print_dynamics, horseshoe_lines
 
 #--------------Lifting line code-------------------#
 
@@ -24,9 +24,9 @@ abstract type Laplace end
 A Uniform3D type expressing a uniform flow in spherical polar coordinates with angles α, β and magnitude mag.
 """
 struct Uniform3D <: Laplace
-    mag :: Float64
-    α :: Float64 
-    β :: Float64
+    mag :: Real
+    α :: Real 
+    β :: Real
 end
 
 """
@@ -48,7 +48,10 @@ velocity(uni :: Uniform3D) = freestream_to_cartesian(uni.mag, uni.α, uni.β)
 """
 Converts coordinates into stability axes.
 """
-stability_axes(coords, uni :: Uniform3D) = RotY{Float64}(uni.α) * coords
+stability_axes(coords, uni :: Uniform3D) =  [ cos(uni.α) 0 sin(uni.α); 
+                                                    0    1     0;
+                                              -sin(uni.α) 0 sin(uni.α)] * coords
+                                            # RotY{Float64}(uni.α) * coords
 
 """
 Converts coordinates into wind axes. This is supposedly not used and is just ceremonially implemented.
@@ -74,10 +77,10 @@ x
         p2 —→— p3
 """
 struct Panel3D <: Panel
-    p1 :: SVector{3,Float64}
-    p2 :: SVector{3,Float64}
-    p3 :: SVector{3,Float64}
-    p4 :: SVector{3,Float64}
+    p1 :: SVector{3,Real}
+    p2 :: SVector{3,Real}
+    p3 :: SVector{3,Real}
+    p4 :: SVector{3,Real}
 end
 
 """
@@ -99,10 +102,10 @@ midpoint(panel :: Panel3D) = (panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4) / 4
 """
 Computes the normal vector of Panel3D.
 """
-panel_normal(panel :: Panel3D) = let p21 = panel.p2 .- panel.p1, 
-                                     p41 = panel.p4 .- panel.p1, 
-                                     p21_x_p41 = p21 × p41;
-                                     p21_x_p41 / norm(p21_x_p41) end
+panel_normal(panel :: Panel3D) = let p31 = panel.p3 .- panel.p1, 
+                                     p42 = panel.p4 .- panel.p2, 
+                                     p31_x_p42 = p31 × p42;
+                                     p31_x_p42 / norm(p31_x_p42) end
 
 """
 Computes the weighted value between two points.
@@ -138,23 +141,26 @@ collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) .+ three_quart
 A composite type consisting of two vectors to define a line.
 """
 struct Line
-    r1 :: SVector{3,Float64}
-    r2 :: SVector{3,Float64}
+    r1 :: SVector{3,Real}
+    r2 :: SVector{3,Real}
 end
 
 """
 Computes the velocity induced at a point `r` by a vortex Line with uniform strength Γ. Checks if `r` lies on the line and sets it to `(0, 0, 0)` if so, as the velocity is singular there.
 """
-function velocity(r, line :: Line, Γ, ε = 1e-6; trailing = false, direction = [1, 0, 0])
+function velocity(r, line :: Line, Γ, ε = 1e-8; trailing = false, direction = [1, 0, 0])
     a = r .- line.r1
     b = r .- line.r2
     a_x_b = a × b
     na, nb = norm(a), norm(b)
 
+    # Compute bound leg velocity
     bound_velocity = any(<(ε), norm.([a, b, a_x_b])) ? zeros(3) : (1/na + 1/nb) * a_x_b / (na * nb + dot(a, b))
     
+    # Compute velocities of trailing legs
     trailing_velocity = !trailing ? zeros(3) : (a × direction) / (na - dot(a, direction)) / na - (b × direction) / (nb - dot(b, direction)) / nb
 
+    # Sums bound and trailing legs' velocities
     Γ/(4π) * (bound_velocity .+ trailing_velocity)
 end
 
@@ -255,7 +261,7 @@ sum_vortices(r, vortex_lines :: Array{Line}, Γ) = sum(velocity(r, line, Γ) for
 """
 Computes the induced velocities at a point `r` of a Vortex Ring with uniform strength Γ.
 """
-velocity(r, vortex_ring :: VortexRing, Γ) = sum_vortices(r, structolist(vortex_ring), Γ)
+velocity(r, vortex_ring :: VortexRing, Γ) = sum_vortices(r, structtolist(vortex_ring), Γ)
 
 #---------------------------------Matrix setup--------------------------------------#
 
@@ -264,12 +270,20 @@ Computes the influence coefficient of the velocity of a vortex line at a colloca
 """
 function influence_coefficient(collocation_point, horseshoe :: Horseshoe, panel_normal, norm_vel, symmetry = false) 
     mirror_point = SVector(collocation_point[1], -collocation_point[2], collocation_point[3])
-    dot(velocity(collocation_point, horseshoe, 1., norm_vel), panel_normal)
+    if symmetry
+        col_vel = velocity(collocation_point, horseshoe, 1., norm_vel)
+        mir_vel = velocity(mirror_point, horseshoe, 1., norm_vel)
+        sum_vel = SVector(col_vel[1] + mir_vel[1], col_vel[2] - mir_vel[2], col_vel[3] + mir_vel[3])
+        return dot(sum_vel, panel_normal)
+    else 
+        return dot(velocity(collocation_point, horseshoe, 1., norm_vel), panel_normal)
+    end
 end
+
 """
 Assembles the Aerodynamic Influence Coefficient (AIC) matrix given vortex lines, collocation points and associated normal vectors.
 """
-influence_matrix(colpoints, vortex_lines :: Array{Horseshoe}, normals, norm_vel) = [ influence_coefficient(colpoint_i, horsie_j, normal_i, norm_vel) for (colpoint_i, normal_i) ∈ zip(colpoints, normals), horsie_j ∈ vortex_lines ]
+influence_matrix(colpoints, vortex_lines :: Array{Horseshoe}, normals, norm_vel, symmetry = false) = [ influence_coefficient(colpoint_i, horsie_j, normal_i, norm_vel, symmetry) for (colpoint_i, normal_i) ∈ zip(colpoints, normals), horsie_j ∈ vortex_lines ]
 
 """
 Computes the projection of a velocity vector with respect to normals. Corresponds to construction of the boundary condition for the RHS of the AIC system.
@@ -292,12 +306,12 @@ make_wake(last_panels :: Array{Panel3D}, uniform :: Uniform3D, wake_length, wake
 """
 Solves the AIC matrix with the boundary condition given Panel3Ds and a freestream velocity.
 """
-function solve_horseshoes(horseshoe_panels :: Array{Panel3D}, camber_panels :: Array{Panel3D}, norm_vel) 
+function solve_horseshoes(horseshoe_panels :: Array{Panel3D}, camber_panels :: Array{Panel3D}, norm_vel, symmetry = false) 
     horseshoes = horseshoe_lines.(horseshoe_panels)
     colpoints = collocation_point.(horseshoe_panels)
     normals = panel_normal.(camber_panels)
     
-    AIC = influence_matrix(colpoints[:], horseshoes[:], normals[:], norm_vel) 
+    AIC = influence_matrix(colpoints[:], horseshoes[:], normals[:], norm_vel, symmetry) 
     boco = boundary_condition(normals[:], norm_vel)
     Γs = AIC \ boco
 
@@ -341,7 +355,7 @@ moment_coefficient(moment, ρ, V, S, ref_length) = force_coefficient(moment, ρ,
 """
 Computes the Kutta-Jowkowski forces and associated moments for horseshoes.
 """
-function dynamic_computations(Γs :: Array{Float64}, horseshoes :: Array{<: AbstractVortexArray}, vel, r_ref, ρ = 1.225)
+function dynamic_computations(Γs :: Array{<: Real}, horseshoes :: Array{<: AbstractVortexArray}, vel, r_ref, ρ = 1.225)
     geom_forces = kutta_force(Γs, horseshoes, vel, ρ)
     geom_moments = moments(horseshoes, geom_forces, r_ref)
 
@@ -387,7 +401,7 @@ streamlines(uniform :: Uniform3D, horseshoe_panels, horseshoes, Γs, length, num
 """
 Prints the relevant aerodynamic/flight dynamics information.
 """
-function print_dynamics(force, moment, drag, V, S, b, c, ρ)
+function aerodynamic_coefficients(force, moment, drag, V, S, b, c, ρ)
     CDi = force_coefficient(drag, ρ, V, S)
     CY = force_coefficient(force[2], ρ, V, S)
     CL = force_coefficient(force[3], ρ, V, S)
@@ -396,8 +410,12 @@ function print_dynamics(force, moment, drag, V, S, b, c, ρ)
     Cm = moment_coefficient(moment[2], ρ, V, S, c)
     Cn = moment_coefficient(moment[3], ρ, V, S, b)
 
-    println("Total Force: $force N")
-    println("Total Moment: $moment N-m")
+    CL, CDi, CY, Cl, Cm, Cn
+end
+
+function print_dynamics(CL, CD, CM, Cl, Cm, Cn)
+    # println("Total Force: $force N")
+    # println("Total Moment: $moment N-m")
     println("Lift Coefficient (CL): $CL")
     println("Drag Coefficient (CDi): $CDi")
     println("Side Force Coefficient (CY): $CY")

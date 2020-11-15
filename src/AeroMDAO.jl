@@ -1,23 +1,27 @@
 module AeroMDAO
 
 export 
-Foil, Wing, HalfWing, projected_area, span, mean_aerodynamic_chord, 
+Foil, Wing, HalfWing, make_wing, projected_area, span, mean_aerodynamic_chord, 
 Panel3D, Uniform, print_info, plot_setup, panel_coords, panel_normal, read_foil, 
 mesh_horseshoes, mesh_wing, mesh_cambers, lead_wing, wing_bounds,
 solve_case, streamlines, tupvector,
-plot_panels, plot_streamlines, horseshoe_lines
+plot_panels, plot_streamlines, horseshoe_lines,
+pressure_coefficient, Uniform2D, make_2Dpanels, grid_data, split_panels, collocation_point
 
 #----------------------IMPORTS--------------------------------#
 
 include("MathTools.jl")
 include("FoilParametrization.jl")
 include("VortexLattice.jl")
+include("DoubletSource.jl")
+
+using .MathTools: fwdsum, fwddiff, fwddiv, tuparray, vectarray, tupvector, linspace, cosine_dist, midgrad
+using .FoilParametrization: read_foil, cosine_foil, foil_camthick
+using .VortexLattice
+using .DoubletSource
 
 import Base: *, +
 using Base.Iterators: peel
-using .MathTools: fwdsum, fwddiff, fwddiv, tuparray, vectarray, tupvector, dot, linspace, cosine_dist
-using .FoilParametrization: read_foil, cosine_foil, foil_camthick
-using .VortexLattice
 using StaticArrays
 using LinearAlgebra
 using Rotations
@@ -66,13 +70,14 @@ coordinates(foil :: Foil) = [ foil.coords[:,1] (zeros ∘ length)(foil.coords[:,
 """
 Definition for a half-wing consisting of airfoils, span lengths, dihedrals, and sweep angles.
 """
+# chords :: Array{Float64} # Chord lengths (m)
 struct HalfWing <: Aircraft
     foils :: Array{Foil} # Airfoil profiles
-    chords :: Array{Float64} # Chord lengths (m)
-    spans :: Array{Float64}  # Leading-edge to leading-edge distance between foils (m)
-    dihedrals :: Array{Float64} # Dihedral angles (deg)
-    sweeps :: Array{Float64} # Leading-edge sweep angles (deg)
-    twists :: Array{Float64} # Twist angles (deg)
+    chords :: Array{<: Real}
+    spans :: Array{<: Real}  # Leading-edge to leading-edge distance between foils (m)
+    dihedrals :: Array{<: Real} # Dihedral angles (deg)
+    sweeps :: Array{<: Real} # Leading-edge sweep angles (deg)
+    twists :: Array{<: Real} # Twist angles (deg)
     HalfWing(foils, chords, spans, dihedrals, sweeps, twists) = new(foils, chords, spans, deg2rad.(dihedrals), deg2rad.(sweeps), -deg2rad.(twists)) # Convert to radians
 end
 
@@ -303,7 +308,7 @@ function mesh_horseshoes(wing :: Wing, span_num, chord_num)
 end
 
 """
-Meshes a HalfWing into panels meant for full 3D analyses using doublet-source elements. Also works as a surface mesh. TODO: Tip meshing.
+Meshes a Wing into panels meant for full 3D analyses using doublet-source elements. Also works as a surface mesh. TODO: Tip meshing.
 """
 function mesh_wing(wing :: Wing, span_num, chord_num)
     left_panels = mesh_wing(wing.left, span_num, chord_num, flip = true)
@@ -313,7 +318,7 @@ function mesh_wing(wing :: Wing, span_num, chord_num)
 end
 
 """
-Meshes a HalfWing into panels meant for vortex lattice analyses using vortex rings.
+Meshes a Wing into panels meant for vortex lattice analyses.
 """
 function mesh_cambers(wing :: Wing, span_num, chord_num)
     left_panels = mesh_cambers(wing.left, span_num, chord_num, flip = true)
@@ -321,6 +326,11 @@ function mesh_cambers(wing :: Wing, span_num, chord_num)
 
     [ left_panels right_panels ] 
 end
+
+"""
+Meshes a Half/Wing for vortex lattice analyses by generating horseshoe and camber panels.
+"""
+vlmesh_wing(wing :: Union{Wing, HalfWing}, span_num, chord_num) = mesh_horseshoes(wing, span_num, chord_num), mesh_cambers(wing, span_num, chord_num)
 
 """
 Prints the relevant geometric characteristics of a HalfWing or Wing.
@@ -332,18 +342,19 @@ function print_info(wing :: Union{Wing, HalfWing})
     println("Aspect Ratio: ", aspect_ratio(wing))
 end
 
-function solve_case(wing :: Aircraft, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5, print = true)
+function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5, print = true)
 
     vel = velocity(uniform)
 
-    wing = wing.left === wing.right ? wing.right : wing
+    symmetry = false
+    # if typeof(wing) == Wing
+    #     symmetry, wing = wing.left === wing.right ? (true, wing.right) : (false, wing)
+    # end
 
-    # Make panels
-    horseshoe_panels = mesh_horseshoes(wing, span_num, chord_num)
-    camber_panels = mesh_cambers(wing, span_num, chord_num)
+    horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
     
     # Solve system
-    Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, vel / uniform.mag)
+    Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, vel / uniform.mag, symmetry)
 
     # Scale vortex strengths
     Γs = uniform.mag * Γs
@@ -355,14 +366,35 @@ function solve_case(wing :: Aircraft, uniform :: Uniform3D, r_ref = (0.25, 0, 0)
     drag = nearfield_drag(force, uniform)
 
     # Print data
-    print ? print_dynamics(force, moment, drag, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ) : nothing
+    coeffs = aerodynamic_coefficients(force, moment, drag, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
 
-    horseshoe_panels, camber_panels, horseshoes, Γs
+    print ? print_dynamics(coeffs...) : nothing
+
+    # horseshoe_panels, camber_panels, horseshoes, Γs
+    coeffs
 end
+
+
+# solve_case(wings :: Array{Aircraft}, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5, print = true) =  
 
 plot_panels(panels :: Array{Panel3D}) = (tuparray ∘ panel_coords).(panels)
 plot_streamlines(streams) = tupvector(streams)
 
+function solve_case(panels :: Array{Panel2D}, uniform :: Uniform2D)
 
+    # Compute doublet and source strengths
+    φs, σs = solve_strengths(panels, uniform)
+    freestream_speed = norm(DoubletSource.velocity(uniform))
+    pressure_coeffs = pressure_coefficient.(freestream_speed, panel_velocities(panels, uniform, φs[1:end-1]))
+
+    # Make panels for plotting
+    # dub_src_panels = DoubletSourcePanel2D.(panels, φs[1:end-1], σs, pressure_coeffs)
+
+    # Compute lift coefficient
+    diff_pans = [ panel_dist(panel_1, panel_2) for (panel_1, panel_2) ∈ (collect ∘ eachrow ∘ midgrad)(panels) ]
+    cl = sum(lift_coefficient.(pressure_coeffs, diff_pans ./ 2, panel_angle.(panels)))
+
+    cl
+end
 
 end

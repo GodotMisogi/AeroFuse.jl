@@ -69,7 +69,7 @@ bernstein_basis(x, n, k) = binomial(n, k) * bernstein_class(x, k, n - k)
 """
 Defines a cosine-spaced airfoil using the Class Shape Transformation method on a Bernstein polynomial basis, with support for leading edge modifications.
 """
-function kulfan_CST(alphas :: Array{<: Real, 2}, (dz_u, dz_l), coeff_LE :: Real = 0, num_points :: Integer = 40)
+function kulfan_CST(alpha_u :: Array{<: Real}, alpha_l :: Array{<: Real}, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
 
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
@@ -78,15 +78,15 @@ function kulfan_CST(alphas :: Array{<: Real, 2}, (dz_u, dz_l), coeff_LE :: Real 
     bernie = (x, alphas, dz) -> cst_coords(bernstein_class, bernstein_basis, x, alphas, dz, coeff_LE)
 
     # Upper and lower surface generation
-    upper_surf = [ bernie(x, alphas[:,1], dz_u) for x ∈ xs ]
-    lower_surf = [ bernie(x, alphas[:,2], dz_l) for x ∈ xs ]
+    upper_surf = [ bernie(x, alpha_u, dz_u) for x ∈ xs ]
+    lower_surf = [ bernie(x, alpha_l, dz_l) for x ∈ xs ]
 
     # Counter-clockwise ordering
     [ [xs upper_surf][end:-1:2,:]; 
        xs lower_surf ]
 end
 
-function camber_CST(alphas :: Array{<: Real, 2}, (dz_cam, dz_thicc), coeff_LE :: Real = 0, num_points :: Integer = 40)
+function camber_CST(alpha_cam :: Array{<: Real}, alpha_thicc :: Array{<: Real}, (dz_cam, dz_thicc) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
 
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
@@ -95,8 +95,8 @@ function camber_CST(alphas :: Array{<: Real, 2}, (dz_cam, dz_thicc), coeff_LE ::
     bernie = (x, alphas, dz) -> cst_coords(bernstein_class, bernstein_basis, x, alphas, dz, coeff_LE)
 
     # Upper and lower surface generation
-    cam = [ bernie(x, alphas[:,1], dz_cam) for x ∈ xs ]
-    thicc = [ bernie(x, alphas[:,2], dz_thicc) for x ∈ xs ]
+    cam = [ bernie(x, alpha_cam, dz_cam) for x ∈ xs ]
+    thicc = [ bernie(x, alpha_thicc, dz_thicc) for x ∈ xs ]
 
     camthick_foil(xs, cam, thicc)
 end
@@ -118,7 +118,7 @@ function camthick_to_CST(coords, num_dvs)
     alpha_cam = coords_to_CST([ xs camber ], num_dvs)
     alpha_thick = coords_to_CST([ xs thickness ], num_dvs)
     
-    [ alpha_cam alpha_thick ]
+    alpha_cam, alpha_thick
 end
 
 #--------------CAMBER-THICKNESS REPRESENTATION----------------#
