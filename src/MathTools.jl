@@ -4,6 +4,13 @@ using StaticArrays
 using Base.Iterators
 using Base: product
 using Interpolations
+import Base: +, *
+
+# Tuple algebra
++(a :: Union{SVector, Tuple}, b :: Union{SVector, Tuple}) = a .+ b
+*(a :: Union{SVector, Tuple}, b :: Union{SVector, Tuple}) = a .* b
+# -(a :: Tuple, b :: Tuple) = a .- b
+# /(a :: Tuple, b :: Tuple) = a ./ b
 
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
@@ -33,7 +40,7 @@ structtolist(x) = [ name << x for name ∈ (fieldnames ∘ typeof)(x) ]
 #--------------------------Convenient math------------------------#
 
 ⊗(A, B) = kron(A, B)
-dot(V₁, V₂) = sum(V₁ .* V₂)
+# dot(V₁, V₂) = sum(V₁ .* V₂)
 # ×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
 ×(xs, ys) = product(xs, ys)
 

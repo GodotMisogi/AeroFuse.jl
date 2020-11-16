@@ -388,7 +388,7 @@ function streamlines(point, uniform :: Uniform3D, horseshoes, Γs, length, num_s
     vel = velocity(uniform)
     for i ∈ 1:num_steps
         update = vel .+ sum(velocity(streamlines[end], horseshoe, Γ, vel / uniform.mag) for (horseshoe, Γ) ∈ zip(horseshoes, Γs))
-        streamlines = [ streamlines..., streamlines[end] .+ (update / norm(update) * length / num_steps)  ]
+        streamlines = vcat(streamlines, streamlines[end] .+ (update / norm(update) * length / num_steps))
     end
     streamlines
 end

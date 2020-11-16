@@ -69,7 +69,7 @@ bernstein_basis(x, n, k) = binomial(n, k) * bernstein_class(x, k, n - k)
 """
 Defines a cosine-spaced airfoil using the Class Shape Transformation method on a Bernstein polynomial basis, with support for leading edge modifications.
 """
-function kulfan_CST(alpha_u :: Array{<: Real}, alpha_l :: Array{<: Real}, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
+function kulfan_CST(alpha_u :: Array{<: Any}, alpha_l :: Array{<: Real}, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
 
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
