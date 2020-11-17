@@ -15,7 +15,7 @@ include("FoilParametrization.jl")
 include("VortexLattice.jl")
 include("DoubletSource.jl")
 
-using .MathTools: fwdsum, fwddiff, fwddiv, tuparray, vectarray, tupvector, linspace, cosine_dist, midgrad
+using .MathTools: fwdsum, fwddiv, tuparray, vectarray, tupvector, linspace, cosine_dist, midgrad
 using .FoilParametrization: read_foil, cosine_foil, foil_camthick
 using .VortexLattice
 using .DoubletSource
@@ -343,8 +343,7 @@ function print_info(wing :: Union{Wing, HalfWing})
 end
 
 function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5, print = true)
-
-    vel = velocity(uniform)
+    vel = VortexLattice.velocity(uniform)
 
     symmetry = false
     # if typeof(wing) == Wing
@@ -370,8 +369,8 @@ function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, r_ref =
 
     print ? print_dynamics(coeffs...) : nothing
 
-    # horseshoe_panels, camber_panels, horseshoes, Γs
-    coeffs
+    horseshoe_panels, camber_panels, horseshoes, Γs
+    # coeffs
 end
 
 
@@ -381,7 +380,6 @@ plot_panels(panels :: Array{Panel3D}) = (tuparray ∘ panel_coords).(panels)
 plot_streamlines(streams) = tupvector(streams)
 
 function solve_case(panels :: Array{Panel2D}, uniform :: Uniform2D)
-
     # Compute doublet and source strengths
     φs, σs = solve_strengths(panels, uniform)
     freestream_speed = norm(DoubletSource.velocity(uniform))

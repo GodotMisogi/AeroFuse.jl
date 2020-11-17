@@ -19,7 +19,7 @@ xcamthick = foil_camthick(cos_foil)
 foiler = camthick_foil(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
 
 ## Fitting to CST
-num_dv = 8
+num_dv = 4
 
 # Coordinates fitting
 up, low = split_foil(cos_foil)
@@ -28,6 +28,7 @@ cst_foil = kulfan_CST(alpha_u, alpha_l, (1e-4, -1e-4), 0.0)
 
 ## Camber-thickness fitting
 alphas = camthick_to_CST(cos_foil, num_dv)
+print(alphas)
 cam_foil = camber_CST(alphas..., (0., 2e-4), 0)
 
 ## Kulfan CST

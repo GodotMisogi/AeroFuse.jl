@@ -14,7 +14,6 @@ Reads a '.dat' file consisting of 2D coordinates, for an airfoil.
 """
 function read_foil(path :: String; header = true)
     readdlm(path, skipstart = header ? 1 : 0)
-    # Point2D{Float64}.(f[:,1], f[:,2])
 end
 
 function split_foil(coords)
@@ -45,14 +44,14 @@ end
 #-------------------CST METHOD--------------------#
 
 # Basic shape function
-function shape_function(x :: Real, basis_func :: Function, coeffs :: Array{<: Real, 1}, coeff_LE :: Real = 0)
+function shape_function(x :: Real, basis_func :: Function, coeffs :: Array{<: Real}, coeff_LE :: Real = 0)
     n = length(coeffs)
     terms = [ basis_func(x, n - 1, i) for i in 0:n-1 ]
     sum(coeffs .* terms) + coeff_LE * (x^0.5) * (1 - x)^(n - 0.5)
 end
 
 # Computing coordinates
-cst_coords(class_func :: Function, basis_func :: Function, x :: Real, alphas :: Array{<: Real, 1}, dz :: Real, coeff_LE :: Real = 0) = class_func(x) * shape_function(x, basis_func, alphas, coeff_LE) + x * dz
+cst_coords(class_func :: Function, basis_func :: Function, x :: Real, alphas :: Array{<: Real}, dz :: Real, coeff_LE :: Real = 0) = class_func(x) * shape_function(x, basis_func, alphas, coeff_LE) + x * dz
 
 #--------------BERNSTEIN BASIS-----------------#
 
@@ -69,8 +68,7 @@ bernstein_basis(x, n, k) = binomial(n, k) * bernstein_class(x, k, n - k)
 """
 Defines a cosine-spaced airfoil using the Class Shape Transformation method on a Bernstein polynomial basis, with support for leading edge modifications.
 """
-function kulfan_CST(alpha_u :: Array{<: Any}, alpha_l :: Array{<: Real}, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
-
+function kulfan_CST(alpha_u :: Array{<: Real}, alpha_l :: Array{<: Real}, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
 
@@ -87,7 +85,6 @@ function kulfan_CST(alpha_u :: Array{<: Any}, alpha_l :: Array{<: Real}, (dz_u, 
 end
 
 function camber_CST(alpha_cam :: Array{<: Real}, alpha_thicc :: Array{<: Real}, (dz_cam, dz_thicc) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
-
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
 
@@ -102,7 +99,6 @@ function camber_CST(alpha_cam :: Array{<: Real}, alpha_thicc :: Array{<: Real}, 
 end
 
 function coords_to_CST(coords, num_dvs)
-
     S_matrix = hcat((bernstein_class.(coords[:,1]) .* bernstein_basis.(coords[:,1], num_dvs - 1, i) for i in 0:num_dvs - 1)...)
 
     alphas = S_matrix \ coords[:,2]
@@ -111,7 +107,6 @@ function coords_to_CST(coords, num_dvs)
 end
 
 function camthick_to_CST(coords, num_dvs)
-
     xs, camber, thickness = (columns ∘ foil_camthick)(coords)
 
     
@@ -142,7 +137,7 @@ end
 """
 Converts the camber-thickness representation to coordinates.
 """
-camthick_foil(xs, camber, thickness) = [ [xs camber .+ thickness / 2][end:-1:1,:]; xs camber .- thickness / 2 ]
+camthick_foil(xs, camber, thickness) = [ [xs camber .+ thickness / 2][end:-1:2,:]; xs camber .- thickness / 2 ]
 
 #--------NACA PARAMETRIZATION------------#
 
@@ -152,7 +147,6 @@ naca4_camberline(pos, cam, xc) = xc < pos ? (cam / pos^2) * xc * (2 * pos - xc) 
 naca4_gradient(pos, cam, xc) = atan(2 * cam / (xc < pos ? pos^2 : (1 - pos)^2) * (pos - xc))
 
 function naca4(digits :: Tuple, n :: Integer = 40; sharp_trailing_edge :: Bool = false)
-    
     # Camber
     cam = digits[1] / 100
     # Position

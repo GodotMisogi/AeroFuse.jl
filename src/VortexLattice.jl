@@ -89,9 +89,9 @@ Computes the area of Panel3D.
 area(panel :: Panel3D) = (abs ∘ norm)((panel.p2 - panel.p1) .* (panel.p3 - panel.p2))
 
 """
-Computes the coordinates of a Panel3D for plotting purposes (closes the loop).
+Computes the coordinates of a Panel3D for plotting purposes.
 """
-panel_coords(panel :: Panel3D) = [ panel.p1'; panel.p2'; panel.p3'; panel.p4' ] 
+panel_coords(panel :: Panel3D) = structtolist(panel)
 
 
 """
@@ -171,7 +171,7 @@ Placeholder. Vortex rings and horseshoes basically have the same methods, and ar
 abstract type AbstractVortexArray end
 
 """
-A horseshoe type consisting of vortex lines. TODO: Consider if better fields are "bound_vortex" and "trailing_vortices"
+A horseshoe type consisting of a bound leg of type Line represening a vortex line.
 """
 struct Horseshoe <: AbstractVortexArray
     bound_leg :: Line
@@ -388,7 +388,7 @@ function streamlines(point, uniform :: Uniform3D, horseshoes, Γs, length, num_s
     vel = velocity(uniform)
     for i ∈ 1:num_steps
         update = vel .+ sum(velocity(streamlines[end], horseshoe, Γ, vel / uniform.mag) for (horseshoe, Γ) ∈ zip(horseshoes, Γs))
-        streamlines = vcat(streamlines, streamlines[end] .+ (update / norm(update) * length / num_steps))
+        streamlines = [ streamlines..., streamlines[end] .+ (update / norm(update) * length / num_steps) ]
     end
     streamlines
 end
@@ -396,7 +396,7 @@ end
 """
 Computes the streamlines from the collocation points of given Horseshoes with the relevant previous inputs.
 """
-streamlines(uniform :: Uniform3D, horseshoe_panels, horseshoes, Γs, length, num_steps) = [ streamlines(SVector(hs), uniform, horseshoes, Γs, length, num_steps) for hs ∈ collocation_point.(horseshoe_panels)[:] ]
+streamlines(uniform :: Uniform3D, horseshoe_panels :: Array{<: Panel}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, length :: Real, num_steps :: Integer) = [ streamlines(SVector(hs), uniform, horseshoes, Γs, length, num_steps) for hs ∈ collocation_point.(horseshoe_panels)[:] ]
 
 """
 Prints the relevant aerodynamic/flight dynamics information.
@@ -413,7 +413,7 @@ function aerodynamic_coefficients(force, moment, drag, V, S, b, c, ρ)
     CL, CDi, CY, Cl, Cm, Cn
 end
 
-function print_dynamics(CL, CD, CM, Cl, Cm, Cn)
+function print_dynamics(CL, CDi, CY, Cl, Cm, Cn)
     # println("Total Force: $force N")
     # println("Total Moment: $moment N-m")
     println("Lift Coefficient (CL): $CL")

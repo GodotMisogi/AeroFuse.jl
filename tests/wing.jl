@@ -4,8 +4,8 @@ includet("../src/MathTools.jl")
 includet("../src/FoilParametrization.jl")
 
 ##
-using .FoilParametrization: read_foil, foil_camthick, camthick_foil, cosine_foil, kulfan_CST, naca4
-using .MathTools: linspace, tuparray, tupvector
+using .FoilParametrization: read_foil, kulfan_CST, naca4
+using .MathTools: linspace, tuparray, tupvector, columns
 using AeroMDAO
 
 ## Wing section setup
@@ -34,17 +34,17 @@ print_info(wing)
 ## Assembly
 ρ = 1.225
 ref = (0.25 * mean_aerodynamic_chord(wing), 0, 0)
-uniform = Uniform(10.0, 5.0, 0.0)
-@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case([wing], uniform, ref, span_num = 10, chord_num = 5, print = true);
+uniform = Uniform(10.0, 5.0, -5.0)
+@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 10, chord_num = 5, print = true);
 
 ## Panel method: TO DO
-wing_panels = mesh_wing(wing, 5, 5);
+wing_panels = mesh_wing(wing, 10, 5);
 
 ##
 wing_coords = plot_panels(wing_panels)[:]
 camber_coords = plot_panels(camber_panels)[:]
 horseshoe_coords = plot_panels(horseshoe_panels)[:]
-streams = plot_streamlines.(streamlines(uniform, horseshoe_panels, horseshoes, Γs, 10, 100));
+streams = plot_streamlines.(streamlines(uniform, horseshoe_panels, horseshoes, Γs, 10, 100))
 
 ##
 min_Γ, max_Γ = extrema(Γs)
@@ -55,15 +55,16 @@ norm_Γs = [ 2(Γ - min_Γ)/Γ_range - 1 for Γ ∈ Γs ]
 using PlotlyJS
 
 ##
-horse_xs = [ [ c[1] for c in panel ] for panel in horseshoe_coords ]
-horse_ys = [ [ c[2] for c in panel ] for panel in horseshoe_coords ]
-horse_zs = [ [ c[3] for c in panel ] for panel in horseshoe_coords ]
-camber_xs = [ [ c[1] for c in panel ] for panel in camber_coords ]
-camber_ys = [ [ c[2] for c in panel ] for panel in camber_coords ]
-camber_zs = [ [ c[3] for c in panel ] for panel in camber_coords ]
-streams_xs = [ [ c[1] for c in panel ] for panel in streams ]
-streams_ys = [ [ c[2] for c in panel ] for panel in streams ]
-streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
+# horse_xs = [ [ c[1] for c in panel ] for panel in horseshoe_coords ]
+# horse_ys = [ [ c[2] for c in panel ] for panel in horseshoe_coords ]
+# horse_zs = [ [ c[3] for c in panel ] for panel in horseshoe_coords ]
+
+# camber_xs = [ [ c[1] for c in panel ] for panel in camber_coords ]
+# camber_ys = [ [ c[2] for c in panel ] for panel in camber_coords ]
+# camber_zs = [ [ c[3] for c in panel ] for panel in camber_coords ]
+# streams_xs = [ [ c[1] for c in panel ] for panel in streams ]
+# streams_ys = [ [ c[2] for c in panel ] for panel in streams ]
+# streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
 
 
 ##

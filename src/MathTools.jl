@@ -4,11 +4,11 @@ using StaticArrays
 using Base.Iterators
 using Base: product
 using Interpolations
-import Base: +, *
+# import Base: +, *
 
 # Tuple algebra
-+(a :: Union{SVector, Tuple}, b :: Union{SVector, Tuple}) = a .+ b
-*(a :: Union{SVector, Tuple}, b :: Union{SVector, Tuple}) = a .* b
+# +(a :: Union{SVector, Tuple}, b :: Union{SVector, Tuple}) = a .+ b
+# *(a :: Union{SVector, Tuple}, b :: Union{SVector, Tuple}) = a .* b
 # -(a :: Tuple, b :: Tuple) = a .- b
 # /(a :: Tuple, b :: Tuple) = a ./ b
 
@@ -23,6 +23,27 @@ splitat(n, xs) = (xs[1:n,:], xs[n+1:end,:])
 lisa(pred, iter) = span(!pred, iter)
 
 # Sieg Heil!
+
+struct UnfoldingIterator{T,F}
+    init::T
+    f::F
+end
+
+Base.iterate(uf::UnfoldingIterator) = uf.init, uf.init
+
+function Base.iterate(uf::UnfoldingIterator, state)
+    maybestate = uf.f(state)
+    if maybestate ≡ nothing
+        nothing
+    else
+        state = something(maybestate)
+        state, state
+    end
+end
+
+Base.IteratorSize(::Type{<:UnfoldingIterator}) = Base.SizeUnknown()
+
+Base.IteratorEltype(::Type{<:UnfoldingIterator}) = Base.EltypeUnknown()
 
 #--------------------HACKS----------------------#
 
@@ -40,7 +61,7 @@ structtolist(x) = [ name << x for name ∈ (fieldnames ∘ typeof)(x) ]
 #--------------------------Convenient math------------------------#
 
 ⊗(A, B) = kron(A, B)
-# dot(V₁, V₂) = sum(V₁ .* V₂)
+dot(V₁, V₂) = sum(V₁ .* V₂)
 # ×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
 ×(xs, ys) = product(xs, ys)
 
