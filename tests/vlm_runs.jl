@@ -1,9 +1,11 @@
 ## 
 using Revise
+using StaticArrays
+using BenchmarkTools
+
+## Custom packages
 includet("../src/MathTools.jl")
 includet("../src/FoilParametrization.jl")
-
-##
 using .FoilParametrization: read_foil, kulfan_CST, naca4
 using .MathTools: linspace, tuparray, tupvector, columns
 using AeroMDAO
@@ -16,16 +18,15 @@ using AeroMDAO
 # foil = kulfan_CST(alphas, dzs, 0.2)
 
 foil = naca4((4,4,1,2))
-
 num_secs = 3
 foils = [ foil for i ∈ 1:num_secs ]
-airfoils = Foil.(foils)
 
+airfoils = Foil.(foils)
 wing_chords = [0.18, 0.16, 0.08]
-wing_twists = [2, 0, -2]
+wing_twists = [2., 0., -2.]
 wing_spans = [0.5, 0.5]
-wing_dihedrals = [0, 11.3]
-wing_sweeps = [1.14, 8]
+wing_dihedrals = [0., 11.3]
+wing_sweeps = [1.14, 8.]
 
 wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
 wing = Wing(wing_right, wing_right)
@@ -33,9 +34,10 @@ print_info(wing)
 
 ## Assembly
 ρ = 1.225
-ref = (0.25 * mean_aerodynamic_chord(wing), 0, 0)
-uniform = Uniform(10.0, 5.0, -5.0)
-@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 10, chord_num = 5, print = true);
+ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
+Ω = SVector(2., 0., 0.)
+uniform = Uniform(1.0, 5.0, 0.0)
+@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, Ω, ref, span_num = 5, chord_num = 10, print = true);
 
 ## Panel method: TO DO
 wing_panels = mesh_wing(wing, 10, 5);
@@ -44,27 +46,28 @@ wing_panels = mesh_wing(wing, 10, 5);
 wing_coords = plot_panels(wing_panels)[:]
 camber_coords = plot_panels(camber_panels)[:]
 horseshoe_coords = plot_panels(horseshoe_panels)[:]
-streams = plot_streamlines.(streamlines(uniform, horseshoe_panels, horseshoes, Γs, 10, 100))
+streams = plot_streamlines.(streamlines(uniform, Ω, horseshoe_panels, horseshoes, Γs, 5, 100));
 
 ##
 min_Γ, max_Γ = extrema(Γs)
 Γ_range = -map(-, min_Γ, max_Γ)
-norm_Γs = [ 2(Γ - min_Γ)/Γ_range - 1 for Γ ∈ Γs ]
+norm_Γs = [ 2 * (Γ - min_Γ) / Γ_range - 1 for Γ ∈ Γs ];
 
 ##
 using PlotlyJS
 
 ##
-# horse_xs = [ [ c[1] for c in panel ] for panel in horseshoe_coords ]
-# horse_ys = [ [ c[2] for c in panel ] for panel in horseshoe_coords ]
-# horse_zs = [ [ c[3] for c in panel ] for panel in horseshoe_coords ]
+horse_xs = [ [ c[1] for c in panel ] for panel in horseshoe_coords ]
+horse_ys = [ [ c[2] for c in panel ] for panel in horseshoe_coords ]
+horse_zs = [ [ c[3] for c in panel ] for panel in horseshoe_coords ]
 
-# camber_xs = [ [ c[1] for c in panel ] for panel in camber_coords ]
-# camber_ys = [ [ c[2] for c in panel ] for panel in camber_coords ]
-# camber_zs = [ [ c[3] for c in panel ] for panel in camber_coords ]
-# streams_xs = [ [ c[1] for c in panel ] for panel in streams ]
-# streams_ys = [ [ c[2] for c in panel ] for panel in streams ]
-# streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
+camber_xs = [ [ c[1] for c in panel ] for panel in camber_coords ]
+camber_ys = [ [ c[2] for c in panel ] for panel in camber_coords ]
+camber_zs = [ [ c[3] for c in panel ] for panel in camber_coords ]
+
+streams_xs = [ [ c[1] for c in panel ] for panel in streams ]
+streams_ys = [ [ c[2] for c in panel ] for panel in streams ]
+streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
 
 
 ##
@@ -107,7 +110,7 @@ trace_streams = [ scatter3d(
                             mode = :lines, 
                             line = attr(color = :lightblue),
                             showlegend = false,
-                            ) for (x, y, z) in zip(streams_xs, streams_ys, streams_zs) ]
+                            ) for (x, y, z) in zip(streams_xs, streams_ys, streams_zs) ];
 
 plot([ 
         [ trace for trace in trace_horses ]...,
@@ -115,7 +118,7 @@ plot([
         [ trace for trace in trace_cambers ]...,
         [ trace for trace in trace_streams ]... 
      ], 
-     layout)
+     layout);
 
 
 ##

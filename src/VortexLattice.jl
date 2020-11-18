@@ -5,6 +5,7 @@ include("MathTools.jl")
 using LinearAlgebra
 using StaticArrays
 using Rotations
+using TimerOutputs
 using .MathTools: accumap, structtolist
 
 export Laplace, Uniform3D, Uniform, velocity, 
@@ -12,8 +13,6 @@ Panel, Panel3D, area, panel_coords, midpoint, panel_normal,
 stability_axes, wind_axes,
 solve_horseshoes, dynamic_computations, nearfield_drag, 
 streamlines, aerodynamic_coefficients, print_dynamics, horseshoe_lines
-
-#--------------Lifting line code-------------------#
 
 """
 Solutions to Laplace's equation.
@@ -32,7 +31,7 @@ end
 """
 Uniform3D constructor in degrees.
 """
-Uniform(mag, α_deg, β_deg) = Uniform3D(mag, deg2rad(α_deg), deg2rad(β_deg))
+Uniform(mag, α_deg, β_deg) = Uniform3D(-mag, deg2rad(α_deg), deg2rad(β_deg))
 
 """
 Converts uniform flow coordinates to Cartesian coordinates.
@@ -44,13 +43,15 @@ Computes the velocity of Uniform3D.
 """
 velocity(uni :: Uniform3D) = freestream_to_cartesian(uni.mag, uni.α, uni.β)
 
-# Axes definitions
+# Axis transformations
+#==========================================================================================#
+
 """
 Converts coordinates into stability axes.
 """
-stability_axes(coords, uni :: Uniform3D) =  [ cos(uni.α) 0 sin(uni.α); 
-                                                    0    1     0;
-                                              -sin(uni.α) 0 sin(uni.α)] * coords
+stability_axes(coords, uni :: Uniform3D) =  [cos(uni.α) 0 sin(uni.α); 
+                                                  0     1     0     ;
+                                             sin(uni.α) 0 sin(uni.α)] * coords
                                             # RotY{Float64}(uni.α) * coords
 
 """
@@ -58,6 +59,30 @@ Converts coordinates into wind axes. This is supposedly not used and is just cer
 """
 wind_axes(coords, uni :: Uniform3D) = RotZY{Float64}(uni.β, uni.α) * coords
 
+
+"""
+Flips the y axis of a given vector.
+"""
+y_flip(vector :: SVector{3, Float64}) = SVector(vector[1], -vector[2], vector[3])
+
+"""
+Flips the x and z axes of a given vector.
+"""
+stab_flip(vector :: SVector{3, Float64}) = SVector(-vector[1], vector[2], -vector[3])
+
+"""
+Transforms forces and moments into stability axes.
+"""
+stability_axes(force, moment, Ω, uniform :: Uniform3D) = stability_axes(force, uniform), stability_axes(stab_flip(moment), uniform), stability_axes(stab_flip(Ω), uniform)
+
+"""
+Transforms forces and moments into wind axes.
+"""
+wind_axes(force, moment, uniform :: Uniform3D) = wind_axes(force, uniform), wind_axes([ -moment[1], moment[2], -moment[3] ], uniform)
+
+
+# Panel setup
+#==========================================================================================#
 
 """
 Placeholder. Panels should be an abstract type as they have some common methods, at least in 2D and 3D. 
@@ -155,13 +180,13 @@ function velocity(r, line :: Line, Γ, ε = 1e-8; trailing = false, direction = 
     na, nb = norm(a), norm(b)
 
     # Compute bound leg velocity
-    bound_velocity = any(<(ε), norm.([a, b, a_x_b])) ? zeros(3) : (1/na + 1/nb) * a_x_b / (na * nb + dot(a, b))
+    @timeit "Bound Leg" bound_velocity = any(<(ε), norm.([a, b, a_x_b])) ? zeros(3) : (1/na + 1/nb) * a_x_b / (na * nb + dot(a, b))
     
     # Compute velocities of trailing legs
-    trailing_velocity = !trailing ? zeros(3) : (a × direction) / (na - dot(a, direction)) / na - (b × direction) / (nb - dot(b, direction)) / nb
+    @timeit "Trailing Leg" trailing_velocity = !trailing ? zeros(3) : (a × direction) / (na - dot(a, direction)) / na - (b × direction) / (nb - dot(b, direction)) / nb
 
     # Sums bound and trailing legs' velocities
-    Γ/(4π) * (bound_velocity .+ trailing_velocity)
+    @timeit "Sum Legs" Γ/(4π) * (bound_velocity .+ trailing_velocity)
 end
 
 
@@ -263,17 +288,18 @@ Computes the induced velocities at a point `r` of a Vortex Ring with uniform str
 """
 velocity(r, vortex_ring :: VortexRing, Γ) = sum_vortices(r, structtolist(vortex_ring), Γ)
 
-#---------------------------------Matrix setup--------------------------------------#
+# Matrix setup
+#==========================================================================================#
 
 """
 Computes the influence coefficient of the velocity of a vortex line at a collocation point projected to a normal vector.
 """
 function influence_coefficient(collocation_point, horseshoe :: Horseshoe, panel_normal, norm_vel, symmetry = false) 
-    mirror_point = SVector(collocation_point[1], -collocation_point[2], collocation_point[3])
     if symmetry
+        mirror_point = y_flip(collocation_point)
         col_vel = velocity(collocation_point, horseshoe, 1., norm_vel)
-        mir_vel = velocity(mirror_point, horseshoe, 1., norm_vel)
-        sum_vel = SVector(col_vel[1] + mir_vel[1], col_vel[2] - mir_vel[2], col_vel[3] + mir_vel[3])
+        mir_vel = (y_flip ∘ velocity)(mirror_point, horseshoe, 1., norm_vel)
+        sum_vel = col_vel .+ mir_vel
         return dot(sum_vel, panel_normal)
     else 
         return dot(velocity(collocation_point, horseshoe, 1., norm_vel), panel_normal)
@@ -283,12 +309,12 @@ end
 """
 Assembles the Aerodynamic Influence Coefficient (AIC) matrix given vortex lines, collocation points and associated normal vectors.
 """
-influence_matrix(colpoints, vortex_lines :: Array{Horseshoe}, normals, norm_vel, symmetry = false) = [ influence_coefficient(colpoint_i, horsie_j, normal_i, norm_vel, symmetry) for (colpoint_i, normal_i) ∈ zip(colpoints, normals), horsie_j ∈ vortex_lines ]
+influence_matrix(colpoints_normals, vortex_lines :: Array{Horseshoe}, norm_vel, symmetry = false) = [ influence_coefficient(colpoint_i, horsie_j, normal_i, norm_vel, symmetry) for (colpoint_i, normal_i) ∈ colpoints_normals, horsie_j ∈ vortex_lines ]
 
 """
-Computes the projection of a velocity vector with respect to normals. Corresponds to construction of the boundary condition for the RHS of the AIC system.
+Computes the projection of a velocity vector with respect to normal vectors of panels. Corresponds to construction of the boundary condition for the RHS of the AIC system.
 """
-boundary_condition(normals, velocity) = - [ dot(velocity, normal) for normal ∈ normals ]
+boundary_condition(velocities, normals) = @timeit "Dotting" dot.(velocities, normals)
 
 """
 Generates a wake Panel3D aligned with a normalised direction vector.
@@ -306,18 +332,25 @@ make_wake(last_panels :: Array{Panel3D}, uniform :: Uniform3D, wake_length, wake
 """
 Solves the AIC matrix with the boundary condition given Panel3Ds and a freestream velocity.
 """
-function solve_horseshoes(horseshoe_panels :: Array{Panel3D}, camber_panels :: Array{Panel3D}, norm_vel, symmetry = false) 
-    horseshoes = horseshoe_lines.(horseshoe_panels)
-    colpoints = collocation_point.(horseshoe_panels)
-    normals = panel_normal.(camber_panels)
-    
-    AIC = influence_matrix(colpoints[:], horseshoes[:], normals[:], norm_vel, symmetry) 
-    boco = boundary_condition(normals[:], norm_vel)
-    Γs = AIC \ boco
+function solve_horseshoes(horseshoe_panels :: Array{Panel3D}, camber_panels :: Array{Panel3D}, norm_vel, Ω̄, symmetry = false) 
 
-    reshape(Γs, (length(horseshoes[:,1]), length(horseshoes[1,:]))), horseshoes
+    @timeit "Horseshoes" horseshoes = horseshoe_lines.(horseshoe_panels)
+    @timeit "Collocation Points" colpoints = collocation_point.(horseshoe_panels)
+    @timeit "Normals" normals = panel_normal.(camber_panels)
+    @timeit "Total Velocity" total_vel = [ norm_vel .+ (Ω̄ × rc_i) for rc_i ∈ colpoints ]
+
+    
+    @timeit "AIC" AIC = influence_matrix(zip(colpoints[:], normals[:]), horseshoes[:], norm_vel, symmetry) 
+    @timeit "RHS" boco = boundary_condition(normals[:], total_vel[:])
+    @timeit "Solve AIC" Γs = AIC \ boco
+
+    @timeit "Reshape" output = reshape(Γs, (length(horseshoes[:,1]), length(horseshoes[1,:]))), horseshoes
+
+    output
 end
-#-------------------------Force evaluations------------------------------------#
+
+# Force evaluations
+#==========================================================================================#
 
 # Trefftz plane evaluations
 # downwash(xi, xj, zi, zj) = -1/(2π) * (xj - xi) / ( (zj - zi)^2 + (xj - xi)^2 )
@@ -330,34 +363,59 @@ end
 # end
 
 """
+Evaluates the total induced velocity at a point `r` given Horseshoes, vortex strengths `Γ`s, rotation rates `Ω`, and freestream flow vector `freestream` in the aircraft reference frame.
+"""
+velocity(r, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, freestream) = sum(velocity(r, horseshoe, Γ, freestream / norm(freestream)) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .- freestream .- Ω × r
+
+
+"""
+Evaluates the total induced velocity at a point `r` given Horseshoes, vortex strengths `Γ`s, rotation rates `Ω`, and freestream flow vector `freestream` in the global reference frame.
+"""
+velocity(r, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, freestream) = sum(velocity(r, horseshoe, Γ, freestream / norm(freestream)) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .+ freestream .+ Ω × r
+
+"""
 Computes the local Kutta-Jowkowski forces given an array of horseshoes, their associated vortex strengths Γs, a Uniform3D, and a density ρ. The velocities are evaluated at the midpoint of the bound leg of each horseshoe.
 """
-function kutta_force(Γs, horseshoes :: Array{<: Horseshoe}, vel, ρ)
+function kutta_force(Γs, horseshoes :: Array{Horseshoe}, vel, Ω, ρ)
     Γ_rings = zip(Γs, horseshoes)
-    [ ρ * (sum(velocity(bound_leg_center(horseshoe_i), horseshoe_j, Γ, vel / norm(vel)) for (Γ, horseshoe_j) ∈ Γ_rings) .+ vel) × bound_leg_vector(horseshoe_i) * Γ_focus for (Γ_focus, horseshoe_i) ∈ Γ_rings ] 
+    [ 
+      let r_i = bound_leg_center(horseshoe_i), l_i = bound_leg_vector(horseshoe_i); 
+      ρ * velocity(r_i, Ω, horseshoes, Γs, vel) × l_i * Γ_focus; 
+      end for (Γ_focus, horseshoe_i) ∈ Γ_rings 
+    ]
 end
+
+"""
+Computes the dynamic pressure given density ρ and speed V.
+"""
+dynamic_pressure(ρ, V) = 0.5 * ρ * V^2
 
 """
 Placeholder. Unsure whether to change this to a generic moment computation function.
 """
-moments(horseshoes :: Array{<: Horseshoe}, forces, r_ref) = [ (bound_leg_center(vortex_ring) .- r_ref) × force for (force, vortex_ring) ∈ zip(forces, horseshoes) ]
+moments(horseshoes :: Array{Horseshoe}, forces, r_ref) = [ (bound_leg_center(vortex_ring) .- r_ref) × force for (force, vortex_ring) ∈ zip(forces, horseshoes) ]
 
 """
 Computes the non-dimensional force coefficient corresponding to standard aerodynamics.
 """
-force_coefficient(force, ρ, V, S) = 2 * force / (ρ * V^2 * S)
+force_coefficient(force, q, S) = force / (q * S)
 
 """
 Computes the non-dimensional moment coefficient corresponding to standard flight dynamics.
 """
-moment_coefficient(moment, ρ, V, S, ref_length) = force_coefficient(moment, ρ, V, S) / ref_length
+moment_coefficient(moment, q, S, ref_length) = force_coefficient(moment, q, S) / ref_length
+
+"""
+Computes the non-dimensional angular velocity coefficient corresponding to standard flight dynamics.
+"""
+rate_coefficient(angular_speed, V, ref_length) = angular_speed * ref_length / 2V
 
 """
 Computes the Kutta-Jowkowski forces and associated moments for horseshoes.
 """
-function dynamic_computations(Γs :: Array{<: Real}, horseshoes :: Array{<: AbstractVortexArray}, vel, r_ref, ρ = 1.225)
-    geom_forces = kutta_force(Γs, horseshoes, vel, ρ)
-    geom_moments = moments(horseshoes, geom_forces, r_ref)
+function dynamic_computations(Γs :: Array{<: Real}, horseshoes :: Array{<: AbstractVortexArray}, vel, Ω, r_ref, ρ = 1.225)
+    @timeit "Forces" geom_forces = kutta_force(Γs, horseshoes, vel, Ω, ρ)
+    @timeit "Moments" geom_moments = moments(horseshoes, geom_forces, r_ref)
 
     geom_forces, geom_moments
 end
@@ -365,29 +423,20 @@ end
 """
 Computes the near-field drag given the sum of the local Kutta-Jowkowski forces computed and a Uniform3D.
 """
-nearfield_drag(force, uniform :: Uniform3D) = dot(force, velocity(uniform) ./ uniform.mag)
-
-"""
-Transforms forces and moments into stability axes.
-"""
-stability_axes(force, moment, uniform :: Uniform3D) = stability_axes(force, uniform), stability_axes([ -moment[1], moment[2], -moment[3] ], uniform)
-
-"""
-Transforms forces and moments into wind axes.
-"""
-wind_axes(force, moment, uniform :: Uniform3D) = wind_axes(force, uniform), wind_axes([ -moment[1], moment[2], -moment[3] ], uniform)
+nearfield_drag(force, uniform :: Uniform3D) = - dot(force, velocity(uniform) / uniform.mag)
 
 
-#-----------------Post-processing------------------------#
+# Post-processing
+#==========================================================================================#
 
 """
 Computes the streamlines from a given starting point, a Uniform3D, Horseshoes and their associated strengths Γs. The length of the streamline and the number of evaluation points must also be specified.
 """
-function streamlines(point, uniform :: Uniform3D, horseshoes, Γs, length, num_steps)
+function streamlines(point, uniform :: Uniform3D, Ω, horseshoes, Γs, length, num_steps)
     streamlines = [point]
     vel = velocity(uniform)
     for i ∈ 1:num_steps
-        update = vel .+ sum(velocity(streamlines[end], horseshoe, Γ, vel / uniform.mag) for (horseshoe, Γ) ∈ zip(horseshoes, Γs))
+        update = velocity(streamlines[end], Ω, horseshoes, Γs, vel)
         streamlines = [ streamlines..., streamlines[end] .+ (update / norm(update) * length / num_steps) ]
     end
     streamlines
@@ -396,33 +445,49 @@ end
 """
 Computes the streamlines from the collocation points of given Horseshoes with the relevant previous inputs.
 """
-streamlines(uniform :: Uniform3D, horseshoe_panels :: Array{<: Panel}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, length :: Real, num_steps :: Integer) = [ streamlines(SVector(hs), uniform, horseshoes, Γs, length, num_steps) for hs ∈ collocation_point.(horseshoe_panels)[:] ]
+streamlines(uniform :: Uniform3D, Ω, horseshoe_panels :: Array{<: Panel}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, length :: Real, num_steps :: Integer) = [ streamlines(SVector(hs), uniform, Ω, horseshoes, Γs, length, num_steps) for hs ∈ collocation_point.(horseshoe_panels)[:] ]
 
 """
 Prints the relevant aerodynamic/flight dynamics information.
 """
-function aerodynamic_coefficients(force, moment, drag, V, S, b, c, ρ)
-    CDi = force_coefficient(drag, ρ, V, S)
-    CY = force_coefficient(force[2], ρ, V, S)
-    CL = force_coefficient(force[3], ρ, V, S)
+function aerodynamic_coefficients(force, moment, drag, Ω, V, S, b, c, ρ)
+    q = dynamic_pressure(ρ, V)
+    CDi = force_coefficient(drag, q, S)
+    CY = force_coefficient(force[2], q, S)
+    CL = force_coefficient(force[3], q, S)
 
-    Cl = moment_coefficient(moment[1], ρ, V, S, b)
-    Cm = moment_coefficient(moment[2], ρ, V, S, c)
-    Cn = moment_coefficient(moment[3], ρ, V, S, b)
+    Cl = moment_coefficient(moment[1], q, S, b)
+    Cm = moment_coefficient(moment[2], q, S, c)
+    Cn = moment_coefficient(moment[3], q, S, b)
 
-    CL, CDi, CY, Cl, Cm, Cn
+    p̄ = rate_coefficient(Ω[1], V, b)
+    q̄ = rate_coefficient(Ω[2], V, c)
+    r̄ = rate_coefficient(Ω[3], V, b)
+
+    CL, CDi, CY, Cl, Cm, Cn, p̄, q̄, r̄
 end
 
-function print_dynamics(CL, CDi, CY, Cl, Cm, Cn)
-    # println("Total Force: $force N")
-    # println("Total Moment: $moment N-m")
-    println("Lift Coefficient (CL): $CL")
-    println("Drag Coefficient (CDi): $CDi")
-    println("Side Force Coefficient (CY): $CY")
-    println("Lift-to-Drag Ratio (L/D): $(CL/CDi)")
-    println("Rolling Moment Coefficient (Cl): $Cl")
-    println("Pitching Moment Coefficient (Cm): $Cm")
-    println("Yawing Moment Coefficient (Cn): $Cn")
+function print_dynamics(CL, CDi, CY, Cl, Cm, Cn, p̄, q̄, r̄)
+    # println("Lift Coefficient")
+    println("CL: $CL")
+    # println("Drag Coefficient")
+    println("CDi: $CDi")
+    # println("Side Force Coefficient")
+    println("CY: $CY")
+    # println("Lift-to-Drag Ratio")
+    println("L/D: $(CL/CDi)")
+    # println("Rolling Moment Coefficient")
+    println("Cl: $Cl")
+    # println("Pitching Moment Coefficient")
+    println("Cm: $Cm")
+    # println("Yawing Moment Coefficient")
+    println("Cn: $Cn")
+    # println("Rolling Rate Coefficient")
+    println("p̄: $p̄")
+    # println("Pitching Rate Coefficient")
+    println("q̄: $q̄")
+    # println("Yawing Rate Coefficient")
+    println("r̄: $r̄")
 end
 
 end

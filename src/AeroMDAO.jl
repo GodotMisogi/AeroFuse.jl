@@ -23,6 +23,7 @@ using .DoubletSource
 import Base: *, +
 using Base.Iterators: peel
 using StaticArrays
+using TimerOutputs
 using LinearAlgebra
 using Rotations
 
@@ -342,31 +343,40 @@ function print_info(wing :: Union{Wing, HalfWing})
     println("Aspect Ratio: ", aspect_ratio(wing))
 end
 
-function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5, print = true)
+function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, Ω = SVector(0., 0., 0.), r_ref = SVector(0.25, 0., 0.), ρ = 1.225; span_num :: Integer = 15, chord_num :: Integer = 5, print = true)
     vel = VortexLattice.velocity(uniform)
 
+    # Experimental: Symmetry condition
     symmetry = false
-    # if typeof(wing) == Wing
-    #     symmetry, wing = wing.left === wing.right ? (true, wing.right) : (false, wing)
-    # end
+    if typeof(wing) == Wing
+        println("Symmetric Case")
+        symmetry, wing = wing.left === wing.right ? (true, wing.right) : (false, wing)
+    end
 
-    horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
+    reset_timer!()
+
+    # Compute panels
+    @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
     
-    # Solve system
-    Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, vel / uniform.mag, symmetry)
+    # Solve system with normalised velocities
+    @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, vel / uniform.mag, Ω / uniform.mag, symmetry)
 
     # Scale vortex strengths
-    Γs = uniform.mag * Γs
+    @timeit "Scale Horseshoes" Γs = uniform.mag .* Γs
 
     # Compute near-field forces
-    geom_forces, geom_moments = dynamic_computations(Γs, horseshoes, vel, r_ref, ρ)
+    @timeit "Compute Dynamics" geom_forces, geom_moments = dynamic_computations(Γs, horseshoes, vel, Ω, r_ref, ρ)
+
+    print_timer()
+
     force, moment = sum(geom_forces), sum(geom_moments)
-    stable_forces, stable_moments = stability_axes(force, moment, uniform)
+    @timeit "Transforming Axes" stable_forces, stable_moments, stable_rates = stability_axes(force, moment, Ω, uniform)
     drag = nearfield_drag(force, uniform)
 
-    # Print data
-    coeffs = aerodynamic_coefficients(force, moment, drag, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
+    # Compute non-dimensional coefficients
+    @timeit "Aerodynamic Coefficients" coeffs = aerodynamic_coefficients(force, moment, drag, stable_rates, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
 
+    # Optionally print data
     print ? print_dynamics(coeffs...) : nothing
 
     horseshoe_panels, camber_panels, horseshoes, Γs
@@ -376,7 +386,7 @@ end
 
 # solve_case(wings :: Array{Aircraft}, uniform :: Uniform3D, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5, print = true) =  
 
-plot_panels(panels :: Array{Panel3D}) = (tuparray ∘ panel_coords).(panels)
+plot_panels(panels :: Array{Panel3D}) = (tupvector ∘ panel_coords).(panels)
 plot_streamlines(streams) = tupvector(streams)
 
 function solve_case(panels :: Array{Panel2D}, uniform :: Uniform2D)

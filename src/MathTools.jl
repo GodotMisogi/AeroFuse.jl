@@ -18,11 +18,11 @@ columns(M) = [ view(M, :, i) for i in 1:size(M, 2) ]
 
 #-------------HASKELL MASTER RACE--------------#
 
+# Sieg Heil!
+
 span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
 splitat(n, xs) = (xs[1:n,:], xs[n+1:end,:])  
 lisa(pred, iter) = span(!pred, iter)
-
-# Sieg Heil!
 
 struct UnfoldingIterator{T,F}
     init::T
