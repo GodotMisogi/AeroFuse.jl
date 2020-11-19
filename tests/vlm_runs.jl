@@ -2,6 +2,7 @@
 using Revise
 using StaticArrays
 using BenchmarkTools
+using TimerOutputs
 
 ## Custom packages
 includet("../src/MathTools.jl")
@@ -33,20 +34,27 @@ wing = Wing(wing_right, wing_right)
 print_info(wing)
 
 ## Assembly
+reset_timer!()
+
 ρ = 1.225
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-Ω = SVector(2., 0., 0.)
-uniform = Uniform(1.0, 5.0, 0.0)
-@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, Ω, ref, span_num = 5, chord_num = 10, print = true);
+Ω = SVector(0.0, -0.0, 0.0)
+uniform = Uniform(1.0, 0.0, 0.0)
+@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, Ω, ref, span_num = 10, chord_num = 5, print = true);
 
+print_timer()
 ## Panel method: TO DO
 wing_panels = mesh_wing(wing, 10, 5);
-
-##
 wing_coords = plot_panels(wing_panels)[:]
 camber_coords = plot_panels(camber_panels)[:]
-horseshoe_coords = plot_panels(horseshoe_panels)[:]
-streams = plot_streamlines.(streamlines(uniform, Ω, horseshoe_panels, horseshoes, Γs, 5, 100));
+horseshoe_coords = plot_panels(horseshoe_panels)[:];
+
+## Streamlines
+reset_timer!()
+
+@timeit "Computing Streamlines" streams = plot_streamlines.(streamlines(uniform, Ω, horseshoe_panels, horseshoes, Γs, 5, 100));
+
+print_timer()
 
 ##
 min_Γ, max_Γ = extrema(Γs)
@@ -73,7 +81,8 @@ streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
 ##
 layout = Layout(
                 title = "Penguins",
-                scene=attr(aspectmode="manual", aspectratio=attr(x=1,y=1,z=1))
+                scene=attr(aspectmode="manual", aspectratio=attr(x=1,y=1,z=1)),
+                zlim=(-0.1, 5.0)
                 )
 
 trace_horses = [ mesh3d(
@@ -118,8 +127,7 @@ plot([
         [ trace for trace in trace_cambers ]...,
         [ trace for trace in trace_streams ]... 
      ], 
-     layout);
-
+     layout)
 
 ##
 # using Plots

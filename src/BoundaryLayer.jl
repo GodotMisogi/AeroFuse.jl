@@ -25,7 +25,7 @@ cf(Uₑ, θ, H, ν = 1.5e-5) = 2ν / (Uₑ * θ) * f2(H)
 c_Δ_times_2_by_H_star(ν, Uₑ, θ, H) = ν / (Uₑ * θ) * f3(H) # 2C_Δ/H* = f₃(H)/Re
 
 R₁(θ, θ₁, Uₑ, Uₑ₁, x, x₁, H, c_f) = (θ - θ₁)/( (θ + θ₁) / 2) + (H + 2)*(Uₑ - Uₑ₁)/( (Uₑ + Uₑ₁) / 2) - (c_f / 2) * (x - x₁) / ( (θ + θ₁) / 2)
-R₂(H_star, H_star₁, Uₑ, Uₑ₁, θ, θ₁, x, x₁, H, c_f, c_Δ) = (H_star - H_star₁)/( (H_star + H_star₁) / 2) + (1 - H) * (Uₑ - Uₑ₁) / ( (Uₑ + Uₑ₁) / 2) + (cf / 2 - 2 * c_Δ / ((H_star + H_star₁) / 2)) * (x - x₁) / ((θ + θ₁) / 2)
-R₃(source_influences, doublet_influences, ms, μs, freestream_tangents) = source_influences * ms + doublet_influences * μs - freestream_tangents 
+R₂(H_star, H_star₁, Uₑ, Uₑ₁, θ, θ₁, x, x₁, H, c_f, c_Δ) = (H_star - H_star₁)/( (H_star + H_star₁) / 2) + (1 - H) * (Uₑ - Uₑ₁) / ( (Uₑ + Uₑ₁) / 2) + (c_f / 2 - 2 * c_Δ / ((H_star + H_star₁) / 2)) * (x - x₁) / ((θ + θ₁) / 2)
+R₃(source_influences, doublet_influences, ms, μs, freestream_tangents) = source_influences * ms .+ doublet_influences * μs - freestream_tangents 
 
 end

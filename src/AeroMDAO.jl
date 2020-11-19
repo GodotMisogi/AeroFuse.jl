@@ -348,36 +348,43 @@ function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, Ω = SV
 
     # Experimental: Symmetry condition
     symmetry = false
-    if typeof(wing) == Wing
-        println("Symmetric Case")
-        symmetry, wing = wing.left === wing.right ? (true, wing.right) : (false, wing)
-    end
+    # if typeof(wing) == Wing
+    #     println("Symmetric Case")
+    #     symmetry, wing = wing.left === wing.right ? (true, wing.right) : (false, wing)
+    # end
 
-    reset_timer!()
+    # reset_timer!()
 
     # Compute panels
     @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
     
     # Solve system with normalised velocities
-    @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, vel / uniform.mag, Ω / uniform.mag, symmetry)
+    @timeit "Solve System" Γs, horseshoes, AIC = solve_horseshoes(horseshoe_panels, camber_panels, vel / uniform.mag, Ω / uniform.mag, symmetry)
 
     # Scale vortex strengths
     @timeit "Scale Horseshoes" Γs = uniform.mag .* Γs
 
     # Compute near-field forces
-    @timeit "Compute Dynamics" geom_forces, geom_moments = dynamic_computations(Γs, horseshoes, vel, Ω, r_ref, ρ)
-
-    print_timer()
+    @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, vel, Ω, r_ref, ρ)
 
     force, moment = sum(geom_forces), sum(geom_moments)
     @timeit "Transforming Axes" stable_forces, stable_moments, stable_rates = stability_axes(force, moment, Ω, uniform)
     drag = nearfield_drag(force, uniform)
 
-    # Compute non-dimensional coefficients
-    @timeit "Aerodynamic Coefficients" coeffs = aerodynamic_coefficients(force, moment, drag, stable_rates, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
+    @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, vel, r_ref, ρ)
 
-    # Optionally print data
-    print ? print_dynamics(coeffs...) : nothing
+    # Compute non-dimensional coefficients
+    @timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, stable_rates, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
+
+    @timeit "Farfield Coefficients" farfield_coeffs = aerodynamic_coefficients(trefftz_force, trefftz_moment, stable_rates, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
+
+    # # Optionally print data
+    @timeit "Printing" if print 
+        println("Nearfield:") 
+        print_dynamics(nearfield_coeffs...)
+        println("\nFarfield:")
+        print_dynamics(farfield_coeffs...)
+    end
 
     horseshoe_panels, camber_panels, horseshoes, Γs
     # coeffs
