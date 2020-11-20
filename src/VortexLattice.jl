@@ -352,7 +352,7 @@ trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = trailing_legs_velocities(r
 """
 Evaluates the induced velocity by the trailing legs at the midpoint of a given Horseshoe `r`, by summing over the velocities of Horseshoes with vortex strengths `Γ`s, rotation rates `Ω`, and freestream flow vector `freestream` in the aircraft reference frame.
 """
-midpoint_velocity(r :: SVector{3, Float64}, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, U) = sum(trailing_velocity(r, horseshoe, Γ, U) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .- U .- Ω × r
+midpoint_velocity(r :: SVector{3, Float64}, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, U) = sum(trailing_velocity(r, horseshoe, Γ, -U) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .- U .- Ω × r
 
 """
 Computes the nearfield forces via the local Kutta-Jowkowski given an array of horseshoes, their associated vortex strengths Γs, a Uniform3D, and a density ρ. The velocities are evaluated at the midpoint of the bound leg of each horseshoe.
