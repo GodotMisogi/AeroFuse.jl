@@ -2,7 +2,7 @@ module AeroMDAO
 
 export 
 Foil, Wing, HalfWing, make_wing, projected_area, span, mean_aerodynamic_chord, 
-Panel3D, Uniform, print_info, plot_setup, panel_coords, panel_normal, read_foil, 
+Panel3D, Freestream, print_info, plot_setup, panel_coords, panel_normal, read_foil, 
 mesh_horseshoes, mesh_wing, mesh_cambers, lead_wing, wing_bounds,
 solve_case, streamlines, tupvector,
 plot_panels, plot_streamlines, horseshoe_lines,
@@ -14,11 +14,13 @@ include("MathTools.jl")
 include("FoilParametrization.jl")
 include("VortexLattice.jl")
 include("DoubletSource.jl")
+include("NonDimensionalization.jl")
 
 using .MathTools: fwdsum, fwddiv, tuparray, vectarray, tupvector, linspace, cosine_dist, midgrad
 using .FoilParametrization: read_foil, cosine_foil, foil_camthick
 using .VortexLattice
 using .DoubletSource
+using .NonDimensionalization
 
 import Base: *, +
 using Base.Iterators: peel
@@ -355,23 +357,21 @@ function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, Ω = SV
 
     # reset_timer!()
 
+    
     # Compute panels
     @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
     
     # Solve system with normalised velocities
-    @timeit "Solve System" Γs, horseshoes, AIC = solve_horseshoes(horseshoe_panels, camber_panels, vel / uniform.mag, Ω / uniform.mag, symmetry)
-
-    # Scale vortex strengths
-    @timeit "Scale Horseshoes" Γs = uniform.mag .* Γs
+    @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, uniform, Ω, symmetry)
 
     # Compute near-field forces
-    @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, vel, Ω, r_ref, ρ)
+    @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, uniform, Ω, r_ref, ρ)
 
     force, moment = sum(geom_forces), sum(geom_moments)
     @timeit "Transforming Axes" stable_forces, stable_moments, stable_rates = stability_axes(force, moment, Ω, uniform)
     drag = nearfield_drag(force, uniform)
 
-    @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, vel, r_ref, ρ)
+    @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, uniform, r_ref, ρ)
 
     # Compute non-dimensional coefficients
     @timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, stable_rates, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
@@ -382,8 +382,8 @@ function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, Ω = SV
     @timeit "Printing" if print 
         println("Nearfield:") 
         print_dynamics(nearfield_coeffs...)
-        println("\nFarfield:")
-        print_dynamics(farfield_coeffs...)
+        # println("\nFarfield:")
+        # print_dynamics(farfield_coeffs...)
     end
 
     horseshoe_panels, camber_panels, horseshoes, Γs

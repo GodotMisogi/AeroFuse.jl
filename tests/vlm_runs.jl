@@ -38,11 +38,12 @@ reset_timer!()
 
 ρ = 1.225
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-Ω = SVector(0.0, -0.0, 0.0)
-uniform = Uniform(1.0, 0.0, 0.0)
+Ω = SVector(0.0, 0.0, 0.0)
+uniform = Freestream(10.0, 5.0, 0.0)
 @time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, Ω, ref, span_num = 10, chord_num = 5, print = true);
 
 print_timer()
+
 ## Panel method: TO DO
 wing_panels = mesh_wing(wing, 10, 5);
 wing_coords = plot_panels(wing_panels)[:]
@@ -59,7 +60,7 @@ print_timer()
 ##
 min_Γ, max_Γ = extrema(Γs)
 Γ_range = -map(-, min_Γ, max_Γ)
-norm_Γs = [ 2 * (Γ - min_Γ) / Γ_range - 1 for Γ ∈ Γs ];
+norm_Γs = [ 2 * (Γ - min_Γ) / Γ_range - 1 for Γ ∈ Γs ]
 
 ##
 using PlotlyJS
@@ -76,7 +77,6 @@ camber_zs = [ [ c[3] for c in panel ] for panel in camber_coords ]
 streams_xs = [ [ c[1] for c in panel ] for panel in streams ]
 streams_ys = [ [ c[2] for c in panel ] for panel in streams ]
 streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
-
 
 ##
 layout = Layout(
