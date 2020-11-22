@@ -3,6 +3,7 @@ using Revise
 using StaticArrays
 using BenchmarkTools
 using TimerOutputs
+using ProfileView
 
 ## Custom packages
 includet("../src/MathTools.jl")
@@ -40,9 +41,9 @@ reset_timer!()
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
 Ω = SVector(0.0, 0.0, 0.0)
 uniform = Freestream(10.0, 5.0, 0.0)
-@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, Ω, ref, span_num = 10, chord_num = 5, print = true);
+@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, Ω, ref, span_num = 10, chord_num = 5, print = true) 
 
-print_timer()
+print_timer();
 
 ## Panel method: TO DO
 wing_panels = mesh_wing(wing, 10, 5);

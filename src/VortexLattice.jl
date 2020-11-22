@@ -70,7 +70,7 @@ wind_axes(coords, uni :: Uniform3D) = RotZY{Float64}(uni.β, uni.α) * coords
 """
 Flips the y axis of a given vector.
 """
-xz_flip(vector :: SVector{3, Float64}) = SVector(vector[1], -vector[2], vector[3])
+reflect_xz(vector :: SVector{3, Float64}) = SVector(vector[1], -vector[2], vector[3])
 
 """
 Flips the x and z axes of a given vector.
@@ -81,6 +81,8 @@ stab_flip(vector :: SVector{3, Float64}) = SVector(-vector[1], vector[2], -vecto
 Transforms forces and moments into stability axes.
 """
 stability_axes(force, moment, Ω, freestream :: Uniform3D) = stability_axes(force, freestream), stability_axes(stab_flip(moment), freestream), stability_axes(stab_flip(Ω), freestream)
+
+wind_axes(force, moment, Ω, freestream :: Uniform3D) = wind_axes(force, freestream), wind_axes(stab_flip(moment), freestream), wind_axes(stab_flip(Ω), freestream)
 
 """
 Transforms forces and moments into wind axes.
@@ -258,8 +260,8 @@ bound_leg_vector(vortex :: AbstractVortexArray) = vector(vortex.bound_leg)
 Computes the velocity using the method of images for a symmetric case in the x-z plane.
 """
 function mirror_velocity(collocation_point, horseshoe, Γ, Û)
-    mirror_point = xz_flip(collocation_point)
-    mir_vel = (xz_flip ∘ velocity)(mirror_point, horseshoe, Γ, Û)
+    mirror_point = reflect_xz(collocation_point)
+    mir_vel = (reflect_xz ∘ velocity)(mirror_point, horseshoe, Γ, Û)
 end
 
 """
@@ -289,19 +291,6 @@ influence_matrix(colpoints, normals, vortex_lines :: Array{Horseshoe}, V̂, symm
 Computes the projection of a velocity vector with respect to normal vectors of panels. Corresponds to construction of the boundary condition for the RHS of the AIC system.
 """
 boundary_condition(velocities, normals) = @timeit "Dotting" dot.(velocities, normals)
-
-"""
-Generates a wake Panel3D aligned with a normalised direction vector.
-"""
-function wake_panel(panel :: Panel3D, freestream :: Uniform3D, bound = 1.)
-    wake = bound .* (normalize ∘ velocity)(freestream)
-    Panel3D(panel.p2, panel.p2 .+ wake, panel.p3 .+ wake, panel.p3)
-end
-
-"""
-Generates wake Panel3Ds given the Panel3Ds of a wing corresponding to the trailing edge and a Uniform3D. The wake length and number of wake panels must be provided.
-"""
-make_wake(last_panels :: Array{Panel3D}, freestream :: Uniform3D, wake_length, wake_num) = (permutedims ∘ accumap)(panel -> wake_panel(panel, freestream, wake_length / wake_num), wake_num, last_panels)
 
 """
 Solves the AIC matrix with the boundary condition given Panel3Ds and a freestream velocity.
@@ -352,7 +341,7 @@ trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = trailing_legs_velocities(r
 """
 Evaluates the induced velocity by the trailing legs at the midpoint of a given Horseshoe `r`, by summing over the velocities of Horseshoes with vortex strengths `Γ`s, rotation rates `Ω`, and freestream flow vector `freestream` in the aircraft reference frame.
 """
-midpoint_velocity(r :: SVector{3, Float64}, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, U) = sum(trailing_velocity(r, horseshoe, Γ, -U) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .- U .- Ω × r
+midpoint_velocity(r :: SVector{3, Float64}, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, U) = sum(trailing_velocity(r, horseshoe, Γ, -normalize(U)) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .- U .- Ω × r
 
 """
 Computes the nearfield forces via the local Kutta-Jowkowski given an array of horseshoes, their associated vortex strengths Γs, a Uniform3D, and a density ρ. The velocities are evaluated at the midpoint of the bound leg of each horseshoe.
@@ -388,7 +377,7 @@ trefftz_potential(r_i, r_j, Γ_j, Û) = let r = r_i .- r_j; Γ_j/2π * Û × r
 
 trefftz_matrix(trefftz_lines, normals, Û) = [ dot(trefftz_potential(center(tline_i), tline_j.r1, 1., Û), n̂_i) for (tline_i, n̂_i) in zip(trefftz_lines, normals), tline_j in trefftz_lines ]
 
-trefftz_projection(line) = Line(SVector(0, line.r1[2], line.r1[3]), SVector(0, line.r2[2], line.r2[3]))
+project_yz(line :: Line) = Line(SVector(0, line.r1[2], line.r1[3]), SVector(0, line.r2[2], line.r2[3]))
 
 wind_axes(line :: Line, freestream :: Uniform3D) = Line(wind_axes(line.r1, freestream), wind_axes(line.r2, freestream)) 
 
@@ -405,9 +394,10 @@ function trefftz_forces(Γs, horseshoes :: Array{Horseshoe}, uniform :: Uniform3
 
     # Project horseshoes' bound legs into Trefftz plane along freestream
     U = velocity(uniform)
-    lines = [ wind_axes(horseshoe.bound_leg, uniform) for horseshoe in horseshoes[end,:] ][:]
-    trefftz_lines = trefftz_projection.(lines)
-    trefftz_vectors = vector.(trefftz_lines)
+    # lines = [ wind_axes(horseshoe.bound_leg, uniform) for horseshoe in horseshoes[end,:] ][:]
+    # trefftz_lines = project_yz.()
+    trefftz_lines = [ horseshoe.bound_leg for horseshoe in horseshoes[end,:] ][:]
+    trefftz_vectors = bound_vector.(trefftz_lines)
 
     Us = repeat([U], length(trefftz_lines))
     normals = Us .× trefftz_vectors
@@ -428,7 +418,7 @@ function trefftz_forces(Γs, horseshoes :: Array{Horseshoe}, uniform :: Uniform3
     Y = - ρ * sum(pots_lens .* sin.(dihedrals))
     L = ρ * sum(pots_lens .* cos.(dihedrals))
 
-    SVector(L, D_i, Y)
+    SVector(D_i, Y, L)
 end 
 
 """
@@ -448,7 +438,7 @@ end
 """
 Evaluates the total induced velocity at a point `r` given Horseshoes, vortex strengths `Γ`s, rotation rates `Ω`, and freestream flow vector `freestream` in the global reference frame.
 """
-stream_velocity(r, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, V) = sum(velocity(r, horseshoe, Γ, V / norm(V)) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .+ freestream .+ Ω × r
+stream_velocity(r, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, V) = sum(velocity(r, horseshoe, Γ, V / norm(V)) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .+ V .+ Ω × r
 
 """
 Computes the streamlines from a given starting point, a Uniform3D, Horseshoes and their associated strengths Γs. The length of the streamline and the number of evaluation points must also be specified.
@@ -469,6 +459,20 @@ Computes the streamlines from the collocation points of given Horseshoes with th
 streamlines(uniform :: Uniform3D, Ω, horseshoe_panels :: Array{<: Panel}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, length :: Real, num_steps :: Integer) = [ streamlines(SVector(hs), uniform, Ω, horseshoes, Γs, length, num_steps) for hs ∈ collocation_point.(horseshoe_panels)[:] ]
 
 end
+
+
+# """
+# Generates a wake Panel3D aligned with a normalised direction vector.
+# """
+# function wake_panel(panel :: Panel3D, freestream :: Uniform3D, bound = 1.)
+#     wake = bound .* (normalize ∘ velocity)(freestream)
+#     Panel3D(panel.p2, panel.p2 .+ wake, panel.p3 .+ wake, panel.p3)
+# end
+
+# """
+# Generates wake Panel3Ds given the Panel3Ds of a wing corresponding to the trailing edge and a Uniform3D. The wake length and number of wake panels must be provided.
+# """
+# make_wake(last_panels :: Array{Panel3D}, freestream :: Uniform3D, wake_length, wake_num) = (permutedims ∘ accumap)(panel -> wake_panel(panel, freestream, wake_length / wake_num), wake_num, last_panels)
 
 
 # """
