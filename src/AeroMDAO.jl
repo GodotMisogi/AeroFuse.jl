@@ -4,8 +4,8 @@ export
 Foil, Wing, HalfWing, make_wing, projected_area, span, mean_aerodynamic_chord, 
 Panel3D, Freestream, print_info, plot_setup, panel_coords, panel_normal, read_foil, 
 mesh_horseshoes, mesh_wing, mesh_cambers, lead_wing, wing_bounds,
-solve_case, streamlines, tupvector,
-plot_panels, plot_streamlines, horseshoe_lines,
+solve_case, streamlines, tupvector, make_panels, vlmesh_wing, transform, paneller,
+plot_panels, plot_streamlines, horseshoe_lines, aerodynamic_coefficients, print_dynamics
 pressure_coefficient, Uniform2D, make_2Dpanels, grid_data, split_panels, collocation_point
 
 #----------------------IMPORTS--------------------------------#
@@ -142,15 +142,15 @@ end
 """
 Computes the weighted average (μ) of two vectors. 
 """
-vector_point(x1, x2, μ) = x1 .+ μ .* (x2 .- x1)
+vector_point(x1, x2, μ) = x1 .+ μ * (x2 .- x1)
 
 """
-Divides two vectors into `n' sections with cosine spacing. TODO: Upgrade to generic spacing functions.
+Divides two vectors into `n` sections with cosine spacing. TODO: Upgrade to generic spacing functions.
 """
 chop_sections(set1, set2, n) = [ vector_point.(set1, set2, μ) for μ ∈ cosine_dist(0.5, 1., n + 1) ][1:end-1]
 
 """
-Divides a set of directional vectors into `n' sections with cosine spacing.
+Divides a set of directional vectors into `n` sections with cosine spacing.
 """
 coords_chopper(coords, n) = [ (chop_sections.(coords[1:end-1], coords[2:end], n)...)..., coords[end] ]
 
@@ -250,7 +250,7 @@ function make_panels(coords)
 end
 
 """
-Meshes a HalfWing into panels meant for lifting-line analyses using horseshoe elements.
+Meshes a HalfWing into panels based on the chord lines of the airfoil sections, meant for lifting-line analyses using horseshoe elements.
 """
 mesh_horseshoes(obj :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ wing_chopper)(wing_bounds(obj, flip)..., span_num, chord_num)
 
@@ -260,19 +260,19 @@ Meshes a HalfWing into panels meant for full 3D analyses using doublet-source el
 mesh_wing(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ wing_coords)(wing, span_num, chord_num, flip)
 
 """
-Meshes a HalfWing into panels meant for vortex lattice analyses using vortex rings.
+Meshes a HalfWing into panels based on the camber distributions of the airfoil sections, meant for vortex lattice analyses.
 """
 mesh_cambers(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ camber_coords)(wing, span_num, chord_num, flip)
 
-"""
-Performs an affine transformation on a list of coordinates.
-"""
-transform(coords, rotation, translation) = coords * rotation' .+ translation
+# """
+# Performs an affine transformation on a list of coordinates.
+# """
+# transform(coords, rotation, translation) = coords * rotation' .+ translation
 
-"""
-Performs an affine transformation on the leading and trailing edges of a HalfWing.
-"""
-transform(lead, trail; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = transform(lead, rotation, translation), transform(trail, rotation', translation)
+# """
+# Performs an affine transformation on the leading and trailing edges of a HalfWing.
+# """
+# transform(lead, trail; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = transform(lead, rotation', translation), transform(trail, rotation', translation)
 
 """
 A composite type consisting of two HalfWings. `left' is meant to have its y-coordinates flipped ∈ Cartesian representation.
@@ -335,6 +335,12 @@ Meshes a Half/Wing for vortex lattice analyses by generating horseshoe and cambe
 """
 vlmesh_wing(wing :: Union{Wing, HalfWing}, span_num, chord_num) = mesh_horseshoes(wing, span_num, chord_num), mesh_cambers(wing, span_num, chord_num)
 
+function paneller(wing :: Union{Wing, HalfWing}, span_num, chord_num; rotation = one(RotMatrix{3, Float64}), translation = SVector(0,0,0))
+    horseshoes, cambers = vlmesh_wing(wing, span_num, chord_num) 
+    [ transform(panel, rotation = rotation, translation = translation) for panel in horseshoes ],
+    [ transform(panel, rotation = rotation, translation = translation) for panel in cambers ]
+end
+
 """
 Prints the relevant geometric characteristics of a HalfWing or Wing.
 """
@@ -343,6 +349,32 @@ function print_info(wing :: Union{Wing, HalfWing})
     println("Area: ", projected_area(wing), " m²")
     println("MAC: ", mean_aerodynamic_chord(wing), " m")
     println("Aspect Ratio: ", aspect_ratio(wing))
+end
+
+function solve_case(horseshoe_panels :: Array{Panel3D}, camber_panels :: Array{Panel3D}, uniform :: Uniform3D, Ω = SVector(0., 0., 0.), r_ref = SVector(0.25, 0., 0.), ρ = 1.225; print = true, symmetry = false)
+    vel = VortexLattice.velocity(uniform)
+
+    # Solve system with normalised velocities
+    @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, uniform, Ω, symmetry)
+
+    # Compute near-field forces
+    @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, uniform, Ω, r_ref, ρ)
+
+    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, uniform.mag, VortexLattice.area.(camber_panels))
+    # println(cps)
+
+    force, moment = sum(geom_forces), sum(geom_moments)
+    @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, Ω, uniform)
+    drag = nearfield_drag(force, uniform)
+
+    # @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, uniform, r_ref, ρ)
+
+    # # Compute non-dimensional coefficients
+    # @timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, trans_rates, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
+
+    force, drag, moment, horseshoes, Γs
+    # horseshoe_panels, camber_panels, horseshoes, Γs
+    # coeffs
 end
 
 function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, Ω = SVector(0., 0., 0.), r_ref = SVector(0.25, 0., 0.), ρ = 1.225; span_num :: Integer = 15, chord_num :: Integer = 5, print = true)
@@ -367,8 +399,11 @@ function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, Ω = SV
     # Compute near-field forces
     @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, uniform, Ω, r_ref, ρ)
 
+    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, uniform.mag, VortexLattice.area.(camber_panels))
+    # println(cps)
+
     force, moment = sum(geom_forces), sum(geom_moments)
-    @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = wind_axes(force, moment, Ω, uniform)
+    @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, Ω, uniform)
     drag = nearfield_drag(force, uniform)
 
     @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, uniform, r_ref, ρ)

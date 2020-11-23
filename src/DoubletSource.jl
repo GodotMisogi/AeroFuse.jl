@@ -23,9 +23,6 @@ import Base: +, -, zero
 # zero(:: Nothing) = nothing
 
 
-pressure_coefficient(mag, vels) = 1 - norm(vels)^2 / mag^2
-
-
 #------------------- Solutions to Laplace's equation--------------------#
 
 abstract type Laplace end

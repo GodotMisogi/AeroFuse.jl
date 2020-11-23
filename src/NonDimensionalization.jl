@@ -1,6 +1,6 @@
 module NonDimensionalization
 
-export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, aerodynamic_coefficients, print_dynamics
+export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_dynamics
 
 """
 Computes the dynamic pressure given density ρ and speed V.
@@ -21,6 +21,17 @@ moment_coefficient(moment, q, S, ref_length) = force_coefficient(moment, q, S) /
 Computes the non-dimensional angular velocity coefficient corresponding to standard flight dynamics.
 """
 rate_coefficient(angular_speed, V, ref_length) = angular_speed * ref_length / 2V
+
+
+"""
+Computes the pressure coefficient given force, reference density, speed and area.
+"""
+pressure_coefficient(force, ρ, V, S) = force_coefficient(force, dynamic_pressure(ρ, V), S)
+
+"""
+Computes the incompressible pressure coefficient given a magnitude and a velocity vector.
+"""
+pressure_coefficient(mag, vels) = 1 - norm(vels)^2 / mag^2
 
 """
 Prints the relevant aerodynamic/flight dynamics information.

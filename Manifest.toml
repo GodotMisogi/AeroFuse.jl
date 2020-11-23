@@ -65,9 +65,9 @@ version = "0.5.0"
 
 [[BinDeps]]
 deps = ["Libdl", "Pkg", "SHA", "URIParser", "Unicode"]
-git-tree-sha1 = "46cf2c1668ad07aba5a9d331bdeea994a1f13856"
+git-tree-sha1 = "1289b57e8cf019aede076edab0587eb9644175bd"
 uuid = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
-version = "1.0.1"
+version = "1.0.2"
 
 [[BinaryProvider]]
 deps = ["Libdl", "Logging", "SHA"]
@@ -226,9 +226,9 @@ version = "1.0.2"
 
 [[DiffRules]]
 deps = ["NaNMath", "Random", "SpecialFunctions"]
-git-tree-sha1 = "eb0c34204c8410888844ada5359ac8b96292cfd1"
+git-tree-sha1 = "214c3fcac57755cfda163d91c58893a8723f93e9"
 uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
-version = "1.0.1"
+version = "1.0.2"
 
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
@@ -379,9 +379,9 @@ version = "0.13.6"
 
 [[HDF5_jll]]
 deps = ["Artifacts", "JLLWrappers", "LibCURL_jll", "Libdl", "OpenSSL_jll", "Pkg", "Zlib_jll"]
-git-tree-sha1 = "76afe05f2e64340082ae071c4cb951c809c83b38"
+git-tree-sha1 = "fd83fa0bde42e01952757f01149dd968c06c4dba"
 uuid = "0234f1f7-429e-5d53-9886-15a909be8d59"
-version = "1.12.0+0"
+version = "1.12.0+1"
 
 [[HTTP]]
 deps = ["Base64", "Dates", "IniFile", "MbedTLS", "Sockets"]
@@ -448,9 +448,9 @@ version = "0.6.3"
 
 [[Ipopt_jll]]
 deps = ["ASL_jll", "CompilerSupportLibraries_jll", "Libdl", "MUMPS_seq_jll", "OpenBLAS32_jll", "Pkg"]
-git-tree-sha1 = "320e342c7e9b01f4cfc86fb89cb5832fcb868567"
+git-tree-sha1 = "4247bc93c3f0cb3d23a9d221e6d23d5449b4d90d"
 uuid = "9cc047cb-c261-5740-88fc-0cf96f7bdcc7"
-version = "3.13.2+0"
+version = "3.13.1+1"
 
 [[IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
@@ -482,9 +482,9 @@ version = "0.21.1"
 
 [[JSONSchema]]
 deps = ["HTTP", "JSON", "ZipFile"]
-git-tree-sha1 = "a9ecdbc90be216912a2e3e8a8e38dc4c93f0d065"
+git-tree-sha1 = "b84ab8139afde82c7c65ba2b792fe12e01dd7307"
 uuid = "7d188eb4-7ad8-530c-ae41-71a32a6d4692"
-version = "0.3.2"
+version = "0.3.3"
 
 [[JpegTurbo_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -627,9 +627,9 @@ version = "5.1.0+5"
 
 [[MUMPS_seq_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "METIS_jll", "OpenBLAS32_jll", "Pkg"]
-git-tree-sha1 = "1a11a84b2af5feb5a62a820574804056cdc59c39"
+git-tree-sha1 = "bfc91ae6e3f8dd775aeb9bdc7061af36e338219a"
 uuid = "d7ed1dd3-d0ae-5e8e-bfb4-87a502085b8d"
-version = "5.2.1+4"
+version = "5.3.5+0"
 
 [[MacroTools]]
 deps = ["Markdown", "Random"]
@@ -698,9 +698,9 @@ uuid = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
 version = "0.7.7"
 
 [[NaNMath]]
-git-tree-sha1 = "c84c576296d0e2fbb3fc134d3e09086b3ea617cd"
+git-tree-sha1 = "bfe47e760d60b82b66b61d2d44128b62e3a369fb"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
-version = "0.3.4"
+version = "0.3.5"
 
 [[Observables]]
 git-tree-sha1 = "635fe10760447cfa86f5118edf2f47eb864fb495"
@@ -714,10 +714,10 @@ uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
 version = "1.4.0"
 
 [[OpenBLAS32_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "19c33675cdeb572c1b17f96c492459d4f4958036"
+deps = ["CompilerSupportLibraries_jll", "Libdl", "Pkg"]
+git-tree-sha1 = "793b33911239d2651c356c823492b58d6490d36a"
 uuid = "656ef2d0-ae68-5445-9ca0-591084a874a2"
-version = "0.3.10+0"
+version = "0.3.9+4"
 
 [[OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -741,6 +741,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "1b556ad51dceefdbf30e86ffa8f528b73c7df2bb"
 uuid = "2f80f16e-611a-54ab-bc61-aa92de5b98fc"
 version = "8.42.0+4"
+
+[[PackageCompiler]]
+deps = ["Libdl", "Pkg", "UUIDs"]
+git-tree-sha1 = "3eee77c94646163f15bd8626acf494360897f890"
+uuid = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
+version = "1.2.3"
 
 [[Pango_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Pkg"]
@@ -829,9 +835,9 @@ version = "0.2.0"
 
 [[Requires]]
 deps = ["UUIDs"]
-git-tree-sha1 = "28faf1c963ca1dc3ec87f166d92982e3c4a1f66d"
+git-tree-sha1 = "e05c53ebc86933601d36212a93b39144a2733493"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
-version = "1.1.0"
+version = "1.1.1"
 
 [[ReverseDiff]]
 deps = ["DiffResults", "DiffRules", "ForwardDiff", "FunctionWrappers", "LinearAlgebra", "MacroTools", "NaNMath", "Random", "SpecialFunctions", "StaticArrays", "Statistics"]

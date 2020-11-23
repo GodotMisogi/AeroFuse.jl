@@ -10,7 +10,7 @@ using .MathTools: accumap, structtolist
 
 export Laplace, Uniform3D, Freestream, velocity, aircraft_velocity,
 Panel, Panel3D, area, panel_coords, midpoint, panel_normal,
-stability_axes, wind_axes,
+body_to_stability_axes, body_to_wind_axes, transform,
 solve_horseshoes, nearfield_dynamics, farfield_dynamics, nearfield_drag, 
 streamlines, aerodynamic_coefficients, print_dynamics, horseshoe_lines
 
@@ -55,7 +55,7 @@ aircraft_velocity(uni :: Uniform3D) = -velocity(uni)
 """
 Converts coordinates into stability axes.
 """
-stability_axes(coords, uni :: Uniform3D) =  
+body_to_stability_axes(coords, uni :: Uniform3D) =  
                                             RotY{Float64}(uni.α) * coords
                                             # [cos(uni.α) 0 -sin(uni.α); 
                                             #       0     1     0     ;
@@ -63,31 +63,34 @@ stability_axes(coords, uni :: Uniform3D) =
                                             
 
 """
-Converts coordinates into wind axes. This is supposedly not used and is just ceremonially implemented.
+Converts coordinates from body axes to wind axes.
 """
-wind_axes(coords, uni :: Uniform3D) = RotZY{Float64}(uni.β, uni.α) * coords
+body_to_wind_axes(coords, uni :: Uniform3D) = RotZY{Float64}(uni.β, uni.α) * coords
 
 """
-Flips the y axis of a given vector.
+Reflects the y-coordinate of a given vector about the x-z plane.
 """
 reflect_xz(vector :: SVector{3, Float64}) = SVector(vector[1], -vector[2], vector[3])
 
 """
-Flips the x and z axes of a given vector.
+Reflects the x- and z- coordinates of a given vector about the y-z and x-y planes respectively.
 """
 stab_flip(vector :: SVector{3, Float64}) = SVector(-vector[1], vector[2], -vector[3])
 
 """
-Transforms forces and moments into stability axes.
+Transforms forces and moments from body to stability axes.
 """
-stability_axes(force, moment, Ω, freestream :: Uniform3D) = stability_axes(force, freestream), stability_axes(stab_flip(moment), freestream), stability_axes(stab_flip(Ω), freestream)
+body_to_stability_axes(force, moment, Ω, freestream :: Uniform3D) = body_to_stability_axes(force, freestream), body_to_stability_axes(stab_flip(moment), freestream), body_to_stability_axes(stab_flip(Ω), freestream)
 
-wind_axes(force, moment, Ω, freestream :: Uniform3D) = wind_axes(force, freestream), wind_axes(stab_flip(moment), freestream), wind_axes(stab_flip(Ω), freestream)
+"""
+Transforms forces and moments from body to wind axes.
+"""
+body_to_wind_axes(force, moment, Ω, freestream :: Uniform3D) = body_to_wind_axes(force, freestream), body_to_wind_axes(stab_flip(moment), freestream), body_to_wind_axes(stab_flip(Ω), freestream)
 
 """
 Transforms forces and moments into wind axes.
 """
-wind_axes(force, moment, freestream :: Uniform3D) = wind_axes(force, freestream), wind_axes([ -moment[1], moment[2], -moment[3] ], freestream)
+body_to_wind_axes(force, moment, freestream :: Uniform3D) = body_to_wind_axes(force, freestream), body_to_wind_axes([ -moment[1], moment[2], -moment[3] ], freestream)
 
 
 # Panel setup
@@ -123,10 +126,14 @@ Computes the area of Panel3D.
 area(panel :: Panel3D) = (abs ∘ norm)((panel.p2 - panel.p1) .* (panel.p3 - panel.p2))
 
 """
-Computes the coordinates of a Panel3D for plotting purposes.
+Computes the coordinates of a Panel3D.
 """
 panel_coords(panel :: Panel3D) = structtolist(panel)
 
+"""
+Performs an affine transformation on the coordinates of a Panel3D.
+"""
+transform(panel :: Panel3D; rotation = one(RotMatrix{3, Float64}), translation = SVector(0,0,0)) = Panel3D([ rotation * coord + translation for coord in panel_coords(panel) ]...)
 
 """
 Computes the midpoint of Panel3D.
@@ -142,9 +149,9 @@ panel_normal(panel :: Panel3D) = let p31 = panel.p3 .- panel.p1,
                                      p31_x_p42 end
 
 """
-Computes the weighted value between two points.
+Computes the weighted value between two values.
 """
-weighted(x1, x2, wx) = (1 - wx) * x1 + wx * x2
+weighted(x1, x2, μ) = (1 - μ) * x1 + μ * x2
 
 """
 Computes the weighted point between two points in a given direction.
@@ -379,7 +386,7 @@ trefftz_matrix(trefftz_lines, normals, Û) = [ dot(trefftz_potential(center(tli
 
 project_yz(line :: Line) = Line(SVector(0, line.r1[2], line.r1[3]), SVector(0, line.r2[2], line.r2[3]))
 
-wind_axes(line :: Line, freestream :: Uniform3D) = Line(wind_axes(line.r1, freestream), wind_axes(line.r2, freestream)) 
+body_to_wind_axes(line :: Line, freestream :: Uniform3D) = Line(body_to_wind_axes(line.r1, freestream), body_to_wind_axes(line.r2, freestream)) 
 
 
 """
@@ -394,10 +401,10 @@ function trefftz_forces(Γs, horseshoes :: Array{Horseshoe}, uniform :: Uniform3
 
     # Project horseshoes' bound legs into Trefftz plane along freestream
     U = velocity(uniform)
-    # lines = [ wind_axes(horseshoe.bound_leg, uniform) for horseshoe in horseshoes[end,:] ][:]
+    # lines = [ body_to_wind_axes(horseshoe.bound_leg, uniform) for horseshoe in horseshoes[end,:] ][:]
     # trefftz_lines = project_yz.()
     trefftz_lines = [ horseshoe.bound_leg for horseshoe in horseshoes[end,:] ][:]
-    trefftz_vectors = bound_vector.(trefftz_lines)
+    trefftz_vectors = vector.(trefftz_lines)
 
     Us = repeat([U], length(trefftz_lines))
     normals = Us .× trefftz_vectors
@@ -431,6 +438,11 @@ function farfield_dynamics(Γs :: Array{<: Real}, horseshoes :: Array{Horseshoe}
     trefftz_force, trefftz_moment
 end
 
+# Stability derivatives
+#==========================================================================================#
+
+# ∂Ū∂α(α, β) = SVector(sin(α) * cos(β), 0, -cos(α) * cos(β))
+# ∂Γ̄∂α(Γ, ∂Ū∂α) = 
 
 # Post-processing
 #==========================================================================================#

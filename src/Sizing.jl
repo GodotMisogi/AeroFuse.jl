@@ -33,10 +33,7 @@ figure_of_merit(thrust) = 0.4742 * thrust^0.0793
 
 hover_speed(T, S_p, ρ) = sqrt(0.5 * T / (ρ * S_p))
 
-function induced_velocity(climb_rate_vtol, v_h)
-    x = climb_rate_vtol / (2v_h)
-    -x + sqrt(x^2 + 1)
-end
+induced_velocity(climb_rate_vtol, v_h) = let x = climb_rate_vtol / (2v_h); -x + sqrt(x^2 + 1) end
 
 disk_loading(M_TO) = 3.2261M_TO + 74.991
 
@@ -44,9 +41,15 @@ prop_area(W_TO, DL, η_prop) = W_TO / (DL * η_prop)
 
 
 area(a, b, c, d) = a * b * c / d
+prodsratio(a, b, c, d) = a * b / (c * d) 
 
 horizontal_tail_area(V_H, wing_chord, wing_area, l_h) = area(V_H, wing_chord, wing_area, l_h)
-vertical_tail_area(V_V, wing_span, wing_area, l_v) = area(V_V, wing_span, wing_area, l_v)
+vertical_tail_area(V_V, wing_span, wing_area, l_v) = area(V_V, wing_span, wing_area, 2l_v)
 
-horizontal_tail_arm
+horizontal_tail_arm()
+
+htail_span(prop_d_fw, prop_d_vtol) = prop_d_fw + prop_d_vtol
+
+vtail_span(S_VT, c_HT, η_VT) = 2S_VT/ ( c_HT * (1 / η_VT + 1))
+
 end

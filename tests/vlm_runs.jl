@@ -46,7 +46,7 @@ uniform = Freestream(10.0, 5.0, 0.0)
 print_timer();
 
 ## Panel method: TO DO
-wing_panels = mesh_wing(wing, 10, 5);
+wing_panels = mesh_wing(wing, 10, 30);
 wing_coords = plot_panels(wing_panels)[:]
 camber_coords = plot_panels(camber_panels)[:]
 horseshoe_coords = plot_panels(horseshoe_panels)[:];
@@ -78,6 +78,10 @@ camber_zs = [ [ c[3] for c in panel ] for panel in camber_coords ]
 streams_xs = [ [ c[1] for c in panel ] for panel in streams ]
 streams_ys = [ [ c[2] for c in panel ] for panel in streams ]
 streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
+
+wing_xs = [ [ c[1] for c in panel ] for panel in wing_coords ]
+wing_ys = [ [ c[2] for c in panel ] for panel in wing_coords ]
+wing_zs = [ [ c[3] for c in panel ] for panel in wing_coords ];
 
 ##
 layout = Layout(
@@ -122,11 +126,21 @@ trace_streams = [ scatter3d(
                             showlegend = false,
                             ) for (x, y, z) in zip(streams_xs, streams_ys, streams_zs) ];
 
+trace_wing =    [ scatter3d(
+                            x = x,
+                            y = y,
+                            z = z,
+                            mode = :lines, 
+                            line = attr(color = :black),
+                            showlegend = false,
+                            ) for (x, y, z) in zip(wing_xs, wing_ys, wing_zs) ];
+
 plot([ 
         [ trace for trace in trace_horses ]...,
         [ trace for trace in trace_horsies ]..., 
         [ trace for trace in trace_cambers ]...,
-        [ trace for trace in trace_streams ]... 
+        [ trace for trace in trace_streams ]...,
+        [ trace for trace in trace_wing ]...,
      ], 
      layout)
 
