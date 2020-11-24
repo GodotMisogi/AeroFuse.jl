@@ -2,10 +2,10 @@ module AeroMDAO
 
 export 
 Foil, Wing, HalfWing, make_wing, projected_area, span, mean_aerodynamic_chord, 
-Panel3D, Freestream, print_info, plot_setup, panel_coords, panel_normal, read_foil, 
+Panel3D, Freestream, info, print_info, plot_setup, panel_coords, panel_normal, read_foil, 
 mesh_horseshoes, mesh_wing, mesh_cambers, lead_wing, wing_bounds,
 solve_case, streamlines, tupvector, make_panels, vlmesh_wing, transform, paneller,
-plot_panels, plot_streamlines, horseshoe_lines, aerodynamic_coefficients, print_dynamics
+plot_panels, plot_streamlines, horseshoe_lines, aerodynamic_coefficients, print_dynamics,
 pressure_coefficient, Uniform2D, make_2Dpanels, grid_data, split_panels, collocation_point
 
 #----------------------IMPORTS--------------------------------#
@@ -345,11 +345,15 @@ end
 Prints the relevant geometric characteristics of a HalfWing or Wing.
 """
 function print_info(wing :: Union{Wing, HalfWing})
-    println("Span: ", span(wing), " m")
-    println("Area: ", projected_area(wing), " m²")
-    println("MAC: ", mean_aerodynamic_chord(wing), " m")
-    println("Aspect Ratio: ", aspect_ratio(wing))
+    data = info(wing)
+    println("Span: ", data[1], " m")
+    println("Area: ", data[2], " m²")
+    println("MAC: ", data[3], " m")
+    println("Aspect Ratio: ", data[4])
 end
+
+info(wing :: Union{Wing, HalfWing}) =
+    span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing)
 
 function solve_case(horseshoe_panels :: Array{Panel3D}, camber_panels :: Array{Panel3D}, uniform :: Uniform3D, Ω = SVector(0., 0., 0.), r_ref = SVector(0.25, 0., 0.), ρ = 1.225; print = true, symmetry = false)
     vel = VortexLattice.velocity(uniform)
@@ -421,8 +425,8 @@ function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, Ω = SV
         print_dynamics(farfield_coeffs...)
     end
 
-    horseshoe_panels, camber_panels, horseshoes, Γs
-    # coeffs
+    # horseshoe_panels, camber_panels, horseshoes, Γs
+    nearfield_coeffs
 end
 
 

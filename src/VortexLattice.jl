@@ -114,10 +114,10 @@ x
         p2 —→— p3
 """
 struct Panel3D <: Panel
-    p1 :: SVector{3, Float64}
-    p2 :: SVector{3, Float64}
-    p3 :: SVector{3, Float64}
-    p4 :: SVector{3, Float64}
+    p1 :: SVector{3, Real}
+    p2 :: SVector{3, Real}
+    p3 :: SVector{3, Real}
+    p4 :: SVector{3, Real}
 end
 
 """
@@ -133,7 +133,7 @@ panel_coords(panel :: Panel3D) = structtolist(panel)
 """
 Performs an affine transformation on the coordinates of a Panel3D.
 """
-transform(panel :: Panel3D; rotation = one(RotMatrix{3, Float64}), translation = SVector(0,0,0)) = Panel3D([ rotation * coord + translation for coord in panel_coords(panel) ]...)
+transform(panel :: Panel3D; rotation = one(RotMatrix{3, Float64}), translation = SVector(0,0,0)) = Panel3D([ (rotation * coord) .+ translation for coord in panel_coords(panel) ]...)
 
 """
 Computes the midpoint of Panel3D.
@@ -309,7 +309,7 @@ function solve_horseshoes(horseshoe_panels :: Array{Panel3D}, camber_panels :: A
     @timeit "Normals" normals = panel_normal.(camber_panels)
     @timeit "Total Velocity" total_vel = [ U .+ (Ω × rc_i) for rc_i ∈ colpoints ]
 
-    @timeit "AIC" AIC = influence_matrix(colpoints[:], normals[:], horseshoes[:], -normalize(U), symmetry) 
+    @timeit "AIC" AIC = influence_matrix(colpoints[:], normals[:], horseshoes[:], -normalize(U), symmetry)
     @timeit "RHS" boco = boundary_condition(normals[:], total_vel[:])
     @timeit "Solve AIC" Γs = AIC \ boco
 
@@ -456,11 +456,13 @@ stream_velocity(r, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γ
 Computes the streamlines from a given starting point, a Uniform3D, Horseshoes and their associated strengths Γs. The length of the streamline and the number of evaluation points must also be specified.
 """
 function streamlines(point, uniform :: Uniform3D, Ω, horseshoes, Γs, length, num_steps)
-    streamlines = [point]
+    streamlines = fill(SVector{3, Float64}(0,0,0), num_steps)
     V = velocity(uniform)
-    @timeit "Iterating" for i ∈ 1:num_steps
-        @timeit "Updating Velocity" update = stream_velocity(streamlines[end], Ω, horseshoes, Γs, V)
-        @timeit "Adding Streamline" streamlines = [ streamlines..., streamlines[end] .+ (update / norm(update) * length / num_steps) ]
+    streamlines[1] = point
+    cuck = x -> stream_velocity(x, Ω, horseshoes, Γs, V)
+    @timeit "Iterating" for i ∈ 2:num_steps
+        @timeit "Updating Velocity" update = cuck(streamlines[i-1])
+        @timeit "Adding Streamline" streamlines[i] = streamlines[i-1] .+ (update / norm(update) * length / num_steps)
     end
     streamlines
 end

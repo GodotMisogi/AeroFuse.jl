@@ -9,8 +9,8 @@ using ProfileView
 includet("../src/MathTools.jl")
 includet("../src/FoilParametrization.jl")
 using .FoilParametrization: read_foil, kulfan_CST, naca4
-using .MathTools: linspace, tuparray, tupvector, columns
 using AeroMDAO
+using Rotations
 
 ## Wing section setup
 # alpha_u = [0.1, 0.3, 0.2, 0.15, 0.2]
@@ -19,20 +19,72 @@ using AeroMDAO
 # dzs = (1e-4, 1e-4)
 # foil = kulfan_CST(alphas, dzs, 0.2)
 
+# Wing setup
 foil = naca4((4,4,1,2))
 num_secs = 3
 foils = [ foil for i ∈ 1:num_secs ]
 
 airfoils = Foil.(foils)
 wing_chords = [0.18, 0.16, 0.08]
-wing_twists = [2., 0., -2.]
+wing_twists = [0., 0., 0.]
 wing_spans = [0.5, 0.5]
 wing_dihedrals = [0., 11.3]
 wing_sweeps = [1.14, 8.]
 
 wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
 wing = Wing(wing_right, wing_right)
+println("Wing —")
 print_info(wing)
+
+## Horizontal tail
+foil = naca4((0,0,1,2))
+num_secs = 2
+foils = [ foil for i ∈ 1:num_secs ]
+
+htail_airfoils = Foil.(foils)
+htail_chords = [0.16, 0.08]
+htail_twists = [0.0, 0.0]
+htail_spans = [0.2]
+htail_dihedrals = [0]
+htail_sweeps = [30]
+htail_location = [1,0,0]
+
+htail_right = HalfWing(htail_airfoils, htail_chords, htail_spans, htail_dihedrals, htail_sweeps, htail_twists)
+htail = Wing(htail_right, htail_right)
+println("Horizontal Tail —")
+print_info(htail)
+
+## Vertical tail
+foil = naca4((0,0,0,9))
+num_secs = 2
+foils = [ foil for i ∈ 1:num_secs ]
+
+vtail_airfoils = Foil.(foils)
+vtail_chords = [0.08, 0.02]
+vtail_twists = [0.0, 0.0]
+vtail_spans = [0.04]
+vtail_dihedrals = [0.0]
+vtail_sweeps = [60]
+
+vtail1_angle = AngleAxis{Float64}(π/2, 1, 0, 0)
+vtail1_location = [1 + 0.2 * tan(π/6), 0.2, 0]
+
+vtail2_angle = AngleAxis{Float64}(π/2, 1, 0, 0)
+vtail2_location = [1 + 0.2 * tan(π/6), -0.2, 0]
+
+vtail = HalfWing(vtail_airfoils, vtail_chords, vtail_spans, vtail_dihedrals, vtail_sweeps, vtail_twists)
+println("Vertical Tail —")
+print_info(vtail)
+
+## Panelling
+wing_panels = paneller(wing, 10, 5)
+htail_panels = paneller(htail, 5, 5, translation = htail_location)
+vtail1_panels = paneller(vtail, 5, 5, rotation = vtail1_angle, translation = vtail1_location)
+vtail2_panels = paneller(vtail, 2, 2, rotation = vtail2_angle, translation = vtail2_location);
+
+##
+horseshoe_panels = [ wing_panels[1][:]; htail_panels[1][:]; vtail2_panels[1][:] ]
+camber_panels = [ wing_panels[2][:]; htail_panels[2][:]; vtail2_panels[2][:] ];
 
 ## Assembly
 reset_timer!()
@@ -41,16 +93,14 @@ reset_timer!()
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
 Ω = SVector(0.0, 0.0, 0.0)
 uniform = Freestream(10.0, 5.0, 0.0)
-@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, Ω, ref, span_num = 10, chord_num = 5, print = true) 
+@time force, drag, moment, horseshoes, Γs = solve_case(horseshoe_panels, camber_panels, uniform, Ω, ref, print = true) 
+
+@timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, Ω, uniform.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
+
+println("Nearfield:") 
+print_dynamics(nearfield_coeffs...)
 
 print_timer();
-
-## Panel method: TO DO
-wing_panels = mesh_wing(wing, 10, 30);
-wing_coords = plot_panels(wing_panels)[:]
-camber_coords = plot_panels(camber_panels)[:]
-horseshoe_coords = plot_panels(horseshoe_panels)[:];
-
 ## Streamlines
 reset_timer!()
 
@@ -61,7 +111,12 @@ print_timer()
 ##
 min_Γ, max_Γ = extrema(Γs)
 Γ_range = -map(-, min_Γ, max_Γ)
-norm_Γs = [ 2 * (Γ - min_Γ) / Γ_range - 1 for Γ ∈ Γs ]
+norm_Γs = [ 2 * (Γ - min_Γ) / Γ_range - 1 for Γ ∈ Γs ];
+
+aircraft_coords = plot_panels(horseshoe_panels)[:]
+camber_coords = plot_panels(camber_panels)[:]
+horseshoe_coords = plot_panels(horseshoe_panels);
+horseshoe_coords = plot_panels(vtail2_panels[1]);
 
 ##
 using PlotlyJS
@@ -79,9 +134,9 @@ streams_xs = [ [ c[1] for c in panel ] for panel in streams ]
 streams_ys = [ [ c[2] for c in panel ] for panel in streams ]
 streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
 
-wing_xs = [ [ c[1] for c in panel ] for panel in wing_coords ]
-wing_ys = [ [ c[2] for c in panel ] for panel in wing_coords ]
-wing_zs = [ [ c[3] for c in panel ] for panel in wing_coords ];
+# aircraft_xs = [ [ c[1] for c in panel ] for panel in aircraft_coords ]
+# aircraft_ys = [ [ c[2] for c in panel ] for panel in aircraft_coords ]
+# aircraft_zs = [ [ c[3] for c in panel ] for panel in aircraft_coords ];
 
 ##
 layout = Layout(
@@ -90,7 +145,7 @@ layout = Layout(
                 zlim=(-0.1, 5.0)
                 )
 
-trace_horses = [ mesh3d(
+trace_horses = [ PlotlyJS.mesh3d(
                         x = x,
                         y = y,
                         z = z,
@@ -99,7 +154,7 @@ trace_horses = [ mesh3d(
                         showscale = false,
                         ) for (x, y, z, norm_Γ) in zip(horse_xs, horse_ys, horse_zs, norm_Γs) ]
 
-trace_horsies = [ scatter3d(
+trace_horsies = [ PlotlyJS.scatter3d(
                             x = x,
                             y = y,
                             z = z,
@@ -108,7 +163,7 @@ trace_horsies = [ scatter3d(
                             showlegend = false,
                             ) for (x, y, z) in zip(horse_xs, horse_ys, horse_zs) ]
 
-trace_cambers = [ scatter3d(
+trace_cambers = [ PlotlyJS.scatter3d(
                        x = x,
                        y = y,
                        z = z,
@@ -117,7 +172,7 @@ trace_cambers = [ scatter3d(
                        showlegend = false,
                        ) for (x, y, z) in zip(camber_xs, camber_ys, camber_zs) ]
 
-trace_streams = [ scatter3d(
+trace_streams = [ PlotlyJS.scatter3d(
                             x = x, 
                             y = y, 
                             z = z, 
@@ -126,32 +181,33 @@ trace_streams = [ scatter3d(
                             showlegend = false,
                             ) for (x, y, z) in zip(streams_xs, streams_ys, streams_zs) ];
 
-trace_wing =    [ scatter3d(
-                            x = x,
-                            y = y,
-                            z = z,
-                            mode = :lines, 
-                            line = attr(color = :black),
-                            showlegend = false,
-                            ) for (x, y, z) in zip(wing_xs, wing_ys, wing_zs) ];
+# trace_aircraft =    [ PlotlyJS.scatter3d(
+#                             x = x,
+#                             y = y,
+#                             z = z,
+#                             mode = :lines, 
+#                             line = attr(color = :black),
+#                             showlegend = false,
+#                             ) for (x, y, z) in zip(aircraft_xs, aircraft_ys, aircraft_zs) ];
 
-plot([ 
+PlotlyJS.plot([ 
         [ trace for trace in trace_horses ]...,
-        [ trace for trace in trace_horsies ]..., 
-        [ trace for trace in trace_cambers ]...,
-        [ trace for trace in trace_streams ]...,
-        [ trace for trace in trace_wing ]...,
+        # [ trace for trace in trace_horsies ]..., 
+        # [ trace for trace in trace_cambers ]...,
+        # [ trace for trace in trace_streams ]...,
+        # [ trace for trace in trace_aircraft ]...,
      ], 
      layout)
 
-##
+## Plotting
 # using Plots
 # plotlyjs()
 
 # ##
-# plot(xaxis = "x", yaxis = "y", zaxis = "z", aspectratio = 1., size=(1280, 720))
+
+# plot(xaxis = "x", yaxis = "y", zaxis = "z", aspectratio = 1., zlim=(-0.1, 3.0), size=(1280, 720))
 # plot!.(camber_coords, color = :black, label = :none)
-# [ mesh3d!(coord, colorscale = :viridis) for (coord, norm_Γ) in zip(horseshoe_coords, norm_Γs) ]
+# plot!.(horseshoe_coords, color = :blue, label = :none)
 # plot!.(streams, color = :green, label = :none)
 
 # gui();

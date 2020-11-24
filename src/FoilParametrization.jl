@@ -109,7 +109,6 @@ end
 function camthick_to_CST(coords, num_dvs)
     xs, camber, thickness = (columns ∘ foil_camthick)(coords)
 
-    
     alpha_cam = coords_to_CST([ xs camber ], num_dvs)
     alpha_thick = coords_to_CST([ xs thickness ], num_dvs)
     
