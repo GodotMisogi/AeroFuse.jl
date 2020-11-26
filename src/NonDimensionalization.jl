@@ -1,5 +1,7 @@
 module NonDimensionalization
 
+using LinearAlgebra
+
 export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_dynamics
 
 """

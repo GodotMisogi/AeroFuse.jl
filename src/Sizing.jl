@@ -1,5 +1,7 @@
 module Sizing
 
+export dynamic_pressure, span_efficiency_factor, wing_loading_stall_speed
+
 # Generic
 dynamic_pressure(ρ, V) = 0.5 * ρ * V^2
 stall_speed(wing_loading, CL_max, ρ = 1.225) = 2 * wing_loading/(ρ * CL_max)
@@ -46,7 +48,7 @@ prodsratio(a, b, c, d) = a * b / (c * d)
 horizontal_tail_area(V_H, wing_chord, wing_area, l_h) = area(V_H, wing_chord, wing_area, l_h)
 vertical_tail_area(V_V, wing_span, wing_area, l_v) = area(V_V, wing_span, wing_area, 2l_v)
 
-horizontal_tail_arm()
+# horizontal_tail_arm()
 
 htail_span(prop_d_fw, prop_d_vtol) = prop_d_fw + prop_d_vtol
 

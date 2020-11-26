@@ -30,6 +30,12 @@ git-tree-sha1 = "42c42f2221906892ceb765dbcb1a51deeffd86d7"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 version = "2.3.0"
 
+[[ArrayInterface]]
+deps = ["LinearAlgebra", "Requires", "SparseArrays"]
+git-tree-sha1 = "bd09109dffaa3926a20178cb8432edd729be0db0"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "2.13.7"
+
 [[ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra"]
 git-tree-sha1 = "951c3fc1ff93497c88fb1dfa893f4de55d0b38e3"
@@ -188,6 +194,14 @@ git-tree-sha1 = "c0647249d785f1d5139c0cc96db8f6b32f7ec416"
 uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
 version = "1.5.0"
 
+[[DarkMode]]
+deps = ["InteractiveUtils", "JSON", "Markdown"]
+git-tree-sha1 = "6aecd7b97cd089dc160226ac2ce54cda292fedac"
+repo-rev = "master"
+repo-url = "https://github.com/Pocket-titan/DarkMode.git"
+uuid = "933edf66-562e-4494-9e5f-31d7e8b9849e"
+version = "0.1.0"
+
 [[DataAPI]]
 git-tree-sha1 = "ad84f52c0b8f05aa20839484dbaf01690b41ff84"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
@@ -230,6 +244,12 @@ git-tree-sha1 = "214c3fcac57755cfda163d91c58893a8723f93e9"
 uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
 version = "1.0.2"
 
+[[Distances]]
+deps = ["LinearAlgebra", "Statistics"]
+git-tree-sha1 = "a5b88815e6984e9f3256b6ca0dc63109b16a506f"
+uuid = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
+version = "0.9.2"
+
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
@@ -271,6 +291,12 @@ deps = ["LinearAlgebra", "Random", "SparseArrays"]
 git-tree-sha1 = "4863cbb7910079369e258dee4add9d06ead5063a"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
 version = "0.8.14"
+
+[[FiniteDiff]]
+deps = ["ArrayInterface", "LinearAlgebra", "Requires", "SparseArrays", "StaticArrays"]
+git-tree-sha1 = "04e18906acf9c7f5b934a7ec3adc82280fb1953b"
+uuid = "6a86dc24-6348-571c-b903-95158fe2bd41"
+version = "2.7.1"
 
 [[FixedPointNumbers]]
 deps = ["Statistics"]
@@ -606,6 +632,12 @@ git-tree-sha1 = "f879ae9edbaa2c74c922e8b85bb83cc84ea1450b"
 uuid = "38a345b3-de98-5d2b-a5d3-14cd9215e700"
 version = "2.34.0+7"
 
+[[LineSearches]]
+deps = ["LinearAlgebra", "NLSolversBase", "NaNMath", "Parameters", "Printf"]
+git-tree-sha1 = "d6e6b2ed397a402a22e474a3f1859c8c1db82c8c"
+uuid = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
+version = "7.1.0"
+
 [[LinearAlgebra]]
 deps = ["Libdl"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -703,6 +735,18 @@ git-tree-sha1 = "8e917fbe96da22628feae3f01b4f100e709ab746"
 uuid = "a975b10e-0019-58db-a62f-e48ff68538c9"
 version = "0.7.3"
 
+[[NLSolversBase]]
+deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
+git-tree-sha1 = "39d6bc45e99c96e6995cbddac02877f9b61a1dd1"
+uuid = "d41bc354-129a-5804-8e4c-c37616107c6c"
+version = "7.7.1"
+
+[[NLsolve]]
+deps = ["Distances", "LineSearches", "LinearAlgebra", "NLSolversBase", "Printf", "Reexport"]
+git-tree-sha1 = "650f266dcb5a24b4095fdab92f0137c0f4ee9392"
+uuid = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
+version = "4.4.1"
+
 [[NNlib]]
 deps = ["Compat", "Libdl", "LinearAlgebra", "Pkg", "Requires", "Statistics"]
 git-tree-sha1 = "1ae42464fea5258fd2ff49f1c4a40fc41cba3860"
@@ -771,6 +815,12 @@ deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jl
 git-tree-sha1 = "9a336dee51d20d1ed890c4a8dca636e86e2b76ca"
 uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
 version = "1.42.4+10"
+
+[[Parameters]]
+deps = ["OrderedCollections", "UnPack"]
+git-tree-sha1 = "38b2e970043613c187bd56a995fe2e551821eb4a"
+uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+version = "0.12.1"
 
 [[Parsers]]
 deps = ["Dates"]
@@ -963,6 +1013,11 @@ version = "0.4.1"
 [[UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+
+[[UnPack]]
+git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
+uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+version = "1.0.2"
 
 [[Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
