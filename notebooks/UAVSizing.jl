@@ -1,17 +1,87 @@
 ### A Pluto.jl notebook ###
-# v0.12.14
+# v0.12.15
 
 using Markdown
 using InteractiveUtils
+
+# ╔═╡ 295abee0-3308-11eb-2d72-b1c4ff53169a
+using PlutoUI
+
+# ╔═╡ 9a3a821e-3309-11eb-3a51-2d2f75464b05
+using Revise
+
+# ╔═╡ 64f54fe0-330a-11eb-36cc-276427fea18f
+using StaticArrays
+
+# ╔═╡ d72bd840-3305-11eb-362b-0f6a7a774a13
+begin
+	include("../src/MathTools.jl")
+	include("../src/Sizing.jl")
+	using .MathTools: tupvector
+	using .Sizing
+end
+
+# ╔═╡ 27ee3000-32db-11eb-3b68-47b2c026fb3d
+using NLsolve
+
+# ╔═╡ bc905010-32f6-11eb-0557-91743b6fe9e3
+using Plots
 
 # ╔═╡ 23137140-3091-11eb-3f8a-2b8bd4b426b5
 md"""
 ## UAV Sizing
 """
 
-# ╔═╡ cbac90c0-3262-11eb-1908-87d130f6d01c
+# ╔═╡ 6ca96a60-3304-11eb-150f-71f4ce3a2918
+begin
+	wing_chords = [0.18, 0.16, 0.08]
+	wing_twists = [-2., 0., 2.]
+	wing_spans = [0.5, 0.5]
+	wing_dihedrals = [0., 15.]
+	wing_sweeps = [1.14, 8.]
+	
+	wing_right = Sizing.HalfWing(wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
+	wing = Sizing.Wing(wing_right, wing_right)
+end
+
+# ╔═╡ 459de1c0-3305-11eb-3e21-03899420918d
+leading, trailing = MathTools.tupvector.(Sizing.wing_bounds(wing))
+
+# ╔═╡ 64ecc030-3311-11eb-2135-e5fa1620347f
+begin
+	lead_xys = [ (lead[1], lead[2]) for lead in leading ]
+	lead_xzs = [ (lead[1], lead[3]) for lead in leading ]
+	trail_xys = [ (trail[1], trail[2]) for trail in trailing ]
+	trail_xzs = [ (trail[1], trail[3]) for trail in trailing ]
+	
+	wing_xys = [ lead_xys[end:-1:1]; trail_xys; lead_xys[end] ]
+	wing_xzs = [ lead_xzs[end:-1:1]; trail_xzs; lead_xzs[end] ]
+end
+
+# ╔═╡ c4862b80-3311-11eb-08cd-1f92421b0f33
+
+
+# ╔═╡ 6077a940-3305-11eb-2ad8-01b3b103898f
+begin
+	plot(leading[1:end])
+	plot!(trailing[1:end])
+	plot!([ leading[1], trailing[1] ])
+	plot!([ leading[end], trailing[end] ], aspect_ratio = 1)
+end
+
+# ╔═╡ a632cd9e-3311-11eb-317f-fdda173f9dc8
+begin
+	plot(wing_xys, aspect_ratio = 1)
+end
+
+# ╔═╡ 3f1598de-3312-11eb-04aa-57c1638dcd7f
+begin
+	plot(wing_xzs, aspect_ratio = 1)
+end
+
+# ╔═╡ df735200-3263-11eb-3c15-c9f42ce9fbef
 md"""
-Tail Sizing
+Tail sizing functions:
 """
 
 # ╔═╡ 5fb5d550-3093-11eb-0691-09050e6939eb
@@ -23,19 +93,38 @@ S_{HT} = \frac{C_{HT} \bar{c}_w S_w}{l_{HT}}
 ```
 """
 
-# ╔═╡ df735200-3263-11eb-3c15-c9f42ce9fbef
+# ╔═╡ 304ebdb0-3091-11eb-0603-dd2131ef1226
+horizontal_tail_area(V_h, mac_w, S_w, l_h) = V_h * mac_w * S_w / l_h
+
+# ╔═╡ 4da4b550-32ed-11eb-1709-1903b01b356c
 md"""
-Tail sizing functions:
+```math
+\begin{equation}
+S_{VT} = \frac{C_{VT} b_w S_w}{2l_{VT}}
+\end{equation}
+```
 """
 
-# ╔═╡ 304ebdb0-3091-11eb-0603-dd2131ef1226
-begin
-	horizontal_tail_area(V_H, wing_mac, wing_area, l_h) = V_H * wing_mac * wing_area / l_h
-	vertical_tail_area(V_V, wing_span, wing_area, l_v) = V_V * wing_span * wing_area / 2l_v
-	vertical_tail_span(vtail_area, htail_chord, η_VT) = 2 * vtail_area / htail_chord / (1 + 1 / η_VT)
-	htail_arm(x_VT, vtail_span, vtail_LE_sweep, htail_chord, x_CG) = x_VT + vtail_span * vtail_LE_sweep + 0.25 * htail_chord - x_CG
-	vtail_arm(x_MAC_VT, vtail_mac) = x_MAC_VT+ 0.25 * vtail_mac
-end
+# ╔═╡ 4ba38e1e-32ed-11eb-2ed4-154da8d4afe8
+vertical_tail_area(V_v, b_w, S_w, l_v) = V_v * b_w * S_w / 2l_v
+
+# ╔═╡ 6d9bd820-32ed-11eb-29c0-2b1f35984e1b
+md"""
+```math
+\begin{equation}
+b_{VT} = \frac{2 S_{VT}}{c_{HT}\left(1 + \frac{1}{\lambda_{VT}}\right)}
+\end{equation}
+```
+"""
+
+# ╔═╡ 4ba47880-32ed-11eb-206a-033b74ac2bc5
+vertical_tail_span(S_v, c_h, λ_v) = 2 * S_v / c_h / (1 + 1 / λ_v)
+
+# ╔═╡ 4ba53bd0-32ed-11eb-25b2-89385a3cecdc
+htail_arm(x_VT, b_v, Λ_LE_v, c_h, x_CG) = x_VT + b_v * Λ_LE_v + 0.25 * c_h - x_CG
+
+# ╔═╡ 4bb0d490-32ed-11eb-1fe6-e72b49f18433
+vtail_arm(x_mac_v, mac_v) = x_mac_v + 0.25 * mac_v
 
 # ╔═╡ f5ae15b2-3091-11eb-3c08-53653717475a
 begin
@@ -45,7 +134,7 @@ begin
 end
 
 # ╔═╡ d5b5ec00-3092-11eb-2d10-87fcea8784a9
-x_mac(x_CG, vtail_area, vtail_root, vtail_tip) = x_CG + vtail_area * (vtail_root + 2 * vtail_tip) / 3(vtail_root + vtail_tip)
+x_mac(x_cg, S_v, c_r_v, c_t_v) = x_cg + S_v * (c_r_v + 2 * c_t_v) / 3(c_r_v + c_t_v)
 
 # ╔═╡ 8cfe52f0-3267-11eb-2b11-23458f7f2966
 md"""
@@ -57,102 +146,181 @@ begin
 	x_w = 0.33
 	Λ_LE_w = deg2rad(0)
 	Λ_TE_w = deg2rad(0)
-	c_r_w = 0.20
 	λ_w = 1.0
+	c_r_w = 0.17828
 	c_t_w = λ_w * c_r_w
 	mac_w = mean_aerodynamic_chord(c_r_w, λ_w)
 	b_w = 1.0
-	S_w = (1 + λ_w) / 2 * c_r_w
+	S_w = (c_r_w + c_t_w) / 2 * b_w
 end
-
-# ╔═╡ 98a56ace-3267-11eb-3627-ed82836734c2
-md"""
-Propeller locations
-"""
-
-# ╔═╡ 3d4d2870-3263-11eb-3e80-1f3f5db82243
-begin
-	D_VTOL_prop = 0.1
-	D_FW_prop = 0.1
-	c_prop = 0.01
-end
-
-# ╔═╡ 39d637e0-3268-11eb-2536-033d1b0d580e
-md"""
-Horizontal tail.
-"""
 
 # ╔═╡ f11e9b60-3266-11eb-0c1f-fd0eaea6cc5d
 V_H = 0.5
 
-# ╔═╡ 5c3009f0-3093-11eb-0ce2-9de2e3be4541
-begin
-	b_h = D_VTOL_prop + D_FW_prop
-	S_h = horizontal_tail_area(V_H, mac_w, S_w, 0.75)
-	c_h = rect_chord(S_h, b_h)
-end 
+# ╔═╡ 8d97a350-30d3-11eb-307f-cd48a69b8300
+V_V = 0.04
 
-# ╔═╡ 3519da90-3263-11eb-0f1b-392714a78701
+# ╔═╡ fdc41530-32ce-11eb-22c0-a9bd5a40611d
 begin
+	# Vertical tail parameters
+	λ_v = 0.5
+	Λ_LE_v = deg2rad(20)
+end
+
+# ╔═╡ 98a56ace-3267-11eb-3627-ed82836734c2
+md"""
+Propeller parameters
+"""
+
+# ╔═╡ 3d4d2870-3263-11eb-3e80-1f3f5db82243
+begin
+	D_VTOL_prop = 0.2
+	D_FW_prop = 0.2
+	c_prop = 0.01
+end
+
+# ╔═╡ 0fdf3ec2-32cf-11eb-399f-cb4281c72cc8
+# Horizontal tail span
+b_h = D_VTOL_prop + D_FW_prop
+
+# ╔═╡ 322ba6c0-32d0-11eb-1557-dd4a0c9510b1
+begin
+	# Propeller locations
 	x_PF = x_w + b_h / 2 * tan(Λ_LE_w) - (D_VTOL_prop / 2 - c_prop) / cos(Λ_LE_w)
 	x_PR = x_w + c_r_w + b_h / 2 * tan(Λ_TE_w) + (D_VTOL_prop / 2 + c_prop) / cos(Λ_TE_w)
 end
 
-# ╔═╡ 40902c30-3268-11eb-32ef-75a5c60b85ab
-md"""
-Vertical tail.
-"""
-
-# ╔═╡ 8d97a350-30d3-11eb-307f-cd48a69b8300
-V_V = 0.04
-
-# ╔═╡ 03ad8000-3093-11eb-1068-19d569a57d29
+# ╔═╡ 4d9a5b40-32d0-11eb-3977-c3a6511f65d1
 begin
+	# CG and vertical tail locations
 	x_CG = 0.5 * (x_PR - x_PF)
 	x_VT = x_PR + D_VTOL_prop / 2 + c_prop
 end
 
-# ╔═╡ ff71bd40-3262-11eb-3155-9f4c31973837
-begin	
-	l_v = x_VT - x_CG
-	λ_v = 0.5
-	Λ_LE_v = deg2rad(20)
-	S_v = vertical_tail_area(V_V, 1.0, S_w, l_v)
-	b_v = vertical_tail_span(S_v, c_h, 0.8)
-	AR_v = aspect_ratio(b_v, S_v)
-	c_r_v = 2 * S_v / (1 + λ_v) / b_v
-	c_t_v = λ_v * c_r_v
-	mac_v = mean_aerodynamic_chord(c_r_v, λ_v)
-	l_h = htail_arm(x_VT, b_v, Λ_LE_v, c_h, x_CG)
-	l_v = vtail_arm(x_VT, mac_v)
+# ╔═╡ 2aa3b310-32db-11eb-0bac-bfe35733cb2d
+function tail_areas(l_h, l_v, mac_w, S_w, b_w, V_V, V_H)
+	S_h = horizontal_tail_area(V_H, mac_w, S_w, l_h)
+	S_v = vertical_tail_area(V_V, b_w, S_w, l_v)
+	
+	S_h, S_v
 end
+
+# ╔═╡ c2940800-32db-11eb-3dd7-6de7abd0d51c
+function tail_arms(S_h, S_v, c_h, λ_v, Λ_LE_v, x_VT_mac, x_CG)
+	b_v = vertical_tail_span(S_v, c_h, λ_v)			# Span
+	c_r_v = c_h / λ_v 								# Root chord
+	mac_v = mean_aerodynamic_chord(c_r_v, λ_v)		# MAC
+	l_h = htail_arm(x_VT_mac, b_v, Λ_LE_v, c_h, x_CG)	# HTail arm
+	l_v = vtail_arm(x_VT_mac, mac_v)					# VTail arm
+	
+	l_h, l_v
+end
+
+# ╔═╡ 34a80ae0-32f0-11eb-1dc3-07cae4d044ce
+md"""
+Iterations:
+"""
+
+# ╔═╡ 40ba59f2-32eb-11eb-2b41-91c19ca0cf8c
+function tail_sizing(num_iter, l_h, l_v, V_V, V_H, S_w, b_w, mac_w, λ_v, Λ_LE_v)
+	# Initialisations
+	S_h0 = 1
+	S_v0 = 1
+	S_hs = zeros(num_iter)
+	S_vs = zeros(num_iter)
+	error_S_h = zeros(num_iter)
+	error_S_v = zeros(num_iter)
+	
+	for i ∈ 1:num_iter
+		S_h, S_v = tail_areas(l_h, l_v, mac_w, S_w, b_w, V_V, V_H)
+
+		c_h = rect_chord(S_h, b_h)
+
+		l_h, l_v = tail_arms(S_h, S_v, c_h, λ_v, Λ_LE_v, x_VT, x_CG)
+
+		diffs = abs.([(S_h - S_h0)/S_h0, (S_v - S_v0)/S_v0] .* 100)
+		
+		S_h0, S_v0 = S_h, S_v
+		error_S_h[i] = diffs[1]
+		error_S_v[i] = diffs[2]
+		S_hs[i] = S_h
+		S_vs[i] = S_v
+	end
+	
+	S_hs, S_vs, l_h, l_v, error_S_h, error_S_v
+end
+
+# ╔═╡ f926e9c0-32f7-11eb-1e53-3ba8e9f52056
+S_hs, S_vs, l_h, l_v, error_h, error_v = tail_sizing(15
+	, x_VT - x_CG, x_VT - x_CG, V_V, V_H, S_w, b_w, mac_w, λ_v, Λ_LE_v)
+
+# ╔═╡ c06dff70-32f6-11eb-2a38-8b82b14cebee
+plot(1:length(error_h), error_h, label = "Horizontal Tail Error")
+
+# ╔═╡ f2ca4d20-32f6-11eb-2cdb-1591a8035a42
+plot(1:length(error_v), error_v, label = "Vertical Tail Error")
+
+# ╔═╡ 29972a70-32ee-11eb-3aaa-a3b2f600223f
+hint(text) = Markdown.MD(Markdown.Admonition("hint", "Hint", [text]));
+
+# ╔═╡ 62f75bd0-32f0-11eb-1792-3354cd63c165
+hint(md"""
+	```math 
+	\begin{equation} 
+	AR = b^2 / S 
+	\end{equation}
+	```
+	""")
 
 # ╔═╡ 18c1fe50-3091-11eb-060c-c944f6e2e2c3
 begin
-    import Pkg
-    Pkg.add(url="https://github.com/Pocket-titan/DarkMode.git")
     import DarkMode
 	DarkMode.enable(theme="material-darker")
 end
 
 # ╔═╡ Cell order:
 # ╟─23137140-3091-11eb-3f8a-2b8bd4b426b5
-# ╟─cbac90c0-3262-11eb-1908-87d130f6d01c
+# ╠═295abee0-3308-11eb-2d72-b1c4ff53169a
+# ╠═9a3a821e-3309-11eb-3a51-2d2f75464b05
+# ╠═64f54fe0-330a-11eb-36cc-276427fea18f
+# ╠═d72bd840-3305-11eb-362b-0f6a7a774a13
+# ╠═6ca96a60-3304-11eb-150f-71f4ce3a2918
+# ╠═459de1c0-3305-11eb-3e21-03899420918d
+# ╠═64ecc030-3311-11eb-2135-e5fa1620347f
+# ╠═c4862b80-3311-11eb-08cd-1f92421b0f33
+# ╠═6077a940-3305-11eb-2ad8-01b3b103898f
+# ╠═a632cd9e-3311-11eb-317f-fdda173f9dc8
+# ╠═3f1598de-3312-11eb-04aa-57c1638dcd7f
+# ╠═df735200-3263-11eb-3c15-c9f42ce9fbef
 # ╟─5fb5d550-3093-11eb-0691-09050e6939eb
-# ╟─df735200-3263-11eb-3c15-c9f42ce9fbef
 # ╠═304ebdb0-3091-11eb-0603-dd2131ef1226
+# ╟─4da4b550-32ed-11eb-1709-1903b01b356c
+# ╠═4ba38e1e-32ed-11eb-2ed4-154da8d4afe8
+# ╟─6d9bd820-32ed-11eb-29c0-2b1f35984e1b
+# ╠═4ba47880-32ed-11eb-206a-033b74ac2bc5
+# ╠═4ba53bd0-32ed-11eb-25b2-89385a3cecdc
+# ╠═4bb0d490-32ed-11eb-1fe6-e72b49f18433
 # ╠═f5ae15b2-3091-11eb-3c08-53653717475a
 # ╠═d5b5ec00-3092-11eb-2d10-87fcea8784a9
 # ╟─8cfe52f0-3267-11eb-2b11-23458f7f2966
 # ╠═7f48f152-3263-11eb-36d1-cfd2a24b2cd9
+# ╟─62f75bd0-32f0-11eb-1792-3354cd63c165
+# ╠═f11e9b60-3266-11eb-0c1f-fd0eaea6cc5d
+# ╠═8d97a350-30d3-11eb-307f-cd48a69b8300
+# ╠═fdc41530-32ce-11eb-22c0-a9bd5a40611d
 # ╟─98a56ace-3267-11eb-3627-ed82836734c2
 # ╠═3d4d2870-3263-11eb-3e80-1f3f5db82243
-# ╠═3519da90-3263-11eb-0f1b-392714a78701
-# ╟─39d637e0-3268-11eb-2536-033d1b0d580e
-# ╠═f11e9b60-3266-11eb-0c1f-fd0eaea6cc5d
-# ╠═5c3009f0-3093-11eb-0ce2-9de2e3be4541
-# ╟─40902c30-3268-11eb-32ef-75a5c60b85ab
-# ╠═8d97a350-30d3-11eb-307f-cd48a69b8300
-# ╠═03ad8000-3093-11eb-1068-19d569a57d29
-# ╠═ff71bd40-3262-11eb-3155-9f4c31973837
-# ╟─18c1fe50-3091-11eb-060c-c944f6e2e2c3
+# ╠═0fdf3ec2-32cf-11eb-399f-cb4281c72cc8
+# ╠═322ba6c0-32d0-11eb-1557-dd4a0c9510b1
+# ╠═4d9a5b40-32d0-11eb-3977-c3a6511f65d1
+# ╠═27ee3000-32db-11eb-3b68-47b2c026fb3d
+# ╠═2aa3b310-32db-11eb-0bac-bfe35733cb2d
+# ╠═c2940800-32db-11eb-3dd7-6de7abd0d51c
+# ╟─34a80ae0-32f0-11eb-1dc3-07cae4d044ce
+# ╠═40ba59f2-32eb-11eb-2b41-91c19ca0cf8c
+# ╠═f926e9c0-32f7-11eb-1e53-3ba8e9f52056
+# ╠═bc905010-32f6-11eb-0557-91743b6fe9e3
+# ╠═c06dff70-32f6-11eb-2a38-8b82b14cebee
+# ╠═f2ca4d20-32f6-11eb-2cdb-1591a8035a42
+# ╟─29972a70-32ee-11eb-3aaa-a3b2f600223f
+# ╠═18c1fe50-3091-11eb-060c-c944f6e2e2c3
