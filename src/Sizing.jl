@@ -1,6 +1,9 @@
 module Sizing
 
+include("MathTools.jl")
+
 using StaticArrays
+using .MathTools: fwdsum, fwddiv
 
 export dynamic_pressure, span_efficiency_factor, wing_loading_stall_speed,
 Wing, HalfWing, aspect_ratio, mean_geometric_chord, mean_aerodynamic_chord, taper_ratio, area, span, quarter_chord, projected_area, wing_bounds

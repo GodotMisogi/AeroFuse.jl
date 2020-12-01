@@ -47,7 +47,7 @@ print_timer();
 
 ## Panel method: TO DO
 # wing_panels = mesh_wing(wing, 10, 30);
-wing_coords = plot_panels(wing_panels)[:]
+# wing_coords = plot_panels(wing_panels)[:]
 camber_coords = plot_panels(camber_panels)[:]
 horseshoe_coords = plot_panels(horseshoe_panels)[:];
 

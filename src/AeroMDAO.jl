@@ -425,8 +425,8 @@ function solve_case(wing :: Union{Wing, HalfWing}, uniform :: Uniform3D, Ω = SV
         print_dynamics(farfield_coeffs...)
     end
 
-    # horseshoe_panels, camber_panels, horseshoes, Γs
-    nearfield_coeffs
+    horseshoe_panels, camber_panels, horseshoes, Γs
+    # nearfield_coeffs
 end
 
 
