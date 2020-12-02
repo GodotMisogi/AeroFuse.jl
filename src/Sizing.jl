@@ -143,6 +143,20 @@ function wing_bounds(wing :: Wing)
     leading, trailing
 end
 
+"""
+Prints the relevant geometric characteristics of a HalfWing or Wing.
+"""
+function print_info(wing :: Union{Wing, HalfWing})
+    data = info(wing)
+    println("Span: ", data[1], " m")
+    println("Area: ", data[2], " m²")
+    println("MAC: ", data[3], " m")
+    println("Aspect Ratio: ", data[4])
+end
+
+info(wing :: Union{Wing, HalfWing}) =
+    span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing)
+
 end
 
 

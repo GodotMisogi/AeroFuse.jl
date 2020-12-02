@@ -16,9 +16,6 @@ end
 # ╔═╡ 295abee0-3308-11eb-2d72-b1c4ff53169a
 using PlutoUI
 
-# ╔═╡ 9a3a821e-3309-11eb-3a51-2d2f75464b05
-using Revise
-
 # ╔═╡ 64f54fe0-330a-11eb-36cc-276427fea18f
 using StaticArrays
 
@@ -100,9 +97,9 @@ x_mac(x_cg, S_v, c_r_v, c_t_v) = x_cg + S_v * (c_r_v + 2 * c_t_v) / 3(c_r_v + c_
 
 # ╔═╡ c2940800-32db-11eb-3dd7-6de7abd0d51c
 function tail_arms(S_h, S_v, c_h, λ_v, Λ_LE_v, x_VT_mac, x_CG)
-	b_v = vertical_tail_span(S_v, c_h, λ_v)			# Span
-	c_r_v = c_h / λ_v 								# Root chord
-	mac_v = mean_aerodynamic_chord(c_r_v, λ_v)		# MAC
+	b_v = vertical_tail_span(S_v, c_h, λ_v)				# Span
+	c_r_v = c_h / λ_v 									# Root chord
+	mac_v = mean_aerodynamic_chord(c_r_v, λ_v)			# MAC
 	l_h = htail_arm(x_VT_mac, b_v, Λ_LE_v, c_h, x_CG)	# HTail arm
 	l_v = vtail_arm(x_VT_mac, mac_v)					# VTail arm
 	
@@ -116,15 +113,16 @@ Wing Parameters
 
 # ╔═╡ 6ca96a60-3304-11eb-150f-71f4ce3a2918
 begin
-	wing_chords = [0.17828, 0.17828, 0.07]
+	wing_chords = [0.2, 0.2, 0.1]
 	wing_twists = [0., 0., 0.]
-	wing_spans = [0.5, 0.1]
-	wing_dihedrals = [0., 5.]
+	wing_spans = [1.705 / 2, 0.1]
+	wing_dihedrals = [0., 60.]
 	wing_sweeps = [0., 60.]
 	
 	wing_right = Sizing.HalfWing(wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
 	wing = Sizing.Wing(wing_right, wing_right)
-end;
+	Sizing.print_info(wing)
+end
 
 # ╔═╡ 7f48f152-3263-11eb-36d1-cfd2a24b2cd9
 begin
@@ -137,13 +135,14 @@ begin
 	mac_w = mean_aerodynamic_chord(c_r_w, λ_w)
 	b_w = Sizing.span(wing)
 	S_w = Sizing.projected_area(wing)
-end;
+	Sizing.info(wing)
+end
 
 # ╔═╡ f11e9b60-3266-11eb-0c1f-fd0eaea6cc5d
-V_H = 0.5
+V_H = 0.55
 
 # ╔═╡ 8d97a350-30d3-11eb-307f-cd48a69b8300
-V_V = 0.04
+V_V = 0.028
 
 # ╔═╡ 98a56ace-3267-11eb-3627-ed82836734c2
 md"""
@@ -152,9 +151,9 @@ Propeller parameters
 
 # ╔═╡ 3d4d2870-3263-11eb-3e80-1f3f5db82243
 begin
-	D_VTOL_prop = 0.1
-	D_FW_prop = 0.1
-	c_prop = D_VTOL_prop * 0.05
+	D_VTOL_prop = 0.36
+	D_FW_prop = 0.42
+	c_prop = D_VTOL_prop * 0.1
 end;
 
 # ╔═╡ 0fdf3ec2-32cf-11eb-399f-cb4281c72cc8
@@ -164,7 +163,7 @@ b_h = D_VTOL_prop + D_FW_prop
 # ╔═╡ 322ba6c0-32d0-11eb-1557-dd4a0c9510b1
 begin
 	# Propeller locations
-	x_PF = x_w + b_h / 2 * tan(Λ_LE_w) - (D_VTOL_prop / 2 - c_prop) / cos(Λ_LE_w)
+	x_PF = x_w + b_h / 2 * tan(Λ_LE_w) - (D_VTOL_prop / 2 + c_prop) / cos(Λ_LE_w)
 	x_PR = x_w + c_r_w + b_h / 2 * tan(Λ_TE_w) + (D_VTOL_prop / 2 + c_prop) / cos(Λ_TE_w)
 end;
 
@@ -212,12 +211,15 @@ Iterations:
 begin
 	# Vertical tail parameters
 	λ_v = 0.5
-	Λ_LE_v = 20.
+	Λ_LE_v = 25.
 end;
+
+# ╔═╡ ab52a460-349a-11eb-1028-27f26f3c9606
+max_iter = 15;
 
 # ╔═╡ 82248a1e-33fc-11eb-3cc1-9b4ae3379bef
 begin
-	num_slider = @bind num Slider(1:20)
+	num_slider = @bind num NumberField(1:max_iter, default = 6)
 	md"""
 	Number of iterations: $(num_slider)
 	"""
@@ -245,7 +247,8 @@ begin
 	
 	htail_right = Sizing.HalfWing(htail_chords, htail_spans, htail_dihedrals, htail_sweeps, htail_twists)
 	htail = Sizing.Wing(htail_right, htail_right)
-end;
+	Sizing.info(htail)
+end
 
 # ╔═╡ 7dcd3140-3328-11eb-2e98-fbc13dbfcfa4
 begin
@@ -257,7 +260,8 @@ begin
 	
 	vtail_left = Sizing.HalfWing(vtail_chords, vtail_spans, vtail_dihedrals, vtail_sweeps, vtail_twists)
 	vtail_right = vtail_left
-end;
+	Sizing.info(vtail_left)
+end
 
 # ╔═╡ c06dff70-32f6-11eb-2a38-8b82b14cebee
 begin
@@ -269,13 +273,13 @@ end
 leading_vr, trailing_vr = MathTools.tupvector.(Sizing.wing_bounds(vtail_right));
 
 # ╔═╡ 9587c5e0-33c1-11eb-18fc-37cfab1575b1
-vtail2_coords = MathTools.tupvector([ RotX(π/2) * SVector(coords...) .+ SVector(x_CG + l_v - 0.25 * c_r_v, b_h / 2, 0) for coords in [ leading_vr; trailing_vr[end:-1:1]; leading_vr[1] ] ])
+vtail2_coords = MathTools.tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, b_h / 2, 0) for coords in [ leading_vr; trailing_vr[end:-1:1]; leading_vr[1] ])
 
 # ╔═╡ 89f866a0-33bf-11eb-1747-17f59bb9537a
 leading_vl, trailing_vl = MathTools.tupvector.(Sizing.wing_bounds(vtail_left));
 
 # ╔═╡ afaa5d40-33bf-11eb-1e82-03fba93e308a
-vtail1_coords = MathTools.tupvector([ RotX(π/2) * SVector(coords...) .+ SVector(x_CG + l_v - 0.25 * c_r_v, -b_h / 2, 0) for coords in [ leading_vl; trailing_vl[end:-1:1]; leading_vl[1] ] ])
+vtail1_coords = MathTools.tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, -b_h / 2, 0) for coords in [ leading_vl; trailing_vl[end:-1:1]; leading_vl[1] ])
 
 # ╔═╡ 16984710-332f-11eb-2285-d587da9090e4
 leading_h, trailing_h = MathTools.tupvector.(Sizing.wing_bounds(htail));
@@ -304,16 +308,18 @@ circle3D(r) = [ (r*cos(θ), r*sin(θ), 0) for θ in 0:1e-2:2π ];
 
 # ╔═╡ 4bc3ffa0-33b7-11eb-0525-659b21f803eb
 begin
-	circ3D = circle3D(D_VTOL_prop)
-	prop3D_rear_right = [ (x_PR, (b_h + D_FW_prop)/ 2, 0) .+ coords for coords in circ3D ]
-	prop3D_rear_left = [ (x_PR, -(b_h + D_FW_prop) / 2, 0) .+ coords for coords in circ3D ]
-	prop3D_front_left = [ (x_PF, -(b_h + D_FW_prop) / 2, 0) .+ coords for coords in circ3D ]
-	prop3D_front_right = [ (x_PF, (b_h + D_FW_prop) / 2, 0) .+ coords for coords in circ3D ]
+	circ3D = circle3D(D_VTOL_prop / 2)
+	circ3D_fw = circle3D(D_FW_prop / 2)
+	prop3D_rear_right = [ (x_PR, (b_h)/ 2, 0) .+ coords for coords in circ3D ]
+	prop3D_rear_left = [ (x_PR, -(b_h) / 2, 0) .+ coords for coords in circ3D ]
+	prop3D_front_left = [ (x_PF, -(b_h) / 2, 0) .+ coords for coords in circ3D ]
+	prop3D_front_right = [ (x_PF, (b_h) / 2, 0) .+ coords for coords in circ3D ]
+	prop3D_fw = MathTools.tupvector((x_w + c_r_w * 1.1, 0, 0) .+ RotY(π/2) * SVector(coords...) for coords in circ3D_fw)
 end;
 
-# ╔═╡ 6077a940-3305-11eb-2ad8-01b3b103898f
+# ╔═╡ 792a3af0-3479-11eb-37af-dda9a6268480
 begin
-	plot(aspect_ratio = 1, camera = (15,45))
+	plot(aspect_ratio = 1, camera = (15,30), zlim=(-1, 1))
 	plot!(wing_coords, label = "Wing")
 	plot!(htail_coords, label = "Horizontal Tail")
 	plot!(vtail1_coords, label = "Vertical Tail 1")
@@ -322,18 +328,12 @@ begin
 	plot!(prop3D_rear_left, label = "Prop Rear Left")
 	plot!(prop3D_front_left, label = "Prop Front Left")
 	plot!(prop3D_front_right, label = "Prop Front Right")
-end
-
-# ╔═╡ 18c1fe50-3091-11eb-060c-c944f6e2e2c3
-begin
-    import DarkMode
-	DarkMode.enable(theme="material-darker")
+	plot!(prop3D_fw, label = "Prop Fixed-Wing")
 end
 
 # ╔═╡ Cell order:
 # ╟─23137140-3091-11eb-3f8a-2b8bd4b426b5
 # ╠═295abee0-3308-11eb-2d72-b1c4ff53169a
-# ╠═9a3a821e-3309-11eb-3a51-2d2f75464b05
 # ╠═64f54fe0-330a-11eb-36cc-276427fea18f
 # ╠═cf662190-33bb-11eb-37b1-f7bf1cc51112
 # ╠═d72bd840-3305-11eb-362b-0f6a7a774a13
@@ -363,23 +363,23 @@ end
 # ╠═4d9a5b40-32d0-11eb-3977-c3a6511f65d1
 # ╟─34a80ae0-32f0-11eb-1dc3-07cae4d044ce
 # ╠═fdc41530-32ce-11eb-22c0-a9bd5a40611d
+# ╠═f926e9c0-32f7-11eb-1e53-3ba8e9f52056
 # ╠═8503ef50-332b-11eb-2953-03dc7826b417
 # ╠═c1522370-332e-11eb-258f-a96268d86a87
 # ╠═7dcd3140-3328-11eb-2e98-fbc13dbfcfa4
 # ╠═bc905010-32f6-11eb-0557-91743b6fe9e3
-# ╠═f926e9c0-32f7-11eb-1e53-3ba8e9f52056
+# ╠═ab52a460-349a-11eb-1028-27f26f3c9606
 # ╟─82248a1e-33fc-11eb-3cc1-9b4ae3379bef
 # ╟─c06dff70-32f6-11eb-2a38-8b82b14cebee
-# ╟─6077a940-3305-11eb-2ad8-01b3b103898f
+# ╠═792a3af0-3479-11eb-37af-dda9a6268480
 # ╟─8f44ca92-33a6-11eb-315f-5b87f51ef53c
 # ╟─b7ae8e30-33a6-11eb-1b08-89654bc14885
 # ╠═afaa5d40-33bf-11eb-1e82-03fba93e308a
 # ╠═9587c5e0-33c1-11eb-18fc-37cfab1575b1
-# ╟─4bc3ffa0-33b7-11eb-0525-659b21f803eb
+# ╠═4bc3ffa0-33b7-11eb-0525-659b21f803eb
 # ╟─885f6532-33c1-11eb-1b81-e1a81e959643
 # ╟─89f866a0-33bf-11eb-1747-17f59bb9537a
 # ╟─16984710-332f-11eb-2285-d587da9090e4
 # ╟─459de1c0-3305-11eb-3e21-03899420918d
 # ╟─29972a70-32ee-11eb-3aaa-a3b2f600223f
 # ╟─2c39cf70-33b7-11eb-0de3-236d16a6f5ea
-# ╟─18c1fe50-3091-11eb-060c-c944f6e2e2c3
