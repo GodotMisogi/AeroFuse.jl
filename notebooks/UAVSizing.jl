@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.15
+# v0.12.16
 
 using Markdown
 using InteractiveUtils
@@ -13,21 +13,17 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 295abee0-3308-11eb-2d72-b1c4ff53169a
-using PlutoUI
-
-# ╔═╡ 64f54fe0-330a-11eb-36cc-276427fea18f
-using StaticArrays
-
-# ╔═╡ cf662190-33bb-11eb-37b1-f7bf1cc51112
-using Rotations
-
 # ╔═╡ d72bd840-3305-11eb-362b-0f6a7a774a13
 begin
+	using PlutoUI
+	using StaticArrays
+	using Rotations
 	include("../src/MathTools.jl")
 	include("../src/Sizing.jl")
-	using .MathTools: tupvector
+	using .MathTools
 	using .Sizing
+	# import DarkMode
+	# DarkMode.enable(theme="material-darker")
 end
 
 # ╔═╡ bc905010-32f6-11eb-0557-91743b6fe9e3
@@ -35,7 +31,7 @@ using Plots; plotlyjs();
 
 # ╔═╡ 23137140-3091-11eb-3f8a-2b8bd4b426b5
 md"""
-## FW-VTOL UAV Sizing
+## Fixed Wing-VTOL UAV Sizing
 """
 
 # ╔═╡ df735200-3263-11eb-3c15-c9f42ce9fbef
@@ -53,6 +49,11 @@ S_{HT} = \frac{C_{HT} \bar{c}_w S_w}{l_{HT}}
 """
 
 # ╔═╡ 304ebdb0-3091-11eb-0603-dd2131ef1226
+"""
+	horizontal_tail_area(volume_ratio, wing_mac, wing_area, tail_arm)
+
+Computes horizontal tail area.
+"""
 horizontal_tail_area(V_h, mac_w, S_w, l_h) = V_h * mac_w * S_w / l_h;
 
 # ╔═╡ 4da4b550-32ed-11eb-1709-1903b01b356c
@@ -80,7 +81,7 @@ b_{VT} = \frac{2 S_{VT}}{c_{HT}\left(1 + \frac{1}{\lambda_{VT}}\right)}
 vertical_tail_span(S_v, c_h, λ_v) = 2 * S_v / c_h / (1 + 1. / λ_v);
 
 # ╔═╡ 4ba53bd0-32ed-11eb-25b2-89385a3cecdc
-htail_arm(x_VT, b_v, Λ_LE_v, c_h, x_CG) = x_VT + b_v * Λ_LE_v + 0.25 * c_h - x_CG;
+htail_arm(x_VT, b_v, Λ_LE_v, c_h, x_CG) = x_VT + b_v * tan(Λ_LE_v) + 0.25 * c_h - x_CG;
 
 # ╔═╡ 4bb0d490-32ed-11eb-1fe6-e72b49f18433
 vtail_arm(x_mac_v, mac_v) = x_mac_v + 0.25 * mac_v;
@@ -112,16 +113,14 @@ Wing Parameters
 """
 
 # ╔═╡ 6ca96a60-3304-11eb-150f-71f4ce3a2918
-begin
-	wing_chords = [0.2, 0.2, 0.1]
-	wing_twists = [0., 0., 0.]
-	wing_spans = [1.705 / 2, 0.1]
-	wing_dihedrals = [0., 60.]
-	wing_sweeps = [0., 60.]
-	
-	wing_right = Sizing.HalfWing(wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
+begin	
+	wing_right = Sizing.HalfWing([0.2, 0.2, 0.1], 	# Chords
+								 [1.705 / 2, 0.1 ], # Spans
+								 [0., 60.], 		# Dihedrals
+								 [0., 60.], 		# Sweeps
+								 [0., 0., 0.])		# Twists
 	wing = Sizing.Wing(wing_right, wing_right)
-	Sizing.print_info(wing)
+	Sizing.info(wing)
 end
 
 # ╔═╡ 7f48f152-3263-11eb-36d1-cfd2a24b2cd9
@@ -135,8 +134,7 @@ begin
 	mac_w = mean_aerodynamic_chord(c_r_w, λ_w)
 	b_w = Sizing.span(wing)
 	S_w = Sizing.projected_area(wing)
-	Sizing.info(wing)
-end
+end;
 
 # ╔═╡ f11e9b60-3266-11eb-0c1f-fd0eaea6cc5d
 V_H = 0.55
@@ -149,11 +147,16 @@ md"""
 Propeller parameters
 """
 
+# ╔═╡ 34a80ae0-32f0-11eb-1dc3-07cae4d044ce
+md"""
+Iterations:
+"""
+
 # ╔═╡ 3d4d2870-3263-11eb-3e80-1f3f5db82243
 begin
 	D_VTOL_prop = 0.36
 	D_FW_prop = 0.42
-	c_prop = D_VTOL_prop * 0.1
+	c_prop = D_VTOL_prop * 0.15
 end;
 
 # ╔═╡ 0fdf3ec2-32cf-11eb-399f-cb4281c72cc8
@@ -202,16 +205,11 @@ function tail_sizing(num_iter, l_h, l_v, V_V, V_H, S_w, b_w, mac_w, λ_v, Λ_LE_
 	S_hs, S_vs, l_h, l_v, error_S_h, error_S_v
 end;
 
-# ╔═╡ 34a80ae0-32f0-11eb-1dc3-07cae4d044ce
-md"""
-Iterations:
-"""
-
 # ╔═╡ fdc41530-32ce-11eb-22c0-a9bd5a40611d
 begin
 	# Vertical tail parameters
 	λ_v = 0.5
-	Λ_LE_v = 25.
+	Λ_LE_v = 30.
 end;
 
 # ╔═╡ ab52a460-349a-11eb-1028-27f26f3c9606
@@ -239,26 +237,22 @@ end;
 
 # ╔═╡ c1522370-332e-11eb-258f-a96268d86a87
 begin
-	htail_chords = [c_h, c_h]
-	htail_twists = [0., 0.]
-	htail_spans = [b_h / 2]
-	htail_dihedrals = [0.]
-	htail_sweeps = [0.]
-	
-	htail_right = Sizing.HalfWing(htail_chords, htail_spans, htail_dihedrals, htail_sweeps, htail_twists)
+	htail_right = Sizing.HalfWing([c_h, c_h], 	# Chords
+								  [b_h / 2],  	# Spans
+								  [0.],			# Dihedrals
+								  [0.],			# Sweeps
+								  [0., 0.])		# Twists
 	htail = Sizing.Wing(htail_right, htail_right)
 	Sizing.info(htail)
 end
 
 # ╔═╡ 7dcd3140-3328-11eb-2e98-fbc13dbfcfa4
 begin
-	vtail_chords = [c_r_v, λ_v * c_r_v ]
-	vtail_twists = [0., 0.]
-	vtail_spans = [b_v]
-	vtail_dihedrals = [0.]
-	vtail_sweeps = [Λ_LE_v]
-	
-	vtail_left = Sizing.HalfWing(vtail_chords, vtail_spans, vtail_dihedrals, vtail_sweeps, vtail_twists)
+	vtail_left = Sizing.HalfWing([c_r_v, λ_v * c_r_v], 	# Chords
+								 [b_v],  					# Spans
+								 [0.],						# Dihedrals
+								 [Λ_LE_v],					# Sweeps
+								 [0., 0.])					# Twists
 	vtail_right = vtail_left
 	Sizing.info(vtail_left)
 end
@@ -267,6 +261,19 @@ end
 begin
 	plot(1:length(error_h), error_h, label = "Horizontal Tail Error")
 	plot!(1:length(error_v), error_v, label = "Vertical Tail Error")
+end
+
+# ╔═╡ c4943450-34c9-11eb-07f6-ab75cfb6de6e
+begin
+	φ_s = @bind φ Slider(0:1e-2:90, default = 15)
+	ψ_s = @bind ψ Slider(0:1e-2:90, default = 30)
+	z_s = @bind z_limit Slider(0:1e-2:3, default = 1.)
+	md"""
+	Horizontal: $(φ_s)
+	Vertical: $(ψ_s)
+	
+	*z*-scale: $(z_s)
+	"""
 end
 
 # ╔═╡ 885f6532-33c1-11eb-1b81-e1a81e959643
@@ -319,7 +326,7 @@ end;
 
 # ╔═╡ 792a3af0-3479-11eb-37af-dda9a6268480
 begin
-	plot(aspect_ratio = 1, camera = (15,30), zlim=(-1, 1))
+	cuck = plot(camera = (φ, ψ), zlim=(-z_limit, z_limit), aspect_ratio = 1)
 	plot!(wing_coords, label = "Wing")
 	plot!(htail_coords, label = "Horizontal Tail")
 	plot!(vtail1_coords, label = "Vertical Tail 1")
@@ -331,12 +338,20 @@ begin
 	plot!(prop3D_fw, label = "Prop Fixed-Wing")
 end
 
+# ╔═╡ d31ac9a0-34c2-11eb-1dd0-0be54d9e8e1d
+top_view = plot(cuck, camera = (0, 90))
+
+# ╔═╡ 8523e000-34c3-11eb-0591-d5669fed462b
+side_view = plot(cuck, camera = (0, 0))
+
+# ╔═╡ 0da81e72-34c7-11eb-35ce-b3986f4c9b86
+begin
+
+end
+
 # ╔═╡ Cell order:
 # ╟─23137140-3091-11eb-3f8a-2b8bd4b426b5
-# ╠═295abee0-3308-11eb-2d72-b1c4ff53169a
-# ╠═64f54fe0-330a-11eb-36cc-276427fea18f
-# ╠═cf662190-33bb-11eb-37b1-f7bf1cc51112
-# ╠═d72bd840-3305-11eb-362b-0f6a7a774a13
+# ╟─d72bd840-3305-11eb-362b-0f6a7a774a13
 # ╟─df735200-3263-11eb-3c15-c9f42ce9fbef
 # ╟─5fb5d550-3093-11eb-0691-09050e6939eb
 # ╠═304ebdb0-3091-11eb-0603-dd2131ef1226
@@ -357,11 +372,11 @@ end
 # ╠═f11e9b60-3266-11eb-0c1f-fd0eaea6cc5d
 # ╠═8d97a350-30d3-11eb-307f-cd48a69b8300
 # ╟─98a56ace-3267-11eb-3627-ed82836734c2
-# ╠═3d4d2870-3263-11eb-3e80-1f3f5db82243
 # ╠═0fdf3ec2-32cf-11eb-399f-cb4281c72cc8
 # ╠═322ba6c0-32d0-11eb-1557-dd4a0c9510b1
 # ╠═4d9a5b40-32d0-11eb-3977-c3a6511f65d1
 # ╟─34a80ae0-32f0-11eb-1dc3-07cae4d044ce
+# ╠═3d4d2870-3263-11eb-3e80-1f3f5db82243
 # ╠═fdc41530-32ce-11eb-22c0-a9bd5a40611d
 # ╠═f926e9c0-32f7-11eb-1e53-3ba8e9f52056
 # ╠═8503ef50-332b-11eb-2953-03dc7826b417
@@ -371,15 +386,19 @@ end
 # ╠═ab52a460-349a-11eb-1028-27f26f3c9606
 # ╟─82248a1e-33fc-11eb-3cc1-9b4ae3379bef
 # ╟─c06dff70-32f6-11eb-2a38-8b82b14cebee
-# ╠═792a3af0-3479-11eb-37af-dda9a6268480
-# ╟─8f44ca92-33a6-11eb-315f-5b87f51ef53c
+# ╟─c4943450-34c9-11eb-07f6-ab75cfb6de6e
+# ╟─792a3af0-3479-11eb-37af-dda9a6268480
+# ╟─d31ac9a0-34c2-11eb-1dd0-0be54d9e8e1d
+# ╟─8523e000-34c3-11eb-0591-d5669fed462b
+# ╠═8f44ca92-33a6-11eb-315f-5b87f51ef53c
 # ╟─b7ae8e30-33a6-11eb-1b08-89654bc14885
 # ╠═afaa5d40-33bf-11eb-1e82-03fba93e308a
 # ╠═9587c5e0-33c1-11eb-18fc-37cfab1575b1
-# ╠═4bc3ffa0-33b7-11eb-0525-659b21f803eb
+# ╟─4bc3ffa0-33b7-11eb-0525-659b21f803eb
 # ╟─885f6532-33c1-11eb-1b81-e1a81e959643
 # ╟─89f866a0-33bf-11eb-1747-17f59bb9537a
 # ╟─16984710-332f-11eb-2285-d587da9090e4
 # ╟─459de1c0-3305-11eb-3e21-03899420918d
 # ╟─29972a70-32ee-11eb-3aaa-a3b2f600223f
 # ╟─2c39cf70-33b7-11eb-0de3-236d16a6f5ea
+# ╟─0da81e72-34c7-11eb-35ce-b3986f4c9b86
