@@ -18,9 +18,9 @@ begin
 	using PlutoUI
 	using StaticArrays
 	using Rotations
-	include("../src/MathTools.jl")
+	include("../src/math_tools.jl")
 	include("../src/Sizing.jl")
-	using .MathTools
+	using .math_tools
 	using .Sizing
 	# import DarkMode
 	# DarkMode.enable(theme="material-darker")
@@ -277,25 +277,25 @@ begin
 end
 
 # ╔═╡ 885f6532-33c1-11eb-1b81-e1a81e959643
-leading_vr, trailing_vr = MathTools.tupvector.(Sizing.wing_bounds(vtail_right));
+leading_vr, trailing_vr = math_tools.tupvector.(Sizing.wing_bounds(vtail_right));
 
 # ╔═╡ 9587c5e0-33c1-11eb-18fc-37cfab1575b1
-vtail2_coords = MathTools.tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, b_h / 2, 0) for coords in [ leading_vr; trailing_vr[end:-1:1]; leading_vr[1] ])
+vtail2_coords = math_tools.tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, b_h / 2, 0) for coords in [ leading_vr; trailing_vr[end:-1:1]; leading_vr[1] ])
 
 # ╔═╡ 89f866a0-33bf-11eb-1747-17f59bb9537a
-leading_vl, trailing_vl = MathTools.tupvector.(Sizing.wing_bounds(vtail_left));
+leading_vl, trailing_vl = math_tools.tupvector.(Sizing.wing_bounds(vtail_left));
 
 # ╔═╡ afaa5d40-33bf-11eb-1e82-03fba93e308a
-vtail1_coords = MathTools.tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, -b_h / 2, 0) for coords in [ leading_vl; trailing_vl[end:-1:1]; leading_vl[1] ])
+vtail1_coords = math_tools.tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, -b_h / 2, 0) for coords in [ leading_vl; trailing_vl[end:-1:1]; leading_vl[1] ])
 
 # ╔═╡ 16984710-332f-11eb-2285-d587da9090e4
-leading_h, trailing_h = MathTools.tupvector.(Sizing.wing_bounds(htail));
+leading_h, trailing_h = math_tools.tupvector.(Sizing.wing_bounds(htail));
 
 # ╔═╡ b7ae8e30-33a6-11eb-1b08-89654bc14885
 htail_coords = [ (x_CG + l_h - 0.25 * c_h, 0, b_v) .+ coords for coords in [ leading_h; trailing_h[end:-1:1]; leading_h[1] ] ]
 
 # ╔═╡ 459de1c0-3305-11eb-3e21-03899420918d
-leading, trailing = MathTools.tupvector.(Sizing.wing_bounds(wing));
+leading, trailing = math_tools.tupvector.(Sizing.wing_bounds(wing));
 
 # ╔═╡ 8f44ca92-33a6-11eb-315f-5b87f51ef53c
 wing_coords = [ (x_w, 0, 0) .+ coords for coords in [ leading; trailing[end:-1:1]; leading[1] ] ]
@@ -321,7 +321,7 @@ begin
 	prop3D_rear_left = [ (x_PR, -(b_h) / 2, 0) .+ coords for coords in circ3D ]
 	prop3D_front_left = [ (x_PF, -(b_h) / 2, 0) .+ coords for coords in circ3D ]
 	prop3D_front_right = [ (x_PF, (b_h) / 2, 0) .+ coords for coords in circ3D ]
-	prop3D_fw = MathTools.tupvector((x_w + c_r_w * 1.1, 0, 0) .+ RotY(π/2) * SVector(coords...) for coords in circ3D_fw)
+	prop3D_fw = math_tools.tupvector((x_w + c_r_w * 1.1, 0, 0) .+ RotY(π/2) * SVector(coords...) for coords in circ3D_fw)
 end;
 
 # ╔═╡ 792a3af0-3479-11eb-37af-dda9a6268480

@@ -1,1 +1,0 @@
-from .airfoil_parametrization import *
