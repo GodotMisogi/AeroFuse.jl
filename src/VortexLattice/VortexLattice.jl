@@ -10,7 +10,7 @@ using TimerOutputs
 
 include("../General/math_tools.jl")
 
-# using accumap, structtolist, ×, three_quarter_point, quarter_point
+using .MathTools: accumap, structtolist, three_quarter_point, quarter_point
 
 ## Freestream
 #==========================================================================================#
@@ -30,6 +30,8 @@ export body_to_stability_axes, body_to_wind_axes
 #==========================================================================================#
 
 include("../General/panel.jl")
+
+import .PanelGeometry: Panel, Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform
 
 export Panel, Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform
 

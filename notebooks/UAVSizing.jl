@@ -18,10 +18,8 @@ begin
 	using PlutoUI
 	using StaticArrays
 	using Rotations
-	include("../src/math_tools.jl")
-	include("../src/Sizing.jl")
-	using .math_tools
-	using .Sizing
+	using Revise
+	using AeroMDAO
 	# import DarkMode
 	# DarkMode.enable(theme="material-darker")
 end
@@ -113,14 +111,19 @@ Wing Parameters
 """
 
 # ╔═╡ 6ca96a60-3304-11eb-150f-71f4ce3a2918
-begin	
-	wing_right = Sizing.HalfWing([0.2, 0.2, 0.1], 	# Chords
-								 [1.705 / 2, 0.1 ], # Spans
-								 [0., 60.], 		# Dihedrals
-								 [0., 60.], 		# Sweeps
-								 [0., 0., 0.])		# Twists
-	wing = Sizing.Wing(wing_right, wing_right)
-	Sizing.info(wing)
+begin
+	wing_foil = naca4((4,4,1,2))
+	wing_num_secs = 3
+	wing_foils = Foil.(wing_foil for i ∈ 1:wing_num_secs)
+	
+	wing_right = HalfWing(wing_foils,		# Foils
+						 [0.2, 0.2, 0.1], 	# Chords
+						 [0., 0., 0.],		# Twists
+						 [1.705 / 2, 0.1 ], # Spans
+						 [0., 60.], 		# Dihedrals
+						 [0., 60.]) 		# Sweeps
+	wing = Wing(wing_right, wing_right)
+	info(wing)
 end
 
 # ╔═╡ 7f48f152-3263-11eb-36d1-cfd2a24b2cd9
@@ -130,10 +133,10 @@ begin
 	Λ_TE_w = deg2rad(0)
 	c_r_w = wing.right.chords[1]
 	c_t_w = wing.right.chords[2]
-	λ_w =  Sizing.taper_ratio(c_r_w, c_t_w)
+	λ_w =  taper_ratio(c_r_w, c_t_w)
 	mac_w = mean_aerodynamic_chord(c_r_w, λ_w)
-	b_w = Sizing.span(wing)
-	S_w = Sizing.projected_area(wing)
+	b_w = span(wing)
+	S_w = projected_area(wing)
 end;
 
 # ╔═╡ f11e9b60-3266-11eb-0c1f-fd0eaea6cc5d
@@ -237,24 +240,34 @@ end;
 
 # ╔═╡ c1522370-332e-11eb-258f-a96268d86a87
 begin
-	htail_right = Sizing.HalfWing([c_h, c_h], 	# Chords
-								  [b_h / 2],  	# Spans
-								  [0.],			# Dihedrals
-								  [0.],			# Sweeps
-								  [0., 0.])		# Twists
-	htail = Sizing.Wing(htail_right, htail_right)
-	Sizing.info(htail)
+	htail_foil = naca4((0,0,1,2))
+	htail_foils = Foil.(htail_foil for i ∈ 1:2)
+	
+	htail_right = HalfWing(htail_foils,
+						  [c_h, c_h], 	# Chords
+						  [0., 0.],		# Twists
+						  [b_h / 2],  	# Spans
+						  [0.],			# Dihedrals
+						  [0.])			# Sweeps
+
+	htail = Wing(htail_right, htail_right)
+	info(htail)
 end
 
 # ╔═╡ 7dcd3140-3328-11eb-2e98-fbc13dbfcfa4
 begin
-	vtail_left = Sizing.HalfWing([c_r_v, λ_v * c_r_v], 	# Chords
-								 [b_v],  					# Spans
-								 [0.],						# Dihedrals
-								 [Λ_LE_v],					# Sweeps
-								 [0., 0.])					# Twists
+	vtail_foil = naca4((0,0,0,9))
+	vtail_foils = Foil.(vtail_foil for i ∈ 1:2)
+	
+	vtail_left = HalfWing(vtail_foils,
+						 [c_r_v, λ_v * c_r_v], 	# Chords
+						 [0., 0.],					# Twists				 
+						 [b_v],  					# Spans
+						 [0.],						# Dihedrals
+						 [Λ_LE_v])					# Sweeps
+						 
 	vtail_right = vtail_left
-	Sizing.info(vtail_left)
+	info(vtail_left)
 end
 
 # ╔═╡ c06dff70-32f6-11eb-2a38-8b82b14cebee
@@ -277,28 +290,28 @@ begin
 end
 
 # ╔═╡ 885f6532-33c1-11eb-1b81-e1a81e959643
-leading_vr, trailing_vr = math_tools.tupvector.(Sizing.wing_bounds(vtail_right));
+leading_vr, trailing_vr = tupvector.(wing_bounds(vtail_right));
 
 # ╔═╡ 9587c5e0-33c1-11eb-18fc-37cfab1575b1
-vtail2_coords = math_tools.tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, b_h / 2, 0) for coords in [ leading_vr; trailing_vr[end:-1:1]; leading_vr[1] ])
+vtail2_coords = tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, b_h / 2, 0) for coords in [ leading_vr; trailing_vr[end:-1:1]; leading_vr[1] ])[:];
 
 # ╔═╡ 89f866a0-33bf-11eb-1747-17f59bb9537a
-leading_vl, trailing_vl = math_tools.tupvector.(Sizing.wing_bounds(vtail_left));
+leading_vl, trailing_vl = tupvector.(wing_bounds(vtail_left));
 
 # ╔═╡ afaa5d40-33bf-11eb-1e82-03fba93e308a
-vtail1_coords = math_tools.tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, -b_h / 2, 0) for coords in [ leading_vl; trailing_vl[end:-1:1]; leading_vl[1] ])
+vtail1_coords = tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, -b_h / 2, 0) for coords in [ leading_vl; trailing_vl[end:-1:1]; leading_vl[1] ])[:];
 
 # ╔═╡ 16984710-332f-11eb-2285-d587da9090e4
-leading_h, trailing_h = math_tools.tupvector.(Sizing.wing_bounds(htail));
+leading_h, trailing_h = tupvector.(wing_bounds(htail));
 
 # ╔═╡ b7ae8e30-33a6-11eb-1b08-89654bc14885
-htail_coords = [ (x_CG + l_h - 0.25 * c_h, 0, b_v) .+ coords for coords in [ leading_h; trailing_h[end:-1:1]; leading_h[1] ] ]
+htail_coords = [ (x_CG + l_h - 0.25 * c_h, 0, b_v) .+ coords for coords in [ leading_h; trailing_h[end:-1:1]; leading_h[1] ] ][:];
 
 # ╔═╡ 459de1c0-3305-11eb-3e21-03899420918d
-leading, trailing = math_tools.tupvector.(Sizing.wing_bounds(wing));
+leading, trailing = tupvector.(wing_bounds(wing));
 
 # ╔═╡ 8f44ca92-33a6-11eb-315f-5b87f51ef53c
-wing_coords = [ (x_w, 0, 0) .+ coords for coords in [ leading; trailing[end:-1:1]; leading[1] ] ]
+wing_coords = [ (x_w, 0, 0) .+ coords for coords in [ leading; trailing[end:-1:1]; leading[1] ] ][:]
 
 # ╔═╡ 29972a70-32ee-11eb-3aaa-a3b2f600223f
 hint(text) = Markdown.MD(Markdown.Admonition("hint", "Hint", [text]));
@@ -321,7 +334,7 @@ begin
 	prop3D_rear_left = [ (x_PR, -(b_h) / 2, 0) .+ coords for coords in circ3D ]
 	prop3D_front_left = [ (x_PF, -(b_h) / 2, 0) .+ coords for coords in circ3D ]
 	prop3D_front_right = [ (x_PF, (b_h) / 2, 0) .+ coords for coords in circ3D ]
-	prop3D_fw = math_tools.tupvector((x_w + c_r_w * 1.1, 0, 0) .+ RotY(π/2) * SVector(coords...) for coords in circ3D_fw)
+	prop3D_fw = tupvector((x_w + c_r_w * 1.1, 0, 0) .+ RotY(π/2) * SVector(coords...) for coords in circ3D_fw)
 end;
 
 # ╔═╡ 792a3af0-3479-11eb-37af-dda9a6268480
@@ -344,14 +357,9 @@ top_view = plot(cuck, camera = (0, 90))
 # ╔═╡ 8523e000-34c3-11eb-0591-d5669fed462b
 side_view = plot(cuck, camera = (0, 0))
 
-# ╔═╡ 0da81e72-34c7-11eb-35ce-b3986f4c9b86
-begin
-
-end
-
 # ╔═╡ Cell order:
 # ╟─23137140-3091-11eb-3f8a-2b8bd4b426b5
-# ╟─d72bd840-3305-11eb-362b-0f6a7a774a13
+# ╠═d72bd840-3305-11eb-362b-0f6a7a774a13
 # ╟─df735200-3263-11eb-3c15-c9f42ce9fbef
 # ╟─5fb5d550-3093-11eb-0691-09050e6939eb
 # ╠═304ebdb0-3091-11eb-0603-dd2131ef1226
@@ -387,18 +395,17 @@ end
 # ╟─82248a1e-33fc-11eb-3cc1-9b4ae3379bef
 # ╟─c06dff70-32f6-11eb-2a38-8b82b14cebee
 # ╟─c4943450-34c9-11eb-07f6-ab75cfb6de6e
-# ╟─792a3af0-3479-11eb-37af-dda9a6268480
-# ╟─d31ac9a0-34c2-11eb-1dd0-0be54d9e8e1d
-# ╟─8523e000-34c3-11eb-0591-d5669fed462b
+# ╠═792a3af0-3479-11eb-37af-dda9a6268480
+# ╠═d31ac9a0-34c2-11eb-1dd0-0be54d9e8e1d
+# ╠═8523e000-34c3-11eb-0591-d5669fed462b
 # ╠═8f44ca92-33a6-11eb-315f-5b87f51ef53c
-# ╟─b7ae8e30-33a6-11eb-1b08-89654bc14885
+# ╠═b7ae8e30-33a6-11eb-1b08-89654bc14885
 # ╠═afaa5d40-33bf-11eb-1e82-03fba93e308a
 # ╠═9587c5e0-33c1-11eb-18fc-37cfab1575b1
-# ╟─4bc3ffa0-33b7-11eb-0525-659b21f803eb
-# ╟─885f6532-33c1-11eb-1b81-e1a81e959643
-# ╟─89f866a0-33bf-11eb-1747-17f59bb9537a
-# ╟─16984710-332f-11eb-2285-d587da9090e4
-# ╟─459de1c0-3305-11eb-3e21-03899420918d
+# ╠═4bc3ffa0-33b7-11eb-0525-659b21f803eb
+# ╠═885f6532-33c1-11eb-1b81-e1a81e959643
+# ╠═89f866a0-33bf-11eb-1747-17f59bb9537a
+# ╠═16984710-332f-11eb-2285-d587da9090e4
+# ╠═459de1c0-3305-11eb-3e21-03899420918d
 # ╟─29972a70-32ee-11eb-3aaa-a3b2f600223f
 # ╟─2c39cf70-33b7-11eb-0de3-236d16a6f5ea
-# ╟─0da81e72-34c7-11eb-35ce-b3986f4c9b86

@@ -28,7 +28,7 @@ wing_spans = [0.5, 0.5]
 wing_dihedrals = [0., 11.3]
 wing_sweeps = [1.14, 8.]
 
-wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
+wing_right = HalfWing(airfoils, wing_chords, wing_twists, wing_spans, wing_dihedrals, wing_sweeps)
 wing = Wing(wing_right, wing_right)
 println("Wing —")
 print_info(wing)
@@ -46,7 +46,7 @@ htail_dihedrals = [0]
 htail_sweeps = [30]
 htail_location = [1,0,0]
 
-htail_right = HalfWing(htail_airfoils, htail_chords, htail_spans, htail_dihedrals, htail_sweeps, htail_twists)
+htail_right = HalfWing(htail_airfoils, htail_chords, htail_twists, htail_spans, htail_dihedrals, htail_sweeps)
 htail = Wing(htail_right, htail_right)
 println("Horizontal Tail —")
 print_info(htail)
@@ -69,7 +69,7 @@ vtail1_location = [1 + 0.2 * tan(π/6), 0.2, 0]
 vtail2_angle = AngleAxis{Float64}(3π/4, 1, 0, 0)
 vtail2_location = [1 + 0.2 * tan(π/6), -0.2, 0]
 
-vtail = HalfWing(vtail_airfoils, vtail_chords, vtail_spans, vtail_dihedrals, vtail_sweeps, vtail_twists)
+vtail = HalfWing(vtail_airfoils, vtail_chords, vtail_twists, vtail_spans, vtail_dihedrals, vtail_sweeps)
 println("Vertical Tail —")
 print_info(vtail)
 

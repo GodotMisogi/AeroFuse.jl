@@ -7,7 +7,7 @@ function solve_case(horseshoe_panels :: Array{Panel3D}, camber_panels :: Array{P
     # Compute near-field forces
     @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
 
-    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, VortexLattice.area.(camber_panels))
+    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels))
     # println(cps)
 
     force, moment = sum(geom_forces), sum(geom_moments)
@@ -73,18 +73,18 @@ end
 
 # solve_case(wings :: Array{Aircraft}, freestream :: Freestream, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5, print = true) =  
 
-function solve_case(panels :: Array{Panel2D}, freestream :: Uniform2D)
-    # Compute doublet and source strengths
-    φs, σs = solve_strengths(panels, freestream)
-    freestream_speed = norm(velocity(freestream))
-    pressure_coeffs = pressure_coefficient.(freestream_speed, panel_velocities(panels, freestream, φs[1:end-1]))
+# function solve_case(panels :: Array{Panel2D}, freestream :: Uniform2D)
+#     # Compute doublet and source strengths
+#     φs, σs = solve_strengths(panels, freestream)
+#     freestream_speed = norm(velocity(freestream))
+#     pressure_coeffs = pressure_coefficient.(freestream_speed, panel_velocities(panels, freestream, φs[1:end-1]))
 
-    # Make panels for plotting
-    # dub_src_panels = DoubletSourcePanel2D.(panels, φs[1:end-1], σs, pressure_coeffs)
+#     # Make panels for plotting
+#     # dub_src_panels = DoubletSourcePanel2D.(panels, φs[1:end-1], σs, pressure_coeffs)
 
-    # Compute lift coefficient
-    diff_pans = [ panel_dist(panel_1, panel_2) for (panel_1, panel_2) ∈ (collect ∘ eachrow ∘ midgrad)(panels) ]
-    cl = sum(lift_coefficient.(pressure_coeffs, diff_pans ./ 2, panel_angle.(panels)))
+#     # Compute lift coefficient
+#     diff_pans = [ panel_dist(panel_1, panel_2) for (panel_1, panel_2) ∈ (collect ∘ eachrow ∘ midgrad)(panels) ]
+#     cl = sum(lift_coefficient.(pressure_coeffs, diff_pans ./ 2, panel_angle.(panels)))
 
-    cl
-end
+#     cl
+# end

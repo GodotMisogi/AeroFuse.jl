@@ -7,7 +7,13 @@ using Rotations
 using TimerOutputs
 
 ## Math tools
+#==========================================================================================#
+
 include("General/math_tools.jl")
+using .MathTools: tupvector, fwdsum, fwddiv, cosine_dist, weighted_vector, vectarray, slope, splitat, adj3, cosine_interp, columns
+
+export tupvector
+
 
 ## Non-dimensionalization
 #==========================================================================================#
@@ -16,23 +22,11 @@ include("General/nondimensional.jl")
 
 export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_dynamics
 
-#-------------------------AIRCRAFT GUFF---------------------#
-
-abstract type Aircraft end
-
-## Foil geometry
-#==========================================================================================#
-
-include("Wings/Foils.jl")
-
-export Foil, read_foil, kulfan_CST, naca4
-
 ## Wing geometry
 #==========================================================================================#
 
-include("Wings/wing_geometry.jl")
-
-export HalfWing, Wing, mean_aerodynamic_chord, span, aspect_ratio, projected_area, info, print_info, lead_wing, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing
+include("Wings/AircraftGeometry.jl")
+# using .AircraftGeometry
 
 ## Vortex lattice
 #==========================================================================================#

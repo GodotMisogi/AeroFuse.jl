@@ -1,3 +1,5 @@
+module MathTools
+
 using StaticArrays
 using Base.Iterators
 using Base: product
@@ -141,7 +143,7 @@ weighted(x1, x2, μ) = (1 - μ) * x1 + μ * x2
 """
 Computes the weighted average (μ) of two vectors. 
 """
-vector_point(x1, x2, μ) = weighted.(x1, x2, μ)
+weighted_vector(x1, x2, μ) = weighted.(x1, x2, μ)
 
 """
 Computes the weighted point between two points in a given direction.
@@ -159,3 +161,5 @@ Computes the 3-quarter point between two points in the x-z plane.
 three_quarter_point(p1, p2) = weighted_point(p1, p2, 3/4, 0, 3/4)
 
 #======================================================================#
+
+end

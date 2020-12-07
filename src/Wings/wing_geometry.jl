@@ -6,12 +6,12 @@ Definition for a half-wing consisting of airfoils, span lengths, dihedrals, and 
 # chords :: Array{Float64} # Chord lengths (m)
 struct HalfWing <: Aircraft
     foils :: Array{Foil} # Airfoil profiles
-    chords :: Array{<: Real}
+    chords :: Array{<: Real} # Airfoil chord lengths (m)
+    twists :: Array{<: Real} # Twist angles (deg)
     spans :: Array{<: Real}  # Leading-edge to leading-edge distance between foils (m)
     dihedrals :: Array{<: Real} # Dihedral angles (deg)
     sweeps :: Array{<: Real} # Leading-edge sweep angles (deg)
-    twists :: Array{<: Real} # Twist angles (deg)
-    HalfWing(foils, chords, spans, dihedrals, sweeps, twists) = new(foils, chords, spans, deg2rad.(dihedrals), deg2rad.(sweeps), -deg2rad.(twists)) # Convert to radians
+    HalfWing(foils, chords, twists, spans, dihedrals, sweeps) = new(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps)) # Convert to radians
 end
 
 """
@@ -72,7 +72,7 @@ end
 """
 Divides two vectors into `n` sections with cosine spacing. TODO: Upgrade to generic spacing functions.
 """
-chop_sections(set1, set2, n) = [ vector_point.(set1, set2, μ) for μ ∈ cosine_dist(0.5, 1., n + 1) ][1:end-1]
+chop_sections(set1, set2, n) = [ weighted_vector.(set1, set2, μ) for μ ∈ cosine_dist(0.5, 1., n + 1) ][1:end-1]
 
 """
 Divides a set of directional vectors into `n` sections with cosine spacing.
@@ -147,7 +147,7 @@ chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) ∈ zip(lead, trail) ]
 """
 Returns an array of cosine distributed coordinates 
 """
-chord_chopper(coords, n) = [ [ vector_point(chord[1,:], chord[2,:], μ) for μ ∈ cosine_dist(0.5, 1., n + 1)  ] for chord ∈ coords ]
+chord_chopper(coords, n) = [ [ weighted_vector(chord[1,:], chord[2,:], μ) for μ ∈ cosine_dist(0.5, 1., n + 1)  ] for chord ∈ coords ]
 
 """
 Applies spanwise spacing divisions on leading and trailing edge coordinates.
@@ -209,8 +209,8 @@ function wing_bounds(wing :: Wing)
     left_lead, left_trail = wing_bounds(wing.left, true)
     right_lead, right_trail = wing_bounds(wing.right)
 
-    leading = [ left_lead[end:-1:2,:]; right_lead ]
-    trailing = [ left_trail[end:-1:2,:]; right_trail ]
+    leading = [ left_lead; right_lead ]
+    trailing = [ left_trail; right_trail ]
 
     leading, trailing
 end

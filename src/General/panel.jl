@@ -1,8 +1,14 @@
+module PanelGeometry
+
 import Base: +, -, zero
 
-include("../General/math_tools.jl")
+using StaticArrays
+using LinearAlgebra
 
-# Panel setup
+include("../General/math_tools.jl")
+using .MathTools: span, structtolist
+
+## Panel setup
 #==========================================================================================#
 
 """
@@ -15,7 +21,7 @@ abstract type Panel end
 # +(::Union{Nothing, Panel2D}, ::Union{Nothing,Panel2D}) = nothing
 # zero(:: Nothing) = nothing
 
-# 2D Panels
+## 2D Panels
 #==========================================================================================#
 
 struct Panel2D <: Panel
@@ -52,7 +58,7 @@ panel_tangent(panel :: Panel2D) = rotation(1., 0., -panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0., 1., panel_angle(panel))
 panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π/2 <= angle <= π) || (-π <= angle <= -π/2) ? "lower" : "upper" end
 
-# 3D Panels
+## 3D Panels
 #==========================================================================================#
 
 """
@@ -101,3 +107,5 @@ panel_normal(panel :: Panel3D) = let p31 = panel.p3 .- panel.p1,
                                      p42 = panel.p4 .- panel.p2, 
                                      p31_x_p42 = cross(p31, p42);
                                      p31_x_p42 end
+                                     
+end
