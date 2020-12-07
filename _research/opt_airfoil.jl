@@ -1,16 +1,8 @@
 ## 
 using Revise
-
-##
-includet("../src/FoilParametrization.jl")
-using .FoilParametrization: naca4, kulfan_CST, camber_CST
 using AeroMDAO
-
-# Optimization libraries
 using JuMP
 using Ipopt
-
-# Plotting
 using Plots
 plotlyjs()
 
@@ -22,11 +14,9 @@ dzs = (0., 0.)
 
 # Objective function
 function optimize_lower(α, α_l...)
-    airfoil = kulfan_CST(α_u, [ α_l... ], dzs, 0., 80)
-    panels = make_2Dpanels(airfoil)
-
+    airfoil = (Foil ∘ kulfan_CST)(α_u, [ α_l... ], dzs, 0., 80)
     uniform = Uniform2D(1.0, α)
-    cl = solve_case(panels, uniform)
+    cl = solve_case(airfoil, uniform, 60)
 end
 
 ## Test
@@ -39,11 +29,11 @@ lower_design = Model(Ipopt.Optimizer)
 num_dv = 2
 
 @variable(lower_design, -1. <= α_l[1:num_dv] <= 0.) 
-@variable(lower_design, -5. <= α <= 15.) 
+@variable(lower_design, -5. <= α <= 10.) 
 
 register(lower_design, :optimize_lower, num_dv + 1, optimize_lower, autodiff = true)
 
-@NLobjective(lower_design, Max, optimize_lower(α, α_l...))
+@NLobjective(lower_design, Min, abs(optimize_lower(α, α_l...) - 0.5))
 
 ## Run optimization
 optimize!(lower_design)
@@ -70,11 +60,9 @@ dct = (0., 0.)
 
 # Camber optimization
 function optimize_camber(α, α_c...)
-    airfoil = camber_CST([ α_c... ], α_t, dct, 0., 80)
-    panels = make_2Dpanels(airfoil)
-
+    airfoil = (Foil ∘ camber_CST)([ α_c... ], α_t, dct, 0., 80)
     uniform = Uniform2D(1.0, α)
-    cl = solve_case(panels, uniform)
+    cl = solve_case(airfoil, uniform, 60)
 end
 
 ## Test
@@ -87,11 +75,11 @@ cam_design = Model(Ipopt.Optimizer)
 num_dv = 8
 
 @variable(cam_design, -0.1 <= α_c[1:num_dv] <= 0.1) 
-@variable(cam_design, -5. <= α <= 15.) 
+@variable(cam_design, -5. <= α <= 10.) 
 
 register(cam_design, :optimize_camber, num_dv + 1, optimize_camber, autodiff = true)
 
-@NLobjective(cam_design, Max, optimize_camber(α, α_c...))
+@NLobjective(cam_design, Min, abs(optimize_camber(α, α_c...) - 0.5))
 
 ## Run optimization
 optimize!(cam_design)

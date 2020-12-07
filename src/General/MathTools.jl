@@ -63,7 +63,7 @@ structtolist(x) = [ name << x for name ∈ (fieldnames ∘ typeof)(x) ]
 ⊗(A, B) = kron(A, B)
 
 # ×(xs, ys) = product(xs, ys)
-# dot(V₁, V₂) = sum(V₁ .* V₂)
+dot(V₁, V₂) = sum(V₁ .* V₂)
 # ×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
 
 # Transforms (x, y) to the coordinate system with (x_s, y_s) as origin oriented at α_s.

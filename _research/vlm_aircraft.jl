@@ -14,7 +14,7 @@ using AeroMDAO
 # alpha_l = [-0.1, -0.1, -0.1, -0.001, -0.02]
 # alphas = [alpha_u alpha_l]
 # dzs = (1e-4, 1e-4)
-# foil = kulfan_CST(alphas, dzs, 0.2)
+# wing_foil = kulfan_CST(alphas, dzs, 0.2)
 
 # Wing setup
 wing_foil = naca4((4,4,1,2))

@@ -5,8 +5,8 @@ import Base: +, -, zero
 using StaticArrays
 using LinearAlgebra
 
-include("../General/math_tools.jl")
-using .MathTools: span, structtolist
+include("../General/MathTools.jl")
+using .MathTools: span, structtolist, inverse_rotation, rotation, midgrad
 
 ## Panel setup
 #==========================================================================================#
@@ -16,10 +16,12 @@ Placeholder. Panels should be an abstract type as they have some common methods,
 """
 abstract type Panel end
 
-# Crap for automatic differentiation
-# zero(:: NTuple{2,<:Real}) = (0., 0.)
-# +(::Union{Nothing, Panel2D}, ::Union{Nothing,Panel2D}) = nothing
-# zero(:: Nothing) = nothing
+panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) .- collocation_point(panel_1))
+
+panel_pairs(panels :: Array{<: Panel}) = [ panel_dist(pair...) for pair ∈ (collect ∘ eachrow ∘ midgrad)(panels) ]
+
+split_panels(panels :: Array{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
+
 
 ## 2D Panels
 #==========================================================================================#
@@ -28,6 +30,11 @@ struct Panel2D <: Panel
     p1 :: NTuple{2, Real}
     p2 :: NTuple{2, Real}
 end
+
+# Crap for automatic differentiation
+# zero(:: NTuple{2,<:Real}) = (0., 0.)
+# +(::Union{Nothing, Panel2D}, ::Union{Nothing,Panel2D}) = nothing
+# zero(:: Nothing) = nothing 
 
 # Methods on panels
 point1(p :: Panel) = p.p1
@@ -41,10 +48,6 @@ a :: Panel - b :: Panel = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
 collocation_point(panel :: Panel2D) = (point1(panel) .+ point2(panel)) ./ 2
 panel_length(panel :: Panel2D) = norm(point2(panel) .- point1(panel))
 
-panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) .- collocation_point(panel_1))
-split_panels(panels :: Array{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
-
-paneller(coords :: Array{<: Real, 2}) = [ Panel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ eachrow([ coords[2:end,:] coords[1:end-1,:] ]) ][end:-1:1]
 
 
 function panel_angle(panel :: Panel2D)
@@ -105,7 +108,7 @@ Computes the normal vector of Panel3D.
 """
 panel_normal(panel :: Panel3D) = let p31 = panel.p3 .- panel.p1, 
                                      p42 = panel.p4 .- panel.p2, 
-                                     p31_x_p42 = cross(p31, p42);
+                                     p31_x_p42 = p31 × p42;
                                      p31_x_p42 end
                                      
 end

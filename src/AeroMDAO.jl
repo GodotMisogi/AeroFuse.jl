@@ -3,13 +3,14 @@ module AeroMDAO
 #----------------------IMPORTS--------------------------------#
 using StaticArrays
 using Rotations
+using LinearAlgebra
 
 using TimerOutputs
 
 ## Math tools
 #==========================================================================================#
 
-include("General/math_tools.jl")
+include("General/MathTools.jl")
 using .MathTools: tupvector, fwdsum, fwddiv, cosine_dist, weighted_vector, vectarray, slope, splitat, adj3, cosine_interp, columns
 
 export tupvector
@@ -39,10 +40,10 @@ export Panel3D, Freestream, velocity, streamlines, solve_horseshoes, transform
 ## Doublet-source
 #==========================================================================================#
 
-# include("DoubletSource/DoubletSource.jl")
-# using .DoubletSource
+include("DoubletSource/DoubletSource.jl")
+using .DoubletSource
 
-# export Panel2D, Uniform2D, velocity
+export Panel2D, Uniform2D, lift_coefficient
 
 ## Aerodynamic analyses
 #==========================================================================================#

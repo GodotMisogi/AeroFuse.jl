@@ -18,16 +18,11 @@ Computes the non-dimensional angular velocity coefficient corresponding to stand
 """
 rate_coefficient(angular_speed, V, ref_length) = angular_speed * ref_length / 2V
 
-
 """
 Computes the pressure coefficient given force, reference density, speed and area.
 """
 pressure_coefficient(force, ρ, V, S) = force_coefficient(force, dynamic_pressure(ρ, V), S)
 
-"""
-Computes the incompressible pressure coefficient given a magnitude and a velocity vector.
-"""
-pressure_coefficient(mag, vels) = 1 - norm(vels)^2 / mag^2
 
 """
 Prints the relevant aerodynamic/flight dynamics information.

@@ -7,7 +7,7 @@ abstract type Aircraft end
 
 include("foil_geometry.jl")
 
-export Foil, read_foil, kulfan_CST, naca4
+export Foil, read_foil, kulfan_CST, naca4, paneller, camber_CST
 
 ## Wing geometry
 #==========================================================================================#

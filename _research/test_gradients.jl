@@ -1,9 +1,7 @@
 ## 
 using Revise
-includet("../src/FoilParametrization.jl")
 
 ##
-using .FoilParametrization: naca4, kulfan_CST
 using AeroMDAO
 using BenchmarkTools
 using ProfileView

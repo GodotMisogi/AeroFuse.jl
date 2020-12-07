@@ -25,7 +25,7 @@ begin
 end
 
 # ╔═╡ bc905010-32f6-11eb-0557-91743b6fe9e3
-using Plots; plotlyjs();
+using Plots; gr();
 
 # ╔═╡ 23137140-3091-11eb-3f8a-2b8bd4b426b5
 md"""

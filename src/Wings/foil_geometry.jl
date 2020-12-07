@@ -59,6 +59,8 @@ function split_foil(coords)
     (coords, [])
 end
 
+paneller(foil :: Foil, num_panels :: Integer) = let coords = cosine_foil(foil.coords, n = num_panels); [ Panel2D((xs, ys), (xe, ye)) for (xs, ys, xe, ye) ∈ eachrow([ coords[2:end,:] coords[1:end-1,:] ]) ][end:-1:1] end
+
 """
 Discretises a foil profile into panels by projecting the x-coordinates of a circle onto the geometry.
 """

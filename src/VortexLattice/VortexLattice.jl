@@ -8,7 +8,7 @@ using TimerOutputs
 ## Math tools
 #==========================================================================================#
 
-include("../General/math_tools.jl")
+include("../General/MathTools.jl")
 
 using .MathTools: accumap, structtolist, three_quarter_point, quarter_point
 
@@ -29,7 +29,7 @@ export body_to_stability_axes, body_to_wind_axes
 ## Panel geometry
 #==========================================================================================#
 
-include("../General/panel.jl")
+include("../General/PanelGeometry.jl")
 
 import .PanelGeometry: Panel, Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform
 

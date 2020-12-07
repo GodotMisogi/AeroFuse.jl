@@ -1,5 +1,5 @@
 function solve_case(horseshoe_panels :: Array{Panel3D}, camber_panels :: Array{Panel3D}, freestream :: Freestream, Ω = SVector(0., 0., 0.), r_ref = SVector(0.25, 0., 0.), ρ = 1.225; print = true, symmetry = false)
-    vel = velocity(freestream)
+    vel = VortexLattice.velocity(freestream)
 
     # Solve system with normalised velocities
     @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, freestream, symmetry)
@@ -73,18 +73,12 @@ end
 
 # solve_case(wings :: Array{Aircraft}, freestream :: Freestream, r_ref = (0.25, 0, 0), ρ = 1.225; span_num = 15, chord_num = 5, print = true) =  
 
-# function solve_case(panels :: Array{Panel2D}, freestream :: Uniform2D)
-#     # Compute doublet and source strengths
-#     φs, σs = solve_strengths(panels, freestream)
-#     freestream_speed = norm(velocity(freestream))
-#     pressure_coeffs = pressure_coefficient.(freestream_speed, panel_velocities(panels, freestream, φs[1:end-1]))
+function solve_case(foil :: Foil, freestream :: Uniform2D, num_panels :: Integer = 60)
+    @timeit "Make Panels" airfoil = paneller(foil, num_panels)
+    
+    @timeit "Solve System" φs = solve_strengths(airfoil, freestream)
+    
+    @timeit "Lift Coefficient" cl = lift_coefficient(airfoil, freestream, φs)
 
-#     # Make panels for plotting
-#     # dub_src_panels = DoubletSourcePanel2D.(panels, φs[1:end-1], σs, pressure_coeffs)
-
-#     # Compute lift coefficient
-#     diff_pans = [ panel_dist(panel_1, panel_2) for (panel_1, panel_2) ∈ (collect ∘ eachrow ∘ midgrad)(panels) ]
-#     cl = sum(lift_coefficient.(pressure_coeffs, diff_pans ./ 2, panel_angle.(panels)))
-
-#     cl
-# end
+    cl
+end

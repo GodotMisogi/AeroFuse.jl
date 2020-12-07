@@ -17,9 +17,9 @@ velocity(object :: Laplace, xs) = map(x -> velocity(object, x...), xs)
 potential(object :: Laplace, xs) = map(x -> potential(object, x...), xs)
 
 struct Source2D <: Laplace
-    str :: Float64
-    x0 :: Float64
-    y0 :: Float64 
+    str :: Real
+    x0 :: Real
+    y0 :: Real 
 end
 
 velocity(src :: Source2D, x, y) = (src.str / (2π) * (x - src.x0) / ((x - src.x0)^2 + (y - src.y0)^2), str / (2π) * (y - src.y0) / ((x - src.x0)^2 + (y - src.y0)^2))
@@ -27,17 +27,17 @@ potential(src :: Source2D, x, y) = src.str / (4π) * log((x - src.x0)^2 + (y - s
 stream(src :: Source2D, x, y) = src.str / (2π) * atan(y - src.y0, x - src.x0)
 
 struct Uniform2D <: Laplace
-    mag :: Float64
-    ang :: Float64 
+    mag :: Real
+    ang :: Real 
 end
 
 velocity(uni :: Uniform2D) = let ang = deg2rad(uni.ang); (uni.mag * cos(ang), uni.mag * sin(ang)) end
 potential(uni :: Uniform2D, x, y) = let ang = deg2rad(uni.ang); uni.mag * (x * cos(ang) + y * sin(ang)) end
 
 struct Doublet2D <: Laplace
-    str :: Float64
-    x0 :: Float64
-    y0 :: Float64 
+    str :: Real
+    x0 :: Real
+    y0 :: Real 
 end 
 
 velocity(dub :: Doublet2D, x, y) = (dub.str / (2π) * ((x - dub.x0)^2 - (y - dub.y0)^2) / ((x - dub.x0)^2 + (y - dub.y0)^2)^2, - dub.str / (2π) * 2 * (x - dub.x0) * (y - dub.y0) / ((x - dub.x0)^2 + (y - dub.y0)^2)^2)
@@ -45,9 +45,9 @@ potential(dub :: Doublet2D, x, y) = -dub.str / (2π) * (y - dub.y0) / ((x - dub.
 stream(dub :: Doublet2D, x, y) = -dub.str / (2π) * (y - dub.y0) / ((x - dub.x0)^2 + (y - dub.y0)^2)
 
 struct Vortex2D <: Laplace
-    str :: Float64
-    x0 :: Float64
-    y0 :: Float64 
+    str :: Real
+    x0 :: Real
+    y0 :: Real 
 end
 
 velocity(vor :: Vortex2D, x, y) = (-vor.str / (2π) * (y - vor.y0) / ((x - vor.x0)^2 + (y - vor.y0)^2), str / (2π) * (x - vor.x0) / ((x - vor.x0)^2 + (y - vor.y0)^2))
@@ -75,7 +75,7 @@ struct Freestream <: Laplace
     mag :: Real
     α :: Real 
     β :: Real
-    Ω :: SVector{3, Float64}
+    Ω :: SVector{3, Real}
     Freestream(mag, α_deg, β_deg, Ω = SVector(0, 0, 0)) = new(mag, deg2rad(α_deg), deg2rad(β_deg), Ω)
 end
 
