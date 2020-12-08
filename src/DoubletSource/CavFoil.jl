@@ -8,7 +8,7 @@ function cavity_split_foil(foil :: Foil, cavity_start, cavity_end)
     upper, lower = split_foil(foil.coords)
 
     xs = [ first(coords) for coords in upper ]
-    c = abs(maximum(xs) - minimum(xs))
+    c = (abs ∘ map)(-, extrema(xs))
     cavity_le = cavity_start
     l = (cavity_end - cavity_start) / 100 / c
 
