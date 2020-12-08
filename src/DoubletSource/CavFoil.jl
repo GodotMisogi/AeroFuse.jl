@@ -72,6 +72,7 @@ function solve_strengths(panels :: AbstractVector{Panel2D}, cavity_panels :: Abs
     cavdub_cavsrc = doublet_matrix(cavity_panels, cavity_panels)
     cavsrc_wetdub = source_matrix(cavity_panels, panels)
     cavsrc_cavsrc = source_matrix(cavity_panels, cavity_panels)
+    kutta = kutta_condition(panels)
 
     cavdub_wetdub_trans = cavdub_wetdub * trans
     cavdub_cavsrc_trans = cavdub_cavsrc * trans
