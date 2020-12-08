@@ -23,13 +23,14 @@ export Uniform2D, velocity, source_potential, doublet_potential, grid_data
 include("../Geometry/PanelGeometry.jl")
 using .PanelGeometry: Panel, Panel2D, split_panels, panel_dist, panel_length, panel_normal, panel_angle, panel_normal, panel_tangent, point1, point2, collocation_point, panel_pairs
 
-export Panel, Panel2D
+export Panel, Panel2D, collocation_point
 
 ## Matrix assembly
 #==========================================================================================#
 
-export solve_strengths, pressure_coefficient, lift_coefficient,
-panel_velocities, influence_coefficient, solve_case
+export solve_strengths, pressure_coefficient, lift_coefficient, solve_case,
+panel_velocities, influence_coefficient, doublet_potential, source_potential,
+doublet_matrix, wake_vector, source_matrix, boundary_vector, kutta_condition
 
 doublet_potential(panel :: Panel2D, strength :: Real, x :: Real, y :: Real) = 
     @timeit "Doublet Potential" doublet_potential(strength, affine_2D(x, y, point1(panel)..., panel_angle(panel))..., 0, panel_length(panel))
@@ -39,21 +40,28 @@ function source_potential(panel :: Panel2D, strength :: Real, x :: Real, y :: Re
     @timeit "Source Potential" source_potential(strength, pan..., 0., panel_length(panel))
 end
 
-influence_coefficient(panel_1 :: Panel2D, panel_2 :: Panel2D) = doublet_potential(panel_1, 1., collocation_point(panel_2)...)
+doublet_influence(panel_1 :: Panel2D, panel_2 :: Panel2D) = doublet_potential(panel_1, 1., collocation_point(panel_2)...)
 
-function doublet_matrix(panels :: AbstractVector{Panel2D}) 
-    # dub_mat = zeros(length(panels), length(panels))
-    dub_mat = map(pans -> pans[1] === pans[2] ? 0.5 : influence_coefficient(pans...), product(panels, panels))'
-    # dub_mat[diagind(dub_mat)] .= 0.5
+source_influence(panel_1 :: Panel2D, panel_2 :: Panel2D) = source_potential(panel_1, 1., collocation_point(panel_2)...)
 
-    # dub_mat
-end
+"""
+    doublet_matrix(panels_1, panels_2)
 
-source_matrix(panels :: AbstractVector{Panel2D}) = [ source_potential(panel_j, 1., pt...) for pt ∈ collocation_point.(panels), panel_j ∈ panels ]
+Computes the matrix of doublet potential influence coefficients between pairs of panels_1 and panels_2.
+"""
+doublet_matrix(panels_1 :: AbstractVector{Panel2D}, panels_2 :: AbstractVector{Panel2D}) = 
+    map(pans -> pans[1] === pans[2] ? 0.5 : doublet_influence(pans...), product(panels_1, panels_2))'
+
+"""
+    source_matrix(panels_1, panels_2)
+
+Computes the matrix of source potential influence coefficients between pairs of panels_1 and panels_2.
+"""
+source_matrix(panels_1 :: AbstractVector{Panel2D}, panels_2 :: AbstractVector{Panel2D}) = [ source_influence(panel_j, panel_i) for panel_i ∈ panels_1, panel_j ∈ panels_2 ]
 
 source_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = [ dot(velocity(freestream), normal) for normal ∈ panel_normal.(panels) ]
 
-boundary_condition(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = - source_matrix(panels) * source_strengths(panels, freestream)
+boundary_condition(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = - source_matrix(panels, panels) * source_strengths(panels, freestream)
 
 # Morino's velocity Kutta condition
 kutta_condition(panels :: AbstractVector{Panel2D}) = [ 1., -1., zeros(length(panels) - 4)..., 1., -1.]
@@ -66,7 +74,7 @@ function wake_vector(panels :: AbstractVector{Panel2D}, bound = 1e3)
 end
 
 function influence_matrix(panels :: AbstractVector{Panel2D}) 
-    @timeit "Doublet Matrix" dub_mat = doublet_matrix(panels)
+    @timeit "Doublet Matrix" dub_mat = doublet_matrix(panels, panels)
     @timeit "Wake Vector" wake_vec = wake_vector(panels)
     @timeit "Kutta Condition" kutta = kutta_condition(panels)'
     @timeit "Matrix Assembly" mat = [ dub_mat   wake_vec;
