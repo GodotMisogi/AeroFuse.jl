@@ -1,16 +1,20 @@
 """
+    stream_velocity(r, horseshoes, Γs, V, Ω)
+
 Evaluates the total induced velocity at a point `r` given Horseshoes, vortex strengths `Γ`s, rotation rates `Ω`, and freestream flow vector `freestream` in the global reference frame.
 """
-stream_velocity(r, Ω :: SVector{3, Float64}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, V) = sum(velocity(r, horseshoe, Γ, V / norm(V)) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .+ V .+ cross(Ω, r)
+stream_velocity(r :: SVector{3, <: Real}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, V :: SVector{3, <: Real}, Ω :: SVector{3, Real}) = sum(velocity(r, horseshoe, Γ, V / norm(V)) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .+ V .+ Ω × r
 
 """
-Computes the streamlines from a given starting point, a Freestream, Horseshoes and their associated strengths Γs. The length of the streamline and the number of evaluation points must also be specified.
+    streamlines(point, freestream :: Freestream, horseshoes, Γs, length, num_steps)
+
+Computes the streamlines from a given starting point, a Freestream, Horseshoes and their associated strengths Γs with a specified length of the streamline and number of evaluation points.
 """
-function streamlines(point, freestream :: Freestream, Ω, horseshoes, Γs, length, num_steps)
-    streamlines = fill(SVector{3, Float64}(0,0,0), num_steps)
+function streamlines(point :: SVector{3, <: Real}, freestream :: Freestream, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, length :: Real, num_steps :: Integer)
+    streamlines = fill(SVector{3, Real}(0,0,0), num_steps)
     V = velocity(freestream)
     streamlines[1] = point
-    cuck = x -> stream_velocity(x, Ω, horseshoes, Γs, V)
+    cuck = x -> stream_velocity(x, horseshoes, Γs, V, freestream.Ω)
     @timeit "Iterating" for i ∈ 2:num_steps
         @timeit "Updating Velocity" update = cuck(streamlines[i-1])
         @timeit "Adding Streamline" streamlines[i] = streamlines[i-1] .+ (update / norm(update) * length / num_steps)
@@ -19,6 +23,8 @@ function streamlines(point, freestream :: Freestream, Ω, horseshoes, Γs, lengt
 end
 
 """
-Computes the streamlines from the collocation points of given Horseshoes with the relevant previous inputs.
+    streamlines(freestream :: Freestream, horseshoes, Γs, length, num_steps)
+
+Computes the streamlines from the collocation points of panels associated with given Horseshoes and their associated strengths Γs, in a given Freestream with a specified length of the streamline and number of evaluation points.
 """
-streamlines(freestream :: Freestream, Ω, horseshoe_panels :: Array{<: Panel}, horseshoes :: Array{Horseshoe}, Γs :: Array{<: Real}, length :: Real, num_steps :: Integer) = [ streamlines(SVector(hs), freestream, Ω, horseshoes, Γs, length, num_steps) for hs ∈ collocation_point.(horseshoe_panels)[:] ]
+streamlines(freestream :: Freestream, horseshoe_panels :: AbstractVector{<: Panel}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, length :: Real, num_steps :: Integer) = [ streamlines(SVector(hs), freestream, horseshoes, Γs, length, num_steps) for hs ∈ collocation_point.(horseshoe_panels)[:] ]

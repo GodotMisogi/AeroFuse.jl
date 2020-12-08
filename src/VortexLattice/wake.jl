@@ -9,4 +9,4 @@ end
 """
 Generates wake Panel3Ds given the Panel3Ds of a wing corresponding to the trailing edge and a Freestream. The wake length and number of wake panels must be provided.
 """
-make_wake(last_panels :: Array{Panel3D}, freestream :: Freestream, wake_length, wake_num) = (permutedims ∘ accumap)(panel -> wake_panel(panel, freestream, wake_length / wake_num), wake_num, last_panels)
+make_wake(last_panels :: AbstractVector{Panel3D}, freestream :: Freestream, wake_length, wake_num) = (permutedims ∘ accumap)(panel -> wake_panel(panel, freestream, wake_length / wake_num), wake_num, last_panels)

@@ -1,12 +1,9 @@
 ##
 using Revise
-includet("../src/FoilParametrization.jl")
+using AeroMDAO
 
 ##
-using .FoilParametrization: read_foil, foil_camthick, camthick_foil, cosine_foil, kulfan_CST, naca4, camthick_to_CST, camber_CST, split_foil, coords_to_CST
-
-##
-foilpath = "airfoil_database/CRM.dat"
+foilpath = "data/airfoil_database/CRM.dat"
 
 ## Foil processing
 coords = read_foil(foilpath)
@@ -28,7 +25,6 @@ cst_foil = kulfan_CST(alpha_u, alpha_l, (1e-4, -1e-4), 0.0)
 
 ## Camber-thickness fitting
 alphas = camthick_to_CST(cos_foil, num_dv)
-print(alphas)
 cam_foil = camber_CST(alphas..., (0., 2e-4), 0)
 
 ## Kulfan CST
@@ -55,11 +51,7 @@ plot!(cst_foil[:,1], cst_foil[:,2],
      label = "CST Coordinates Fit")
 plot!(cam_foil[:,1], cam_foil[:,2], 
      label = "CST Camber-Thickness Fit", aspectratio = 1)
-
-## CST
-plot(foil[:,1], foil[:,2], 
+plot!(foil[:,1], foil[:,2], 
     label = "CST", aspectratio = 1)
-
-## NACA
-plot(naca[:,1], naca[:,2], 
+plot!(naca[:,1], naca[:,2], 
     label = "NACA", aspectratio = 1)

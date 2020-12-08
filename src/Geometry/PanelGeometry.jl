@@ -5,7 +5,7 @@ import Base: +, -, zero
 using StaticArrays
 using LinearAlgebra
 
-include("../General/MathTools.jl")
+include("../Tools/MathTools.jl")
 using .MathTools: span, structtolist, inverse_rotation, rotation, midgrad
 
 ## Panel setup
@@ -18,36 +18,34 @@ abstract type Panel end
 
 panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) .- collocation_point(panel_1))
 
-panel_pairs(panels :: Array{<: Panel}) = [ panel_dist(pair...) for pair ∈ (collect ∘ eachrow ∘ midgrad)(panels) ]
+panel_pairs(panels :: AbstractVector{<: Panel}) = [ panel_dist(pair...) for pair ∈ (collect ∘ eachrow ∘ midgrad)(panels) ]
 
-split_panels(panels :: Array{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
+split_panels(panels :: AbstractVector{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
 
 
 ## 2D Panels
 #==========================================================================================#
 
 struct Panel2D <: Panel
-    p1 :: NTuple{2, Real}
-    p2 :: NTuple{2, Real}
+    p1 :: SVector{2, Real}
+    p2 :: SVector{2, Real}
 end
 
 # Crap for automatic differentiation
 # zero(:: NTuple{2,<:Real}) = (0., 0.)
 # +(::Union{Nothing, Panel2D}, ::Union{Nothing,Panel2D}) = nothing
 # zero(:: Nothing) = nothing 
+# zero(:: Panel2D) = Panel2D((0., 0.), (0., 0.))
 
 # Methods on panels
 point1(p :: Panel) = p.p1
 point2(p :: Panel) = p.p2
-zero(:: Panel2D) = Panel2D((0., 0.), (0., 0.))
-
 
 a :: Panel + b :: Panel = Panel2D(point1(a) + point1(b), point2(a) + point2(b))
 a :: Panel - b :: Panel = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
 
 collocation_point(panel :: Panel2D) = (point1(panel) .+ point2(panel)) ./ 2
 panel_length(panel :: Panel2D) = norm(point2(panel) .- point1(panel))
-
 
 
 function panel_angle(panel :: Panel2D)

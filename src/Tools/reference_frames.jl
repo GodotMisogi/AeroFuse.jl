@@ -4,11 +4,7 @@
 """
 Converts coordinates into stability axes.
 """
-body_to_stability_axes(coords, uni :: Freestream) =  
-                                            RotY{Float64}(uni.α) * coords
-                                            # [cos(uni.α) 0 -sin(uni.α); 
-                                            #       0     1     0     ;
-                                            #  sin(uni.α) 0 sin(uni.α)] * coords
+body_to_stability_axes(coords, uni :: Freestream) = RotY{Float64}(uni.α) * coords
                                             
 
 """
@@ -19,12 +15,12 @@ body_to_wind_axes(coords, uni :: Freestream) = RotZY{Float64}(uni.β, uni.α) * 
 """
 Reflects the y-coordinate of a given vector about the x-z plane.
 """
-reflect_xz(vector :: SVector{3, Float64}) = SVector(vector[1], -vector[2], vector[3])
+reflect_xz(vector :: SVector{3, <: Real}) = SVector(vector[1], -vector[2], vector[3])
 
 """
 Reflects the x- and z- coordinates of a given vector about the y-z and x-y planes respectively.
 """
-stab_flip(vector :: SVector{3, Float64}) = SVector(-vector[1], vector[2], -vector[3])
+stab_flip(vector :: SVector{3, <: Real}) = SVector(-vector[1], vector[2], -vector[3])
 
 """
 Transforms forces and moments from body to stability axes.

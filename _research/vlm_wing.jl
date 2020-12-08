@@ -4,17 +4,9 @@ using StaticArrays
 using BenchmarkTools
 using TimerOutputs
 using ProfileView
-
-## Custom packages
 using AeroMDAO
 
 ## Wing section setup
-# alpha_u = [0.1, 0.3, 0.2, 0.15, 0.2]
-# alpha_l = [-0.1, -0.1, -0.1, -0.001, -0.02]
-# alphas = [alpha_u alpha_l]
-# dzs = (1e-4, 1e-4)
-# foil = kulfan_CST(alphas, dzs, 0.2)
-
 foil = naca4((4,4,1,2))
 num_secs = 3
 foils = [ foil for i ∈ 1:num_secs ]
@@ -26,7 +18,13 @@ wing_spans = [0.5, 0.5]
 wing_dihedrals = [0., 11.3]
 wing_sweeps = [1.14, 8.]
 
-wing_right = HalfWing(airfoils, wing_chords, wing_spans, wing_dihedrals, wing_sweeps, wing_twists)
+# wing_right = HalfWing(airfoils, wing_chords, wing_twists, wing_spans, wing_dihedrals, wing_sweeps)
+wing_right = HalfWing(Foil.(naca4((2,4,1,2)) for i ∈ 1:5),
+                        [0.0639628599561049, 0.06200381820887121, 0.05653644812231768, 0.04311297779068357, 0.031463501535620116],
+                      [0., 0., 0., 0., 0.],
+                      [0.2, 0.2, 0.2, 0.2],
+                      [0., 0., 0., 0.],
+                      [0., 0., 0., 0.])
 wing = Wing(wing_right, wing_right)
 print_info(wing)
 
@@ -36,21 +34,21 @@ reset_timer!()
 ρ = 1.225
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
 Ω = SVector(0.0, 0.0, 0.0)
-uniform = Freestream(10.0, 0.0, 0.0)
-@time horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, Ω, ref, span_num = 10, chord_num = 5, print = true) 
+uniform = Freestream(10.0, 0.0, 0.0, Ω)
+@time coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 5, print = true) 
 
 print_timer();
 
 ## Panel method: TO DO
 # wing_panels = mesh_wing(wing, 10, 30);
-# wing_coords = plot_panels(wing_panels)[:]
-camber_coords = plot_panels(camber_panels)[:]
-horseshoe_coords = plot_panels(horseshoe_panels)[:];
+# wing_coords = plot_panels(wing_panels[:])
+camber_coords = plot_panels(camber_panels[:])
+horseshoe_coords = plot_panels(horseshoe_panels[:]);
 
 ## Streamlines
 reset_timer!()
 
-@timeit "Computing Streamlines" streams = plot_streamlines.(streamlines(uniform, Ω, horseshoe_panels, horseshoes, Γs, 5, 100));
+@timeit "Computing Streamlines" streams = plot_streamlines.(streamlines(uniform, horseshoe_panels[:], horseshoes, Γs, 2, 100));
 
 print_timer()
 

@@ -1,16 +1,16 @@
 #-----------------WING---------------------#
 
 """
-Definition for a half-wing consisting of airfoils, span lengths, dihedrals, and sweep angles.
+Definition for a HalfWing consisting of airfoils, span lengths, dihedrals, and sweep angles.
 """
 # chords :: Array{Float64} # Chord lengths (m)
 struct HalfWing <: Aircraft
-    foils :: Array{Foil} # Airfoil profiles
-    chords :: Array{<: Real} # Airfoil chord lengths (m)
-    twists :: Array{<: Real} # Twist angles (deg)
-    spans :: Array{<: Real}  # Leading-edge to leading-edge distance between foils (m)
-    dihedrals :: Array{<: Real} # Dihedral angles (deg)
-    sweeps :: Array{<: Real} # Leading-edge sweep angles (deg)
+    foils :: AbstractVector{Foil} # Airfoil profiles
+    chords :: AbstractVector{<: Real} # Airfoil chord lengths (m)
+    twists :: AbstractVector{<: Real} # Twist angles (deg)
+    spans :: AbstractVector{<: Real}  # Leading-edge to leading-edge distance between foils (m)
+    dihedrals :: AbstractVector{<: Real} # Dihedral angles (deg)
+    sweeps :: AbstractVector{<: Real} # Leading-edge sweep angles (deg)
     HalfWing(foils, chords, twists, spans, dihedrals, sweeps) = new(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps)) # Convert to radians
 end
 
@@ -45,12 +45,14 @@ Computes the quarter-chord length given a chord.
 quarter_chord(chord) = 0.25 * chord
 
 """
-Computes the planform span of a half-wing.
+Computes the planform span of a HalfWing.
 """
 span(wing :: HalfWing) = sum(wing.spans .* cos.(wing.dihedrals) .* cos.(fwdsum(wing.twists) / 2))
 
 """
-Computes the projected area of a half-wing.
+    projected_area(wing)
+    
+Computes the projected area of a HalfWing.
 """
 function projected_area(wing :: HalfWing)
     mean_chords = fwdsum(wing.chords) / 2 # Mean chord lengths of sections.
@@ -59,7 +61,7 @@ function projected_area(wing :: HalfWing)
 end
 
 """
-Computes the mean aerodynamic chord of a half-wing.
+Computes the mean aerodynamic chord of a HalfWing.
 """
 function mean_aerodynamic_chord(wing :: HalfWing)
     mean_chords = fwdsum(wing.chords) / 2

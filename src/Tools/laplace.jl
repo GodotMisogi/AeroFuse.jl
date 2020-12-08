@@ -4,7 +4,7 @@ Solutions to Laplace's equation.
 abstract type Laplace end
 
 # Performs velocity and potential calculations on a grid
-function grid_data(objects :: Array{<: Laplace}, xs)
+function grid_data(objects :: AbstractVector{Laplace}, xs)
     vels = foldl((v1, v2) -> [ u .+ v for (u, v) ∈ zip(v1, v2) ], velocity(object, xs) for object ∈ objects)
     pots = foldl((v1, v2) -> v1 + v2, potential(object, xs) for object ∈ objects)
     

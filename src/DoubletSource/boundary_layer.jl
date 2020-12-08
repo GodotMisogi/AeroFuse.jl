@@ -9,7 +9,7 @@
     
 # end
 
-inviscid_edge_speed(panels :: Array{Panel2D}, uniform :: Uniform2D, source_influences, doublet_influences, ms, μs) = [ dot(velocity(uniform), panel_tangent(panel)) for panel in panels ] .+ source_influences * ms .+ doublet_influences * μs
+inviscid_edge_speed(panels :: AbstractVector{Panel2D}, uniform :: Uniform2D, source_influences, doublet_influences, ms, μs) = [ dot(velocity(uniform), panel_tangent(panel)) for panel in panels ] .+ source_influences * ms .+ doublet_influences * μs
 
 δ_star(m, Uₑ) = m / Uₑ # δ* = m/Uₑ
 

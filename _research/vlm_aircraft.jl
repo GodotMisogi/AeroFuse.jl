@@ -5,63 +5,47 @@ using BenchmarkTools
 using TimerOutputs
 using ProfileView
 using Rotations
-
-## Custom packages
 using AeroMDAO
 
-## Wing section setup
-# alpha_u = [0.1, 0.3, 0.2, 0.15, 0.2]
-# alpha_l = [-0.1, -0.1, -0.1, -0.001, -0.02]
-# alphas = [alpha_u alpha_l]
-# dzs = (1e-4, 1e-4)
-# wing_foil = kulfan_CST(alphas, dzs, 0.2)
-
-# Wing setup
+## Wing
 wing_foil = naca4((4,4,1,2))
-wing_num_secs = 3
-wing_foils = [ wing_foil for i ∈ 1:wing_num_secs ]
+wing_right = HalfWing(Foil.(wing_foil for i ∈ 1:3), 
+                      [0.18, 0.16, 0.08],
+                      [0., 0., 0.],
+                      [0.5, 0.5],
+                      [0., 11.3],
+                      [1.14, 8.])
 
-airfoils = Foil.(wing_foils)
-wing_chords = [0.18, 0.16, 0.08]
-wing_twists = [0., 0., 0.]
-wing_spans = [0.5, 0.5]
-wing_dihedrals = [0., 11.3]
-wing_sweeps = [1.14, 8.]
-
-wing_right = HalfWing(airfoils, wing_chords, wing_twists, wing_spans, wing_dihedrals, wing_sweeps)
 wing = Wing(wing_right, wing_right)
 println("Wing —")
 print_info(wing)
 
 ## Horizontal tail
 htail_foil = naca4((0,0,1,2))
-htail_num_secs = 2
-htail_foils = [ htail_foil for i ∈ 1:htail_num_secs ]
+htail_right = HalfWing(Foil.(htail_foil for i ∈ 1:2), 
+                       [0.16, 0.08],
+                       [0.0, 0.0],
+                       [0.2],
+                       [0.],
+                       [30.])
 
-htail_airfoils = Foil.(htail_foils)
-htail_chords = [0.16, 0.08]
-htail_twists = [0.0, 0.0]
-htail_spans = [0.2]
-htail_dihedrals = [0]
-htail_sweeps = [30]
-htail_location = [1,0,0]
-
-htail_right = HalfWing(htail_airfoils, htail_chords, htail_twists, htail_spans, htail_dihedrals, htail_sweeps)
 htail = Wing(htail_right, htail_right)
 println("Horizontal Tail —")
 print_info(htail)
 
 ## Vertical tail
 vtail_foil = naca4((0,0,0,9))
-vtail_num_secs = 2
-vtail_foils = [ vtail_foil for i ∈ 1:vtail_num_secs ]
+vtail = HalfWing(Foil.(vtail_foil for i ∈ 1:2), 
+                 [0.08, 0.02],
+                 [0.0, 0.0],
+                 [0.04],
+                 [0.],
+                 [60.])
+println("Vertical Tail —")
+print_info(vtail)
 
-vtail_airfoils = Foil.(vtail_foils)
-vtail_chords = [0.08, 0.02]
-vtail_twists = [0.0, 0.0]
-vtail_spans = [0.04]
-vtail_dihedrals = [0.0]
-vtail_sweeps = [60]
+## Panelling
+htail_location = [1., 0., 0.]
 
 vtail1_angle = AngleAxis{Float64}(π/4, 1, 0, 0)
 vtail1_location = [1 + 0.2 * tan(π/6), 0.2, 0]
@@ -69,11 +53,6 @@ vtail1_location = [1 + 0.2 * tan(π/6), 0.2, 0]
 vtail2_angle = AngleAxis{Float64}(3π/4, 1, 0, 0)
 vtail2_location = [1 + 0.2 * tan(π/6), -0.2, 0]
 
-vtail = HalfWing(vtail_airfoils, vtail_chords, vtail_twists, vtail_spans, vtail_dihedrals, vtail_sweeps)
-println("Vertical Tail —")
-print_info(vtail)
-
-## Panelling
 wing_panels = paneller(wing, 10, 5)
 htail_panels = paneller(htail, 5, 5, translation = htail_location)
 vtail1_panels = paneller(vtail, 2, 2, rotation = vtail1_angle, translation = vtail1_location)
@@ -92,7 +71,7 @@ ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
 freestream = Freestream(10.0, 0.0, 0.0, Ω)
 @time force, drag, moment, horseshoes, Γs = solve_case(horseshoe_panels, camber_panels, freestream, ref, print = true) 
 
-@timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, Ω, freestream.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
+@timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, freestream.Ω, freestream.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
 
 println("Nearfield:") 
 print_dynamics(nearfield_coeffs...)

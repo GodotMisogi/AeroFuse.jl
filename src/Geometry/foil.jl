@@ -8,7 +8,7 @@ using DelimitedFiles
 Airfoil structure consisting of foil coordinates as an array of points.
 """
 struct Foil <: Aircraft
-    coords :: Array{<: Real, 2} # The foil profile as an array of coordinates, must be in Selig format.
+    coords :: AbstractArray{<: Real, 2} # The foil profile as an array of coordinates, must be in Selig format.
 end
 
 """
@@ -64,7 +64,7 @@ paneller(foil :: Foil, num_panels :: Integer) = let coords = cosine_foil(foil.co
 """
 Discretises a foil profile into panels by projecting the x-coordinates of a circle onto the geometry.
 """
-function cosine_foil(coords :: Array{<: Real, 2}; n :: Integer = 40)
+function cosine_foil(coords :: AbstractArray{<: Real, 2}; n :: Integer = 40)
     upper, lower = split_foil(coords)
     upper = [upper; lower[1,:]'] # Append leading edge from lower to upper
     upper_cos, lower_cos = cosine_interp(upper[end:-1:1,:], n), cosine_interp(lower, n)
@@ -76,14 +76,14 @@ end
 #-------------------CST METHOD--------------------#
 
 # Basic shape function
-function shape_function(x :: Real, basis_func :: Function, coeffs :: Array{<: Real}, coeff_LE :: Real = 0)
+function shape_function(x :: Real, basis_func :: Function, coeffs :: AbstractVector{<: Real}, coeff_LE :: Real = 0)
     n = length(coeffs)
     terms = [ basis_func(x, n - 1, i) for i in 0:n-1 ]
     sum(coeffs .* terms) + coeff_LE * (x^0.5) * (1 - x)^(n - 0.5)
 end
 
 # Computing coordinates
-cst_coords(class_func :: Function, basis_func :: Function, x :: Real, alphas :: Array{<: Real}, dz :: Real, coeff_LE :: Real = 0) = class_func(x) * shape_function(x, basis_func, alphas, coeff_LE) + x * dz
+cst_coords(class_func :: Function, basis_func :: Function, x :: Real, alphas :: AbstractVector{<: Real}, dz :: Real, coeff_LE :: Real = 0) = class_func(x) * shape_function(x, basis_func, alphas, coeff_LE) + x * dz
 
 #--------------BERNSTEIN BASIS-----------------#
 
@@ -100,7 +100,7 @@ bernstein_basis(x, n, k) = binomial(n, k) * bernstein_class(x, k, n - k)
 """
 Defines a cosine-spaced airfoil using the Class Shape Transformation method on a Bernstein polynomial basis, with support for leading edge modifications.
 """
-function kulfan_CST(alpha_u :: Array{<: Real}, alpha_l :: Array{<: Real}, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
+function kulfan_CST(alpha_u :: AbstractVector{<: Real}, alpha_l :: AbstractVector{<: Real}, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
 
@@ -116,7 +116,7 @@ function kulfan_CST(alpha_u :: Array{<: Real}, alpha_l :: Array{<: Real}, (dz_u,
        xs lower_surf ]
 end
 
-function camber_CST(alpha_cam :: Array{<: Real}, alpha_thicc :: Array{<: Real}, (dz_cam, dz_thicc) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
+function camber_CST(alpha_cam :: AbstractVector{<: Real}, alpha_thicc :: AbstractVector{<: Real}, (dz_cam, dz_thicc) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
 
@@ -153,7 +153,7 @@ end
 """
 Converts an airfoil to its camber-thickness representation in cosine spacing.
 """
-function foil_camthick(coords :: Array{<: Real, 2}, num :: Integer = 40)
+function foil_camthick(coords :: AbstractArray{<: Real, 2}, num :: Integer = 40)
     upper, lower = split_foil(cosine_foil(coords, n = num))
 
     xs, y_LE = lower[:,1], lower[1,2]   # Getting abscissa and leading edge ordinate
@@ -177,7 +177,7 @@ naca4_thickness(t_by_c, xc, sharp_trailing_edge :: Bool) = 5 * t_by_c * (0.2969 
 naca4_camberline(pos, cam, xc) = xc < pos ? (cam / pos^2) * xc * (2 * pos - xc) : cam / (1 - pos)^2 * ( (1 - 2 * pos) + 2 * pos * xc - xc^2)
 naca4_gradient(pos, cam, xc) = atan(2 * cam / (xc < pos ? pos^2 : (1 - pos)^2) * (pos - xc))
 
-function naca4(digits :: Tuple, n :: Integer = 40; sharp_trailing_edge :: Bool = false)
+function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_edge :: Bool = false)
     # Camber
     cam = digits[1] / 100
     # Position

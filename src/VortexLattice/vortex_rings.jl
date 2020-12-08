@@ -45,11 +45,11 @@ function VortexRing(panel :: Panel3D)
 end
 
 """
-Computes the induced velocities at a point `r` of a Vortex Ring with constant strength Γ.
-"""
-velocity(r, vortex_ring :: VortexRing, Γ) = sum_vortices(r, structtolist(vortex_ring), Γ)
-
-"""
 Sums the velocities evaluated at a point `r` of vortex lines with constant strength Γ.
 """
 sum_vortices(r, vortex_lines :: Array{Line}, Γ) = sum(velocity(r, line, Γ) for line ∈ vortex_lines)
+
+"""
+Computes the induced velocities at a point `r` of a Vortex Ring with constant strength Γ.
+"""
+velocity(r, vortex_ring :: VortexRing, Γ) = sum_vortices(r, structtolist(vortex_ring), Γ)

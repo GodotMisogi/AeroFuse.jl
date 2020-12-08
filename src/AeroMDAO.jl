@@ -10,7 +10,7 @@ using TimerOutputs
 ## Math tools
 #==========================================================================================#
 
-include("General/MathTools.jl")
+include("Tools/MathTools.jl")
 using .MathTools: tupvector, fwdsum, fwddiv, cosine_dist, weighted_vector, vectarray, slope, splitat, adj3, cosine_interp, columns
 
 export tupvector
@@ -19,14 +19,14 @@ export tupvector
 ## Non-dimensionalization
 #==========================================================================================#
 
-include("General/nondimensional.jl")
+include("Tools/nondimensional.jl")
 
 export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_dynamics
 
 ## Wing geometry
 #==========================================================================================#
 
-include("Wings/AircraftGeometry.jl")
+include("Geometry/AircraftGeometry.jl")
 # using .AircraftGeometry
 
 ## Vortex lattice
@@ -43,7 +43,7 @@ export Panel3D, Freestream, velocity, streamlines, solve_horseshoes, transform
 include("DoubletSource/DoubletSource.jl")
 using .DoubletSource
 
-export Panel2D, Uniform2D, lift_coefficient
+export Panel, Panel2D, Uniform2D, lift_coefficient
 
 ## Aerodynamic analyses
 #==========================================================================================#
@@ -55,7 +55,7 @@ export solve_case
 ## Post-processing
 #==========================================================================================#
 
-include("General/plot_tools.jl")
+include("Tools/plot_tools.jl")
 
 export plot_panels, plot_streamlines
 
