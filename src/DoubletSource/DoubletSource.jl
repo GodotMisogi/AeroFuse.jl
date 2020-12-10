@@ -7,15 +7,25 @@ using StaticArrays
 using Statistics
 using TimerOutputs
 
+## Non-dimensionalization
+#==========================================================================================#
+
+include("../Tools/NonDimensional.jl")
+import .NonDimensional: pressure_coefficient
+
+## Math tools
+#==========================================================================================#
+
 include("../Tools/MathTools.jl")
 using .MathTools: rotation, inverse_rotation, affine_2D, span, midgrad
 
 ## Solutions to Laplace's equation
 #==========================================================================================#
 
-include("../Tools/laplace.jl")
+include("../Tools/Laplace.jl")
+import .Laplace: Uniform2D, velocity, source_potential, doublet_potential, potential, grid_data
 
-export Uniform2D, velocity, source_potential, doublet_potential, grid_data
+export Uniform2D, velocity, source_potential, doublet_potential, potential, grid_data
 
 ## Panels
 #==========================================================================================#
@@ -106,11 +116,6 @@ end
 lift_coefficient(cp :: Real, dist_colpoints :: Real, panel_angle :: Real) = - cp * dist_colpoints * cos(panel_angle)
 
 lift_coefficient(wake_strength :: Real, speed :: Real) = - 2. * wake_strength / speed
-
-"""
-Computes the incompressible pressure coefficient given a magnitude and a velocity vector.
-"""
-pressure_coefficient(mag, vels) = 1 - norm(vels)^2 / mag^2
 
 function pressure_coefficient(panels :: AbstractVector{Panel2D}, φs :: AbstractVector{<: Real}, freestream :: Uniform2D) 
     speed = (norm ∘ velocity)(freestream)

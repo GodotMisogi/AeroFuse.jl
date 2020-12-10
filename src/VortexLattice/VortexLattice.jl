@@ -15,9 +15,10 @@ using .MathTools: accumap, structtolist, three_quarter_point, quarter_point
 ## Freestream
 #==========================================================================================#
 
-include("../Tools/laplace.jl")
+include("../Tools/Laplace.jl")
+import .Laplace: Freestream, velocity, aircraft_velocity
 
-export Laplace, Freestream, velocity, aircraft_velocity
+export Freestream, velocity, aircraft_velocity
 
 ## Reference frames
 #==========================================================================================#
@@ -106,8 +107,6 @@ function solve_horseshoes(horseshoe_panels :: AbstractVector{Panel3D}, camber_pa
     @timeit "Solve AIC" Γs = AIC \ boco
 
     @timeit "Reshape" output = reshape(Γs, size(horseshoes)...), horseshoes
-
-    output
 end
 
 

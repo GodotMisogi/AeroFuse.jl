@@ -44,6 +44,8 @@ _ndims(x) = Base.IteratorSize(x) isa Base.HasShape ? _ndims(Base.IteratorSize(x)
 
 
 ##
+xs = Point.((1:4), (11:14))
+not_perimeter(p1 :: Point, p2 :: Point) = p1 === p2 ? 0.5 : 1 / width(p1)  + 1 / height(p2)
 gradient(not_perimeter, xs[3], xs[5])
 
 ##

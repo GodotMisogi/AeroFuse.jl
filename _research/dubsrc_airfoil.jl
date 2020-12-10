@@ -19,21 +19,19 @@ println("Lift Coefficient: $cl")
 
 print_timer();
 
-##
-cls = []
-for alpha in 0:15
-    uniform = Uniform2D(5.0, alpha)
-
+function alpha_sweep(α, airfoil)
+    uniform = Uniform2D(1.0, α)
     @time cl = solve_case(airfoil, uniform, 60)
-    println("Angle: $alpha, Lift Coefficient: $cl")
-
-    append!(cls, cl)
 end
+
+##
+αs = 0:10
+cls = [ alpha_sweep(α, airfoil) for α in αs ]
 
 ## Plotting libraries
 using Plots
 plotlyjs();
 
 ## Lift polar
-plot(0:15, cls, 
+plot(αs, cls, 
         xlabel = "α", ylabel = "CL")

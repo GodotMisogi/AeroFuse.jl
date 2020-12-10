@@ -1,10 +1,14 @@
+module Laplace
+
+using StaticArrays
+
 """
 Solutions to Laplace's equation.
 """
-abstract type Laplace end
+abstract type AbstractLaplace end
 
 # Performs velocity and potential calculations on a grid
-function grid_data(objects :: AbstractVector{Laplace}, xs)
+function grid_data(objects :: AbstractVector{<: AbstractLaplace}, xs)
     vels = foldl((v1, v2) -> [ u .+ v for (u, v) ∈ zip(v1, v2) ], velocity(object, xs) for object ∈ objects)
     pots = foldl((v1, v2) -> v1 + v2, potential(object, xs) for object ∈ objects)
     
@@ -12,11 +16,11 @@ function grid_data(objects :: AbstractVector{Laplace}, xs)
 end
 
 # Performs velocity and potential computations for an object on a grid
-grid_data(object :: Laplace, xs) = velocity(object, xs), potential(object, xs)
-velocity(object :: Laplace, xs) = map(x -> velocity(object, x...), xs) 
-potential(object :: Laplace, xs) = map(x -> potential(object, x...), xs)
+grid_data(object :: AbstractLaplace, xs) = velocity(object, xs), potential(object, xs)
+velocity(object :: AbstractLaplace, xs) = map(x -> velocity(object, x...), xs) 
+potential(object :: AbstractLaplace, xs) = map(x -> potential(object, x...), xs)
 
-struct Source2D <: Laplace
+struct Source2D <: AbstractLaplace
     str :: Real
     x0 :: Real
     y0 :: Real 
@@ -26,7 +30,7 @@ velocity(src :: Source2D, x, y) = (src.str / (2π) * (x - src.x0) / ((x - src.x0
 potential(src :: Source2D, x, y) = src.str / (4π) * log((x - src.x0)^2 + (y - src.y0)^2)
 stream(src :: Source2D, x, y) = src.str / (2π) * atan(y - src.y0, x - src.x0)
 
-struct Uniform2D <: Laplace
+struct Uniform2D <: AbstractLaplace
     mag :: Real
     ang :: Real 
 end
@@ -34,7 +38,7 @@ end
 velocity(uni :: Uniform2D) = let ang = deg2rad(uni.ang); (uni.mag * cos(ang), uni.mag * sin(ang)) end
 potential(uni :: Uniform2D, x, y) = let ang = deg2rad(uni.ang); uni.mag * (x * cos(ang) + y * sin(ang)) end
 
-struct Doublet2D <: Laplace
+struct Doublet2D <: AbstractLaplace
     str :: Real
     x0 :: Real
     y0 :: Real 
@@ -44,7 +48,7 @@ velocity(dub :: Doublet2D, x, y) = (dub.str / (2π) * ((x - dub.x0)^2 - (y - dub
 potential(dub :: Doublet2D, x, y) = -dub.str / (2π) * (y - dub.y0) / ((x - dub.x0)^2 + (y - dub.y0)^2)
 stream(dub :: Doublet2D, x, y) = -dub.str / (2π) * (y - dub.y0) / ((x - dub.x0)^2 + (y - dub.y0)^2)
 
-struct Vortex2D <: Laplace
+struct Vortex2D <: AbstractLaplace
     str :: Real
     x0 :: Real
     y0 :: Real 
@@ -71,7 +75,7 @@ doublet_velocity(str :: Real, x :: Real, z :: Real, x1 :: Real, x2 :: Real) = (s
 """
 A Freestream type expressing a freestream flow in spherical polar coordinates with angles α, β and magnitude mag.
 """
-struct Freestream <: Laplace
+struct Freestream <: AbstractLaplace
     mag :: Real
     α :: Real 
     β :: Real
@@ -93,3 +97,5 @@ velocity(uni :: Freestream) = freestream_to_cartesian(uni.mag, uni.α, uni.β)
 Computes the velocity of Freestream in the aircraft reference frame.
 """
 aircraft_velocity(uni :: Freestream) = -velocity(uni)
+
+end
