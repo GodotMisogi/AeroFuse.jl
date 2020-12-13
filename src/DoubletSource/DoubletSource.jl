@@ -50,14 +50,25 @@ function source_potential(panel :: Panel2D, strength :: Real, x :: Real, y :: Re
     @timeit "Source Potential" source_potential(strength, pan..., 0., panel_length(panel))
 end
 
+"""
+    doublet_influence(panel_1, panel_2)
+
+Computes the doublet potential influence coefficient of panel_1 at the collocation point of panel_2.
+"""
 doublet_influence(panel_1 :: Panel2D, panel_2 :: Panel2D) = doublet_potential(panel_1, 1., collocation_point(panel_2)...)
 
+
+"""
+    source_influence(panel_1, panel_2)
+
+Computes the doublet potential influence coefficient of panel_1 at the collocation point of panel_2.
+"""
 source_influence(panel_1 :: Panel2D, panel_2 :: Panel2D) = source_potential(panel_1, 1., collocation_point(panel_2)...)
 
 """
     doublet_matrix(panels_1, panels_2)
 
-Computes the matrix of doublet potential influence coefficients between pairs of panels_1 and panels_2.
+Creates the matrix of doublet potential influence coefficients between pairs of panels_1 and panels_2.
 """
 doublet_matrix(panels_1 :: AbstractVector{Panel2D}, panels_2 :: AbstractVector{Panel2D}) = 
     map(pans -> pans[1] === pans[2] ? 0.5 : doublet_influence(pans...), product(panels_1, panels_2))'
@@ -65,15 +76,24 @@ doublet_matrix(panels_1 :: AbstractVector{Panel2D}, panels_2 :: AbstractVector{P
 """
     source_matrix(panels_1, panels_2)
 
-Computes the matrix of source potential influence coefficients between pairs of panels_1 and panels_2.
+Creates the matrix of source potential influence coefficients between pairs of panels_1 and panels_2.
 """
 source_matrix(panels_1 :: AbstractVector{Panel2D}, panels_2 :: AbstractVector{Panel2D}) = [ source_influence(panel_j, panel_i) for panel_i ∈ panels_1, panel_j ∈ panels_2 ]
 
-source_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = [ dot(velocity(freestream), normal) for normal ∈ panel_normal.(panels) ]
+"""
+    source_strengths(panels, freestream)
+
+Creates the vector of source strengths for the Dirichlet boundary condition ``\\sigma = \\vec U_{\\infty} \\cdot \\hat{n}`` given Panel2Ds and a Uniform2D.
+"""
+source_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = dot.((Ref ∘ velocity)(freestream), panel_normal.(panels))
 
 boundary_condition(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = - source_matrix(panels, panels) * source_strengths(panels, freestream)
 
-# Morino's velocity Kutta condition
+"""
+    kutta_condition(panels)
+
+Creates the vector describing Morino's Kutta condition given Panel2Ds.
+"""
 kutta_condition(panels :: AbstractVector{Panel2D}) = [ 1., -1., zeros(length(panels) - 4)..., 1., -1.]
 
 function wake_vector(panels :: AbstractVector{Panel2D}, bound = 1e3)
@@ -85,18 +105,18 @@ end
 
 function influence_matrix(panels :: AbstractVector{Panel2D}) 
     @timeit "Doublet Matrix" dub_mat = doublet_matrix(panels, panels)
-    @timeit "Wake Vector" wake_vec = wake_vector(panels)
-    @timeit "Kutta Condition" kutta = kutta_condition(panels)'
-    @timeit "Matrix Assembly" mat = [ dub_mat   wake_vec;
-                                      kutta        0.   ]
+    @timeit "Wake Vector" wake_vec   = wake_vector(panels)
+    @timeit "Kutta Condition" kutta  = kutta_condition(panels)'
+    @timeit "Matrix Assembly" mat    = [ dub_mat   wake_vec;
+                                         kutta        0.   ]
 end
               
 boundary_vector(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = [ boundary_condition(panels, freestream); 0. ]
 
 function solve_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) 
     # @timeit "Source Strengths" σs = source_strengths(panels, freestream)
-    @timeit "AIC" AIC = influence_matrix(panels)
-    @timeit "RHS" boco = boundary_vector(panels, freestream)
+    @timeit "AIC" AIC      = influence_matrix(panels)
+    @timeit "RHS" boco     = boundary_vector(panels, freestream)
     @timeit "Solve AIC" φs = AIC \ boco 
 
     φs

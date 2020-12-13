@@ -43,9 +43,6 @@ end
 cavity_pressure(sf, sl, A = 0.5, ν = 1.0, λ = 0.1) = sf < (1 - λ) * sl ? 0 : A * ((sf - (1 - λ) * sl) / (sl - (1 - λ) * sl))^ν
 
 function cavity_influence_matrix(wetted_panels :: AbstractVector{Panel2D}, wetted_cavpanels :: AbstractVector{Panel2D}, cavity_panels :: AbstractVector{Panel2D})
-
-    wetted_panels, wetted_cavpanels = cavity_split_panels(panels)
-
     # Influence on wetted panels
     doublets_wetwet   = doublet_matrix(wetted_panels, wetted_panels)
     sources_wetcav    = source_matrix(wetted_panels, cavity_panels)
@@ -76,7 +73,6 @@ function cavity_influence_matrix(wetted_panels :: AbstractVector{Panel2D}, wette
     # Cavity leading edge extrapolation
     leading_cavpanel  = findfirst(panel -> panel === first(cavity_panels), panels)
     prev_terms        = 3
-    next_terms        = 4
     leading           = [ zeros(length(panels) - leading_cavpanel - prev_terms)..., 1, 2, 3, zeros(leading_cavpanel)... ]
     leading_dub       = sum(doublets_wetcav, dims = 2)
     leading_cav       = sum(doublets_cavcav, dims = 2)
@@ -84,48 +80,54 @@ function cavity_influence_matrix(wetted_panels :: AbstractVector{Panel2D}, wette
     # Aerodynamic Influence Coefficient matrix
     AIC               = [ doublets_wetwet  sources_wetcav  trans_wetcav  leading_dub  wake_wet ;
                           doublets_cavwet  sources_cavcav  trans_cavcav  leading_cav  wake_cav ;
-                          zeros(num_wet)'    closure_cav'       0             0          0     ;
-                             leading'      zeros(num_cav)'      0             0          0     ;
-                              kutta'       zeros(num_cav)'      0             0          0     ]
+                          zeros(num_wet)'    closure_cav'        0            0           0    ;
+                             leading'      zeros(num_cav)'       0            0           0    ;
+                              kutta'       zeros(num_cav)'       0            0           0    ]
 
 end
 
 function cavity_boundary_vector(wetted_panels :: AbstractVector{Panel2D}, wetted_cavpanels :: AbstractVector{Panel2D}, cavity_panels :: AbstractVector{Panel2D}, freestream :: Uniform2D)
-    doublets_cavwet = doublet_matrix(cavity_panels, wetted_panels)
-    doublets_cavcav = doublet_matrix(cavity_panels, cavity_panels)
-    sources_cavwet  = source_matrix(cavity_panels, wetted_panels)
-    sources_wetcav  = source_matrix(wetted_panels, cavity_panels)
+    # Boundary condition: Source terms
+    boundary_sources_wet    = boundary_condition(wetted_panels, freestream)
+    boundary_sources_cav    = - source_matrix(cavity_panels, wetted_panels) * source_strengths(wetted_panels, freestream)
 
-    # Cavity doublets boundary condition
-    bound_cav       = [ potential(freestream, collocation_point(cav_panel)...) - potential(freestream, (point1 ∘ first)(cavity_panels)...) for cav_panel in cavity_panels ]
+    # Boundary condition: Doublet terms
+    bound_cav               = [ potential(freestream, colpoint...) - potential(freestream, (point1 ∘ first)(cavity_panels)...) for colpoint in collocation_point.(cavity_panels) ]
+    
+    boundary_doublets_wet   = doublet_matrix(cavity_panels, wetted_panels) * bound_cav
+    boundary_doublets_cav   = doublet_matrix(cavity_panels, cavity_panels) * bound_cav
 
-    # Cavity closure condition
-    sf              = panel_length.(wetted_cavpanels)
-    sl              = sum(panel_length.(cavity_panels))
-    closure_cav     = cavity_length ./ (1 - cavity_pressure.(cumsum(sf), sl))
-    source_closure  = - sum(cavclose .* cavsrc_bound)
+    # Boundary condition: Cavity closure
+    sf                      = panel_length.(wetted_cavpanels)
+    sl                      = sum(panel_length.(cavity_panels))
+    sources_cav             = source_strengths(cavity_panels, freestream)
+    closure_cav             = cavity_length ./ (1 - cavity_pressure.(cumsum(sf), sl))
+    source_closure          = - sum(sources_cav .* closure_cav)
 
-    RHS             = [ boundary_vector(wetted_panels, freestream) ;
-                               doublets_cavcav * bound_cav         ;
-                                     source_closure                ;
-                                           0                       ;
-                                           0                       ]
+    # Boundary condition: Matrix assembly
+    RHS                     = [ boundary_doublets_wet + boundary_sources_wet ;
+                                boundary_doublets_cav + boundary_sources_cav ;
+                                               source_closure                ;
+                                                     0                       ;
+                                                     0                       ]
 end    
 
 
 function solve_strengths(panels :: AbstractVector{Panel2D}, cavity_panels :: AbstractVector{Panel2D}, freestream :: Uniform2D)
     wetted_panels, wetted_cavpanels = cavity_split_panels(panels)
-    AIC = cavity_influence_matrix(wetted_panels, wetted_cavpanels, cavity_panels)
-    RHS = cavity_boundary_vector(wetted_panels, wetted_cavpanels, cavity_panels, freestream)
-    
-    # Solve system
+
+    # Matrix solution
+    AIC       = cavity_influence_matrix(wetted_panels, wetted_cavpanels, cavity_panels)
+    RHS       = cavity_boundary_vector(wetted_panels, wetted_cavpanels, cavity_panels, freestream)
     strengths = AIC \ RHS
 
-    φs = strengths[1:num_wetted], strengths[num_wetted+1:end-2]
+    φs        = strengths[1:num_wetted]
+    ∂φ∂ns     = strengths[num_wetted+1:end-2]
+
     # Cavity velocity, cavitation number and wake panel strength
-    qc = strengths[end - 1]
-    woke_panel.doublet_strength = strengths[end]
-    σ = qc^2 / freestream.mag^2 - 1
+    qc        = strengths[end - 1]
+    σ         = qc^2 / freestream.mag^2 - 1
+
     println("Cavity Velocity: ", qc, ", Cavitation Number: ", σ)
 end
 

@@ -19,6 +19,7 @@ println("Lift Coefficient: $cl")
 
 print_timer();
 
+##
 function alpha_sweep(α, airfoil)
     uniform = Uniform2D(1.0, α)
     @time cl = solve_case(airfoil, uniform, 60)
