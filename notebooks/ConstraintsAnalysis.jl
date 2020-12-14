@@ -10,10 +10,10 @@ md"""
 """
 
 # ╔═╡ 1b50c100-3b7d-11eb-1886-f7c9833720da
-dynamic_pressure(ρ, V) = 0.5 * ρ * V^2
+dynamic_pressure(ρ, V) = 0.5 * ρ * V^2;
 
 # ╔═╡ 9e25b9d0-3b7f-11eb-1588-2d40cc56f40c
-span_efficiency_factor(e, AR) = 1 / (π * e * AR)
+span_efficiency_factor(e, AR) = 1 / (π * e * AR);
 
 # ╔═╡ 6ecda840-3b7b-11eb-2f36-a37e3aa55916
 md"""
@@ -95,7 +95,7 @@ thrust_to_weight_vtol_climb(wing_loading, V_vtol, S_proj_S_wing, CD, ρ = 1.225)
 begin
 	RoC_vtol = 2.
 	CD = 2.
-	S_proj_S_wing = 1.2
+	S_proj_S_wing = 1.4
 	
 	tbWs_RoC_vtol = thrust_to_weight_vtol_climb.(wing_loadings, RoC_vtol, S_proj_S_wing, CD, ρ)
 	pbWs_vtol_climb = power_loading.(tbWs_RoC_vtol, V_RoC, η_prop_FW)

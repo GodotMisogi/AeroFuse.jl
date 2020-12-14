@@ -38,7 +38,7 @@ export Panel, Panel2D, collocation_point
 ## Matrix assembly
 #==========================================================================================#
 
-export solve_strengths, pressure_coefficient, lift_coefficient, solve_case,
+export solve_strengths, lift_coefficient, solve_case,
 panel_velocities, influence_coefficient, doublet_potential, source_potential,
 doublet_matrix, wake_vector, source_matrix, boundary_vector, kutta_condition
 
@@ -128,7 +128,7 @@ end
 function panel_velocities(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D, doublet_strengths :: AbstractVector{<: Real})
     @timeit "Panel Pairs" diff_pans = panel_pairs(panels)
     @timeit "Strength Diffs" diff_strs = -diff(midgrad(doublet_strengths), dims = 2)
-    @timeit "Tangential Velocities" tan_dot_u = [ dot(velocity(freestream), tangent) for tangent ∈ panel_tangent.(panels) ]
+    @timeit "Tangential Velocities" tan_dot_u = dot.((Ref ∘ velocity)(freestream), panel_tangent.(panels))
 
     @timeit "Sum Velocities" diff_strs ./ diff_pans .+ tan_dot_u 
 end
