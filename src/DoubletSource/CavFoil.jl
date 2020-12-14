@@ -88,28 +88,28 @@ end
 
 function cavity_boundary_vector(wetted_panels :: AbstractVector{Panel2D}, wetted_cavpanels :: AbstractVector{Panel2D}, cavity_panels :: AbstractVector{Panel2D}, freestream :: Uniform2D)
     # Boundary condition: Source terms
-    boundary_sources_wet    = boundary_condition(wetted_panels, freestream)
-    boundary_sources_cav    = - source_matrix(cavity_panels, wetted_panels) * source_strengths(wetted_panels, freestream)
+    boundary_sources_wet   = boundary_condition(wetted_panels, freestream)
+    boundary_sources_cav   = - source_matrix(cavity_panels, wetted_panels) * source_strengths(wetted_panels, freestream)
 
     # Boundary condition: Doublet terms
-    bound_cav               = [ potential(freestream, colpoint...) - potential(freestream, (point1 ∘ first)(cavity_panels)...) for colpoint in collocation_point.(cavity_panels) ]
+    bound_cav              = [ potential(freestream, colpoint...) - potential(freestream, (point1 ∘ first)(cavity_panels)...) for colpoint in collocation_point.(cavity_panels) ]
     
-    boundary_doublets_wet   = doublet_matrix(cavity_panels, wetted_panels) * bound_cav
-    boundary_doublets_cav   = doublet_matrix(cavity_panels, cavity_panels) * bound_cav
+    boundary_doublets_wet  = doublet_matrix(cavity_panels, wetted_panels) * bound_cav
+    boundary_doublets_cav  = doublet_matrix(cavity_panels, cavity_panels) * bound_cav
 
     # Boundary condition: Cavity closure
-    sf                      = panel_length.(wetted_cavpanels)
-    sl                      = sum(panel_length.(cavity_panels))
-    sources_cav             = source_strengths(cavity_panels, freestream)
-    closure_cav             = cavity_length ./ (1 - cavity_pressure.(cumsum(sf), sl))
-    source_closure          = - sum(sources_cav .* closure_cav)
+    sf                     = panel_length.(wetted_cavpanels)
+    sl                     = sum(panel_length.(cavity_panels))
+    sources_cav            = source_strengths(cavity_panels, freestream)
+    closure_cav            = cavity_length ./ (1 - cavity_pressure.(cumsum(sf), sl))
+    source_closure         = - sum(sources_cav .* closure_cav)
 
     # Boundary condition: Matrix assembly
-    RHS                     = [ boundary_doublets_wet + boundary_sources_wet ;
-                                boundary_doublets_cav + boundary_sources_cav ;
-                                               source_closure                ;
-                                                     0                       ;
-                                                     0                       ]
+    RHS                    = [ boundary_doublets_wet + boundary_sources_wet ;
+                               boundary_doublets_cav + boundary_sources_cav ;
+                                              source_closure                ;
+                                                    0                       ;
+                                                    0                       ]
 end    
 
 

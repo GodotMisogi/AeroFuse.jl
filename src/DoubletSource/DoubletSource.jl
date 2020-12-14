@@ -42,9 +42,19 @@ export solve_strengths, pressure_coefficient, lift_coefficient, solve_case,
 panel_velocities, influence_coefficient, doublet_potential, source_potential,
 doublet_matrix, wake_vector, source_matrix, boundary_vector, kutta_condition
 
-doublet_potential(panel :: Panel2D, strength :: Real, x :: Real, y :: Real) = 
-    @timeit "Doublet Potential" doublet_potential(strength, affine_2D(x, y, point1(panel)..., panel_angle(panel))..., 0, panel_length(panel))
+"""
+    doublet_potential(panel, φ, x, y)
 
+Computes the influence of a Panel2D with a given doublet strength ``\\phi`` at a location (x, y).
+"""
+doublet_potential(panel :: Panel2D, φ :: Real, x :: Real, y :: Real) = 
+    @timeit "Doublet Potential" doublet_potential(φ, affine_2D(x, y, point1(panel)..., panel_angle(panel))..., 0, panel_length(panel))
+
+"""
+    source_potential(panel, σ, x, y)
+
+Computes the influence of a Panel2D with a given source strength ``\\sigma`` at a location (x, y).
+"""
 function source_potential(panel :: Panel2D, strength :: Real, x :: Real, y :: Real)
     pan = affine_2D(x, y, point1(panel)..., panel_angle(panel))
     @timeit "Source Potential" source_potential(strength, pan..., 0., panel_length(panel))
@@ -87,6 +97,11 @@ Creates the vector of source strengths for the Dirichlet boundary condition ``\\
 """
 source_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = dot.((Ref ∘ velocity)(freestream), panel_normal.(panels))
 
+"""
+    source_strengths(panels, freestream)
+
+Creates the vector for the Dirichlet boundary condition ``\\sigma = \\vec U_{\\infty} \\cdot \\hat{n}`` given Panel2Ds and a Uniform2D.
+"""
 boundary_condition(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = - source_matrix(panels, panels) * source_strengths(panels, freestream)
 
 """
@@ -96,6 +111,11 @@ Creates the vector describing Morino's Kutta condition given Panel2Ds.
 """
 kutta_condition(panels :: AbstractVector{Panel2D}) = [ 1., -1., zeros(length(panels) - 4)..., 1., -1.]
 
+"""
+    wake_vector(panels, bound)
+
+Creates the vector of doublet potential influence coefficients from the wake on the panels, with an option for the length of the wake.
+"""
 function wake_vector(panels :: AbstractVector{Panel2D}, bound = 1e3)
     lastx, lasty = point2(panels[end])
     woke_panel = Panel2D((lastx, lasty), (bound * lastx, lasty))
@@ -103,6 +123,11 @@ function wake_vector(panels :: AbstractVector{Panel2D}, bound = 1e3)
     [ doublet_potential(woke_panel, 1., pt...) for pt ∈ collocation_point.(panels) ]
 end
 
+"""
+    influence_matrix(panels)
+
+Assembles the Aerodynamic Influence Coefficient matrix consisting of the doublet matrix, wake vector, Kutta condiition given Panel2Ds.
+"""
 function influence_matrix(panels :: AbstractVector{Panel2D}) 
     @timeit "Doublet Matrix" dub_mat = doublet_matrix(panels, panels)
     @timeit "Wake Vector" wake_vec   = wake_vector(panels)
@@ -110,7 +135,12 @@ function influence_matrix(panels :: AbstractVector{Panel2D})
     @timeit "Matrix Assembly" mat    = [ dub_mat   wake_vec;
                                          kutta        0.   ]
 end
-              
+
+"""
+    boundary_vector(panels, freestream)
+
+Assembles the vector for the boundary condition of the problem given Panel2Ds and a Uniform2D.
+"""
 boundary_vector(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = [ boundary_condition(panels, freestream); 0. ]
 
 function solve_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) 
@@ -128,7 +158,7 @@ end
 function panel_velocities(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D, doublet_strengths :: AbstractVector{<: Real})
     @timeit "Panel Pairs" diff_pans = panel_pairs(panels)
     @timeit "Strength Diffs" diff_strs = -diff(midgrad(doublet_strengths), dims = 2)
-    @timeit "Tangential Velocities" tan_dot_u = [ dot(velocity(freestream), tangent) for tangent ∈ panel_tangent.(panels) ]
+    @timeit "Tangential Velocities" tan_dot_u = dot.((Ref ∘ velocity)(freestream), panel_tangent.(panels))
 
     @timeit "Sum Velocities" diff_strs ./ diff_pans .+ tan_dot_u 
 end
