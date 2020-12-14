@@ -10,10 +10,10 @@ md"""
 """
 
 # ╔═╡ 1b50c100-3b7d-11eb-1886-f7c9833720da
-dynamic_pressure(ρ, V) = 0.5 * ρ * V^2
+dynamic_pressure(ρ, V) = 0.5 * ρ * V^2;
 
 # ╔═╡ 9e25b9d0-3b7f-11eb-1588-2d40cc56f40c
-span_efficiency_factor(e, AR) = 1 / (π * e * AR)
+span_efficiency_factor(e, AR) = 1 / (π * e * AR);
 
 # ╔═╡ 6ecda840-3b7b-11eb-2f36-a37e3aa55916
 md"""
@@ -95,7 +95,7 @@ thrust_to_weight_vtol_climb(wing_loading, V_vtol, S_proj_S_wing, CD, ρ = 1.225)
 begin
 	RoC_vtol = 2.
 	CD = 2.
-	S_proj_S_wing = 1.2
+	S_proj_S_wing = 1.4
 	
 	tbWs_RoC_vtol = thrust_to_weight_vtol_climb.(wing_loadings, RoC_vtol, S_proj_S_wing, CD, ρ)
 	pbWs_vtol_climb = power_loading.(tbWs_RoC_vtol, V_RoC, η_prop_FW)
@@ -121,6 +121,9 @@ end;
 md"""
 ### Service Ceiling
 """
+
+# ╔═╡ 9555e300-3dde-11eb-1a7f-ad2665ff0729
+
 
 # ╔═╡ 621e7590-3b83-11eb-1700-91b2f71716d1
 begin
@@ -169,6 +172,7 @@ end
 # ╠═25094f50-3b7d-11eb-2ab4-93c376e1b193
 # ╠═f6ac2640-3b7d-11eb-02de-21ef4c02ecac
 # ╟─5a681fe0-3b83-11eb-3da0-cbca7e455391
+# ╠═9555e300-3dde-11eb-1a7f-ad2665ff0729
 # ╠═621e7590-3b83-11eb-1700-91b2f71716d1
 # ╠═413bd390-3b7e-11eb-34f9-bf8ad1968b0f
 # ╠═dd39bc4e-3b90-11eb-17df-09f9d206a6b2

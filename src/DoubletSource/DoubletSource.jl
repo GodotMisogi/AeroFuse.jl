@@ -38,7 +38,7 @@ export Panel, Panel2D, collocation_point
 ## Matrix assembly
 #==========================================================================================#
 
-export solve_strengths, pressure_coefficient, lift_coefficient, solve_case,
+export solve_strengths, lift_coefficient, solve_case,
 panel_velocities, influence_coefficient, doublet_potential, source_potential,
 doublet_matrix, wake_vector, source_matrix, boundary_vector, kutta_condition
 

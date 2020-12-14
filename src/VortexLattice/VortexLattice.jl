@@ -41,6 +41,7 @@ export Panel, Panel3D, panel_area, panel_coords, midpoint, panel_normal, transfo
 
 include("horseshoes.jl")
 
+export Horseshoe
 
 ## Vortex lattice
 #==========================================================================================#
@@ -50,7 +51,7 @@ export solve_horseshoes
 """
 Computes the velocity using the method of images for a symmetric case in the x-z plane.
 """
-function mirror_velocity(collocation_point :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, Real})
+function mirror_velocity(collocation_point :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real})
     mirror_point = reflect_xz(collocation_point)
     mir_vel = (reflect_xz ∘ velocity)(mirror_point, horseshoe, Γ, V_hat)
 end

@@ -13,8 +13,6 @@ using TimerOutputs
 include("Tools/MathTools.jl")
 using .MathTools: tupvector, fwdsum, fwddiv, cosine_dist, weighted_vector, vectarray, slope, splitat, adj3, cosine_interp, columns
 
-export tupvector
-
 
 ## Non-dimensionalization
 #==========================================================================================#
@@ -36,15 +34,15 @@ include("Geometry/AircraftGeometry.jl")
 include("VortexLattice/VortexLattice.jl")
 using .VortexLattice
 
-export Panel3D, Freestream, velocity, streamlines, solve_horseshoes, transform
+export Panel3D, Horseshoe, Freestream, velocity, streamlines, solve_horseshoes, transform, panel_coords
 
-## Doublet-source
+## Doublet-source panel method
 #==========================================================================================#
 
 include("DoubletSource/DoubletSource.jl")
 using .DoubletSource
 
-export Panel, Panel2D, Uniform2D, lift_coefficient
+export Panel2D, Uniform2D, lift_coefficient
 
 ## Aerodynamic analyses
 #==========================================================================================#
@@ -58,6 +56,6 @@ export solve_case
 
 include("Tools/plot_tools.jl")
 
-export plot_panels, plot_streamlines
+export plot_panels, plot_streamlines, trace_surface, trace_panels, trace_coords, trace_streamlines
 
 end

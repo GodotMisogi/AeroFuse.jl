@@ -81,14 +81,14 @@ print_timer();
 ## Streamlines
 reset_timer!()
 
-@timeit "Computing Streamlines" streams = plot_streamlines.(streamlines(freestream, Ω, horseshoe_panels, horseshoes, Γs, 5, 100));
+@timeit "Computing Streamlines" streams = plot_streamlines.(streamlines(freestream, horseshoe_panels, horseshoes, Γs, 5, 100));
 
 print_timer()
 
 ## Normalisation
 min_Γ, max_Γ = extrema(Γs)
 Γ_range = -map(-, min_Γ, max_Γ)
-norm_Γs = [ 2 * (Γ - min_Γ) / Γ_range - 1 for Γ ∈ Γs ]
+norm_Γs = [ 2 * (Γ - min_Γ) / Γ_range - 1 for Γ ∈ Γs ];
 
 ##
 # aircraft_coords = plot_panels(horseshoe_panels)[:]
@@ -127,7 +127,7 @@ trace_horses = [ PlotlyJS.mesh3d(
                         x = x,
                         y = y,
                         z = z,
-                        intensity = repeat([norm_Γ], length(x)),
+                        intensity = fill(norm_Γ, length(x)),
                         text = norm_Γ,
                         showscale = false,
                         ) for (x, y, z, norm_Γ) in zip(horse_xs, horse_ys, horse_zs, norm_Γs) ]

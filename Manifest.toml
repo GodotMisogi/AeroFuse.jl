@@ -1141,6 +1141,12 @@ git-tree-sha1 = "2b3eac39df218762d2d005702d601cd44c997497"
 uuid = "aed1982a-8fda-507f-9586-7b0439959a61"
 version = "1.1.33+4"
 
+[[Xfoil]]
+deps = ["Printf", "xfoil_light_jll"]
+git-tree-sha1 = "270d29dccfcbb706f23df37145741bbb397ed672"
+uuid = "19641d66-a62d-11e8-2441-8f57a969a9c4"
+version = "0.4.0"
+
 [[Xorg_libX11_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
 git-tree-sha1 = "5be649d550f3f4b95308bf0183b82e2582876527"
@@ -1332,6 +1338,12 @@ deps = ["Libdl", "Pkg"]
 git-tree-sha1 = "8e2c44ab4d49ad9518f359ed8b62f83ba8beede4"
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
 version = "1.40.0+2"
+
+[[xfoil_light_jll]]
+deps = ["CompilerSupportLibraries_jll", "Libdl", "Pkg"]
+git-tree-sha1 = "c4911d4117851f897fba29f4a184985ef37227bb"
+uuid = "70cc596b-f351-5640-b155-76ddf0ff62ca"
+version = "0.1.0+0"
 
 [[xkbcommon_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Wayland_jll", "Wayland_protocols_jll", "Xorg_libxcb_jll", "Xorg_xkeyboard_config_jll"]
