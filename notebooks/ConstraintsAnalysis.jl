@@ -122,6 +122,9 @@ md"""
 ### Service Ceiling
 """
 
+# ╔═╡ 9555e300-3dde-11eb-1a7f-ad2665ff0729
+
+
 # ╔═╡ 621e7590-3b83-11eb-1700-91b2f71716d1
 begin
 	RoC_ceiling = 0.5
@@ -169,6 +172,7 @@ end
 # ╠═25094f50-3b7d-11eb-2ab4-93c376e1b193
 # ╠═f6ac2640-3b7d-11eb-02de-21ef4c02ecac
 # ╟─5a681fe0-3b83-11eb-3da0-cbca7e455391
+# ╠═9555e300-3dde-11eb-1a7f-ad2665ff0729
 # ╠═621e7590-3b83-11eb-1700-91b2f71716d1
 # ╠═413bd390-3b7e-11eb-34f9-bf8ad1968b0f
 # ╠═dd39bc4e-3b90-11eb-17df-09f9d206a6b2

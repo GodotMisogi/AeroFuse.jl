@@ -4,13 +4,12 @@
 """
 Converts coordinates into stability axes.
 """
-body_to_stability_axes(coords, uni :: Freestream) = RotY{Float64}(uni.α) * coords
+body_to_stability_axes(coords, α) = RotY{Float64}(α) * coords
                                             
-
 """
 Converts coordinates from body axes to wind axes.
 """
-body_to_wind_axes(coords, uni :: Freestream) = RotZY{Float64}(uni.β, uni.α) * coords
+body_to_wind_axes(coords, α, β) = RotZY{Float64}(β, α) * coords
 
 """
 Reflects the y-coordinate of a given vector about the x-z plane.
@@ -25,14 +24,9 @@ stab_flip(vector :: SVector{3, <: Real}) = SVector(-vector[1], vector[2], -vecto
 """
 Transforms forces and moments from body to stability axes.
 """
-body_to_stability_axes(force, moment, Ω, freestream :: Freestream) = body_to_stability_axes(force, freestream), body_to_stability_axes(stab_flip(moment), freestream), body_to_stability_axes(stab_flip(Ω), freestream)
+body_to_stability_axes(force, moment, freestream :: Freestream) = body_to_stability_axes(force, freestream.α), body_to_stability_axes(stab_flip(moment), freestream.α), body_to_wind_axes(stab_flip(freestream.Ω), freestream.α)
 
 """
 Transforms forces and moments from body to wind axes.
 """
-body_to_wind_axes(force, moment, Ω, freestream :: Freestream) = body_to_wind_axes(force, freestream), body_to_wind_axes(stab_flip(moment), freestream), body_to_wind_axes(stab_flip(Ω), freestream)
-
-"""
-Transforms forces and moments into wind axes.
-"""
-body_to_wind_axes(force, moment, freestream :: Freestream) = body_to_wind_axes(force, freestream), body_to_wind_axes([ -moment[1], moment[2], -moment[3] ], freestream)
+body_to_wind_axes(force, moment, freestream :: Freestream) = body_to_wind_axes(force, freestream.α, freestream.β), body_to_wind_axes(stab_flip(moment), freestream.α, freestream.β), body_to_wind_axes(stab_flip(freestream.Ω), freestream.α, freestream.β)
