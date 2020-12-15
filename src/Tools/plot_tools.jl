@@ -20,7 +20,7 @@ function trace_panels(panels :: AbstractVector{Panel3D})
     trace_coords(xs, ys, zs)
 end
 
-trace_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30) = trace_panels(mesh_wing(wing, span_num, chord_num)[:])
+trace_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30; rotation = one(RotMatrix{3, Float64}), translation = SVector(0, 0, 0)) = trace_panels(transform.(mesh_wing(wing, span_num, chord_num)[:], rotation = rotation, translation = translation))
 
 function trace_panels(panels :: AbstractVector{Panel3D}, Γs :: AbstractVector{<: Real})
     coords = plot_panels(panels[:])

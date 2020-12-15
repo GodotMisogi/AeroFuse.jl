@@ -4,6 +4,8 @@ import Base: +, -, zero
 
 using StaticArrays
 using LinearAlgebra
+using Rotations
+using CoordinateTransformations
 
 include("../Tools/MathTools.jl")
 using .MathTools: span, structtolist, inverse_rotation, rotation, midgrad
@@ -22,7 +24,6 @@ panel_pairs(panels :: AbstractVector{<: Panel}) = [ panel_dist(pair...) for pair
 
 split_panels(panels :: AbstractVector{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
 
-
 ## 2D Panels
 #==========================================================================================#
 
@@ -31,18 +32,12 @@ struct Panel2D <: Panel
     p2 :: SVector{2, Real}
 end
 
-# Crap for automatic differentiation
-# zero(:: NTuple{2,<:Real}) = (0., 0.)
-# +(::Union{Nothing, Panel2D}, ::Union{Nothing,Panel2D}) = nothing
-# zero(:: Nothing) = nothing 
-# zero(:: Panel2D) = Panel2D((0., 0.), (0., 0.))
-
 # Methods on panels
 point1(p :: Panel) = p.p1
 point2(p :: Panel) = p.p2
 
-a :: Panel + b :: Panel = Panel2D(point1(a) + point1(b), point2(a) + point2(b))
-a :: Panel - b :: Panel = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
+a :: Panel + b :: Panel = Panel2D(point1(a) .+ point1(b), point2(a) .+ point2(b))
+a :: Panel - b :: Panel = Panel2D(point1(a) .- point1(b), point2(a) .- point2(b))
 
 collocation_point(panel :: Panel2D) = (point1(panel) .+ point2(panel)) ./ 2
 panel_length(panel :: Panel2D) = norm(point2(panel) .- point1(panel))
@@ -94,7 +89,7 @@ panel_coords(panel :: Panel3D) = structtolist(panel)
 """
 Performs an affine transformation on the coordinates of a Panel3D.
 """
-transform(panel :: Panel3D; rotation = one(RotMatrix{3, Float64}), translation = SVector(0, 0, 0)) = Panel3D(( (rotation * coord) .+ translation for coord in panel_coords(panel) )...)
+transform(panel :: Panel3D, rotation, translation) = Panel3D( (Translation(translation) ∘ LinearMap(rotation)).(panel_coords(panel))...)
 
 """
 Computes the midpoint of Panel3D.
@@ -105,8 +100,7 @@ midpoint(panel :: Panel3D) = (panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4) ./ 4
 Computes the normal vector of Panel3D.
 """
 panel_normal(panel :: Panel3D) = let p31 = panel.p3 .- panel.p1, 
-                                     p42 = panel.p4 .- panel.p2, 
-                                     p31_x_p42 = p31 × p42;
-                                     p31_x_p42 end
+                                     p42 = panel.p4 .- panel.p2;
+                                     p31 × p42 end
                                      
 end

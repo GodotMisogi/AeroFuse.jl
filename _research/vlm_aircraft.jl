@@ -1,9 +1,9 @@
 ## 
+# using BenchmarkTools
+# using ProfileView
 using Revise
 using StaticArrays
-using BenchmarkTools
 using TimerOutputs
-using ProfileView
 using Rotations
 using AeroMDAO
 
@@ -48,19 +48,30 @@ print_info(vtail)
 htail_location = [1., 0., 0.]
 
 vtail1_angle = AngleAxis{Float64}(π/4, 1, 0, 0)
-vtail1_location = [1 + 0.2 * tan(π/6), 0.2, 0]
+vtail1_location = SVector(1 + 0.2 * tan(π/6), 0.2, 0)
 
 vtail2_angle = AngleAxis{Float64}(3π/4, 1, 0, 0)
-vtail2_location = [1 + 0.2 * tan(π/6), -0.2, 0]
+vtail2_location = SVector(1 + 0.2 * tan(π/6), -0.2, 0)
 
 wing_panels = paneller(wing, 10, 5)
 htail_panels = paneller(htail, 5, 5, translation = htail_location)
-vtail1_panels = paneller(vtail, 2, 2, rotation = vtail1_angle, translation = vtail1_location)
-vtail2_panels = paneller(vtail, 2, 2, rotation = vtail2_angle, translation = vtail2_location);
+vtail1_panels = paneller(vtail, 4, 4, rotation = vtail1_angle, translation = vtail1_location)
+vtail2_panels = paneller(vtail, 4, 4, rotation = vtail2_angle, translation = vtail2_location);
 
 ##
-horseshoe_panels = [ wing_panels[1][:]; htail_panels[1][:]; vtail1_panels[1][:]; vtail2_panels[1][:] ]
-camber_panels = [ wing_panels[2][:]; htail_panels[2][:]; vtail1_panels[2][:]; vtail2_panels[2][:] ];
+horseshoe_panels = 	[ 
+                    	wing_panels[1][:]; 
+                    	htail_panels[1][:]; 
+                    	vtail1_panels[1][:];
+                        vtail2_panels[1][:]
+					]
+
+camber_panels 	= 	[ 
+						wing_panels[2][:];
+						htail_panels[2][:];
+						vtail1_panels[2][:];
+						vtail2_panels[2][:]
+					];
 
 ## Assembly
 reset_timer!()
@@ -68,7 +79,7 @@ reset_timer!()
 ρ = 1.225
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
 Ω = SVector(0.0, 0.0, 0.0)
-freestream = Freestream(10.0, 0.0, 0.0, Ω)
+freestream = Freestream(10.0, 5.0, 0.0, Ω)
 @time force, drag, moment, horseshoes, Γs = solve_case(horseshoe_panels, camber_panels, freestream, ref, print = true) 
 
 @timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, freestream.Ω, freestream.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
@@ -78,115 +89,33 @@ print_dynamics(nearfield_coeffs...)
 
 print_timer();
 
-## Streamlines
-reset_timer!()
-
-@timeit "Computing Streamlines" streams = plot_streamlines.(streamlines(freestream, horseshoe_panels, horseshoes, Γs, 5, 100));
-
-print_timer()
-
 ## Normalisation
 min_Γ, max_Γ = extrema(Γs)
 Γ_range = -map(-, min_Γ, max_Γ)
 norm_Γs = [ 2 * (Γ - min_Γ) / Γ_range - 1 for Γ ∈ Γs ];
 
 ##
-# aircraft_coords = plot_panels(horseshoe_panels)[:]
-camber_coords = plot_panels(camber_panels)[:]
-horseshoe_coords = plot_panels(horseshoe_panels)[:];
-# horseshoe_coords = plot_panels(vtail2_panels[1]);
-
-##
 using PlotlyJS
 
-##
-horse_xs = [ [ c[1] for c in panel ] for panel in horseshoe_coords ]
-horse_ys = [ [ c[2] for c in panel ] for panel in horseshoe_coords ]
-horse_zs = [ [ c[3] for c in panel ] for panel in horseshoe_coords ]
-
-camber_xs = [ [ c[1] for c in panel ] for panel in camber_coords ]
-camber_ys = [ [ c[2] for c in panel ] for panel in camber_coords ]
-camber_zs = [ [ c[3] for c in panel ] for panel in camber_coords ]
-
-streams_xs = [ [ c[1] for c in panel ] for panel in streams ]
-streams_ys = [ [ c[2] for c in panel ] for panel in streams ]
-streams_zs = [ [ c[3] for c in panel ] for panel in streams ];
-
-# aircraft_xs = [ [ c[1] for c in panel ] for panel in aircraft_coords ]
-# aircraft_ys = [ [ c[2] for c in panel ] for panel in aircraft_coords ]
-# aircraft_zs = [ [ c[3] for c in panel ] for panel in aircraft_coords ];
-
-##
 layout = Layout(
                 title = "Penguins",
                 scene=attr(aspectmode="manual", aspectratio=attr(x=1,y=1,z=1)),
-                zlim=(-0.1, 5.0)
+                # zlim=(-0.1, 5.0)
                 )
 
-trace_horses = [ PlotlyJS.mesh3d(
-                        x = x,
-                        y = y,
-                        z = z,
-                        intensity = fill(norm_Γ, length(x)),
-                        text = norm_Γ,
-                        showscale = false,
-                        ) for (x, y, z, norm_Γ) in zip(horse_xs, horse_ys, horse_zs, norm_Γs) ]
+## Streamlines
+reset_timer!()
 
-trace_horsies = [ PlotlyJS.scatter3d(
-                            x = x,
-                            y = y,
-                            z = z,
-                            mode = :lines, 
-                            line = attr(color = :black),
-                            showlegend = false,
-                            ) for (x, y, z) in zip(horse_xs, horse_ys, horse_zs) ]
+@timeit "Computing Streamlines" trace_streams = trace_streamlines(freestream, horseshoe_panels, horseshoes, Γs, 2, 100);
 
-trace_cambers = [ PlotlyJS.scatter3d(
-                       x = x,
-                       y = y,
-                       z = z,
-                       mode = :lines, 
-                       line = attr(color = :black),
-                       showlegend = false,
-                       ) for (x, y, z) in zip(camber_xs, camber_ys, camber_zs) ]
+print_timer()
 
-trace_streams = [ PlotlyJS.scatter3d(
-                            x = x, 
-                            y = y, 
-                            z = z, 
-                            mode = :lines, 
-                            line = attr(color = :lightblue),
-                            showlegend = false,
-                            ) for (x, y, z) in zip(streams_xs, streams_ys, streams_zs) ];
+trace_horses = trace_panels(horseshoe_panels, Γs)
+trace_cambers = trace_panels(camber_panels)
 
-# trace_aircraft =    [ PlotlyJS.scatter3d(
-#                             x = x,
-#                             y = y,
-#                             z = z,
-#                             mode = :lines, 
-#                             line = attr(color = :black),
-#                             showlegend = false,
-#                             ) for (x, y, z) in zip(aircraft_xs, aircraft_ys, aircraft_zs) ];
-
-PlotlyJS.plot([ 
-        # [ trace for trace in trace_horsies ]..., 
+plot([ 
         # [ trace for trace in trace_cambers ]...,
         [ trace for trace in trace_streams ]...,
-        # [ trace for trace in trace_aircraft ]...,
         [ trace for trace in trace_horses ]...,
      ], 
      layout)
-
-
-## Plotting
-# using Plots
-# plotlyjs()
-
-# ##
-
-# plot(xaxis = "x", yaxis = "y", zaxis = "z", aspectratio = 1., zlim=(-0.1, 3.0), size=(1280, 720))
-# plot!.(camber_coords, color = :black, label = :none)
-# plot!.(horseshoe_coords, color = :blue, label = :none)
-# plot!.(streams, color = :green, label = :none)
-
-# gui();

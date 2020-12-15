@@ -254,8 +254,8 @@ vlmesh_wing(wing :: Union{Wing, HalfWing}, span_num, chord_num) = mesh_horseshoe
 
 function paneller(wing :: Union{Wing, HalfWing}, span_num, chord_num; rotation = one(RotMatrix{3, Float64}), translation = SVector(0,0,0))
     horseshoes, cambers = vlmesh_wing(wing, span_num, chord_num) 
-    [ transform(panel, rotation = rotation, translation = translation) for panel in horseshoes ],
-    [ transform(panel, rotation = rotation, translation = translation) for panel in cambers ]
+    [ transform(panel, rotation, translation) for panel in horseshoes ],
+    [ transform(panel, rotation, translation) for panel in cambers ]
 end
 
 """

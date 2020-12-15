@@ -26,10 +26,12 @@ struct Line
     r2 :: SVector{3, Real}
 end
 
-vector(line :: Line) = line.r2 .- line.r1
-center(line :: Line) = (line.r1 .+ line.r2) ./ 2
+point1(line :: Line) = line.r1
+point2(line :: Line) = line.r2
+vector(line :: Line) = point2(line) - point1(line)
+center(line :: Line) = (point1(line) .+ point2(line)) ./ 2
 
-transform(line :: Line, rotation, translation) = Line(rotation * line.r1 + translation, rotation * line.r2 + translation)
+transform(line :: Line, rotation, translation) = let trans = Translation(translation) ∘ LinearMap(rotation); Line((trans ∘ point1)(line), (trans ∘ point2)(line)) end
 
 """
 Helper function to compute the velocity induced by a bound vortex leg.
@@ -78,6 +80,13 @@ struct Horseshoe <: AbstractVortexArray
 end
 
 """
+    bound_leg(horseshoe)
+
+Getter for bound leg of Horseshoe.
+"""
+bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
+
+"""
 Returns a Horseshoe on a Panel3D.
 """
 horseshoe_lines(panel :: Panel3D) = (Horseshoe ∘ Line)(bound_leg(panel)...)
@@ -85,9 +94,9 @@ horseshoe_lines(panel :: Panel3D) = (Horseshoe ∘ Line)(bound_leg(panel)...)
 """
 Computes the midpoint of the bound leg of a Horseshoe or Vortex Ring.
 """
-bound_leg_center(vortex :: AbstractVortexArray) = center(vortex.bound_leg)
+bound_leg_center(horseshoe :: Horseshoe) = (center ∘ bound_leg)(horseshoe)
 
 """
 Computes the direction vector of the bound leg of a Horseshoe or Vortex Ring.
 """
-bound_leg_vector(vortex :: AbstractVortexArray) = vector(vortex.bound_leg)
+bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)

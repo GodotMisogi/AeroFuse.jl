@@ -11,7 +11,7 @@ function solve_case(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :
     # println(cps)
 
     force, moment = sum(geom_forces), sum(geom_moments)
-    @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, Ω, freestream)
+    @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, freestream)
     drag = nearfield_drag(force, freestream)
 
     # @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
@@ -38,10 +38,10 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
     @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
     
     # Solve system with normalised velocities
-    @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels[:], camber_panels[:], freestream, symmetry)
+    @timeit "Solve System" Γs, horseshoes = reshape.(solve_horseshoes(horseshoe_panels[:], camber_panels[:], freestream, symmetry), size(horseshoe_panels)...)
 
     # Compute near-field forces
-    @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
+    @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs[:], horseshoes[:], freestream, r_ref, ρ)
 
     # @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
 

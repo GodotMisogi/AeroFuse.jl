@@ -16,12 +16,16 @@ Placeholder.
 trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = trailing_legs_velocities(r, horseshoe.bound_leg, Γ, direction = V)
 
 """
-Evaluates the induced velocity by the trailing legs at the midpoint of a given Horseshoe `r`, by summing over the velocities of Horseshoes with vortex strengths `Γ`s, rotation rates `Ω`, and freestream flow vector `freestream` in the aircraft reference frame.
+	midpoint_velocity(r, Ω, horseshoes, Γs, U)
+
+Evaluates the induced velocity by the trailing legs at the midpoint of a given Horseshoe ``r``, by summing over the velocities of Horseshoes with vortex strengths ``\\Gamma``s, rotation rates ``\\Omega``, and a freestream flow vector ``U`` in the aircraft reference frame.
 """
 midpoint_velocity(r :: SVector{3, <: Real}, Ω :: SVector{3, <: Real}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, U) = sum(trailing_velocity(r, horseshoe, Γ, -normalize(U)) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .- U .- Ω × r
 
 """
-Computes the nearfield forces via the local Kutta-Jowkowski given an array of horseshoes, their associated vortex strengths Γs, a Freestream, and a density ρ. The velocities are evaluated at the midpoint of the bound leg of each horseshoe.
+	nearfield_forces(Γs, horseshoes, U, Ω, ρ)
+
+Computes the nearfield forces via the local Kutta-Jowkowski given an array of horseshoes, their associated vortex strengths ``\\Gammas``s, a freestream flow vector ``U``, rotation rates ``\\Omega``, and a density ``\\rho``. The velocities are evaluated at the midpoint of the bound leg of each horseshoe.
 """
 function nearfield_forces(Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{Horseshoe}, U, Ω, ρ)
     Γ_shoes = zip(Γs, horseshoes)
@@ -33,9 +37,11 @@ function nearfield_forces(Γs :: AbstractVector{<: Real}, horseshoes :: Abstract
 end
 
 """
+	nearfield_drag(force, freestream)
+
 Computes the near-field drag given the sum of the local Kutta-Jowkowski forces and a Freestream.
 """
-nearfield_drag(force, V :: Freestream) = dot(force, velocity(V) / V.mag)
+nearfield_drag(force, freestream :: Freestream) = dot(force, velocity(freestream) / freestream.mag)
 
 """
 Computes the nearfield forces and associated moments.
