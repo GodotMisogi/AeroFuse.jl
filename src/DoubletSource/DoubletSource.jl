@@ -48,17 +48,15 @@ doublet_matrix, wake_vector, source_matrix, boundary_vector, kutta_condition
 Computes the influence of a Panel2D with a given doublet strength ``\\phi`` at a location (x, y).
 """
 doublet_potential(panel :: Panel2D, φ :: Real, x :: Real, y :: Real) = 
-    @timeit "Doublet Potential" doublet_potential(φ, affine_2D(x, y, point1(panel)..., panel_angle(panel))..., 0, panel_length(panel))
+    @timeit "Doublet Potential" doublet_potential(φ, affine_2D(x, y, point1(panel)..., panel_angle(panel))..., 0., panel_length(panel))
 
 """
     source_potential(panel, σ, x, y)
 
 Computes the influence of a Panel2D with a given source strength ``\\sigma`` at a location (x, y).
 """
-function source_potential(panel :: Panel2D, strength :: Real, x :: Real, y :: Real)
-    pan = affine_2D(x, y, point1(panel)..., panel_angle(panel))
-    @timeit "Source Potential" source_potential(strength, pan..., 0., panel_length(panel))
-end
+source_potential(panel :: Panel2D, strength :: Real, x :: Real, y :: Real) =
+    @timeit "Source Potential" source_potential(strength, affine_2D(x, y, point1(panel)..., panel_angle(panel))..., 0., panel_length(panel))
 
 """
     doublet_influence(panel_1, panel_2)
