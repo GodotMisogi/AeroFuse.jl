@@ -1,31 +1,226 @@
 ### A Pluto.jl notebook ###
-# v0.12.16
+# v0.12.17
 
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ b7cd7250-2f3c-11eb-260d-1f81b64e7cbe
-mass_takeoff(m_vtol_prop, m_fixed_prop, m_payload, ff_batt, ff_struct, ff_subsys, ff_avionics) = (m_vtol_prop + m_fixed_prop + m_payload) / (1 - (ff_batt + ff_struct + ff_subsys + ff_avionics))
+# ╔═╡ 6c04f612-4083-11eb-017a-0f6e29496ddd
+using Plots
 
-# ╔═╡ 98de4950-3581-11eb-0495-05b7d0c5c57c
-mass_residual(m_to, m_vtol_prop, m_fixed_prop, m_payload, mf_batt, mf_struct, mf_subsys, mf_avionics) = mto * (1 - (mf_batt + mf_struct + mf_subsys + mf_avionics)) - (m_vtol_prop + m_fixed_prop + m_payload)
+# ╔═╡ 5c4d5f00-4083-11eb-31ad-d70d906e4825
+md"""
+# Initial Weight Estimation
+"""
 
-# ╔═╡ 6e5a5bc0-3b75-11eb-27d1-dd09cf16244c
-# mass_residual(40, _, _, 10, 0.3, 0.07)
+# ╔═╡ 4e29ad60-408e-11eb-152e-ebf08ea514b0
+md"![](https://godot-bloggy.xyz/WeightEstimation.svg)"
 
-# ╔═╡ 7bf733b0-3b76-11eb-1cfc-6f7225ac79d4
-mf_battery(t, m_to, E_spec, η_batt, f_usable) = t * P / (m_to * E_spec * η_batt * f_usable)
+# ╔═╡ 2ede8630-4087-11eb-0f6b-4ddfbf717726
+md"## Maximum Takeoff Weight"
 
-# ╔═╡ 95f0ad50-3b76-11eb-03c7-ad71559db97b
-mf_hover_battery(t_hover, E_spec, FM, η_elec, η_batt, f_usable, disk_loading, g = 9.81, ρ = 1.225) = t_hover * g / (E_spec * FM * η_elec * η_batt * f_usable) * √(disk_loading / 2ρ)
+# ╔═╡ 4f4c117e-4087-11eb-1e9e-270a27337237
+md"""
+```math
+W_0 = \frac{W_\text{payload} + W_\text{crew}}{1 - FFs - W_e / W_0}, \quad FFs =  \prod_i W_{f_i} / W_0 
+```
+"""
 
-# ╔═╡ e406e950-3b76-11eb-1ea2-15bd92e22b1f
+# ╔═╡ c2c891f0-4083-11eb-1164-f78e70d8cd88
+maximum_takeoff_weight(WPL, Wcrew, WfWTO, WeWTO) = (WPL + Wcrew)/(1 - WfWTO - WeWTO)
 
+# ╔═╡ 49a58902-4087-11eb-27ae-61c820955b7a
+md"Gravitational acceleration constant"
+
+# ╔═╡ 82e6a100-4086-11eb-0ee0-197bf26577e1
+g = 9.81;
+
+# ╔═╡ 68635df2-4086-11eb-2c0c-fd451c7480b9
+md"### Takeoff"
+
+# ╔═╡ bc194170-4082-11eb-3f1b-27d8e7490b12
+takeoffWF = 0.97;
+
+# ╔═╡ 706b07f0-4086-11eb-358d-9f296a4bf423
+md"### Climb"
+
+# ╔═╡ 4df075f0-4083-11eb-0f64-c5fd6c41772f
+climbWF = 0.985 ;
+
+# ╔═╡ 4f886920-4085-11eb-3720-45a3b9fa0a37
+md"### Cruise"
+
+# ╔═╡ 9682d72e-4084-11eb-269d-0bc3efc1c8e2
+cruise_weight_fraction(range, SFC, V, L_D) = exp(-range * SFC / (V * L_D) )
+
+# ╔═╡ 8f3f4b10-4085-11eb-36f7-0de9a630e3e3
+begin
+	#At 35000 ft speed of sound = 295 m/s
+	M = 0.84 					# Cruise speed in Mach
+	V = M * 295       			# Cruise speed in m/s
+	cruise_SFC = 0.5/3600 		# TSFC at cruise in 1/secs
+	R1 = 2800 * 1000    		# Range of cruise segment 1
+	LD_max = 16.                # Maximum L/D ratio
+	LD_cruise = LD_max * 0.866  # L/D ratio at cruise
+end;
+
+# ╔═╡ 36093a82-4083-11eb-346a-23528f9cd4d5
+cruise1WF = cruise_weight_fraction(R1, cruise_SFC, V, LD_cruise)
+
+# ╔═╡ 54b79ec0-4085-11eb-3386-41981e608e45
+md"### Loiter"
+
+# ╔═╡ bcb4fa50-4084-11eb-3474-618341f94e86
+loiter_weight_fraction(endurance, SFC, L_D) = exp(-endurance * SFC / L_D)
+
+# ╔═╡ 3afb38b0-4086-11eb-31c0-cd32f6feeed6
+begin
+	E1 = 3 * 3600
+	loiter_SFC = 0.4/3600  
+end;
+
+# ╔═╡ 3b336710-4083-11eb-3990-8ff6fcd8c645
+loiter1WF = loiter_weight_fraction(E1, loiter_SFC, LD_max)   
+
+# ╔═╡ 2db14640-4086-11eb-34ab-7982af7dd0b5
+md"Range of cruise segment 2:"
+
+# ╔═╡ 27ee5c20-4086-11eb-25e6-3ff461fb24dd
+R2 = 2800 * 1000;
+
+# ╔═╡ f8b34110-4084-11eb-2b95-2fb540813285
+cruise2WF = cruise_weight_fraction(R2, cruise_SFC, V, LD_cruise)
+
+# ╔═╡ 191983f0-4086-11eb-0575-7d769008814e
+md"Endurance of loiter segment 2 in seconds:"
+
+# ╔═╡ 1197d2d0-4086-11eb-2134-4bf31d078ddc
+E2 = 0.33 * 3600;
+
+# ╔═╡ 07ecf590-4085-11eb-1181-633ab1ab1e4e
+loiter2WF = loiter_weight_fraction(E2, loiter_SFC, LD_max)
+
+# ╔═╡ 0ec73130-4087-11eb-064c-f5695f578c69
+md"### Landing"
+
+# ╔═╡ 4950af0e-4083-11eb-2ec1-1dd821c489b4
+landingWF = 0.995;
+
+# ╔═╡ 158ee120-4087-11eb-188b-f13671908d3f
+md"### Fuel Weight Fractions"
+
+# ╔═╡ 08eb3da0-4083-11eb-2eac-45e93f3e99f4
+fuel_weight_fraction(fracs, a = 1.00) = a*(1 - prod(fracs))
+
+# ╔═╡ 2816e82e-4085-11eb-33d7-93dac498b4ff
+md"Create list of fuel fractions"
+
+# ╔═╡ 0e95bdc0-4083-11eb-267c-07ddf6161aa6
+FFs = [takeoffWF, climbWF, cruise1WF, loiter1WF, cruise2WF, loiter2WF, landingWF]
+
+# ╔═╡ 13bc67e2-4083-11eb-1b48-d5fa25a4cd95
+WfWTO = fuel_weight_fraction(FFs)
+
+# ╔═╡ 3bd51360-4085-11eb-240e-e189c1d79c9c
+md"### Empty Weight Fraction"
+
+# ╔═╡ c6bbec32-4083-11eb-32a6-93488d9abc07
+function empty_weight_raymer(WTO, A, B)
+	WeWTO = A * WTO^B   # Raymer's regression
+	We = WeWTO * WTO     # Empty weight calculation
+	return WeWTO
+end
+
+# ╔═╡ cbe0c190-4083-11eb-020e-bbf9f4f7d67a
+function empty_weight_roskam(WTO, A, B)
+	logWe = (np.log10(WTO) - A) / B    # Roskam's regression
+	We = 10^logWe
+	WeWTO = We/WTO                     # Empty weight fraction calculation
+	return We, WeWTO
+end
+
+# ╔═╡ bb6c4652-4087-11eb-0818-2515b67bccc0
+md"Regression coefficients"
+
+# ╔═╡ d9628ce0-4083-11eb-2d1d-c951a4c14425
+begin
+	A = 0.88
+	B = -0.07
+end
+
+# ╔═╡ 089674a0-4088-11eb-1534-ef06a695815f
+function compute_mtow(W_PL, W_crew, A, B, num_iters = 20, err = 1.0, tol = 1e-6)
+	WTO = W_PL + W_crew 	# Initial value (guess)
+	WTOarray = [WTO]
+	errArray = []
+	for i in 1:num_iters
+		WeWTO = empty_weight_raymer(WTO, A, B)
+		newWTO = maximum_takeoff_weight(W_PL, W_crew, WfWTO, WeWTO)
+		err = abs(newWTO-WTO)/WTO
+		WTO = newWTO
+		WTOarray = push!(WTOarray, WTO)
+		errArray = push!(errArray, err)
+		err < tol ? break : continue
+	end
+	
+	return WTOarray, errArray
+end
+
+# ╔═╡ 89e9ac40-4086-11eb-3ca3-f1352e475899
+begin
+	WPL = 4500g                           # Payload weight in N
+	Wcrew = 360g                          # Crew weight in N
+end;
+
+# ╔═╡ 05618530-4084-11eb-325c-1fe833f089dc
+WTOs, errors = compute_mtow(WPL, Wcrew, A, B, 8)
+
+# ╔═╡ 58da9050-408c-11eb-310e-6106a7b11edd
+begin
+	plot1 = plot(WTOs, label = :none, ylabel = "MTOW", xlabel = "Iterations")
+	plot2 = plot(errors, label = :none, ylabel = "Error", xlabel = "Iterations")
+	plot(plot1, plot2, layout = (2,1))
+end
 
 # ╔═╡ Cell order:
-# ╠═b7cd7250-2f3c-11eb-260d-1f81b64e7cbe
-# ╠═98de4950-3581-11eb-0495-05b7d0c5c57c
-# ╠═6e5a5bc0-3b75-11eb-27d1-dd09cf16244c
-# ╠═7bf733b0-3b76-11eb-1cfc-6f7225ac79d4
-# ╠═95f0ad50-3b76-11eb-03c7-ad71559db97b
-# ╠═e406e950-3b76-11eb-1ea2-15bd92e22b1f
+# ╟─5c4d5f00-4083-11eb-31ad-d70d906e4825
+# ╟─4e29ad60-408e-11eb-152e-ebf08ea514b0
+# ╟─2ede8630-4087-11eb-0f6b-4ddfbf717726
+# ╟─4f4c117e-4087-11eb-1e9e-270a27337237
+# ╠═c2c891f0-4083-11eb-1164-f78e70d8cd88
+# ╟─49a58902-4087-11eb-27ae-61c820955b7a
+# ╠═82e6a100-4086-11eb-0ee0-197bf26577e1
+# ╟─68635df2-4086-11eb-2c0c-fd451c7480b9
+# ╠═bc194170-4082-11eb-3f1b-27d8e7490b12
+# ╟─706b07f0-4086-11eb-358d-9f296a4bf423
+# ╠═4df075f0-4083-11eb-0f64-c5fd6c41772f
+# ╟─4f886920-4085-11eb-3720-45a3b9fa0a37
+# ╠═9682d72e-4084-11eb-269d-0bc3efc1c8e2
+# ╠═8f3f4b10-4085-11eb-36f7-0de9a630e3e3
+# ╠═36093a82-4083-11eb-346a-23528f9cd4d5
+# ╟─54b79ec0-4085-11eb-3386-41981e608e45
+# ╠═bcb4fa50-4084-11eb-3474-618341f94e86
+# ╠═3afb38b0-4086-11eb-31c0-cd32f6feeed6
+# ╠═3b336710-4083-11eb-3990-8ff6fcd8c645
+# ╟─2db14640-4086-11eb-34ab-7982af7dd0b5
+# ╠═27ee5c20-4086-11eb-25e6-3ff461fb24dd
+# ╠═f8b34110-4084-11eb-2b95-2fb540813285
+# ╟─191983f0-4086-11eb-0575-7d769008814e
+# ╠═1197d2d0-4086-11eb-2134-4bf31d078ddc
+# ╠═07ecf590-4085-11eb-1181-633ab1ab1e4e
+# ╟─0ec73130-4087-11eb-064c-f5695f578c69
+# ╠═4950af0e-4083-11eb-2ec1-1dd821c489b4
+# ╟─158ee120-4087-11eb-188b-f13671908d3f
+# ╠═08eb3da0-4083-11eb-2eac-45e93f3e99f4
+# ╟─2816e82e-4085-11eb-33d7-93dac498b4ff
+# ╠═0e95bdc0-4083-11eb-267c-07ddf6161aa6
+# ╠═13bc67e2-4083-11eb-1b48-d5fa25a4cd95
+# ╟─3bd51360-4085-11eb-240e-e189c1d79c9c
+# ╠═c6bbec32-4083-11eb-32a6-93488d9abc07
+# ╠═cbe0c190-4083-11eb-020e-bbf9f4f7d67a
+# ╠═bb6c4652-4087-11eb-0818-2515b67bccc0
+# ╠═d9628ce0-4083-11eb-2d1d-c951a4c14425
+# ╠═089674a0-4088-11eb-1534-ef06a695815f
+# ╠═89e9ac40-4086-11eb-3ca3-f1352e475899
+# ╠═05618530-4084-11eb-325c-1fe833f089dc
+# ╟─58da9050-408c-11eb-310e-6106a7b11edd
+# ╟─6c04f612-4083-11eb-017a-0f6e29496ddd

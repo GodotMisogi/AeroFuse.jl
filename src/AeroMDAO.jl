@@ -13,6 +13,8 @@ using TimerOutputs
 include("Tools/MathTools.jl")
 using .MathTools: tupvector, fwdsum, fwddiv, cosine_dist, weighted_vector, vectarray, slope, splitat, adj3, cosine_interp, columns
 
+export tupvector
+
 
 ## Non-dimensionalization
 #==========================================================================================#
@@ -56,6 +58,6 @@ export solve_case
 
 include("Tools/plot_tools.jl")
 
-export plot_panels, plot_streamlines, trace_surface, trace_panels, trace_coords, trace_streamlines, panel_splits
+export plot_panels, plot_surface, plot_streamlines, trace_surface, trace_panels, trace_coords, trace_streamlines, panel_splits
 
 end

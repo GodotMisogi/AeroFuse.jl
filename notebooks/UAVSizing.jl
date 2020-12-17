@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.16
+# v0.12.17
 
 using Markdown
 using InteractiveUtils
@@ -20,8 +20,6 @@ begin
 	using Rotations
 	using Revise
 	using AeroMDAO
-	# import DarkMode
-	# DarkMode.enable(theme="material-darker")
 end
 
 # ╔═╡ bc905010-32f6-11eb-0557-91743b6fe9e3
@@ -47,11 +45,6 @@ S_{HT} = \frac{C_{HT} \bar{c}_w S_w}{l_{HT}}
 """
 
 # ╔═╡ 304ebdb0-3091-11eb-0603-dd2131ef1226
-"""
-	horizontal_tail_area(volume_ratio, wing_mac, wing_area, tail_arm)
-
-Computes horizontal tail area.
-"""
 horizontal_tail_area(V_h, mac_w, S_w, l_h) = V_h * mac_w * S_w / l_h;
 
 # ╔═╡ 4da4b550-32ed-11eb-1709-1903b01b356c
@@ -290,28 +283,20 @@ begin
 end
 
 # ╔═╡ 885f6532-33c1-11eb-1b81-e1a81e959643
-leading_vr, trailing_vr = tupvector.(wing_bounds(vtail_right));
-
-# ╔═╡ 9587c5e0-33c1-11eb-18fc-37cfab1575b1
-vtail2_coords = tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, b_h / 2, 0) for coords in [ leading_vr; trailing_vr[end:-1:1]; leading_vr[1] ])[:];
-
-# ╔═╡ 89f866a0-33bf-11eb-1747-17f59bb9537a
-leading_vl, trailing_vl = tupvector.(wing_bounds(vtail_left));
-
-# ╔═╡ afaa5d40-33bf-11eb-1e82-03fba93e308a
-vtail1_coords = tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, -b_h / 2, 0) for coords in [ leading_vl; trailing_vl[end:-1:1]; leading_vl[1] ])[:];
-
-# ╔═╡ 16984710-332f-11eb-2285-d587da9090e4
-leading_h, trailing_h = tupvector.(wing_bounds(htail));
-
-# ╔═╡ b7ae8e30-33a6-11eb-1b08-89654bc14885
-htail_coords = [ (x_CG + l_h - 0.25 * c_h, 0, b_v) .+ coords for coords in [ leading_h; trailing_h[end:-1:1]; leading_h[1] ] ][:];
-
-# ╔═╡ 459de1c0-3305-11eb-3e21-03899420918d
-leading, trailing = tupvector.(wing_bounds(wing));
+begin
+	leading, trailing = tupvector.(wing_bounds(wing))
+	leading_h, trailing_h = tupvector.(wing_bounds(htail))
+	leading_vr, trailing_vr = tupvector.(wing_bounds(vtail_right))
+	leading_vl, trailing_vl = tupvector.(wing_bounds(vtail_left))
+end;
 
 # ╔═╡ 8f44ca92-33a6-11eb-315f-5b87f51ef53c
-wing_coords = [ (x_w, 0, 0) .+ coords for coords in [ leading; trailing[end:-1:1]; leading[1] ] ][:]
+begin
+	wing_coords = [ (x_w, 0, 0) .+ coords for coords in [ leading; trailing[end:-1:1]; leading[1] ] ][:]
+	htail_coords = [ (x_CG + l_h - 0.25 * c_h, 0, b_v) .+ coords for coords in [ leading_h; trailing_h[end:-1:1]; leading_h[1] ] ][:]
+	vtail1_coords = tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, -b_h / 2, 0) for coords in [ leading_vl; trailing_vl[end:-1:1]; leading_vl[1] ])[:]
+	vtail2_coords = tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, b_h / 2, 0) for coords in [ leading_vr; trailing_vr[end:-1:1]; leading_vr[1] ])[:]
+end;
 
 # ╔═╡ 29972a70-32ee-11eb-3aaa-a3b2f600223f
 hint(text) = Markdown.MD(Markdown.Admonition("hint", "Hint", [text]));
@@ -395,17 +380,11 @@ side_view = plot(cuck, camera = (0, 0))
 # ╟─82248a1e-33fc-11eb-3cc1-9b4ae3379bef
 # ╟─c06dff70-32f6-11eb-2a38-8b82b14cebee
 # ╟─c4943450-34c9-11eb-07f6-ab75cfb6de6e
-# ╠═792a3af0-3479-11eb-37af-dda9a6268480
-# ╠═d31ac9a0-34c2-11eb-1dd0-0be54d9e8e1d
-# ╠═8523e000-34c3-11eb-0591-d5669fed462b
-# ╠═8f44ca92-33a6-11eb-315f-5b87f51ef53c
-# ╠═b7ae8e30-33a6-11eb-1b08-89654bc14885
-# ╠═afaa5d40-33bf-11eb-1e82-03fba93e308a
-# ╠═9587c5e0-33c1-11eb-18fc-37cfab1575b1
-# ╠═4bc3ffa0-33b7-11eb-0525-659b21f803eb
-# ╠═885f6532-33c1-11eb-1b81-e1a81e959643
-# ╠═89f866a0-33bf-11eb-1747-17f59bb9537a
-# ╠═16984710-332f-11eb-2285-d587da9090e4
-# ╠═459de1c0-3305-11eb-3e21-03899420918d
+# ╟─792a3af0-3479-11eb-37af-dda9a6268480
+# ╟─d31ac9a0-34c2-11eb-1dd0-0be54d9e8e1d
+# ╟─8523e000-34c3-11eb-0591-d5669fed462b
+# ╟─8f44ca92-33a6-11eb-315f-5b87f51ef53c
+# ╟─4bc3ffa0-33b7-11eb-0525-659b21f803eb
+# ╟─885f6532-33c1-11eb-1b81-e1a81e959643
 # ╟─29972a70-32ee-11eb-3aaa-a3b2f600223f
 # ╟─2c39cf70-33b7-11eb-0de3-236d16a6f5ea
