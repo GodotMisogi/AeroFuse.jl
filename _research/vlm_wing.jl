@@ -10,7 +10,7 @@ using AeroMDAO
 foil = naca4((4,4,1,2))
 wing_right  = HalfWing(Foil.(foil for i ∈ 1:3),     # Foils
                         [0.18, 0.16, 0.08],         # Chords
-                        [2., 0., -2.],  ;            # Twists
+                        [2., 0., -2.],              # Twists
                         [0.5, 0.5],                 # Spans
                         [0., 11.3],                 # Dihedrals
                         [1.14, 8.])                 # Sweeps
