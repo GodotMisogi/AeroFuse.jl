@@ -48,10 +48,10 @@ trace_horses = trace_panels(horseshoe_panels[:], Γs[:])
 trace_cambers = trace_panels(camber_panels[:])
 trace_wing = trace_surface(wing)
 
-PlotlyJS.plot([ 
-                  [ trace for trace in trace_horses ]...,
-                  [ trace for trace in trace_cambers ]...,
-                  [ trace for trace in trace_streams ]...,
-                  # [ trace for trace in trace_wing ]...,
-              ],
-              layout)
+plot([ 
+		[ trace for trace in trace_horses ]...,
+		[ trace for trace in trace_cambers ]...,
+		#   [ trace for trace in trace_streams ]...,
+		[ trace for trace in trace_wing ]...,
+	],
+	layout)

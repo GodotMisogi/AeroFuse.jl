@@ -2,7 +2,7 @@ module NonDimensional
 
 using LinearAlgebra: norm
 
-export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_dynamics
+export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_dynamics, reynolds_number
 
 """
 Computes the dynamic pressure given density ρ and speed V.
@@ -87,5 +87,8 @@ function print_dynamics(CL, CDi, CY, Cl, Cm, Cn, p̄, q̄, r̄)
     # println("Yawing Rate Coefficient")
     println("r̄: $r̄")
 end
+
+reynolds_number(ρ, V, c, μ) = ρ * V * c / μ
+reynolds_number(V, c, ν) = V * c / ν
 
 end

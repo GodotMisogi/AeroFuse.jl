@@ -93,7 +93,7 @@ source_matrix(panels_1 :: AbstractVector{Panel2D}, panels_2 :: AbstractVector{Pa
 
 Creates the vector of source strengths for the Dirichlet boundary condition ``\\sigma = \\vec U_{\\infty} \\cdot \\hat{n}`` given Panel2Ds and a Uniform2D.
 """
-source_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = dot.((Ref ∘ velocity)(freestream), panel_normal.(panels))
+source_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = dot.((Scalar ∘ velocity)(freestream), panel_normal.(panels))
 
 """
     source_strengths(panels, freestream)
@@ -156,7 +156,7 @@ end
 function panel_velocities(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D, doublet_strengths :: AbstractVector{<: Real})
     @timeit "Panel Pairs" diff_pans = panel_pairs(panels)
     @timeit "Strength Diffs" diff_strs = -diff(midgrad(doublet_strengths), dims = 2)
-    @timeit "Tangential Velocities" tan_dot_u = dot.((Ref ∘ velocity)(freestream), panel_tangent.(panels))
+    @timeit "Tangential Velocities" tan_dot_u = dot.((Scalar ∘ velocity)(freestream), panel_tangent.(panels))
 
     @timeit "Sum Velocities" diff_strs ./ diff_pans .+ tan_dot_u 
 end

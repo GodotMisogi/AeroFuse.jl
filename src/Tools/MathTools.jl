@@ -14,7 +14,7 @@ using Interpolations
 
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
-columns(M) = [ view(M, :, i) for i in 1:size(M, 2) ]
+columns(M) = tuple([ view(M, :, i) for i in 1:size(M, 2) ]...)
 
 #-------------HASKELL MASTER RACE--------------#
 
@@ -57,6 +57,12 @@ field << obj = getfield(obj, field)
 
 # Convert homogeneous struct entries to lists
 structtolist(x) = [ name << x for name ∈ (fieldnames ∘ typeof)(x) ]
+
+function svectors(x:: Vector{SVector{N,T}}, ::Val{N}) where {T,N}
+    size(x,1) == N || error("sizes mismatch")
+    isbitstype(T) || error("use for bitstypes only")
+    reinterpret(SMatrix{T}, reshape(size(x)[1], N))
+end
 
 #--------------------------Convenient math------------------------#
 

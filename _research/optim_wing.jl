@@ -2,6 +2,7 @@
 using Revise
 using StaticArrays
 using AeroMDAO
+using TimerOutputs
 using Optim
 using PlotlyJS
 
@@ -43,9 +44,14 @@ sweeps = [0., 0., 0., 0.]
 V = 10.
 α = 0.
 
-wing = make_wing(digits, chords, twists, spans, dihedrals, sweeps)
-cdi = optimize_cdi(digits, chords, twists, spans, dihedrals, sweeps, V, α)
-lifter = cons_lift(digits, chords, twists, spans, dihedrals, sweeps, V, α)
+reset_timer!()
+
+@timeit "Making Wing" wing = make_wing(digits, chords, twists, spans, dihedrals, sweeps)
+@timeit "Computing CDi" cdi = optimize_cdi(digits, chords, twists, spans, dihedrals, sweeps, V, α)
+@timeit "Computing Lift" lifter = cons_lift(digits, chords, twists, spans, dihedrals, sweeps, V, α)
+
+print_timer()
+
 println("CDi: $cdi")
 println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, V), projected_area(wing)))")
 
@@ -59,15 +65,39 @@ u_bound = fill(Inf, length(chords))
 bound_chords = TwiceDifferentiableConstraints(l_bound, u_bound)
 
 lc = [5.0]; uc = [5.0]
-lift_constraint = TwiceDifferentiableConstraints(x -> cons_lift(digits, x, twists, spans, dihedrals, sweeps, V, α), l_bound, u_bound, lc, uc, :forward)
 
-resi_chords = optimize(optimize_chords,
-                        lift_constraint,
-                        chords,							# Initial value
-                        IPNewton(),
-                        autodiff = :forward,
-                        Optim.Options(
-                                        # extended_trace = true,
-                                        show_trace = true
-                                     )
-                        )
+function lifter!(c, x) 
+    c = cons_lift(digits, x, twists, spans, dihedrals, sweeps, V, α)
+end
+
+lift_constraint = TwiceDifferentiableConstraints(lifter, l_bound, u_bound, lc, uc, :forward)
+
+reset_timer!()
+
+@timeit "Optimizing" res_chord = optimize(optimize_chords,
+                                          bound_chords,
+                                        #   lift_constraint,
+                                          chords,							# Initial value
+                                          IPNewton(),
+                                          # autodiff = :forward,
+                                          Optim.Options(
+                                                          # extended_trace = true,
+                                                          show_trace = true
+                                                          )
+                                          )
+
+##
+print_timer()
+
+##
+layout = Layout(title = "Vortex Lattice",
+                scene=attr(aspectratio=attr(x=1,y=1,z=1)),
+                )
+
+opt_wing = make_wing(digits, res_chord.minimizer, twists, spans, dihedrals, sweeps)
+trace_wing = trace_surface(opt_wing)
+
+plot([ 
+		[ trace for trace in trace_wing ]...,
+	],
+	layout)

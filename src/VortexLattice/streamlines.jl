@@ -11,10 +11,10 @@ stream_velocity(r :: SVector{3, <: Real}, horseshoes :: AbstractVector{Horseshoe
 Computes the streamlines from a given starting point, a Freestream, Horseshoes and their associated strengths Γs with a specified length of the streamline and number of evaluation points.
 """
 function streamlines(point :: SVector{3, <: Real}, freestream :: Freestream, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, length :: Real, num_steps :: Integer)
-    streamlines = fill(SVector{3, Real}(0,0,0), num_steps)
+    streamlines = fill(point, num_steps)
     V = velocity(freestream)
-    streamlines[1] = point
-    cuck = x -> stream_velocity(x, horseshoes, Γs, V, freestream.Ω)
+    # streamlines[1] = point
+    cuck(x) = stream_velocity(x, horseshoes, Γs, V, freestream.Ω)
     @timeit "Iterating" for i ∈ 2:num_steps
         @timeit "Updating Velocity" update = cuck(streamlines[i-1])
         @timeit "Adding Streamline" streamlines[i] = streamlines[i-1] .+ (update / norm(update) * length / num_steps)

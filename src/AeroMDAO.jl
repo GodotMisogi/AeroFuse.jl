@@ -20,7 +20,7 @@ using .MathTools: tupvector, fwdsum, fwddiv, cosine_dist, weighted_vector, vecta
 include("Tools/NonDimensional.jl")
 using .NonDimensional
 
-export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_dynamics
+export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_dynamics, reynolds_number
 
 ## Wing geometry
 #==========================================================================================#
@@ -56,6 +56,6 @@ export solve_case
 
 include("Tools/plot_tools.jl")
 
-export plot_panels, plot_streamlines, trace_surface, trace_panels, trace_coords, trace_streamlines
+export plot_panels, plot_streamlines, trace_surface, trace_panels, trace_coords, trace_streamlines, panel_splits
 
 end
