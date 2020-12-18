@@ -112,7 +112,7 @@ begin
 	wing_right = HalfWing(wing_foils,		# Foils
 						 [0.2, 0.2, 0.1], 	# Chords
 						 [0., 0., 0.],		# Twists
-						 [1.705 / 2, 0.1 ], # Spans
+						 [1.705 / 2, 0.1], # Spans
 						 [0., 60.], 		# Dihedrals
 						 [0., 60.]) 		# Sweeps
 	wing = Wing(wing_right, wing_right)
@@ -143,15 +143,10 @@ md"""
 Propeller parameters
 """
 
-# ╔═╡ 34a80ae0-32f0-11eb-1dc3-07cae4d044ce
-md"""
-Iterations:
-"""
-
 # ╔═╡ 3d4d2870-3263-11eb-3e80-1f3f5db82243
 begin
 	D_VTOL_prop = 0.36
-	D_FW_prop = 0.42
+	D_FW_prop = 0.16
 	c_prop = D_VTOL_prop * 0.15
 end;
 
@@ -201,6 +196,11 @@ function tail_sizing(num_iter, l_h, l_v, V_V, V_H, S_w, b_w, mac_w, λ_v, Λ_LE_
 	S_hs, S_vs, l_h, l_v, error_S_h, error_S_v
 end;
 
+# ╔═╡ 34a80ae0-32f0-11eb-1dc3-07cae4d044ce
+md"""
+Iterations:
+"""
+
 # ╔═╡ fdc41530-32ce-11eb-22c0-a9bd5a40611d
 begin
 	# Vertical tail parameters
@@ -220,8 +220,7 @@ begin
 end
 
 # ╔═╡ f926e9c0-32f7-11eb-1e53-3ba8e9f52056
-S_hs, S_vs, l_h, l_v, error_h, error_v = 
-tail_sizing(num, x_VT - x_CG, x_VT - x_CG, V_V, V_H, S_w, b_w, mac_w, λ_v, deg2rad(Λ_LE_v));
+S_hs, S_vs, l_h, l_v, error_h, error_v = tail_sizing(num, x_VT - x_CG, x_VT - x_CG, V_V, V_H, S_w, b_w, mac_w, λ_v, deg2rad(Λ_LE_v));
 
 # ╔═╡ 8503ef50-332b-11eb-2953-03dc7826b417
 begin
@@ -298,16 +297,6 @@ begin
 	vtail2_coords = tupvector(RotX(π/2) * SVector(coords...) .+ SVector(x_VT, b_h / 2, 0) for coords in [ leading_vr; trailing_vr[end:-1:1]; leading_vr[1] ])[:]
 end;
 
-# ╔═╡ 29972a70-32ee-11eb-3aaa-a3b2f600223f
-hint(text) = Markdown.MD(Markdown.Admonition("hint", "Hint", [text]));
-
-# ╔═╡ 62f75bd0-32f0-11eb-1792-3354cd63c165
-hint(md"""
-	\begin{equation} 
-	AR = b^2 / S 
-	\end{equation}
-	""")
-
 # ╔═╡ 2c39cf70-33b7-11eb-0de3-236d16a6f5ea
 circle3D(r) = [ (r*cos(θ), r*sin(θ), 0) for θ in 0:1e-2:2π ];
 
@@ -361,15 +350,14 @@ side_view = plot(cuck, camera = (0, 0))
 # ╟─8cfe52f0-3267-11eb-2b11-23458f7f2966
 # ╠═6ca96a60-3304-11eb-150f-71f4ce3a2918
 # ╠═7f48f152-3263-11eb-36d1-cfd2a24b2cd9
-# ╟─62f75bd0-32f0-11eb-1792-3354cd63c165
 # ╠═f11e9b60-3266-11eb-0c1f-fd0eaea6cc5d
 # ╠═8d97a350-30d3-11eb-307f-cd48a69b8300
 # ╟─98a56ace-3267-11eb-3627-ed82836734c2
+# ╠═3d4d2870-3263-11eb-3e80-1f3f5db82243
 # ╠═0fdf3ec2-32cf-11eb-399f-cb4281c72cc8
 # ╠═322ba6c0-32d0-11eb-1557-dd4a0c9510b1
 # ╠═4d9a5b40-32d0-11eb-3977-c3a6511f65d1
 # ╟─34a80ae0-32f0-11eb-1dc3-07cae4d044ce
-# ╠═3d4d2870-3263-11eb-3e80-1f3f5db82243
 # ╠═fdc41530-32ce-11eb-22c0-a9bd5a40611d
 # ╠═f926e9c0-32f7-11eb-1e53-3ba8e9f52056
 # ╠═8503ef50-332b-11eb-2953-03dc7826b417
@@ -386,5 +374,4 @@ side_view = plot(cuck, camera = (0, 0))
 # ╟─8f44ca92-33a6-11eb-315f-5b87f51ef53c
 # ╟─4bc3ffa0-33b7-11eb-0525-659b21f803eb
 # ╟─885f6532-33c1-11eb-1b81-e1a81e959643
-# ╟─29972a70-32ee-11eb-3aaa-a3b2f600223f
 # ╟─2c39cf70-33b7-11eb-0de3-236d16a6f5ea

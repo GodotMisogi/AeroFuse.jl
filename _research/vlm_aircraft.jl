@@ -12,7 +12,7 @@ wing_foil = naca4((4,4,1,2))
 wing_right = HalfWing(Foil.(wing_foil for i ∈ 1:3), 
                       [0.18, 0.16, 0.08],
                       [0., 0., 0.],
-                      [0.5, 0.5],
+                      [0.5, 0.2],
                       [0., 11.3],
                       [1.14, 8.])
 
@@ -98,7 +98,7 @@ norm_Γs = [ 2 * (Γ - min_Γ) / Γ_range - 1 for Γ ∈ Γs ];
 using PlotlyJS
 
 layout = Layout(
-                title = "Penguins",
+                title = "Vortex Lattice Aircraft",
                 scene=attr(aspectmode="manual", aspectratio=attr(x=1,y=1,z=1)),
                 # zlim=(-0.1, 5.0)
                 )
@@ -114,7 +114,7 @@ trace_horses = trace_panels(horseshoe_panels, Γs)
 trace_cambers = trace_panels(camber_panels)
 
 plot([ 
-        # [ trace for trace in trace_cambers ]...,
+        [ trace for trace in trace_cambers ]...,
         [ trace for trace in trace_streams ]...,
         [ trace for trace in trace_horses ]...,
      ], 

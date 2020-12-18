@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.16
+# v0.12.17
 
 using Markdown
 using InteractiveUtils
@@ -11,7 +11,7 @@ begin
 	using Optim
 	using Plots
 	gr()
-end
+end;
 
 # ╔═╡ aa0d9882-4093-11eb-1038-f3aa407bb8e9
 md"# Airfoil Shape Design"
@@ -48,8 +48,21 @@ begin
 		 label = "Initial Surface", aspectratio = 1)
 end
 
+# ╔═╡ 087e19f0-40f1-11eb-01b0-b9a3691c39ef
+md"""
+```math
+\begin{gather}
+\text{minimize} & |{C_L - C_{L_0}}| & \text{Target lift coefficient } C_{L_0} \\
+\text{subject to} & \mathbf x & \text{Shape variables}
+\end{gather}
+```
+"""
+
 # ╔═╡ 57bc7c80-4094-11eb-3e8b-1b496ce43efb
-cl0 = 1.2               # Target lift coefficient
+cl0 = 0.5;
+
+# ╔═╡ 8264f5d0-40f2-11eb-378e-01f8cac5cc7c
+target_cl = x -> abs(optimize_CST(x, α, n_upper, le) - cl0)
 
 # ╔═╡ e8a268a0-4093-11eb-02d8-07eee9ba7d15
 l_bound = [ fill(1e-12, length(α_u0)); fill(-Inf, length(α_l0)) ]
@@ -58,19 +71,24 @@ l_bound = [ fill(1e-12, length(α_u0)); fill(-Inf, length(α_l0)) ]
 u_bound = [ fill(Inf, length(α_u0)); fill(5e-1, length(α_l0)) ]
 
 # ╔═╡ ec6e16a2-4093-11eb-1904-23cad91aff99
-# resi_CST = optimize(x -> abs(optimize_CST(x, α, n_upper, le) - cl0), 
-					# l_bound, u_bound,			# Bounds
-					# α_ul0,						# Initial value
-					# Fminbox(GradientDescent()),
-					# autodiff = :forward,
-					# Optim.Options(show_trace = true)
-					# )
+resi_CST = optimize(target_cl, 
+					l_bound, u_bound,			# Bounds
+					α_ul0,						# Initial value
+					Fminbox(GradientDescent()),	# Optimizer
+					autodiff = :forward,		
+					Optim.Options(show_trace = true)
+					)
+
+# ╔═╡ e34b0360-4108-11eb-085b-d11a73ecf61d
+md"""### Banana Design"""
 
 # ╔═╡ 0afe7d80-4094-11eb-0830-1d3a7e58c1db
 begin
-		CST_opt = kulfan_CST(resi_CST.minimizer[1:n_upper], resi_CST.minimizer[n_upper+1:end], dzs, le, 80)
+	CST_opt = kulfan_CST(resi_CST.minimizer[1:n_upper],
+						 resi_CST.minimizer[n_upper+1:end], 
+						 dzs, le, 80)
 
-	fig = plot(aspectratio = 1, dpi = 300)
+	fig = plot(aspectratio = 1)
 	plot!(CST_test[:,1], CST_test[:,2], 
 			label = "Initial Surface")
 	plot!(CST_opt[:,1], CST_opt[:,2], 
@@ -167,16 +185,19 @@ end
 # println("Camber Cl: $camber_cl")
 
 # ╔═╡ Cell order:
-# ╠═aa0d9882-4093-11eb-1038-f3aa407bb8e9
+# ╟─aa0d9882-4093-11eb-1038-f3aa407bb8e9
 # ╠═9c8e3e2e-4093-11eb-3e43-85d1fead00e5
 # ╟─a4f74210-4093-11eb-10b3-c3ec247080d3
 # ╠═b618f06e-4093-11eb-17af-f918c12aa8da
 # ╠═bc6f40f0-4093-11eb-30a1-17ffd1f0d74b
 # ╠═c5f9ba60-4093-11eb-0ea9-d5a3bf495234
 # ╠═d7d91370-4093-11eb-0be4-01686a5cec7d
+# ╟─087e19f0-40f1-11eb-01b0-b9a3691c39ef
+# ╠═8264f5d0-40f2-11eb-378e-01f8cac5cc7c
 # ╠═57bc7c80-4094-11eb-3e8b-1b496ce43efb
 # ╠═e8a268a0-4093-11eb-02d8-07eee9ba7d15
 # ╠═2b8228e0-4094-11eb-174e-7b1f2d3fa6ad
 # ╠═ec6e16a2-4093-11eb-1904-23cad91aff99
+# ╟─e34b0360-4108-11eb-085b-d11a73ecf61d
 # ╠═0afe7d80-4094-11eb-0830-1d3a7e58c1db
 # ╟─8ed3fdc0-4093-11eb-1743-332b9934cbf8
