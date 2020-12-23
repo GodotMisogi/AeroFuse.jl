@@ -23,10 +23,18 @@ print_info(wing)
 ρ = 1.225
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
 Ω = SVector(0.0, 0.0, 0.0)
-uniform = Freestream(10.0, 5.0, -5.0, Ω)
-@time nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10, print = true) 
+uniform = Freestream(10.0, 0.0, 5.0, Ω)
+@time nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10) 
 
 # print_timer();
+
+# Optionally print data
+begin
+    println("\nNearfield:")
+    print_dynamics(nf_coeffs...)
+    println("\nFarfield:")
+    print_dynamics(ff_coeffs...)
+end
 
 ##
 using PlotlyJS

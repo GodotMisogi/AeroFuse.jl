@@ -22,7 +22,7 @@ function solve_case(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :
     force, drag, moment, horseshoes, Γs
 end
 
-function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; span_num :: Integer = 15, chord_num :: Integer = 5, print = true)
+function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; span_num :: Integer = 15, chord_num :: Integer = 5)
     vel = VortexLattice.velocity(freestream)
 
     # Experimental: Symmetry condition
@@ -53,14 +53,6 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
     @timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, trans_rates, freestream.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
 
     @timeit "Farfield Coefficients" farfield_coeffs = aerodynamic_coefficients(trefftz_force, trefftz_moment, trans_rates, freestream.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
-
-    # # Optionally print data
-    @timeit "Printing" if print 
-        println("Nearfield:") 
-        print_dynamics(nearfield_coeffs...)
-        println("\nFarfield:")
-        print_dynamics(farfield_coeffs...)
-    end
 
     nearfield_coeffs, farfield_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs
 end

@@ -2,9 +2,20 @@
 
 trefftz_potential(r_i :: SVector{3, <: Real}, r_j :: SVector{3, <: Real}, Γ_j :: Real, U_hat :: SVector{3, <: Real}) = let r = r_i .- r_j; Γ_j / 2π * U_hat × r / norm(r)^2 end
 
-∇φ(r :: SVector{3, <: Real}, Γ :: Real, trefftz_lines, U_hat :: SVector{3, <: Real}) = sum(trefftz_potential(r, r_jp½, Γ, U_hat) for r_jp½ ∈ point2.(trefftz_lines))
+∇φ(r :: SVector{3, <: Real}, points, Γs :: AbstractVector{<: Real}, U_hat :: SVector{3, <: Real}) = sum(trefftz_potential.(Ref(r), points, Γs, Ref(U_hat)))
 
-∂φ∂n(trefftz_lines :: AbstractVector{Line}, Γs :: AbstractVector{<: Real}, normals, U_hat) = dot.((∇φ(center(rline_i), Γ_i, trefftz_lines, U_hat) for (rline_i, Γ_i) ∈ zip(trefftz_lines, Γs)), normals)
+∂φ∂n(trefftz_line :: Line, points, Γs :: AbstractVector{<: Real}, normal, U_hat) = dot(∇φ(center(trefftz_line), points, Γs, U_hat), normal)
+
+function ∂φ∂ns(trefftz_lines :: AbstractVector{Line}, Δφs :: AbstractVector{<: Real}, normals, U_hat) 
+    points =    [ point1.(trefftz_lines)..., (point2 ∘ last)(trefftz_lines) ]
+    new_Γs =    [  
+                    0 - Δφs[1];                 # Γ_½
+                    Δφs[1:end-1] .- Δφs[2:end]; # Γ_{j - ½}, j ∈ 1...N
+                    Δφs[end] - 0                # Γ_{N + ½}
+                ]
+
+    ∂φ∂n.(trefftz_lines, Ref(points), Ref(new_Γs), normals, Ref(U_hat))
+end
 
 """
     trefftz_forces(Γs, horseshoes, freestream, ρ)
@@ -14,32 +25,25 @@ Computes the aerodynamic forces in the Trefftz plane normal to the freestream gi
 function trefftz_forces(Γs, horseshoes :: AbstractArray{Horseshoe}, freestream :: Freestream, ρ :: Real)
 
     # Project trailing edge horseshoes' bound legs into Trefftz plane along wind axes
-    @timeit "Sum Γs" Δφs = sum(Γs, dims = 1)[:]
-    trefftz_lines = body_to_wind_axes.(bound_leg.(horseshoes[end,:][:]), Ref(freestream))
+    U_hat           = SVector(1, 0, 0)
+    trefftz_lines   = body_to_wind_axes.(bound_leg.(horseshoes[end,:][:]), Ref(freestream))
     trefftz_vectors = vector.(trefftz_lines)
-
-    U_hat = SVector(1, 0, 0)
-
-    # Projection of "wake" = trailing edge in Trefftz plane
-    trefftz_projs = trefftz_vectors .- dot.(Ref(U_hat), trefftz_vectors) .* Ref(U_hat)
-
-    # Normal vectors of "wake" = trailing edge in Trefftz plane
-    normals = Ref(U_hat) .× trefftz_projs
+    trefftz_projs   = trefftz_vectors .- dot.(Ref(U_hat), trefftz_vectors) .* Ref(U_hat)
+    normals         = Ref(U_hat) .× trefftz_projs
 
     # Compute directional derivatives of doublets in the normal direction
-    @timeit "∂φ/∂n" ∂φ_∂n = ∂φ∂n(trefftz_lines, Δφs, normals, U_hat)
+    @timeit "Sum Γs" Δφs = sum(Γs, dims = 1)[:]
+    @timeit "∂φ/∂n" ∂φ_∂n = ∂φ∂ns(trefftz_lines, Δφs, normals, U_hat)
 
     # Compute forces    
     @timeit "Dihedrals" dihedrals = [ atan(vec[3], vec[2]) for vec in trefftz_projs ]
-    println(rad2deg.(dihedrals))
-    @timeit "Projected Leg Norms" Δs = norm.(trefftz_vectors)
+    @timeit "Projected Leg Norms" Δs = norm.(trefftz_projs)
     
-    pots_lens = Δφs .* Δs
-    D_i = -0.5 * ρ * sum(pots_lens .* ∂φ_∂n)
-    Y = - ρ * freestream.mag * sum(pots_lens .* sin.(dihedrals))
-    L = ρ * freestream.mag * sum(pots_lens .* cos.(dihedrals))
+    ΔφsΔs   = Δφs .* Δs
+    D_i     = -0.5 * ρ * sum(ΔφsΔs .* ∂φ_∂n)
+    Y       = - ρ * freestream.mag * sum(ΔφsΔs .* sin.(dihedrals))
+    L       = ρ * freestream.mag * sum(ΔφsΔs .* cos.(dihedrals))
 
-    println(SVector(D_i, Y, L))
     SVector(D_i, Y, L)
 end 
 
