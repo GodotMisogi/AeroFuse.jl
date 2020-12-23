@@ -28,11 +28,9 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
     # Experimental: Symmetry condition
     symmetry = false
     # if typeof(wing) == Wing
-    #     println("Symmetric Case")
+    #     println("Symmetric Case - \n")
     #     symmetry, wing = wing.left === wing.right ? (true, wing.right) : (false, wing)
     # end
-
-    # reset_timer!()
 
     # Compute panels
     @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
@@ -43,7 +41,7 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
     # Compute near-field forces
     @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs[:], horseshoes[:], freestream, r_ref, ρ)
 
-    # @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
+    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
 
     force, moment = sum(geom_forces), sum(geom_moments)
     @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, freestream)
@@ -64,7 +62,7 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
         print_dynamics(farfield_coeffs...)
     end
 
-    nearfield_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs
+    nearfield_coeffs, farfield_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs
 end
 
 function solve_case(component :: Dict{<: Aircraft, Tuple{Integer, Integer}}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225, print = true)

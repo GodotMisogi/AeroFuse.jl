@@ -16,6 +16,13 @@ Converts coordinates from body axes to wind axes with angles ``\\alpha,~ \\beta`
 body_to_wind_axes(coords, α :: Real, β :: Real) = RotZY{Float64}(β, α) * coords
 
 """
+    body_to_wind_axes(coords, α, β)
+
+Converts coordinates from body axes to wind axes with angles ``\\alpha,~ \\beta``.
+"""
+body_to_wind_axes(vector :: SVector{3, <: Real}, freestream :: Freestream) = body_to_wind_axes(vector, freestream.α, freestream.β)
+
+"""
     reflect_xz(vector)
 
 Reflects the y-coordinate of a given SVector about the x-z plane.
@@ -41,7 +48,7 @@ stability_flip(vector :: SVector{3, <: Real}) = SVector(-vector[1], vector[2], -
 
 Transforms a Line from body to wind axes in a given Freestream.
 """
-body_to_wind_axes(line :: Line, freestream :: Freestream) = Line(body_to_wind_axes(line.r1, freestream), body_to_wind_axes(line.r2, freestream)) 
+body_to_wind_axes(line :: Line, freestream :: Freestream) = Line(body_to_wind_axes(line.r1, freestream.α, freestream.β), body_to_wind_axes(line.r2, freestream.α, freestream.β)) 
 
 """
     body_to_stability_axes(force, moment, freestream)

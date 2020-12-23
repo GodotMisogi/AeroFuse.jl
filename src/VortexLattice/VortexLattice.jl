@@ -128,10 +128,6 @@ include("farfield.jl")
 
 export farfield_dynamics
 
-"""
-Placeholder. Unsure whether to change this to a generic moment computation function.
-"""
-moments(horseshoes :: AbstractVector{Horseshoe}, forces, r_ref) = [ (bound_leg_center(vortex_ring) .- r_ref) × force for (force, vortex_ring) ∈ zip(forces, horseshoes) ]
 
 ## Post-processing
 #==========================================================================================#

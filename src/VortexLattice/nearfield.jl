@@ -44,6 +44,11 @@ Computes the near-field drag given the sum of the local Kutta-Jowkowski forces a
 nearfield_drag(force, freestream :: Freestream) = dot(force, velocity(freestream) / freestream.mag)
 
 """
+Placeholder. Unsure whether to change this to a generic moment computation function.
+"""
+moments(horseshoes :: AbstractVector{Horseshoe}, forces, r_ref) = [ (bound_leg_center(vortex_ring) .- r_ref) × force for (force, vortex_ring) ∈ zip(forces, horseshoes) ]
+
+"""
 Computes the nearfield forces and associated moments.
 """
 function nearfield_dynamics(Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{Horseshoe}, freestream :: Freestream, r_ref, ρ = 1.225)
