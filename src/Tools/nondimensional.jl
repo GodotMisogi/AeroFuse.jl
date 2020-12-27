@@ -7,7 +7,7 @@ export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient
 """
 Computes the dynamic pressure given density ρ and speed V.
 """
-dynamic_pressure(ρ, V) = 0.5 * ρ * V^2
+dynamic_pressure(ρ, V) = 1/2 * ρ * V^2
 
 """
 Computes the non-dimensional force coefficient corresponding to standard aerodynamics.
@@ -32,10 +32,12 @@ pressure_coefficient(force, ρ, V, S) = force_coefficient(force, dynamic_pressur
 """
 Computes the incompressible pressure coefficient given a magnitude and a velocity vector.
 """
-pressure_coefficient(mag, vels) = 1 - norm(vels)^2 / mag^2
+pressure_coefficient(mag, vels) = 1 - (norm(vels) / mag)^2
 
 """
-Prints the relevant aerodynamic/flight dynamics information.
+    aerodynamic_coefficients(force, moment, drag, Ω, V, S, B, c, ρ)
+
+Prints the relevant aerodynamic/flight dynamics information given a net force and moment with reference parameters.
 """
 function aerodynamic_coefficients(force, moment, Ω, V, S, b, c, ρ)
     q = dynamic_pressure(ρ, V)
@@ -55,7 +57,9 @@ function aerodynamic_coefficients(force, moment, Ω, V, S, b, c, ρ)
 end
 
 """
-Prints the relevant aerodynamic/flight dynamics information with a separate entry for drag.
+    aerodynamic_coefficients(force, moment, drag, Ω, V, S, B, c, ρ)
+
+Prints the relevant aerodynamic/flight dynamics information given a net force and moment with reference parameters, and a separate entry for drag computation.
 """
 function aerodynamic_coefficients(force, moment, drag, Ω, V, S, b, c, ρ)
     q = dynamic_pressure(ρ, V)

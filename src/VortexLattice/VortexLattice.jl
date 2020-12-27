@@ -10,7 +10,7 @@ using TimerOutputs
 
 include("../Tools/MathTools.jl")
 
-using .MathTools: accumap, structtolist, three_quarter_point, quarter_point
+using .MathTools: accumap, fwddiff, structtolist, three_quarter_point, quarter_point
 
 ## Freestream
 #==========================================================================================#

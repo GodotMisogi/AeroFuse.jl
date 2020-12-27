@@ -36,9 +36,9 @@ function optimize_cdi_chords(chords...)
     Ω = SVector(0.0, 0.0, 0.0)
     uniform = Freestream(10.0, 0.0, 0.0, Ω)
     ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 6, print = false)
+    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
 
-    cdi = coeffs[2]
+    cdi = ff_coeffs[2]
 end
 
 function optimize_cdi_naca4(m, p, t, c)
@@ -47,9 +47,9 @@ function optimize_cdi_naca4(m, p, t, c)
     Ω = SVector(0.0, 0.0, 0.0)
     uniform = Freestream(10.0, 0.0, 0.0, Ω)
     ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 6, print = false)
+    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
 
-    cdi = coeffs[2]
+    cdi = ff_coeffs[2]
 end
 
 # Lift constraint function
@@ -59,10 +59,10 @@ function chords_lift(chords...)
     Ω = SVector(0.0, 0.0, 0.0)
     uniform = Freestream(10.0, 0.0, 0.0, Ω)
     ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 6, print = false)
+    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
 
-    cl = coeffs[1]
-    lift = 0.5 * ρ * uniform.mag^2 * projected_area(wing) * cl
+    cl = ff_coeffs[1]
+    lift = 1/2 * ρ * uniform.mag^2 * projected_area(wing) * cl
 end
 
 function naca4_lift(m, p, t, c)
@@ -71,10 +71,10 @@ function naca4_lift(m, p, t, c)
     Ω = SVector(0.0, 0.0, 0.0)
     uniform = Freestream(10.0, 0.0, 0.0, Ω)
     ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 6, print = false)
+    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
 
-    cl = coeffs[1]
-    lift = 0.5 * ρ * uniform.mag^2 * projected_area(wing) * cl
+    cl = ff_coeffs[1]
+    lift = 1/2 * ρ * uniform.mag^2 * projected_area(wing) * cl
 end
 
 ## Test runs
@@ -108,7 +108,7 @@ register(chord_design, :optimize_cdi_chords, num_dv, optimize_cdi_chords, autodi
 register(chord_design, :chords_lift, num_dv, chords_lift, autodiff = true)
 
 @NLobjective(chord_design, Min, optimize_cdi_chords(chords...))
-@NLconstraint(chord_design, chords_lift(chords...) == 1)
+@NLconstraint(chord_design, chords_lift(chords...) == 5)
 
 ## Run optimization
 optimize!(chord_design)

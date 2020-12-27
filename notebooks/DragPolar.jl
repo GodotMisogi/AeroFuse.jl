@@ -21,7 +21,7 @@ So this is how text rendering works, sheesh.
 """
 
 # ╔═╡ b979b830-2f3b-11eb-2c1f-95035ea2a15b
-dynamic_pressure(ρ, V) = 0.5 * ρ * V^2
+dynamic_pressure(ρ, V) = 1/2 * ρ * V^2
 
 # ╔═╡ 7e002da0-2f42-11eb-33b8-edab9d45e9ee
 md"""

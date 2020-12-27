@@ -1,4 +1,4 @@
-function solve_case(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :: AbstractVector{Panel3D}, freestream :: Freestream, Ω = SVector(0., 0., 0.), r_ref = SVector(0.25, 0., 0.), ρ = 1.225; print = true, symmetry = false)
+function solve_case(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :: AbstractVector{Panel3D}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; symmetry = false)
     vel = VortexLattice.velocity(freestream)
 
     # Solve system with normalised velocities
@@ -7,17 +7,14 @@ function solve_case(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :
     # Compute near-field forces
     @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
 
-    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels))
-    # println(cps)
-
     force, moment = sum(geom_forces), sum(geom_moments)
     @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, freestream)
     drag = nearfield_drag(force, freestream)
 
-    # @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
+    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels))
 
-    # # Compute non-dimensional coefficients
-    # @timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, trans_rates, freestream.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
+    # Compute farfield forces
+    @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
 
     force, drag, moment, horseshoes, Γs
 end
@@ -35,18 +32,19 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
     # Compute panels
     @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
     
-    # Solve system with normalised velocities
+    # Solve system
     @timeit "Solve System" Γs, horseshoes = reshape.(solve_horseshoes(horseshoe_panels[:], camber_panels[:], freestream, symmetry), size(horseshoe_panels)...)
 
-    # Compute near-field forces
+    # Compute near-field dynamics
     @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs[:], horseshoes[:], freestream, r_ref, ρ)
+    force, moment = sum(geom_forces), sum(geom_moments)
+    drag = nearfield_drag(force, freestream)
 
     @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
 
-    force, moment = sum(geom_forces), sum(geom_moments)
     @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, freestream)
-    drag = nearfield_drag(force, freestream)
 
+    # Compute farfield dynamics
     @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
 
     # Compute non-dimensional coefficients
@@ -57,24 +55,25 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
     nearfield_coeffs, farfield_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs
 end
 
-function solve_case(component :: Dict{<: Aircraft, Tuple{Integer, Integer}}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225, print = true)
+function solve_case(components :: Dict{<: Aircraft, Tuple{Integer, Integer}}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225)
     vel = VortexLattice.velocity(freestream)
     # Compute panels
-    @timeit "Meshing" meshes = [ vlmesh_wing(comp, mesh...) for (comp, mesh) in component ] 
+    @timeit "Meshing" meshes = [ vlmesh_wing(comp, size_panels...) for (comp, size_panels) in components ] 
     @timeit "Make Panels" horseshoe_panels, camber_panels = first.(meshes), last.(meshes)
     
     # Solve system with normalised velocities
     @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels[:], camber_panels[:], freestream, symmetry)
 
-    # Compute near-field forces
+    # Compute nearfield dynamics
     @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
-
-    # @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
-
     force, moment = sum(geom_forces), sum(geom_moments)
-    @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, freestream.Ω, freestream)
     drag = nearfield_drag(force, freestream)
 
+    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
+
+    @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, freestream.Ω, freestream)
+
+    # Compute farfield dynamics
     @timeit "Farfield Dynamics" trefftz_force, trefftz_moment = farfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
 
     # Compute non-dimensional coefficients
@@ -82,15 +81,7 @@ function solve_case(component :: Dict{<: Aircraft, Tuple{Integer, Integer}}, fre
 
     @timeit "Farfield Coefficients" farfield_coeffs = aerodynamic_coefficients(trefftz_force, trefftz_moment, trans_rates, freestream.mag, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
 
-    # # Optionally print data
-    @timeit "Printing" if print 
-        println("Nearfield:") 
-        print_dynamics(nearfield_coeffs...)
-        println("\nFarfield:")
-        print_dynamics(farfield_coeffs...)
-    end
-
-    nearfield_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs
+    nearfield_coeffs, farfield_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs
 end
 
 function solve_case(foil :: Foil, freestream :: Uniform2D, num_panels :: Integer = 60)

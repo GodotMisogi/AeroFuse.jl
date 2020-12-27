@@ -164,7 +164,7 @@ end;
 # ╔═╡ 4d9a5b40-32d0-11eb-3977-c3a6511f65d1
 begin
 	# CG and vertical tail locations
-	x_CG = 0.5 * (x_PR - x_PF)
+	x_CG = 1/2 * (x_PR - x_PF)
 	x_VT = x_PR + D_VTOL_prop / 2 + c_prop
 end;
 

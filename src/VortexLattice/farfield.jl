@@ -1,4 +1,5 @@
-#---------------------------Farfield evaluations---------------------------#
+## Farfield force evaluation
+#==========================================================================================#
 
 trefftz_potential(r_i :: SVector{3, <: Real}, r_j :: SVector{3, <: Real}, Γ_j :: Real, U_hat :: SVector{3, <: Real}) = let r = r_i .- r_j; Γ_j / 2π * U_hat × r / norm(r)^2 end
 
@@ -6,16 +7,13 @@ trefftz_potential(r_i :: SVector{3, <: Real}, r_j :: SVector{3, <: Real}, Γ_j :
 
 ∂φ∂n(trefftz_line :: Line, points, Γs :: AbstractVector{<: Real}, normal, U_hat) = dot(∇φ(center(trefftz_line), points, Γs, U_hat), normal)
 
-function ∂φ∂ns(trefftz_lines :: AbstractVector{Line}, Δφs :: AbstractVector{<: Real}, normals, U_hat) 
-    points =    [ point1.(trefftz_lines)..., (point2 ∘ last)(trefftz_lines) ]
-    new_Γs =    [  
-                    0 - Δφs[1];                 # Γ_½
-                    Δφs[1:end-1] .- Δφs[2:end]; # Γ_{j - ½}, j ∈ 1...N
-                    Δφs[end] - 0                # Γ_{N + ½}
-                ]
+function ∂φ∂ns(trefftz_lines :: AbstractVector{Line}, Δφs :: AbstractVector{<: Real}, normals, U_hat)
+    new_Γs = fwddiff([ 0; -Δφs; 0 ])
+    pts = points(trefftz_lines)
 
-    ∂φ∂n.(trefftz_lines, Ref(points), Ref(new_Γs), normals, Ref(U_hat))
+    ∂φ∂n.(trefftz_lines, Ref(pts) , Ref(new_Γs), normals, Ref(U_hat))
 end
+
 
 """
     trefftz_forces(Γs, horseshoes, freestream, ρ)
@@ -23,7 +21,6 @@ end
 Computes the aerodynamic forces in the Trefftz plane normal to the freestream given horseshoes, their associated strengths Γs, and a density ρ.
 """
 function trefftz_forces(Γs, horseshoes :: AbstractArray{Horseshoe}, freestream :: Freestream, ρ :: Real)
-
     # Project trailing edge horseshoes' bound legs into Trefftz plane along wind axes
     U_hat           = SVector(1, 0, 0)
     trefftz_lines   = body_to_wind_axes.(bound_leg.(horseshoes[end,:][:]), Ref(freestream))
@@ -39,10 +36,10 @@ function trefftz_forces(Γs, horseshoes :: AbstractArray{Horseshoe}, freestream 
     @timeit "Dihedrals" dihedrals = [ atan(vec[3], vec[2]) for vec in trefftz_projs ]
     @timeit "Projected Leg Norms" Δs = norm.(trefftz_projs)
     
-    ΔφsΔs   = Δφs .* Δs
-    D_i     = -0.5 * ρ * sum(ΔφsΔs .* ∂φ_∂n)
-    Y       = - ρ * freestream.mag * sum(ΔφsΔs .* sin.(dihedrals))
-    L       = ρ * freestream.mag * sum(ΔφsΔs .* cos.(dihedrals))
+    ΔφsΔs = Δφs .* Δs
+    D_i   = -1/2 * ρ * sum(ΔφsΔs .* ∂φ_∂n)
+    Y     = - ρ * freestream.mag * sum(ΔφsΔs .* sin.(dihedrals))
+    L     = ρ * freestream.mag * sum(ΔφsΔs .* cos.(dihedrals))
 
     SVector(D_i, Y, L)
 end 

@@ -53,7 +53,7 @@ md"""
 thrust_to_weight_fw_cruise(q, k, CD0, wing_loading) = q * CD0 / (wing_loading) + k / q * wing_loading;
 
 # ╔═╡ 1b50c100-3b7d-11eb-1886-f7c9833720da
-dynamic_pressure(ρ, V) = 0.5 * ρ * V^2;
+dynamic_pressure(ρ, V) = 1/2 * ρ * V^2;
 
 # ╔═╡ 9e25b9d0-3b7f-11eb-1588-2d40cc56f40c
 span_efficiency_factor(e, AR) = 1 / (π * e * AR);
@@ -151,7 +151,7 @@ md"""
 """
 
 # ╔═╡ 25094f50-3b7d-11eb-2ab4-93c376e1b193
-wing_loading_stall_speed(V_stall, CL_max, ρ = 1.225) = 0.5 * ρ * V_stall^2 * CL_max;
+wing_loading_stall_speed(V_stall, CL_max, ρ = 1.225) = 1/2 * ρ * V_stall^2 * CL_max;
 
 # ╔═╡ f6ac2640-3b7d-11eb-02de-21ef4c02ecac
 begin

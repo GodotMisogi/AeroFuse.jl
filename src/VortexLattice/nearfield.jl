@@ -13,14 +13,14 @@ trailing_legs_velocities(r, line :: Line, Γ; direction = SVector(1., 0., 0.)) =
 """
 Placeholder.
 """
-trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = trailing_legs_velocities(r, horseshoe.bound_leg, Γ, direction = V)
+trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = trailing_legs_velocities(r, bound_leg(horseshoe), Γ, direction = V)
 
 """
 	midpoint_velocity(r, Ω, horseshoes, Γs, U)
 
 Evaluates the induced velocity by the trailing legs at the midpoint of a given Horseshoe ``r``, by summing over the velocities of Horseshoes with vortex strengths ``\\Gamma``s, rotation rates ``\\Omega``, and a freestream flow vector ``U`` in the aircraft reference frame.
 """
-midpoint_velocity(r :: SVector{3, <: Real}, Ω :: SVector{3, <: Real}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, U) = sum(trailing_velocity(r, horseshoe, Γ, -normalize(U)) for (horseshoe, Γ) ∈ zip(horseshoes, Γs)) .- U .- Ω × r
+midpoint_velocity(r :: SVector{3, <: Real}, Ω :: SVector{3, <: Real}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, U) = sum(trailing_velocity.(Ref(r), horseshoes, Γs, Ref(-normalize(U)))) .- U .- Ω × r
 
 """
 	nearfield_forces(Γs, horseshoes, U, Ω, ρ)
@@ -30,9 +30,9 @@ Computes the nearfield forces via the local Kutta-Jowkowski given an array of ho
 function nearfield_forces(Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{Horseshoe}, U, Ω, ρ)
     Γ_shoes = zip(Γs, horseshoes)
     @timeit "Summing Forces" [ 
-      let r_i = bound_leg_center(horseshoe_i), l_i = bound_leg_vector(horseshoe_i); 
-      ρ * Γ_i * midpoint_velocity(r_i, Ω, horseshoes, Γs, U) × l_i end 
-      for (Γ_i, horseshoe_i) ∈ Γ_shoes 
+      let r = bound_leg_center(horseshoe), l = bound_leg_vector(horseshoe); 
+      ρ * Γ * midpoint_velocity(r, Ω, horseshoes, Γs, U) × l end 
+      for (Γ, horseshoe) ∈ Γ_shoes 
     ]
 end
 

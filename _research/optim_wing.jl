@@ -19,9 +19,9 @@ end
 function run_case(wing, V, α)
     uniform = Freestream(V, α, 0.0)
     ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 6, print = false)
+    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
 
-    coeffs
+    ff_coeffs
 end
 
 # Objective function
@@ -75,8 +75,8 @@ lift_constraint = TwiceDifferentiableConstraints(lifter, l_bound, u_bound, lc, u
 reset_timer!()
 
 @timeit "Optimizing" res_chord = optimize(optimize_chords,
+                                          lift_constraint,
                                           bound_chords,
-                                        #   lift_constraint,
                                           chords,							# Initial value
                                           IPNewton(),
                                           # autodiff = :forward,
@@ -95,9 +95,9 @@ layout = Layout(title = "Vortex Lattice",
                 )
 
 opt_wing = make_wing(digits, res_chord.minimizer, twists, spans, dihedrals, sweeps)
-trace_wing = trace_surface(opt_wing)
+wing_trace = trace_surface(opt_wing)
 
 plot([ 
-		[ trace for trace in trace_wing ]...,
+		[ trace for trace in wing_trace ]...,
 	],
 	layout)
