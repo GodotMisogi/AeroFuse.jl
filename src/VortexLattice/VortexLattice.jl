@@ -58,25 +58,25 @@ velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: 
 """
     mirror_velocity(r, horseshoe, Γ, V_hat)
 
-Computes the induced velocity, using the method of images for a symmetric case in the x-z plane, at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
+Computes the induced velocity, using the method of images for a symmetric case in the ``x``-``z`` plane, at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
 """
-function mirror_velocity(collocation_point :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real})
-    mirror_point = reflect_xz(collocation_point)
-    mir_vel = (reflect_xz ∘ velocity)(mirror_point, horseshoe, Γ, V_hat)
+function mirror_velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real})
+    mirror_point = reflect_xz(r)
+    mir_vel = velocity(mirror_point, horseshoe, Γ, V_hat)
 end
 
 """
-    influence_coefficient(collocation_point, horseshoe, panel_normal, V_hat, symmetry)
+    influence_coefficient(r, horseshoe, panel_normal, V_hat, symmetry)
 
-Computes the influence coefficient of the velocity of a Horseshoe with trailing lines in a given direction ``\\hat V``` at a collocation point projected to a normal vector, with an option for symmetry in the x-z plane.
+Computes the influence coefficient of the velocity of a Horseshoe with trailing lines in a given direction ``\\hat V`` at a point ``r`` projected to a normal vector, with an option for symmetry in the ``x``-``z`` plane.
 """
-function influence_coefficient(collocation_point :: SVector{3, <: Real}, horseshoe :: Horseshoe, panel_normal :: SVector{3, <: Real}, V_hat :: SVector{3, <: Real}, symmetry = false) 
+function influence_coefficient(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, panel_normal :: SVector{3, <: Real}, V_hat :: SVector{3, <: Real}, symmetry = false) 
     if symmetry
-        col_vel = velocity(collocation_point, horseshoe, 1., V_hat)
-        mir_vel = mirror_velocity(collocation_point, horseshoe, 1., V_hat)
+        col_vel = velocity(r, horseshoe, 1., V_hat)
+        mir_vel = (reflect_xz ∘ mirror_velocity)(r, horseshoe, 1., V_hat)
         return dot(col_vel .+ mir_vel, panel_normal)
     else 
-        return dot(velocity(collocation_point, horseshoe, 1., V_hat), panel_normal)
+        return dot(velocity(r, horseshoe, 1., V_hat), panel_normal)
     end
 end
 
@@ -86,7 +86,7 @@ end
 """
     influence_matrix(colpoints, normals, horseshoes, V_hat, symmetry)
 
-Assembles the Aerodynamic Influence Coefficient (AIC) matrix given horseshoes, collocation points, associated normal vectors, a unit vector representing the freestream, with an option for symmetry in the x-z plane.
+Assembles the Aerodynamic Influence Coefficient (AIC) matrix given horseshoes, collocation points, associated normal vectors, a unit vector representing the freestream, with an option for symmetry in the ``x``-``z`` plane.
 """
 influence_matrix(colpoints, normals, horseshoes :: AbstractVector{Horseshoe}, V_hat :: SVector{3, <: Real}, symmetry = false) = @timeit "Matrix Construction" [ @timeit "Influence Coefficient" influence_coefficient(colpoint_i, horsie_j, normal_i, V_hat, symmetry) for (colpoint_i, normal_i) ∈ zip(colpoints, normals), horsie_j ∈ horseshoes ]
 
@@ -100,7 +100,7 @@ boundary_condition(velocities, normals) = @timeit "Dotting" dot.(velocities, nor
 """
     solve_horseshoes(horseshoe_panels, camber_panels, freestream, symmetry) 
 
-Solves the AIC matrix with the boundary condition given Panel3Ds and a Freestream, with the option to use the symmetry of the problem in the x-z plane.
+Solves the AIC matrix with the boundary condition given Panel3Ds and a Freestream, with the option to use the symmetry of the problem in the ``x``-``z`` plane.
 """
 function solve_horseshoes(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :: AbstractVector{Panel3D}, freestream :: Freestream, symmetry = false) 
     U = aircraft_velocity(freestream)
