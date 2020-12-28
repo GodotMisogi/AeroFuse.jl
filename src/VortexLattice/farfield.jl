@@ -7,21 +7,18 @@ trefftz_potential(r_i :: SVector{3, <: Real}, r_j :: SVector{3, <: Real}, Γ_j :
 
 ∂φ∂n(trefftz_line :: Line, points, Γs :: AbstractVector{<: Real}, normal, U_hat) = dot(∇φ(center(trefftz_line), points, Γs, U_hat), normal)
 
-function ∂φ∂ns(trefftz_lines :: AbstractVector{Line}, Δφs :: AbstractVector{<: Real}, normals, U_hat)
-    new_Γs = fwddiff([ 0; -Δφs; 0 ])
-    pts = points(trefftz_lines)
-
-    ∂φ∂n.(trefftz_lines, Ref(pts) , Ref(new_Γs), normals, Ref(U_hat))
-end
-
+∂φ∂ns(trefftz_lines :: AbstractVector{Line}, Δφs :: AbstractVector{<: Real}, normals, U_hat) = ∂φ∂n.(trefftz_lines, (Ref ∘ points)(trefftz_lines), (Ref ∘ fwddiff)([ 0; -Δφs; 0 ]), normals, Ref(U_hat))
 
 """
     trefftz_forces(Γs, horseshoes, freestream, ρ)
 
 Computes the aerodynamic forces in the Trefftz plane normal to the freestream given horseshoes, their associated strengths Γs, and a density ρ.
 """
-function trefftz_forces(Γs, horseshoes :: AbstractArray{Horseshoe}, freestream :: Freestream, ρ :: Real)
-    # Project trailing edge horseshoes' bound legs into Trefftz plane along wind axes
+function trefftz_forces(Γs, horseshoes :: AbstractArray{Horseshoe}, freestream :: Freestream, ρ :: Real, symmetry = false)
+    # Symmetry condition
+    # horseshoes, Γs = symmetry ? [ horseshoes[:,end:1:-1] horseshoes ], [ Γs[:, end:1:-1] Γs ] : horseshoes, Γs
+
+    # Project trailing edge horseshoes' bound legs into Trefftz plane along wind axes   
     U_hat           = SVector(1, 0, 0)
     trefftz_lines   = body_to_wind_axes.(bound_leg.(horseshoes[end,:][:]), Ref(freestream))
     trefftz_vectors = vector.(trefftz_lines)

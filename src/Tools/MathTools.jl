@@ -4,19 +4,13 @@ using StaticArrays
 using Base.Iterators
 using Base: product
 using Interpolations
-# import Base: +, *
-
-# Tuple algebra
-# +(a :: Union{SVector, Tuple}, b :: Union{SVector, Tuple}) = a .+ b
-# *(a :: Union{SVector, Tuple}, b :: Union{SVector, Tuple}) = a .* b
-# -(a :: Tuple, b :: Tuple) = a .- b
-# /(a :: Tuple, b :: Tuple) = a ./ b
 
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
 columns(M) = tuple([ view(M, :, i) for i in 1:size(M, 2) ]...)
 
-#-------------HASKELL MASTER RACE--------------#
+## Haskell Master Race
+#===========================================================================#
 
 # Sieg Heil!
 
@@ -45,7 +39,8 @@ Base.IteratorSize(::Type{<:UnfoldingIterator}) = Base.SizeUnknown()
 
 Base.IteratorEltype(::Type{<:UnfoldingIterator}) = Base.EltypeUnknown()
 
-#--------------------HACKS----------------------#
+## Renaming math operations
+#===========================================================================#
 
 """
 "Lenses" to access subfields on lists of objects.
@@ -58,19 +53,17 @@ field << obj = getfield(obj, field)
 # Convert homogeneous struct entries to lists
 structtolist(x) = [ name << x for name ∈ (fieldnames ∘ typeof)(x) ]
 
-function svectors(x:: Vector{SVector{N,T}}, ::Val{N}) where {T,N}
-    size(x,1) == N || error("sizes mismatch")
-    isbitstype(T) || error("use for bitstypes only")
-    reinterpret(SMatrix{T}, reshape(size(x)[1], N))
-end
-
-#--------------------------Convenient math------------------------#
+## Renaming math operations
+#===========================================================================#
 
 ⊗(A, B) = kron(A, B)
 
-# ×(xs, ys) = product(xs, ys)
+×(xs, ys) = product(xs, ys)
 dot(V₁, V₂) = sum(V₁ .* V₂)
 # ×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
+
+## Basic transformations/geometry
+#===========================================================================#
 
 # Transforms (x, y) to the coordinate system with (x_s, y_s) as origin oriented at α_s.
 affine_2D(x, y, x_s, y_s, α_s) = rotation(x - x_s, y - y_s, α_s)
@@ -79,16 +72,28 @@ rotation(x, y, angle) = SVector(x * cos(angle) + y * sin(angle), -x * sin(angle)
 
 slope(x1, y1, x2, y2) = (y2 - y1) / (x2 - x1)
 
-#---------------------Improving readablity and functionality with arrays------------------------#
+## Array conversions
+#===========================================================================#
 
 tupvector(xs) = [ tuple(x...) for x in xs ]
 tuparray(xs) = tuple.(eachcol(xs)...)
 vectarray(xs) = SVector.(eachcol(xs)...)
 
+## Difference opettions
+#===========================================================================#
+
+fwdsum(xs) = xs[2:end] .+ xs[1:end-1]
+fwddiff(xs) = xs[2:end] .- xs[1:end-1]
+fwddiv(xs) = xs[2:end] ./ xs[1:end-1]
+ord2diff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
+
+adj3(xs) = [ xs[1:end-2,:] xs[2:end-1,:] xs[3:end,:] ]
+
+# Central differencing schema for pairs except at the trailing edge
+
 stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
 parts(xs) = let adj = stencil(xs, 1); adj[1,:], adj[end,:] end
 
-# Central differencing schema for pairs except at the trailing edge
 function midgrad(xs) 
     first_two_pairs, last_two_pairs = permutedims.(parts(xs))
     central_diff_pairs = stencil(xs, 2)
@@ -96,17 +101,8 @@ function midgrad(xs)
     [first_two_pairs; central_diff_pairs; last_two_pairs]
 end
 
-# Difference operators
-fwdsum(xs) = xs[2:end] .+ xs[1:end-1]
-fwddiff(xs) = xs[2:end] .- xs[1:end-1]
-fwddiv(xs) = xs[2:end] ./ xs[1:end-1]
-ord2diff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
-
-
-adj3(xs) = [ xs[1:end-2,:] xs[2:end-1,:] xs[3:end,:] ]
-
-
-#------------------------------Spacing formulas---------------------------#
+## Spacing formulas
+#===========================================================================#
 
 """
 Provides the projections to the x-axis for a circle of given diameter and center.
@@ -126,7 +122,8 @@ function cosine_interp(coords :: Array{<:Real, 2}, n :: Integer = 40)
     [ x_circ y_circ ]
 end
 
-#-------------Iterator methods-----------------------$
+## Iterator methods
+#===========================================================================#
 
 function accumap(f, n, xs)
     data = [ xs ]
@@ -152,20 +149,22 @@ Computes the weighted average (μ) of two vectors.
 weighted_vector(x1, x2, μ) = weighted.(x1, x2, μ)
 
 """
-Computes the weighted point between two points in a given direction.
-"""
-weighted_point((x1, y1, z1), (x2, y2, z2), wx, wy, wz) = SVector(weighted(x1, x2, wx), weighted(y1, y2, wy), weighted(z1, z2, wz))
-
-"""
 Computes the quarter point between two points in the x-z plane.
 """
-quarter_point(p1, p2) = weighted_point(p1, p2, 1/4, 0, 1/4)
+quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(1/4, 0, 1/4))
 
 """
 Computes the 3-quarter point between two points in the x-z plane.
 """
-three_quarter_point(p1, p2) = weighted_point(p1, p2, 3/4, 0, 3/4)
+three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
 
-#======================================================================#
+## Macros
+#===========================================================================#
+
+# macro getter(obj)
+#     return :((function name(x)
+#                 getfield(name, x) 
+#             end))
+# end
 
 end

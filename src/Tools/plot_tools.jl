@@ -14,15 +14,11 @@ trace_coords(xs, ys, zs, color = :black) = [ scatter3d(
                                                 ) 
                                             for (x, y, z) in zip(xs, ys, zs) ]
 
-function trace_panels(panels :: AbstractVector{Panel3D})
-    coords = panel_coords.(panels)
-    xs, ys, zs = panel_splits(coords)
-    trace_coords(xs, ys, zs)
-end
+trace_panels(panels :: AbstractVector{Panel3D}) = trace_coords(panel_splits(panel_coords.(panels))...)
 
-trace_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30; rotation = one(RotMatrix{3, Float64}), translation = SVector(0, 0, 0)) = (trace_panels ∘ collect)(transform(panel, rotation, translation) for panel in mesh_wing(wing, span_num, chord_num)[:])
+trace_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30; rotation = one(RotMatrix{3, Float64}), translation = SVector(0, 0, 0)) = trace_panels([ transform(panel, rotation, translation) for panel in mesh_wing(wing, span_num, chord_num)[:] ])
 
-plot_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30; rotation = one(RotMatrix{3, Float64}), translation = SVector(0, 0, 0)) = (plot_panels ∘ collect)(transform(panel, rotation, translation) for panel in mesh_wing(wing, span_num, chord_num)[:])
+plot_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30; rotation = one(RotMatrix{3, Float64}), translation = SVector(0, 0, 0)) = plot_panels([ transform(panel, rotation, translation) for panel in mesh_wing(wing, span_num, chord_num)[:] ])
 
 function trace_panels(panels :: AbstractVector{Panel3D}, Γs :: AbstractVector{<: Real})
     coords = panel_coords.(panels[:])
@@ -44,12 +40,7 @@ function trace_panels(panels :: AbstractVector{Panel3D}, Γs :: AbstractVector{<
                 for (x, y, z, norm_Γ) in zip(xs, ys, zs, norm_Γs) ]
 end
 
-function trace_streamlines(freestream :: Freestream, horseshoe_panels :: AbstractVector{Panel3D}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, length :: Real, num_steps :: Integer = 100)
-    streams = streamlines(freestream, horseshoe_panels[:], horseshoes, Γs, length, num_steps)
-    xs, ys, zs = panel_splits(streams)
-    trace_coords(xs, ys, zs, :lightblue)
-end
-
+trace_streamlines(freestream :: Freestream, points, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, length :: Real, num_steps :: Integer = 100) = trace_coords((panel_splits ∘ streamlines)(freestream, points, horseshoes, Γs, length, num_steps)..., :lightblue)
 
 ## Doublet-source
 #==========================================================================================#

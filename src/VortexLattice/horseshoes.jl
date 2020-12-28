@@ -43,7 +43,7 @@ bound_leg_velocity(a, b, Γ) = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm
 """
 Helper function to compute the velocity induced by trailing vortex legs.
 """
-trailing_legs_velocities(a, b, Γ, û) = Γ/4π * (a × û / (norm(a) - dot(a, û)) / norm(a) - b × û / (norm(b) - dot(b, û)) / norm(b))
+trailing_legs_velocities(a, b, Γ, u) = Γ/4π * (a × u / (norm(a) - dot(a, u)) / norm(a) - b × u / (norm(b) - dot(b, u)) / norm(b))
 
 """
 Helper function to check if any point is on the bound leg.
@@ -102,3 +102,20 @@ bound_leg_center(horseshoe :: Horseshoe) = (center ∘ bound_leg)(horseshoe)
 Computes the direction vector of the bound leg of a Horseshoe or Vortex Ring.
 """
 bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
+
+"""
+    velocity(r, horseshoe, Γ, V_hat)
+
+Computes the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
+"""
+velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real}) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, direction = V_hat)
+
+"""
+    mirror_velocity(r, horseshoe, Γ, V_hat)
+
+Computes the induced velocity, using the method of images for a symmetric case in the ``x``-``z`` plane, at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
+"""
+function mirror_velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real})
+    mirror_point = reflect_xz(r)
+    mir_vel = velocity(mirror_point, horseshoe, Γ, V_hat)
+end
