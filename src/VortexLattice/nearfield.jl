@@ -8,7 +8,7 @@ bound_leg_velocity(r, line :: Line, Γ, ε = 1e-8) = let a = r .- line.r1, b = r
 """
 Placeholder.
 """
-trailing_legs_velocities(r, line :: Line, Γ; direction = SVector(1., 0., 0.)) = @timeit "Trailing Leg" let a = r .- line.r1, b = r .- line.r2; trailing_legs_velocities(a, b, Γ, direction) end
+trailing_legs_velocities(r, line :: Line, Γ; direction = SVector(1., 0., 0.)) = @timeit "Trailing Leg" trailing_legs_velocities(r .- line.r1, r .- line.r2, Γ, direction)
 
 """
 Placeholder.
@@ -27,14 +27,7 @@ midpoint_velocity(r :: SVector{3, <: Real}, Ω :: SVector{3, <: Real}, horseshoe
 
 Computes the nearfield forces via the local Kutta-Jowkowski given an array of horseshoes, their associated vortex strengths ``\\Gammas``s, a freestream flow vector ``U``, rotation rates ``\\Omega``, and a density ``\\rho``. The velocities are evaluated at the midpoint of the bound leg of each horseshoe.
 """
-function nearfield_forces(Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{Horseshoe}, U, Ω, ρ)
-    Γ_shoes = zip(Γs, horseshoes)
-    @timeit "Summing Forces" [ 
-      let r = bound_leg_center(horseshoe), l = bound_leg_vector(horseshoe); 
-      ρ * Γ * midpoint_velocity(r, Ω, horseshoes, Γs, U) × l end 
-      for (Γ, horseshoe) ∈ Γ_shoes 
-    ]
-end
+nearfield_forces(Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{Horseshoe}, U, Ω, ρ) = @timeit "Summing Forces" ρ * Γs .* midpoint_velocity.(bound_leg_center.(horseshoes), Ref(Ω), Ref(horseshoes), Ref(Γs), Ref(U)) .× bound_leg_vector.(horseshoes)
 
 """
 	nearfield_drag(force, freestream)

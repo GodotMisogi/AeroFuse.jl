@@ -46,7 +46,18 @@ layout = Layout(title = "Vortex Lattice",
 ## Streamlines
 reset_timer!()
 
-@timeit "Computing Streamlines" trace_streams = trace_streamlines(uniform, horseshoe_panels[:], horseshoes[:], Γs[:], 2, 100);
+num_points = 30
+max_z = 0.02
+y = span(wing) / 2 - 0.5
+# seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
+
+span_points = 10
+init = trailing_chopper(wing, span_points) 
+dx, dy, dz = 0, 0, 1e-3
+seed = [ init .+ Ref([dx, dy, dz]); 
+         init .+ Ref([dx, dy, -dz]) ]
+
+@timeit "Computing Streamlines" trace_streams = trace_streamlines(uniform, seed, horseshoes[:], Γs[:], 2, 100);
 
 print_timer()
 
@@ -61,7 +72,7 @@ PlotlyJS.plot(
                 [ trace for trace in trace_horsies ]...,
                 [ trace for trace in trace_horses ]...,
                 [ trace for trace in trace_streams ]...,
-                # [ trace for trace in trace_cambers ]...,
+                [ trace for trace in trace_cambers ]...,
                 # [ trace for trace in trace_wing ]...,
             ],
             layout)

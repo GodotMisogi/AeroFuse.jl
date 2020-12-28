@@ -14,4 +14,4 @@ export Foil, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foi
 
 include("wing.jl")
 
-export HalfWing, Wing, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, print_info, lead_wing, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing
+export HalfWing, Wing, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, print_info, leading_edge, leading_chopper, trailing_chopper, wing_chopper, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing

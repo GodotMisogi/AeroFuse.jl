@@ -84,7 +84,7 @@ coords_chopper(coords, n) = [ (chop_sections.(coords[1:end-1], coords[2:end], n)
 """
 Computes the leading edge coordinates of a HalfWing, with an option to flip the signs of the y-coordinates.
 """
-function lead_wing(wing :: HalfWing, flip :: Bool = false)
+function leading_edge(wing :: HalfWing, flip :: Bool = false)
     spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
 
     sweeped_spans = [ 0; cumsum(spans .* tan.(sweeps)) ]
@@ -103,7 +103,7 @@ function wing_bounds(wing :: HalfWing, flip :: Bool = false)
     chords = wing.chords
     twisted_chords = chords .* sin.(wing.twists)
     
-    leading = lead_wing(wing, flip)
+    leading = leading_edge(wing, flip)
     trailing = SVector.(chords, (zeros ∘ length)(chords), twisted_chords) 
 
     leading, (flip ? trailing[end:-1:1] : trailing) .+ leading
@@ -113,7 +113,7 @@ end
 Computes the coordinates of a HalfWing consisting of Foils and relevant geometric quantities. Requires specification of number of spanwise and chordwise panels. Optionally flips the signs of the y-coordinates.
 """
 function wing_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
-    leading_xyz = lead_wing(wing, flip)
+    leading_xyz = leading_edge(wing, flip)
     
     scaled_foils = wing.chords .* (coordinates ∘ cut_foil).(wing.foils, chord_num)
     
@@ -129,7 +129,7 @@ end
 Computes the coordinates of a HalfWing consisting of camber distributions of Foils and relevant geometric quantities. Requires specification of number of spanwise and chordwise panels. Optionally flips the signs of the y-coordinates.
 """
 function camber_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
-    leading_xyz = lead_wing(wing, flip)
+    leading_xyz = leading_edge(wing, flip)
     
     scaled_foils = wing.chords .* (coordinates ∘ camber_thickness).(wing.foils, chord_num)
 
@@ -176,6 +176,10 @@ function make_panels(coords)
     hcat(( Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ secs1secs2 )...)
 end
 
+leading_chopper(obj :: HalfWing, span_num :: Integer; flip = false) = coords_chopper(leading_edge(obj, flip), span_num)
+
+trailing_chopper(obj :: HalfWing, span_num :: Integer; flip = false) = coords_chopper(leading_edge(obj, flip), span_num)
+
 """
 Meshes a HalfWing into panels based on the chord lines of the airfoil sections, meant for lifting-line analyses using horseshoe elements.
 """
@@ -216,6 +220,10 @@ function wing_bounds(wing :: Wing)
 
     leading, trailing
 end
+
+leading_chopper(obj :: Wing, span_num :: Integer; flip = false) = span_chopper(wing_bounds(obj)..., span_num)[1]
+
+trailing_chopper(obj :: Wing, span_num :: Integer; flip = false) = span_chopper(wing_bounds(obj)..., span_num)[2]
 
 """
 Meshes a Wing into panels meant for lifting-line analyses using horseshoe elements.

@@ -24,10 +24,10 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
 
     # Experimental: Symmetry condition
     symmetry = false
-    # if typeof(wing) == Wing
-    #     println("Symmetric Case - \n")
-    #     symmetry, wing = wing.left === wing.right ? (true, wing.right) : (false, wing)
-    # end
+    if typeof(wing) == Wing
+        println("Symmetric Case - \n")
+        symmetry, wing = wing.left === wing.right ? (true, wing.right) : (false, wing)
+    end
 
     # Compute panels
     @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
@@ -63,6 +63,8 @@ function solve_case(components :: Dict{<: Aircraft, Tuple{Integer, Integer}}, fr
     
     # Solve system with normalised velocities
     @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels[:], camber_panels[:], freestream, symmetry)
+
+    Γs = reshape(Γs, size(horseshoe_panels)...)
 
     # Compute nearfield dynamics
     @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)

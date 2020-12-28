@@ -109,13 +109,3 @@ bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
 Computes the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
 """
 velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real}) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, direction = V_hat)
-
-"""
-    mirror_velocity(r, horseshoe, Γ, V_hat)
-
-Computes the induced velocity, using the method of images for a symmetric case in the ``x``-``z`` plane, at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
-"""
-function mirror_velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real})
-    mirror_point = reflect_xz(r)
-    mir_vel = velocity(mirror_point, horseshoe, Γ, V_hat)
-end
