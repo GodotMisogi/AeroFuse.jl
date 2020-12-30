@@ -30,11 +30,32 @@ Reflects the y-coordinate of a given SVector about the x-z plane.
 reflect_xz(vector :: SVector{3, <: Real}) = SVector(vector[1], -vector[2], vector[3])
 
 """
+    project_yz(vector)
+
+Projects the y-coordinate of a given SVector about the x-z plane.
+"""
+project_yz(vector :: SVector{3, <: Real}) = SVector(0, vector[2], vector[3])
+
+"""
+    reflect_yz(line)
+
+Reflects a Line onto the ``x``-``z`` plane of its coordinate system.
+"""
+reflect_xz(line :: Line) = Line((reflect_xz ∘ point2)(line), (reflect_xz ∘ point1)(line))
+
+"""
+    reflect_yz(Horseshoe)
+
+Reflects a Horseshoe onto the ``x``-``z`` plane of its coordinate system.
+"""
+reflect_xz(horseshoe :: Horseshoe) = (Horseshoe ∘ reflect_xz ∘ bound_leg)(horseshoe)
+
+"""
     project_yz(line)
 
-Projects a Line onto the y-z plane of its coordinate system.
+Projects a Line onto the ``y``-``z`` plane of its coordinate system.
 """
-project_yz(line :: Line) = Line(SVector(0, line.r1[2], line.r1[3]), SVector(0, line.r2[2], line.r2[3]))
+project_yz(line :: Line) = Line((project_yz ∘ point1)(line), (project_yz ∘ point2)(line))
 
 """
     stability_flip(vector)

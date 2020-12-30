@@ -41,7 +41,7 @@ export Horseshoe
 include("../Tools/ReferenceFrames.jl")
 # using .ReferenceFrames: body_to_stability_axes, body_to_wind_axes
 
-export body_to_stability_axes, body_to_wind_axes
+export body_to_stability_axes, body_to_wind_axes, reflect_xz
 
 ## Influence matrix and solution of system
 #==========================================================================================#
