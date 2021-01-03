@@ -25,7 +25,7 @@ reset_timer!()
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
 Ω = SVector(0.0, 0.0, 0.0)
 uniform = Freestream(10.0, 5.0, 0.0, Ω)
-@time nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 2, chord_num = 2) 
+@time nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 10, chord_num = 10) 
 
 print_timer();
 

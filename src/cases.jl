@@ -3,12 +3,9 @@ function solve_case(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :
     @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, freestream, symmetry)
 
     geom_forces, geom_moments, remaining = case_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
-    
-    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
 
     nearfield_coeffs, farfield_coeffs = case_coefficients(wing, remaining..., freestream.mag, ρ)
 
-    # force, drag, moment, horseshoes, Γs
 end
 
 function case_dynamics(Γs :: AbstractArray{<: Real}, horseshoes :: AbstractArray{Horseshoe}, freestream :: Freestream, r_ref :: SVector{3, <: Real}, ρ :: Real)
@@ -25,15 +22,17 @@ function case_dynamics(Γs :: AbstractArray{<: Real}, horseshoes :: AbstractArra
     geom_forces, geom_moments, force, moment, drag, trans_rates, trefftz_force, trefftz_moment
 end
 
-function case_coefficients(wing, force, moment, drag, trans_rates, trefftz_force, trefftz_moment, V, ρ)
-    @timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, trans_rates, V, 2 * projected_area(wing), 2 * span(wing), mean_aerodynamic_chord(wing), ρ)
+function case_coefficients(wing :: Union{Wing, HalfWing}, force :: SVector{3,<: Real}, moment :: SVector{3,<: Real}, drag :: Real, trans_rates :: SVector{3,<: Real}, trefftz_force :: SVector{3,<: Real}, trefftz_moment :: SVector{3,<: Real}, V :: Real, ρ :: Real)
+    @timeit "Nearfield Coefficients" nearfield_coeffs = aerodynamic_coefficients(force, moment, drag, trans_rates, V, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
 
-    @timeit "Farfield Coefficients" farfield_coeffs = aerodynamic_coefficients(trefftz_force, trefftz_moment, trans_rates, V, 2 * projected_area(wing), 2 * span(wing), mean_aerodynamic_chord(wing), ρ)
+    @timeit "Farfield Coefficients" farfield_coeffs = aerodynamic_coefficients(trefftz_force, trefftz_moment, trans_rates, V, projected_area(wing), span(wing), mean_aerodynamic_chord(wing), ρ)
 
     nearfield_coeffs, farfield_coeffs
 end
 
-function solve_symmetric_case(wing :: HalfWing, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225, span_num :: Integer, chord_num :: Integer)
+symmetric_case_coefficients(wing :: Union{Wing, HalfWing}, force :: SVector{3,<: Real}, moment :: SVector{3,<: Real}, drag :: Real, trans_rates :: SVector{3,<: Real}, trefftz_force :: SVector{3,<: Real}, trefftz_moment :: SVector{3,<: Real}, V :: Real, ρ :: Real) = case_coefficients(wing, force, moment, drag, trans_rates, trefftz_force, trefftz_moment, V, 2ρ)
+
+function solve_symmetric_case(wing :: HalfWing, freestream :: Freestream, span_num :: Integer, chord_num :: Integer, r_ref, ρ)
     # Compute panels
     @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
     
@@ -44,18 +43,18 @@ function solve_symmetric_case(wing :: HalfWing, freestream :: Freestream, r_ref 
     Γs = [ Γs[:,end:-1:1] Γs ]
     horseshoes = [ reflect_xz.(horseshoes[:,end:-1:1]) horseshoes ]
 
-    geom_forces, geom_moments, remaining = case_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
+    geom_forces, geom_moments, force, moment, drag, trans_rates, trefftz_force, trefftz_moment = case_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
     
-    @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
+    # @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
 
-    nearfield_coeffs, farfield_coeffs = case_coefficients(wing, remaining..., freestream.mag, ρ)
+    nearfield_coeffs, farfield_coeffs = symmetric_case_coefficients(wing, force, moment, drag, trans_rates, trefftz_force, trefftz_moment, freestream.mag, ρ)
 
     nearfield_coeffs, farfield_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs
 end
 
 function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; span_num :: Integer = 15, chord_num :: Integer = 5)
-    if wing.left === wing.right & freestream.β == 0
-        return solve_symmetric_case(wing, freestream, r_ref, ρ; span_num, chord_num)
+    if wing.left === wing.right && freestream.β == 0
+        return solve_symmetric_case(wing.right, freestream, span_num, chord_num, r_ref, ρ)
     else
         # Compute panels
         @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
@@ -63,13 +62,13 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
         # Solve system
         @timeit "Solve System" Γs, horseshoes = reshape.(solve_horseshoes(horseshoe_panels[:], camber_panels[:], freestream, false), size(horseshoe_panels)...)
 
-        geom_forces, geom_moments, remaining = case_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
+        geom_forces, geom_moments, force, moment, drag, trans_rates, trefftz_force, trefftz_moment = case_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
         
-        @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
+        # @timeit "Pressure Distribution" cps = pressure_coefficient.(geom_forces, ρ, freestream.mag, panel_area.(camber_panels[:]))
 
-        nearfield_coeffs, farfield_coeffs = case_coefficients(wing, remaining..., freestream.mag, ρ)
+        nearfield_coeffs, farfield_coeffs = case_coefficients(wing, force, moment, drag, trans_rates, trefftz_force, trefftz_moment, freestream.mag, ρ)
 
-        return nearfield_coeffs, farfield_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs
+        return nearfield_coeffs, farfield_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs
     end
 end
 
