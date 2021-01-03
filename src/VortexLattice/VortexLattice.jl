@@ -47,7 +47,6 @@ export body_to_stability_axes, body_to_wind_axes, reflect_xz
 #==========================================================================================#
 
 include("influences.jl")
-include("symmetry.jl")
 
 export solve_horseshoes
 
@@ -63,7 +62,7 @@ function solve_horseshoes(horseshoe_panels :: AbstractVector{Panel3D}, camber_pa
     @timeit "Normals" normals = panel_normal.(camber_panels)
     @timeit "Total Velocity" total_vel = Ref(U) .+ Ref(freestream.Ω) .× colpoints
     
-    @timeit "AIC" AIC = symmetry ? sym_influence_matrix(colpoints[:], normals[:], horseshoes[:], -normalize(U)) : influence_matrix(colpoints[:], normals[:], horseshoes[:], -normalize(U))
+    @timeit "AIC" AIC = influence_matrix(colpoints[:], normals[:], horseshoes[:], -normalize(U), symmetry)
     @timeit "RHS" boco = boundary_condition(total_vel[:], normals[:])
     @timeit "Solve AIC" Γs = AIC \ boco
 
