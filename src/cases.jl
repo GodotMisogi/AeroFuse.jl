@@ -1,10 +1,4 @@
 function solve_case(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :: AbstractVector{Panel3D}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; symmetry = false)
-    # Solve system with normalised velocities
-    @timeit "Solve System" Γs, horseshoes = solve_horseshoes(horseshoe_panels, camber_panels, freestream, symmetry)
-
-    geom_forces, geom_moments, remaining = case_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
-
-    nearfield_coeffs, farfield_coeffs = case_coefficients(wing, remaining..., freestream.mag, ρ)
 
 end
 
