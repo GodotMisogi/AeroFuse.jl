@@ -11,7 +11,7 @@ function influence_coefficient(r :: SVector{3, <: Real}, horseshoe :: Horseshoe,
         col_vel = velocity(r, horseshoe, 1., V_hat)
         mir_vel = (reflect_xz ∘ velocity)(reflect_xz(r), horseshoe, 1., V_hat)
 
-        dot(col_vel .+ mir_vel, panel_normal)
+        dot(col_vel + mir_vel, panel_normal)
     else
         dot(velocity(r, horseshoe, 1., V_hat), panel_normal)
     end

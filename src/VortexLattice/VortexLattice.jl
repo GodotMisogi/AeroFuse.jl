@@ -51,19 +51,31 @@ include("influences.jl")
 export solve_horseshoes
 
 """
+Placeholder.
+"""
+function make_horseshoes(horseshoe_panels :: AbstractVector{Panel3D})
+    @timeit "Horseshoes" horseshoes = horseshoe_lines.(horseshoe_panels)
+    @timeit "Collocation Points" colpoints = collocation_point.(horseshoe_panels)
+
+    horseshoes, colpoints
+end
+
+"""
     solve_horseshoes(horseshoe_panels, camber_panels, freestream, symmetry) 
 
 Solves the AIC matrix with the boundary condition given Panel3Ds and a Freestream, with the option to use the symmetry of the problem in the ``x``-``z`` plane.
 """
 function solve_horseshoes(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :: AbstractVector{Panel3D}, freestream :: Freestream, symmetry = false) 
-    U = aircraft_velocity(freestream)
-    @timeit "Horseshoes" horseshoes = horseshoe_lines.(horseshoe_panels)
-    @timeit "Collocation Points" colpoints = collocation_point.(horseshoe_panels)
+    @timeit "Freestream Velocity" U = aircraft_velocity(freestream)
+
+    horseshoes, colpoints = make_horseshoes(horseshoe_panels)
+    
     @timeit "Normals" normals = panel_normal.(camber_panels)
+
     @timeit "Total Velocity" total_vel = Ref(U) .+ Ref(freestream.Ω) .× colpoints
     
-    @timeit "AIC" AIC = influence_matrix(colpoints[:], normals[:], horseshoes[:], -normalize(U), symmetry)
-    @timeit "RHS" boco = boundary_condition(total_vel[:], normals[:])
+    @timeit "AIC" AIC = influence_matrix(colpoints, normals, horseshoes, -normalize(U), symmetry)
+    @timeit "RHS" boco = boundary_condition(total_vel, normals)[:]
     @timeit "Solve AIC" Γs = AIC \ boco
 
     @timeit "Reshape" output = Γs, horseshoes

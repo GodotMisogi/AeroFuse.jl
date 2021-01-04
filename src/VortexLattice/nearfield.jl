@@ -2,16 +2,11 @@
 #==========================================================================================#
 
 """
-Placeholder.
-"""
-trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = let line = bound_leg(horseshoe); trailing_legs_velocities(r - point1(line), r - point2(line), Γ, V) end
-
-"""
 	midpoint_velocity(r, Ω, horseshoes, Γs, U)
 
 Evaluates the induced velocity by the trailing legs at the midpoint of a given Horseshoe ``r``, by summing over the velocities of Horseshoes with vortex strengths ``\\Gamma``s, rotation rates ``\\Omega``, and a freestream flow vector ``U`` in the aircraft reference frame.
 """
-midpoint_velocity(r :: SVector{3, <: Real}, Ω :: SVector{3, <: Real}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, U) = sum(trailing_velocity.(Ref(r), horseshoes, Γs, Ref(-normalize(U)))) .- U .- Ω × r
+midpoint_velocity(r :: SVector{3, <: Real}, Ω :: SVector{3, <: Real}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, U) = @timeit "Midpoint Velocity" sum(trailing_velocity.(Ref(r), horseshoes, Γs, Ref(-normalize(U)))) - U - Ω × r
 
 """
 	nearfield_forces(Γs, horseshoes, U, Ω, ρ)

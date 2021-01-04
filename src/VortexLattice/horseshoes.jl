@@ -46,24 +46,15 @@ Helper function to compute the velocity induced by trailing vortex legs.
 trailing_legs_velocities(a, b, Γ, u) = Γ/4π * (a × u / (norm(a) - dot(a, u)) / norm(a) - b × u / (norm(b) - dot(b, u)) / norm(b))
 
 """
-Helper function to check if any point is on the bound leg.
-"""
-on_line(a, b, ε) = any(<(ε), norm.([a, b, a × b ]))
-
-"""
 Computes the velocity induced at a point `r` by a vortex Line with constant strength Γ. Checks if `r` lies on the line and sets it to `(0, 0, 0)` if so, as the velocity is singular there.
 """
-function horseshoe_velocity(r, line :: Line, Γ, ε = 1e-8; direction = SVector(1, 0, 0))
-    a, b = r .- line.r1, r .- line.r2
+function horseshoe_velocity(r, line :: Line, Γ, direction)
+    a = r - point1(line)
+    b = r - point2(line)
 
-    # Compute bound leg velocity
-    @timeit "Bound Leg" bound_velocity = on_line(a, b, ε) ? zeros(3) : bound_leg_velocity(a, b, Γ)
-    
-    # Compute velocities of trailing legs
-    @timeit "Trailing Leg" trailing_velocity = trailing_legs_velocities(a, b, Γ, direction)
-
-    # Sums bound and trailing legs' velocities
-    @timeit "Sum Legs" bound_velocity .+ trailing_velocity
+    bound = @timeit "Bound Leg" bound_leg_velocity(a, b, Γ)
+    trail = @timeit "Trailing Legs" trailing_legs_velocities(a, b, Γ, direction)
+    @timeit "Sum Legs" bound + trail
 end
 
 ## Arrays of vortex lines
@@ -84,7 +75,7 @@ end
 """
     bound_leg(horseshoe)
 
-Getter for bound leg of Horseshoe.
+Getter for bound leg field of a Horseshoe.
 """
 bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
 
@@ -108,4 +99,9 @@ bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
 
 Computes the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
 """
-velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real}) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, direction = V_hat)
+velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real}) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
+
+"""
+Placeholder.
+"""
+trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = let line = bound_leg(horseshoe); @timeit "Trailing Velocity" trailing_legs_velocities(r - point1(line), r - point2(line), Γ, V) end
