@@ -6,21 +6,21 @@
 
 Evaluates the induced velocity by the trailing legs at the midpoint of a given Horseshoe ``r``, by summing over the velocities of Horseshoes with vortex strengths ``\\Gamma``s, rotation rates ``\\Omega``, and a freestream flow vector ``U`` in the aircraft reference frame.
 """
-midpoint_velocity(r :: SVector{3, <: Real}, Ω :: SVector{3, <: Real}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, U) = @timeit "Midpoint Velocity" sum(trailing_velocity.(Ref(r), horseshoes, Γs, Ref(-normalize(U)))) - U - Ω × r
+midpoint_velocity(r :: SVector{3, <: Real}, Ω :: SVector{3, <: Real}, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, U :: SVector{3,<: Real}) = @timeit "Midpoint Velocity" sum(trailing_velocity.(Ref(r), horseshoes, Γs, Ref(-normalize(U)))) - U - Ω × r
 
 """
 	nearfield_forces(Γs, horseshoes, U, Ω, ρ)
 
 Computes the nearfield forces via the local Kutta-Jowkowski given an array of horseshoes, their associated vortex strengths ``\\Gamma``s, a freestream flow vector ``U``, rotation rates ``\\Omega``, and a density ``\\rho``. The velocities are evaluated at the midpoint of the bound leg of each horseshoe.
 """
-nearfield_forces(Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{Horseshoe}, U, Ω, ρ) = @timeit "Summing Forces" ρ * Γs .* midpoint_velocity.(bound_leg_center.(horseshoes), Ref(Ω), Ref(horseshoes), Ref(Γs), Ref(U)) .× bound_leg_vector.(horseshoes)
+nearfield_forces(Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{Horseshoe}, U :: SVector{3,<: Real}, Ω :: SVector{3,<: Real}, ρ :: Real) = @timeit "Summing Forces" ρ * Γs .* midpoint_velocity.(bound_leg_center.(horseshoes), Ref(Ω), Ref(horseshoes), Ref(Γs), Ref(U)) .× bound_leg_vector.(horseshoes)
 
 """
 	nearfield_drag(force, freestream)
 
 Computes the near-field drag given the sum of the local Kutta-Jowkowski forces and a Freestream.
 """
-nearfield_drag(force, freestream :: Freestream) = dot(force, velocity(freestream) / freestream.mag)
+nearfield_drag(force :: SVector{3,<: Real}, freestream :: Freestream) = dot(force, velocity(freestream) / freestream.mag)
 
 """
 Placeholder.
