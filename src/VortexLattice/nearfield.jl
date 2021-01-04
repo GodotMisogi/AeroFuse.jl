@@ -30,12 +30,12 @@ horseshoe_moment(horseshoe :: Horseshoe, force :: SVector{3,<: Real}, r_ref :: S
 """
 Placeholder. Unsure whether to change this to a generic moment computation function.
 """
-moments(horseshoes :: AbstractVector{Horseshoe}, forces, r_ref) = horseshoe_moment.(horseshoes, forces, Ref(r_ref))
+moments(horseshoes :: AbstractVector{Horseshoe}, forces, r_ref :: SVector{3,<: Real) = horseshoe_moment.(horseshoes, forces, Ref(r_ref))
 
 """
 Computes the nearfield forces and associated moments.
 """
-function nearfield_dynamics(Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{Horseshoe}, freestream :: Freestream, r_ref, ρ = 1.225)
+function nearfield_dynamics(Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{Horseshoe}, freestream :: Freestream, r_ref :: SVector{3,<: Real}, ρ :: Real = 1.225)
     @timeit "Forces" geom_forces = nearfield_forces(Γs, horseshoes, aircraft_velocity(freestream), freestream.Ω, ρ)
     @timeit "Moments" geom_moments = moments(horseshoes, geom_forces, r_ref)
 
