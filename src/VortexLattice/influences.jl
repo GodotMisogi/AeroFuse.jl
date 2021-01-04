@@ -6,7 +6,7 @@
 
 Computes the influence coefficient of the velocity of a Horseshoe with trailing lines in a given direction ``\\hat V`` at a point ``r`` projected to a normal vector.
 """
-function influence_coefficient(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, panel_normal :: SVector{3, <: Real}, V_hat :: SVector{3, <: Real}, symmetry)
+function influence_coefficient(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, panel_normal :: SVector{3, <: Real}, V_hat :: SVector{3, <: Real}, symmetry :: Bool)
     if symmetry
         col_vel = velocity(r, horseshoe, 1., V_hat)
         mir_vel = (reflect_xz ∘ velocity)(reflect_xz(r), horseshoe, 1., V_hat)
@@ -23,7 +23,7 @@ end
 
 Assembles the Aerodynamic Influence Coefficient (AIC) matrix given horseshoes, collocation points, associated normal vectors, a unit vector representing the freestream.
 """
-influence_matrix(colpoints, normals, horseshoes :: AbstractVector{Horseshoe}, V_hat :: SVector{3, <: Real}, symmetry) = @timeit "Matrix Construction" [ @timeit "Influence Coefficient" influence_coefficient(r_i, horsie_j, n_i, V_hat, symmetry) for (r_i, n_i) ∈ zip(colpoints, normals), horsie_j ∈ horseshoes ]
+influence_matrix(colpoints, normals, horseshoes :: AbstractVector{Horseshoe}, V_hat :: SVector{3, <: Real}, symmetry :: Bool) = @timeit "Matrix Construction" [ @timeit "Influence Coefficient" influence_coefficient(r_i, horsie_j, n_i, V_hat, symmetry) for (r_i, n_i) ∈ zip(colpoints, normals), horsie_j ∈ horseshoes ]
 
 
 """

@@ -6,7 +6,7 @@ bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2), quarter_point(p4, p3) ]
 """
 Helper function to compute the collocation point of Panel3D for horseshoes/vortex rings, which is the 3-quarter point on each side in the x-z plane.
 """
-collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) .+ three_quarter_point(p4, p3) ) ./ 2
+collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
 
 """
 Computes the bound leg for a Panel3D.
@@ -29,7 +29,7 @@ end
 point1(line :: Line) = line.r1
 point2(line :: Line) = line.r2
 vector(line :: Line) = point2(line) - point1(line)
-center(line :: Line) = (point1(line) .+ point2(line)) ./ 2
+center(line :: Line) = (point1(line) + point2(line)) / 2
 
 points(lines :: AbstractVector{Line}) = [ point1.(lines)..., (point2 ∘ last)(lines) ]
 
@@ -46,17 +46,14 @@ Helper function to compute the velocity induced by trailing vortex legs.
 trailing_legs_velocities(a, b, Γ, u) = Γ/4π * (a × u / (norm(a) - dot(a, u)) / norm(a) - b × u / (norm(b) - dot(b, u)) / norm(b))
 
 """
-Computes the velocity induced at a point `r` by a vortex Line with constant strength Γ. Checks if `r` lies on the line and sets it to `(0, 0, 0)` if so, as the velocity is singular there.
+Placeholder.
 """
-function horseshoe_velocity(r, line :: Line, Γ, direction)
-    a = r - point1(line)
-    b = r - point2(line)
+total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
 
-    bound = @timeit "Bound Leg" bound_leg_velocity(a, b, Γ)
-    trail = @timeit "Trailing Legs" trailing_legs_velocities(a, b, Γ, direction)
-    @timeit "Sum Legs" bound + trail
-end
-
+"""
+Computes the velocity induced at a point `r` by a vortex Line with constant strength Γ.
+"""
+horseshoe_velocity(r, line :: Line, Γ, direction) = @timeit "Sum Legs" total_horseshoe_velocity(r - point1(line), r - point2(line), Γ, direction)
 ## Arrays of vortex lines
 #==========================================================================================#
 
