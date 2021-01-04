@@ -1,7 +1,7 @@
 ## Farfield dynamics
 #==========================================================================================#
 
-trefftz_potential(r_i :: SVector{3, <: Real}, r_j :: SVector{3, <: Real}, Γ_j :: Real) = let r = r_i .- r_j; Γ_j / 2π * SVector(1, 0, 0) × r / norm(r)^2 end
+trefftz_potential(r_i :: SVector{3, <: Real}, r_j :: SVector{3, <: Real}, Γ_j :: Real) = let r = r_i - r_j; Γ_j / 2π * SVector(1, 0, 0) × r / norm(r)^2 end
 
 ∇φ(r :: SVector{3, <: Real}, points, Γs :: AbstractVector{<: Real}) = sum(trefftz_potential.(Ref(r), points, Γs))
 
@@ -38,7 +38,7 @@ function trefftz_forces(Γs, horseshoes :: AbstractArray{Horseshoe}, freestream 
     trefftz_lines, trefftz_proj_vecs, normals = trefftz_preprocessing(horseshoes :: AbstractArray{Horseshoe}, freestream :: Freestream)
 
     # Compute directional derivatives of doublets in the normal direction
-    @timeit "Sum Γs" Δφs = sum(Γs, dims = 1)[:]
+    @timeit "Sum Γs" Δφs = vec(sum(Γs, dims = 1))
     @timeit "∂φ/∂n" ∂φ_∂n = ∂φ∂ns(trefftz_lines, Δφs, normals)
 
     # Compute forces    
