@@ -25,7 +25,7 @@ nearfield_drag(force, freestream :: Freestream) = dot(force, velocity(freestream
 """
 Placeholder.
 """
-horseshoe_moment(horseshoe :: Horseshoe, force, r_ref) = (bound_leg_center(horseshoe) - r_ref) × force
+horseshoe_moment(horseshoe :: Horseshoe, force :: SVector{3,<: Real}, r_ref :: SVector{3,<: Real}) = (bound_leg_center(horseshoe) - r_ref) × force
 
 """
 Placeholder. Unsure whether to change this to a generic moment computation function.
