@@ -36,11 +36,11 @@ end
 point1(p :: Panel) = p.p1
 point2(p :: Panel) = p.p2
 
-a :: Panel + b :: Panel = Panel2D(point1(a) .+ point1(b), point2(a) .+ point2(b))
-a :: Panel - b :: Panel = Panel2D(point1(a) .- point1(b), point2(a) .- point2(b))
+a :: Panel + b :: Panel = Panel2D(point1(a) + point1(b), point2(a) + point2(b))
+a :: Panel - b :: Panel = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
 
-collocation_point(panel :: Panel2D) = (point1(panel) .+ point2(panel)) ./ 2
-panel_length(panel :: Panel2D) = norm(point2(panel) .- point1(panel))
+collocation_point(panel :: Panel2D) = (point1(panel) + point2(panel)) / 2
+panel_length(panel :: Panel2D) = norm(point2(panel) - point1(panel))
 
 
 function panel_angle(panel :: Panel2D)
@@ -79,7 +79,7 @@ end
 """
 Computes the area of Panel3D.
 """
-panel_area(panel :: Panel3D) = norm(panel.p2 .- panel.p1) * norm(panel.p3 .- panel.p2)
+panel_area(panel :: Panel3D) = norm(panel.p2 - panel.p1) * norm(panel.p3 - panel.p2)
 
 """
 Computes the coordinates of a Panel3D.
@@ -94,13 +94,13 @@ transform(panel :: Panel3D, rotation, translation) = Panel3D( (Translation(trans
 """
 Computes the midpoint of Panel3D.
 """
-midpoint(panel :: Panel3D) = (panel.p1 .+ panel.p2 .+ panel.p3 .+ panel.p4) ./ 4
+midpoint(panel :: Panel3D) = (panel.p1 + panel.p2 + panel.p3 + panel.p4) / 4
 
 """
 Computes the normal vector of Panel3D.
 """
-panel_normal(panel :: Panel3D) = let p31 = panel.p3 .- panel.p1, 
-                                     p42 = panel.p4 .- panel.p2;
+panel_normal(panel :: Panel3D) = let p31 = panel.p3 - panel.p1, 
+                                     p42 = panel.p4 - panel.p2;
                                      p31 × p42 end
                                      
 end

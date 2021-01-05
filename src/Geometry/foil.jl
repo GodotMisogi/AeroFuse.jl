@@ -105,7 +105,7 @@ function kulfan_CST(alpha_u :: AbstractVector{<: Real}, alpha_l :: AbstractVecto
     xs = cosine_dist(0.5, 1, num_points)
 
     # λ-function for Bernstein polynomials
-    bernie = (x, alphas, dz) -> cst_coords(bernstein_class, bernstein_basis, x, alphas, dz, coeff_LE)
+    bernie(x, alphas, dz) = cst_coords(bernstein_class, bernstein_basis, x, alphas, dz, coeff_LE)
 
     # Upper and lower surface generation
     upper_surf = [ bernie(x, alpha_u, dz_u) for x ∈ xs ]
@@ -121,7 +121,7 @@ function camber_CST(alpha_cam :: AbstractVector{<: Real}, alpha_thicc :: Abstrac
     xs = cosine_dist(0.5, 1, num_points)
 
     # λ-function for Bernstein polynomials
-    bernie = (x, alphas, dz) -> cst_coords(bernstein_class, bernstein_basis, x, alphas, dz, coeff_LE)
+    bernie(x, alphas, dz) = cst_coords(bernstein_class, bernstein_basis, x, alphas, dz, coeff_LE)
 
     # Upper and lower surface generation
     cam = [ bernie(x, alpha_cam, dz_cam) for x ∈ xs ]
@@ -202,11 +202,11 @@ function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_e
         # Compute gradients
         gradients = [ naca4_gradient(pos, cam, xc) for xc in xs ]
         # Upper surface
-        x_upper = xs .- thickness .* sin.(gradients) 
-        y_upper = camber .+ thickness .* cos.(gradients)
+        x_upper = @. xs - thickness * sin(gradients) 
+        y_upper = @. camber + thickness * cos(gradients)
         # Lower surface
-        x_lower = xs .+ thickness .* sin.(gradients) 
-        y_lower = camber .- thickness .* cos.(gradients)
+        x_lower = @. xs + thickness * sin(gradients) 
+        y_lower = @. camber - thickness * cos(gradients)
     end
     [ [x_upper y_upper][end:-1:2,:]; 
        x_lower y_lower ]

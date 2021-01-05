@@ -35,6 +35,9 @@ points(lines :: AbstractVector{Line}) = [ point1.(lines)..., (point2 ∘ last)(l
 
 transform(line :: Line, rotation, translation) = let trans = Translation(translation) ∘ LinearMap(rotation); Line((trans ∘ point1)(line), (trans ∘ point2)(line)) end
 
+r1(r, line :: Line) = r - point1(line)
+r2(r, line :: Line) = r - point2(line)
+
 """
 Helper function to compute the velocity induced by a bound vortex leg.
 """
@@ -53,7 +56,7 @@ total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_
 """
 Computes the velocity induced at a point `r` by a vortex Line with constant strength Γ.
 """
-horseshoe_velocity(r, line :: Line, Γ, direction) = @timeit "Sum Legs" total_horseshoe_velocity(r - point1(line), r - point2(line), Γ, direction)
+horseshoe_velocity(r, line :: Line, Γ, direction) = @timeit "Sum Legs" total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
 ## Arrays of vortex lines
 #==========================================================================================#
 
@@ -76,6 +79,9 @@ Getter for bound leg field of a Horseshoe.
 """
 bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
 
+r1(r, horseshoe :: Horseshoe) = r1(r, bound_leg(horseshoe))
+r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
+
 """
 Returns a Horseshoe on a Panel3D.
 """
@@ -97,8 +103,3 @@ bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
 Computes the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
 """
 velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real}) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
-
-"""
-Placeholder.
-"""
-trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = let line = bound_leg(horseshoe); @timeit "Trailing Velocity" trailing_legs_velocities(r - point1(line), r - point2(line), Γ, V) end

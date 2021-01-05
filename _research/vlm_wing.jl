@@ -7,8 +7,8 @@ using TimerOutputs
 using AeroMDAO
 
 ## Wing section setup
-foil = naca4((2,4,1,2))
-wing_right  = HalfWing(Foil.(foil for i ∈ 1:3),     # Foils
+foil        =   naca4((2,4,1,2))
+wing_right  =   HalfWing(Foil.(foil for i ∈ 1:3),   # Foils
                         [0.18, 0.16, 0.08],         # Chords
                         [2., 0., -2.],              # Twists
                         [0.5, 0.5],                 # Spans
@@ -24,7 +24,7 @@ reset_timer!()
 ρ = 1.225
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
 Ω = SVector(0.0, 0.0, 0.0)
-uniform = Freestream(10.0, 5.0, 5.0, Ω)
+uniform = Freestream(10.0, 5.0, 0.0, Ω)
 nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = @time solve_case(wing, uniform, ref, span_num = 10, chord_num = 10) 
 
 print_timer();
