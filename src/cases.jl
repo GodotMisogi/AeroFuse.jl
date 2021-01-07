@@ -49,9 +49,11 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
 end
 
 function solve_case(foil :: Foil, freestream :: Uniform2D, num_panels :: Integer = 60)
-    @timeit "Make Panels" airfoil = paneller(foil, num_panels)
+    # @timeit "Make Panels" 
+    airfoil = paneller(foil, num_panels)
     
-    @timeit "Solve Case" φs, cl = solve_problem(airfoil, Laplace.velocity(freestream))
+    # @timeit "Solve Case" 
+    φs, cl = solve_problem(airfoil, Laplace.velocity(freestream))
     
     cl
 end

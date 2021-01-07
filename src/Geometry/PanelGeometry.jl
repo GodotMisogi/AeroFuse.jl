@@ -8,7 +8,7 @@ using Rotations
 using CoordinateTransformations
 
 include("../Tools/MathTools.jl")
-using .MathTools: span, structtolist, inverse_rotation, rotation, midgrad
+using .MathTools: span, structtolist, inverse_rotation, rotation, affine_2D
 
 ## Panel setup
 #==========================================================================================#
@@ -19,8 +19,6 @@ Placeholder. Panels should be an abstract type as they have some common methods,
 abstract type Panel end
 
 panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) - collocation_point(panel_1))
-
-panel_pairs(panels :: AbstractVector{<: Panel}) = [ panel_dist(pair...) for pair ∈ (collect ∘ eachrow ∘ midgrad)(panels) ]
 
 split_panels(panels :: AbstractVector{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
 

@@ -82,24 +82,33 @@ vectarray(xs) = SVector.(eachcol(xs)...)
 ## Difference opettions
 #===========================================================================#
 
-fwdsum(xs) = xs[2:end] .+ xs[1:end-1]
-fwddiff(xs) = xs[2:end] .- xs[1:end-1]
-fwddiv(xs) = xs[2:end] ./ xs[1:end-1]
-ord2diff(xs) = xs[3:end] .- 2 * xs[2:end-1] .+ xs[1:end-2] 
+fwdsum(xs) = @. xs[2:end] .+ xs[1:end-1]
+fwddiff(xs) = @. xs[2:end] - xs[1:end-1]
+fwddiv(xs) = @. xs[2:end] / xs[1:end-1]
+ord2diff(xs) = @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
 
 adj3(xs) = [ xs[1:end-2,:] xs[2:end-1,:] xs[3:end,:] ]
 
 # Central differencing schema for pairs except at the trailing edge
 
-stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
-parts(xs) = let adj = stencil(xs, 1); adj[1,:], adj[end,:] end
+midpair_map(f, xs) = [        f(xs[1], xs[2])     ;
+                       f.(xs[1:end-2], xs[3:end]) ;
+                          f(xs[end-1],  xs[end])  ]
 
-function midgrad(xs) 
-    first_two_pairs, last_two_pairs = permutedims.(parts(xs))
-    central_diff_pairs = stencil(xs, 2)
+# stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
+# parts(xs) = le/t adj = stencil(xs, 1); adj[1,:], adj[end,:] end
+
+# Lazy? versions
+# stencil(xs, n) = zip(xs[n+1:end], xs[1:length(xs) - n])
+# parts(xs) = (first ∘ stencil)(xs, 1), (last ∘ stencil)(xs, 1)
+
+# function midgrad(xs) 
+#     first_two_pairs, last_two_pairs = permutedims.(parts(xs))
+#     central_diff_pairs = stencil(xs, 2)
     
-    [first_two_pairs; central_diff_pairs; last_two_pairs]
-end
+#     [first_two_pairs; central_diff_pairs; last_two_pairs]
+# end
+
 
 ## Spacing formulas
 #===========================================================================#
