@@ -40,7 +40,7 @@ function trace_panels(panels :: AbstractVector{Panel3D}, Γs :: AbstractVector{<
                 for (x, y, z, norm_Γ) in zip(xs, ys, zs, norm_Γs) ]
 end
 
-trace_streamlines(freestream :: Freestream, points, horseshoes :: AbstractVector{Horseshoe}, Γs :: AbstractVector{<: Real}, length :: Real, num_steps :: Integer = 100) = trace_coords((panel_splits ∘ streamlines)(freestream, points, horseshoes, Γs, length, num_steps)..., :lightblue)
+trace_streamlines(freestream :: Freestream, points, horseshoes :: AbstractVector{<: Horseshoe}, Γs :: AbstractVector{<: Real}, length :: Real, num_steps :: Integer = 100) = trace_coords((panel_splits ∘ streamlines)(freestream, points, horseshoes, Γs, length, num_steps)..., :lightblue)
 
 ## Doublet-source
 #==========================================================================================#
