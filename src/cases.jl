@@ -29,9 +29,9 @@ function solve_symmetric_case(wing :: HalfWing, freestream :: Freestream, span_n
 end
 
 function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; span_num :: Integer = 15, chord_num :: Integer = 5)
-    # if wing.left === wing.right && freestream.β == 0.
-    #     solve_symmetric_case(wing.right, freestream, span_num, chord_num, r_ref, ρ)
-    # else
+    if wing.left === wing.right && freestream.β == 0.
+        solve_symmetric_case(wing.right, freestream, span_num, chord_num, r_ref, ρ)
+    else
         # Compute panels
         @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)
         
@@ -45,7 +45,7 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
         nearfield_coeffs, farfield_coeffs = case_coefficients(wing, force, moment, drag, trans_rates, trefftz_force, trefftz_moment, freestream.mag, ρ)
 
         nearfield_coeffs, farfield_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs
-    # end
+    end
 end
 
 function solve_case(foil :: Foil, freestream :: Uniform2D, num_panels :: Integer = 60)

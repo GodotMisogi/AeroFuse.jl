@@ -33,7 +33,7 @@ point2(line :: Line) = line.r2
 vector(line :: Line) = point2(line) - point1(line)
 center(line :: Line) = (point1(line) + point2(line)) / 2
 
-points(lines :: AbstractVector{<: Line}) = [ point1.(lines)..., (point2 ∘ last)(lines) ]
+points(lines :: AbstractVector{<: Line}) = [ point1.(lines); [(point2 ∘ last)(lines)] ]
 
 transform(line :: Line, rotation, translation) = let trans = Translation(translation) ∘ LinearMap(rotation); Line((trans ∘ point1)(line), (trans ∘ point2)(line)) end
 

@@ -66,11 +66,11 @@ function solve_system(colpoints, horseshoes, normals, total_vel, U, symmetry)
     @timeit "RHS" boco = boundary_condition(total_vel, normals)
     
     # Pre-allocated versions
-    AIC = zeros(length(colpoints), length(colpoints))
-    boco = zeros(length(colpoints))
+    # AIC = zeros(length(colpoints), length(colpoints))
+    # boco = zeros(length(colpoints))
 
-    @timeit "AIC (Preallocated)" influence_matrix!(AIC, colpoints, normals, horseshoes, -normalize(U))
-    @timeit "RHS (Preallocated)" boundary_condition!(boco, total_vel, normals)
+    # @timeit "AIC (Preallocated)" influence_matrix!(AIC, colpoints, normals, horseshoes, -normalize(U))
+    # @timeit "RHS (Preallocated)" boundary_condition!(boco, total_vel, normals)
 
     @timeit "Solve AIC" AIC \ boco
 end

@@ -23,10 +23,11 @@ reset_timer!()
 
 ρ = 1.225
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-Ω = SVector(0.0, 0.0, 0.0)
-uniform = Freestream(10.0, 5.0, 0.0, Ω)
-@time nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10) 
+Ω = SVector(0.0, 5.0, 3.0)
+uniform = Freestream(10.0, 5.0, 5.0, Ω)
+nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = @time solve_case(wing, uniform, ref, span_num = 10, chord_num = 10) 
 
+#
 print_timer();
 
 begin
@@ -69,10 +70,10 @@ trace_wing = trace_surface(wing)
 
 PlotlyJS.plot(
             [
-                [ trace for trace in trace_horsies ]...,
-                [ trace for trace in trace_horses ]...,
-                [ trace for trace in trace_streams ]...,
-                [ trace for trace in trace_cambers ]...,
+                (trace for trace in trace_horsies)...,
+                (trace for trace in trace_horses)...,
+                (trace for trace in trace_streams)...,
+                (trace for trace in trace_cambers)...,
                 # [ trace for trace in trace_wing ]...,
             ],
             layout)

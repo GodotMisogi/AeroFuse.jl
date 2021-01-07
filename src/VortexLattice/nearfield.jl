@@ -18,8 +18,6 @@ Evaluates the induced velocity by the trailing legs at a given location ``r``, b
 """
 midpoint_velocity(r :: SVector{3, <: Real}, Ω :: SVector{3,<: Real}, horseshoes :: AbstractVector{<: Horseshoe}, Γs :: AbstractVector{<: Real}, U :: SVector{3,<: Real}) = @timeit "Midpoint Velocity" sum(trailing_velocity.(Ref(r), horseshoes, Γs, Ref(-normalize(U)))) - U - Ω × r
 
-# kutta_joukowsky(r :: SVector{3, <: Real}, Γ :: Real, l :: SVector{3, <: Real}, Γs :: AbstractVector{<: Real}, horseshoes :: AbstractVector{<: Horseshoe}, U :: SVector{3,<: Real}, Ω :: SVector{3,<: Real}, ρ :: Real) = kutta_joukowsky(ρ, Γ, midpoint_velocity(r, Ω, horseshoes, Γs, U), l)
-
 """
 	nearfield_forces(Γs, horseshoes, U, Ω, ρ)
 
