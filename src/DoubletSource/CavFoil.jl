@@ -72,8 +72,8 @@ function cavity_influence_matrix(wetted_panels :: AbstractVector{Panel2D}, wette
 
     # Cavity leading edge extrapolation
     leading_cavpanel  = findfirst(panel -> panel === first(cavity_panels), panels)
-    prev_terms        = 3
-    leading           = [ zeros(length(panels) - leading_cavpanel - prev_terms)..., 1, 2, 3, zeros(leading_cavpanel - 1)... ]
+    prev_terms        = [1,2,3]
+    leading           = [ zeros(length(panels) - leading_cavpanel - length(prev_terms)); prev_terms; zeros(leading_cavpanel - 1) ]
     leading_dub       = sum(doublets_wetcav, dims = 2)
     leading_cav       = sum(doublets_cavcav, dims = 2)
 

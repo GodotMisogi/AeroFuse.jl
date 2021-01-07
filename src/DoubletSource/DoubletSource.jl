@@ -23,157 +23,87 @@ using .MathTools: rotation, inverse_rotation, affine_2D, span, midgrad
 #==========================================================================================#
 
 include("../Tools/Laplace.jl")
-import .Laplace: Uniform2D, velocity, source_potential, doublet_potential, potential, grid_data
-
-export Uniform2D, velocity, source_potential, doublet_potential, potential, grid_data
+import .Laplace: source_potential, doublet_potential, potential
 
 ## Panels
 #==========================================================================================#
 
 include("../Geometry/PanelGeometry.jl")
-using .PanelGeometry: Panel, Panel2D, split_panels, panel_dist, panel_length, panel_normal, panel_angle, panel_normal, panel_tangent, point1, point2, collocation_point, panel_pairs
+using .PanelGeometry: Panel, Panel2D, split_panels, panel_dist, panel_length, panel_normal, panel_angle, panel_normal, panel_tangent, point1, point2, collocation_point, panel_pairs, trans_panel
 
 export Panel, Panel2D, collocation_point
 
 ## Matrix assembly
 #==========================================================================================#
 
-export solve_strengths, lift_coefficient, solve_case,
+function doublet_influence(panel_j :: Panel2D, panel_i :: Panel2D)
+    xp, yp = trans_panel(panel_j, panel_i)
+    doublet_potential(1., xp, yp, 0., panel_length(panel_j))
+end
+
+function source_influence(panel_j :: Panel2D, panel_i :: Panel2D)
+    xp, yp = trans_panel(panel_j, panel_i)
+    source_potential(1., xp, yp, 0., panel_length(panel_j))
+end
+
+include("influences.jl")
+include("matrix_prealloc.jl")
+
+export solve_problem, solve_strengths, lift_coefficient, solve_case,
 panel_velocities, influence_coefficient, doublet_potential, source_potential,
 doublet_matrix, wake_vector, source_matrix, boundary_vector, kutta_condition
 
-"""
-    doublet_potential(panel, φ, x, y)
-
-Computes the influence of a Panel2D with a given doublet strength ``\\phi`` at a location (x, y).
-"""
-doublet_potential(panel :: Panel2D, φ :: Real, x :: Real, y :: Real) = 
-    @timeit "Doublet Potential" doublet_potential(φ, affine_2D(x, y, point1(panel)..., panel_angle(panel))..., 0., panel_length(panel))
-
-"""
-    source_potential(panel, σ, x, y)
-
-Computes the influence of a Panel2D with a given source strength ``\\sigma`` at a location (x, y).
-"""
-source_potential(panel :: Panel2D, strength :: Real, x :: Real, y :: Real) =
-    @timeit "Source Potential" source_potential(strength, affine_2D(x, y, point1(panel)..., panel_angle(panel))..., 0., panel_length(panel))
-
-"""
-    doublet_influence(panel_1, panel_2)
-
-Computes the doublet potential influence coefficient of panel_1 at the collocation point of panel_2.
-"""
-doublet_influence(panel_1 :: Panel2D, panel_2 :: Panel2D) = doublet_potential(panel_1, 1., collocation_point(panel_2)...)
-
-
-"""
-    source_influence(panel_1, panel_2)
-
-Computes the doublet potential influence coefficient of panel_1 at the collocation point of panel_2.
-"""
-source_influence(panel_1 :: Panel2D, panel_2 :: Panel2D) = source_potential(panel_1, 1., collocation_point(panel_2)...)
-
-"""
-    doublet_matrix(panels_1, panels_2)
-
-Creates the matrix of doublet potential influence coefficients between pairs of panels_1 and panels_2.
-"""
-doublet_matrix(panels_1 :: AbstractVector{Panel2D}, panels_2 :: AbstractVector{Panel2D}) = 
-    map(pans -> pans[1] === pans[2] ? 0.5 : doublet_influence(pans...), product(panels_1, panels_2))'
-
-"""
-    source_matrix(panels_1, panels_2)
-
-Creates the matrix of source potential influence coefficients between pairs of panels_1 and panels_2.
-"""
-source_matrix(panels_1 :: AbstractVector{Panel2D}, panels_2 :: AbstractVector{Panel2D}) = [ source_influence(panel_j, panel_i) for panel_i ∈ panels_1, panel_j ∈ panels_2 ]
-
-"""
-    source_strengths(panels, freestream)
-
-Creates the vector of source strengths for the Dirichlet boundary condition ``\\sigma = \\vec U_{\\infty} \\cdot \\hat{n}`` given Panel2Ds and a Uniform2D.
-"""
-source_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = dot.((Scalar ∘ velocity)(freestream), panel_normal.(panels))
-
-"""
-    source_strengths(panels, freestream)
-
-Creates the vector for the Dirichlet boundary condition ``\\sigma = \\vec U_{\\infty} \\cdot \\hat{n}`` given Panel2Ds and a Uniform2D.
-"""
-boundary_condition(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = - source_matrix(panels, panels) * source_strengths(panels, freestream)
-
-"""
-    kutta_condition(panels)
-
-Creates the vector describing Morino's Kutta condition given Panel2Ds.
-"""
-kutta_condition(panels :: AbstractVector{Panel2D}) = [ 1., -1., zeros(length(panels) - 4)..., 1., -1.]
-
-"""
-    wake_vector(panels, bound)
-
-Creates the vector of doublet potential influence coefficients from the wake on the panels, with an option for the length of the wake.
-"""
-function wake_vector(panels :: AbstractVector{Panel2D}, bound = 1e3)
-    lastx, lasty = point2(panels[end])
-    woke_panel = Panel2D((lastx, lasty), (bound * lastx, lasty))
-    
-    [ doublet_potential(woke_panel, 1., pt...) for pt ∈ collocation_point.(panels) ]
-end
-
-"""
-    influence_matrix(panels)
-
-Assembles the Aerodynamic Influence Coefficient matrix consisting of the doublet matrix, wake vector, Kutta condiition given Panel2Ds.
-"""
-function influence_matrix(panels :: AbstractVector{Panel2D}) 
-    @timeit "Doublet Matrix" dub_mat = doublet_matrix(panels, panels)
-    @timeit "Wake Vector" wake_vec   = wake_vector(panels)
-    @timeit "Kutta Condition" kutta  = kutta_condition(panels)'
-    @timeit "Matrix Assembly" mat    = [ dub_mat   wake_vec;
-                                         kutta        0.   ]
-end
-
-"""
-    boundary_vector(panels, freestream)
-
-Assembles the vector for the boundary condition of the problem given Panel2Ds and a Uniform2D.
-"""
-boundary_vector(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) = [ boundary_condition(panels, freestream); 0. ]
-
-function solve_strengths(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D) 
+function solve_strengths(panels :: AbstractVector{<: Panel2D}, u, bound = 1e3) 
     # @timeit "Source Strengths" σs = source_strengths(panels, freestream)
-    @timeit "AIC" AIC      = influence_matrix(panels)
-    @timeit "RHS" boco     = boundary_vector(panels, freestream)
-    @timeit "Solve AIC" φs = AIC \ boco 
+   
+    # @timeit "AIC" AIC   = influence_matrix(panels)
+    # @timeit "RHS" boco  = boundary_vector(panels, u)
 
-    φs
+
+    # Pre-allocated version
+    n = length(panels) + 1
+    AIC = zeros(n,n)
+    boco = zeros(n)
+
+    lastx, lasty = (point2 ∘ last)(panels)
+    woke_panel = Panel2D{Float64}((lastx, lasty), (bound * lastx, lasty))
+
+    @timeit "Matrix Assembly (Preallocated)" matrix_assembly!(AIC, boco, panels, woke_panel, u)
+
+    @timeit "Solve AIC" AIC \ boco 
+end
+
+function solve_problem(panels :: AbstractVector{<: Panel2D}, u)
+    @timeit "Solve System" φs = solve_strengths(panels, u)
+        
+    @timeit "Lift Coefficient" cl = lift_coefficient(panels, u, φs)
+
+    φs, cl
 end
 
 ## Force and pressure evaluations
 #==========================================================================================#
 
-function panel_velocities(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D, doublet_strengths :: AbstractVector{<: Real})
+function panel_velocities(panels :: AbstractVector{<: Panel2D}, u, doublet_strengths :: AbstractVector{<: Real})
     @timeit "Panel Pairs" diff_pans = panel_pairs(panels)
     @timeit "Strength Diffs" diff_strs = -diff(midgrad(doublet_strengths), dims = 2)
-    @timeit "Tangential Velocities" tan_dot_u = dot.((Scalar ∘ velocity)(freestream), panel_tangent.(panels))
+    @timeit "Tangential Velocities" tan_dot_u = dot.(Ref(u), panel_tangent.(panels))
 
-    @timeit "Sum Velocities" diff_strs ./ diff_pans .+ tan_dot_u 
+    @timeit "Sum Velocities" @. diff_strs / diff_pans + tan_dot_u 
 end
 
 lift_coefficient(cp :: Real, dist_colpoints :: Real, panel_angle :: Real) = - cp * dist_colpoints * cos(panel_angle)
 
 lift_coefficient(wake_strength :: Real, speed :: Real) = - 2. * wake_strength / speed
 
-function pressure_coefficient(panels :: AbstractVector{Panel2D}, φs :: AbstractVector{<: Real}, freestream :: Uniform2D) 
-    speed = (norm ∘ velocity)(freestream)
-    @timeit "Panel Velocities" panel_vels = panel_velocities(panels, freestream, φs[1:end-1])
-    pressure_coefficient.(speed, panel_vels)
+function pressure_coefficient(panels :: AbstractVector{<: Panel2D}, φs :: AbstractVector{<: Real}, u) 
+    @timeit "Panel Velocities" panel_vels = panel_velocities(panels, u, φs[1:end-1])
+    pressure_coefficient.(norm(u), panel_vels)
 end
 
-function lift_coefficient(panels :: AbstractVector{Panel2D}, freestream :: Uniform2D, φs :: AbstractVector{<: Real}) 
-    @timeit "Pressure Coefficients" cps = pressure_coefficient(panels, φs, freestream)
-    @timeit "Lift Coefficients" cls = lift_coefficient.(cps, panel_pairs(panels) ./ 2, panel_angle.(panels))
+function lift_coefficient(panels :: AbstractVector{<: Panel2D}, u, φs :: AbstractVector{<: Real}) 
+    @timeit "Pressure Coefficients" cps = pressure_coefficient(panels, φs, u)
+    @timeit "Lift Coefficients" cls = lift_coefficient.(cps, panel_pairs(panels) / 2, panel_angle.(panels))
     cl = sum(cls)
 end
 

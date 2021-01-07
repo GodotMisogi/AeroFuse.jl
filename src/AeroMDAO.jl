@@ -41,10 +41,15 @@ export Panel3D, Horseshoe, Freestream, velocity, streamlines, solve_horseshoes, 
 ## Doublet-source panel method
 #==========================================================================================#
 
+include("Tools/Laplace.jl")
+import .Laplace: Uniform2D, velocity
+
+export Uniform2D, velocity
+
 include("DoubletSource/DoubletSource.jl")
 using .DoubletSource
 
-export Panel2D, Uniform2D, lift_coefficient
+export Panel2D, lift_coefficient
 
 ## Aerodynamic analyses
 #==========================================================================================#

@@ -48,6 +48,15 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
     # end
 end
 
+function solve_case(foil :: Foil, freestream :: Uniform2D, num_panels :: Integer = 60)
+    @timeit "Make Panels" airfoil = paneller(foil, num_panels)
+    
+    @timeit "Solve Case" φs, cl = solve_problem(airfoil, Laplace.velocity(freestream))
+    
+    cl
+end
+
+
 # function solve_case(components :: Dict{<: Aircraft, Tuple{Integer, Integer}}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225)
 #     # Compute panels
 #     @timeit "Meshing" meshes = [ vlmesh_wing(comp, size_panels...) for (comp, size_panels) in components ] 
@@ -77,11 +86,3 @@ end
 
 #     nearfield_coeffs, farfield_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs
 # end
-
-function solve_case(foil :: Foil, freestream :: Uniform2D, num_panels :: Integer = 60)
-    @timeit "Make Panels" airfoil = paneller(foil, num_panels)
-    
-    @timeit "Solve System" φs = solve_strengths(airfoil, freestream)
-    
-    @timeit "Lift Coefficient" cl = lift_coefficient(airfoil, freestream, φs)
-end

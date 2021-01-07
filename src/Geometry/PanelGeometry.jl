@@ -18,7 +18,7 @@ Placeholder. Panels should be an abstract type as they have some common methods,
 """
 abstract type Panel end
 
-panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) .- collocation_point(panel_1))
+panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) - collocation_point(panel_1))
 
 panel_pairs(panels :: AbstractVector{<: Panel}) = [ panel_dist(pair...) for pair ∈ (collect ∘ eachrow ∘ midgrad)(panels) ]
 
@@ -27,10 +27,12 @@ split_panels(panels :: AbstractVector{<: Panel}) = collect.(span(panel -> panel_
 ## 2D Panels
 #==========================================================================================#
 
-struct Panel2D <: Panel
-    p1 :: SVector{2, Real}
-    p2 :: SVector{2, Real}
+struct Panel2D{T} <: Panel where T <: Real
+    p1 :: SVector{2,T}
+    p2 :: SVector{2,T}
 end
+
+Panel2D(p1 :: SVector{2,T}, p2 :: SVector{2,T}) where T <: Real = Panel2D{T}(p1, p2)
 
 # Methods on panels
 point1(p :: Panel) = p.p1
@@ -42,6 +44,11 @@ a :: Panel - b :: Panel = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
 collocation_point(panel :: Panel2D) = (point1(panel) + point2(panel)) / 2
 panel_length(panel :: Panel2D) = norm(point2(panel) - point1(panel))
 
+function trans_panel(panel_1 :: Panel2D, panel_2 :: Panel2D)
+    x, y = collocation_point(panel_2)
+    xs, ys = point1(panel_1)
+    affine_2D(x, y, xs, ys, panel_angle(panel_1)) 
+end
 
 function panel_angle(panel :: Panel2D)
     xs, ys = point1(panel) 
