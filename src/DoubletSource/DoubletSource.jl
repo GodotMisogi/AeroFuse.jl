@@ -1,6 +1,5 @@
 module DoubletSource
 
-
 using LinearAlgebra
 using Base.Iterators
 using StaticArrays
@@ -46,7 +45,7 @@ function source_influence(panel_j :: Panel2D, panel_i :: Panel2D)
     source_potential(1., xp, yp, 0., panel_length(panel_j))
 end
 
-include("influences.jl")
+include("matrix_func.jl")
 include("matrix_prealloc.jl")
 
 export solve_problem, solve_strengths, lift_coefficient, solve_case,
