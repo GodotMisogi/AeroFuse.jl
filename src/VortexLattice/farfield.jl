@@ -11,12 +11,12 @@ trefftz_potential(r_i :: SVector{3, <: Real}, r_j :: SVector{3, <: Real}, Γ_j :
 
 function trefftz_preprocessing(horseshoes :: AbstractArray{<: Horseshoe}, freestream :: Freestream)
     U_hat               = SVector(1, 0, 0)
-    u_ref, free_ref     = Ref(U_hat), Ref(freestream)
+    U_ref, free_ref     = Ref(U_hat), Ref(freestream)
     trefftz_lines       = @. body_to_wind_axes(bound_leg(horseshoes[end,:][:]), free_ref)
 
     trefftz_vectors     = @. vector(trefftz_lines)
-    trefftz_proj_vecs   = @. trefftz_vectors - dot(u_ref, trefftz_vectors) * u_ref
-    normals             = @. u_ref × trefftz_proj_vecs
+    trefftz_proj_vecs   = @. trefftz_vectors - dot(U_ref, trefftz_vectors) * U_ref
+    normals             = @. U_ref × trefftz_proj_vecs
 
     @timeit "Dihedrals" dihedrals = [ atan(vec[3], vec[2]) for vec in trefftz_proj_vecs ]
     @timeit "Projected Leg Norms" Δs = norm.(trefftz_proj_vecs)
@@ -24,10 +24,10 @@ function trefftz_preprocessing(horseshoes :: AbstractArray{<: Horseshoe}, freest
     trefftz_lines, trefftz_proj_vecs, normals, dihedrals, Δs
 end
 
-function trefftz_compute(ΔφsΔs, ∂φ_∂n, dihedrals, V, ρ, symmetry)     
-    D_i = - 1/2 * ρ * sum(@. ΔφsΔs * ∂φ_∂n)
-    Y   = - ρ * V * sum(@. ΔφsΔs * sin(dihedrals))
-    L   = ρ * V * sum(@. ΔφsΔs * cos(dihedrals))
+function trefftz_compute(Δφs, Δs, ∂φ_∂n, dihedrals, V, ρ, symmetry)     
+    D_i = - 1/2 * ρ * sum(@. Δφs * Δs * ∂φ_∂n)
+    Y   = - ρ * V * sum(@. Δφs * Δs * sin(dihedrals))
+    L   = ρ * V * sum(@. Δφs * Δs * cos(dihedrals))
     
     symmetry ? SVector(D_i, 0, 2L) : SVector(D_i, Y, L)
 end
@@ -46,7 +46,7 @@ function trefftz_forces(Γs, horseshoes :: AbstractArray{<: Horseshoe}, freestre
     @timeit "∂φ/∂n" ∂φ_∂n = ∂φ∂ns(trefftz_lines, Δφs, normals)
 
     # Compute forces
-    trefftz_compute(Δφs .* Δs, ∂φ_∂n, dihedrals, freestream.mag, ρ, symmetry)
+    trefftz_compute(Δφs, Δs, ∂φ_∂n, dihedrals, freestream.mag, ρ, symmetry)
 end 
 
 """

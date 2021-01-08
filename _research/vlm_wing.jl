@@ -48,12 +48,12 @@ layout = Layout(title = "Vortex Lattice",
 reset_timer!()
 
 num_points = 30
-max_z = 0.02
+max_z = 0.1
 y = span(wing) / 2 - 0.5
 # seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
 
 span_points = 10
-init = trailing_chopper(wing.right, span_points) 
+init = trailing_chopper(wing, span_points) 
 dx, dy, dz = 0, 0, 1e-3
 seed = [ init .+ Ref([dx, dy, dz]); 
          init .+ Ref([dx, dy, -dz]) ]
