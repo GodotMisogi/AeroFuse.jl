@@ -53,24 +53,22 @@ export solve_horseshoes
 """
 Placeholder.
 """
-function make_horseshoes(horseshoe_panels :: AbstractVector{Panel3D})
-    @timeit "Horseshoes" horseshoes = horseshoe_lines.(horseshoe_panels)
-    @timeit "Collocation Points" colpoints = collocation_point.(horseshoe_panels)
-
-    horseshoes, colpoints
-end
+make_horseshoes(horseshoe_panels :: AbstractVector{Panel3D}) =
+    @. horseshoe_lines(horseshoe_panels), collocation_point(horseshoe_panels)
 
 function solve_system(colpoints, horseshoes, normals, total_vel, U, symmetry)
-    # Allocated versions
+    # Allocated versions    
+
     @timeit "AIC" AIC = influence_matrix(colpoints, normals, horseshoes, -normalize(U), symmetry)
     @timeit "RHS" boco = boundary_condition(total_vel, normals)
     
-    # Pre-allocated versions
+    # Pre-allocated version
     # AIC = zeros(length(colpoints), length(colpoints))
     # boco = zeros(length(colpoints))
 
-    # @timeit "AIC (Preallocated)" influence_matrix!(AIC, colpoints, normals, horseshoes, -normalize(U))
-    # @timeit "RHS (Preallocated)" boundary_condition!(boco, total_vel, normals)
+    # @timeit "RHS" boundary_condition!(boco, colpoints, U, Ω, normals)
+    
+    # @timeit "Matrix Assembly (Pre-allocated)" matrix_assembly!(AIC, boco, colpoints, normals, horseshoes, total_vel, -normalize(U))
 
     @timeit "Solve AIC" AIC \ boco
 end
@@ -86,12 +84,12 @@ function solve_horseshoes(horseshoe_panels :: AbstractVector{Panel3D}, camber_pa
     horseshoes, colpoints = make_horseshoes(horseshoe_panels)
     
     @timeit "Normals" normals = panel_normal.(camber_panels)
-    
+
     @timeit "Total Velocity" total_vel = [ U + freestream.Ω × colpoint for colpoint in colpoints ]
 
     @timeit "Solving..." Γs = solve_system(colpoints, horseshoes, normals, total_vel, U, symmetry)
 
-    @timeit "Reshape" Γs, horseshoes
+    Γs, horseshoes
 end
 
 

@@ -25,7 +25,7 @@ n_upper = length(α_u0)  # Number of upper surface variables
 le = 0.0                # Leading edge modification
 α = 0.                  # Angle of attack
 cl0 = 1.2               # Target lift coefficient
-CST_cl = optimize_CST(α_ul0, α, n_upper, le)
+CST_cl = @time optimize_CST(α_ul0, α, n_upper, le)
 println("CST Cl: $CST_cl")
 
 ## Plot
@@ -81,7 +81,7 @@ end
 num_cam = length(α_c0)  # Number of camber variables
 α = 0.                  # Angle of attack
 cl0 = 1.2               # Target lift coefficient
-camber_cl = optimize_camber_CST(α_ct0, α, num_cam)
+camber_cl = @time optimize_camber_CST(α_ct0, α, num_cam)
 println("Camber Cl: $camber_cl")
 
 ## Plot

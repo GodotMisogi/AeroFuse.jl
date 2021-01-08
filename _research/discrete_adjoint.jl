@@ -22,7 +22,12 @@ function get_T(T_grid, i, j, T_boundary)
     end
 end
 
-stencil_1(T, i, j, T_boundary) = [ get_T(T, i, j, T_boundary), get_T(T, i-1, j, T_boundary), get_T(T, i+1, j, T_boundary), get_T(T, i, j-1, T_boundary), get_T(T, i, j+1, T_boundary) ]
+stencil_1(T, i, j, T_boundary) = 
+    [ get_T(T, i, j, T_boundary)   ;
+      get_T(T, i-1, j, T_boundary) ;
+      get_T(T, i+1, j, T_boundary) ;
+      get_T(T, i, j-1, T_boundary) ;
+      get_T(T, i, j+1, T_boundary) ]
 
 # Difference operators specific to stencil_1
 Δ²x(T, h) = central_2nd_diff(T[2], T[1], T[3], h)
@@ -92,6 +97,8 @@ for i in 1:num_iters
     T .+= ω * ΔT
 end
 
+k = compute_k.(βs..., T)
+
 ##
 using Plots
 plotlyjs()
@@ -100,10 +107,13 @@ plotlyjs()
 plot(ε)
 
 ##
-contourf(xs, xs, q₀)
+surf1 = surface(xs, xs, q₀)
 
 ##
-contourf(xs, xs, T)
+surf2 = surface(xs, xs, T)
+
+##
+surf3 = surface(xs, xs, k)
 
 # begin
 #     ΔT = ∂R∂T \ -ΔR

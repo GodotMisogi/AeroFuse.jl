@@ -19,7 +19,7 @@ end
 function run_case(wing, V, α)
     uniform = Freestream(V, α, 0.0)
     ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
+    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 10, chord_num = 10)
 
     ff_coeffs
 end
@@ -47,13 +47,13 @@ V = 10.
 reset_timer!()
 
 @timeit "Making Wing" wing = make_wing(digits, chords, twists, spans, dihedrals, sweeps)
-@timeit "Computing CDi" cdi = optimize_cdi(digits, chords, twists, spans, dihedrals, sweeps, V, α)
-@timeit "Computing Lift" lifter = cons_lift(digits, chords, twists, spans, dihedrals, sweeps, V, α)
+
+@timeit "Run Case" ff_coeffs = @time run_case(wing, V, α)
 
 print_timer()
 
-println("CDi: $cdi")
-println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, V), projected_area(wing)))")
+println("\nFarfield:")
+print_dynamics(ff_coeffs...)
 
 ## Optimisation
 #============================================#
@@ -64,19 +64,19 @@ l_bound = fill(1e-12, length(chords))
 u_bound = fill(Inf, length(chords))
 bound_chords = TwiceDifferentiableConstraints(l_bound, u_bound)
 
-lc = [5.0]; uc = [5.0]
+lc = [1.]; uc = [1.]
 
 function lifter!(c, x) 
     c = cons_lift(digits, x, twists, spans, dihedrals, sweeps, V, α)
 end
 
-lift_constraint = TwiceDifferentiableConstraints(lifter, l_bound, u_bound, lc, uc, :forward)
+lift_constraint = TwiceDifferentiableConstraints(lifter!, l_bound, u_bound, lc, uc, :forward)
 
 reset_timer!()
 
 @timeit "Optimizing" res_chord = optimize(optimize_chords,
                                           lift_constraint,
-                                          bound_chords,
+                                        #   bound_chords,
                                           chords,							# Initial value
                                           IPNewton(),
                                           # autodiff = :forward,
@@ -98,6 +98,6 @@ opt_wing = make_wing(digits, res_chord.minimizer, twists, spans, dihedrals, swee
 wing_trace = trace_surface(opt_wing)
 
 plot([ 
-		[ trace for trace in wing_trace ]...,
+		(trace for trace in wing_trace)...,
 	],
 	layout)

@@ -31,6 +31,21 @@ end
 αs = 0:10
 @benchmark cls = alpha_sweep.(αs, Ref(airfoil))
 
+## Overall
+
+function optimize_CST(alpha_u, alpha_l)
+    @timeit "Make Airfoil" airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), 0., 80)
+    @timeit "Make Uniform2D" uniform = Uniform2D(1.0, 5.0)
+    @timeit "Solve Case" solve_case(airfoil, uniform, 60)
+end
+
+##
+reset_timer!();
+
+@time optimize_CST(alpha_u, alpha_l)
+
+print_timer();
+
 ## Plotting libraries
 using Plots
 plotlyjs();

@@ -58,7 +58,7 @@ total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_
 """
 Computes the velocity induced at a point `r` by a vortex Line with constant strength Γ.
 """
-horseshoe_velocity(r, line :: Line, Γ, direction) = @timeit "Sum Legs" total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
+horseshoe_velocity(r, line :: Line, Γ, direction) = total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
 
 ## Arrays of vortex lines
 #==========================================================================================#

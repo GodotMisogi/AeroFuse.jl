@@ -27,7 +27,7 @@ Assembles the Aerodynamic Influence Coefficient matrix consisting of the doublet
 """
 influence_matrix(panels :: AbstractVector{<: Panel2D}, woke_panel :: Panel2D) = 
     [ doublet_matrix(panels, panels)   wake_vector(woke_panel, panels) ;
-        kutta_condition(panels)'                       0               ]
+         kutta_condition(panels)'                     0                ]
 
 """
     source_matrix(panels_1, panels_2)

@@ -36,8 +36,8 @@ Panel2D(p1 :: SVector{2,T}, p2 :: SVector{2,T}) where T <: Real = Panel2D{T}(p1,
 point1(p :: Panel) = p.p1
 point2(p :: Panel) = p.p2
 
-a :: Panel + b :: Panel = Panel2D(point1(a) + point1(b), point2(a) + point2(b))
-a :: Panel - b :: Panel = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
+a :: Panel2D + b :: Panel2D = Panel2D(point1(a) + point1(b), point2(a) + point2(b))
+a :: Panel2D - b :: Panel2D = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
 
 collocation_point(panel :: Panel2D) = (point1(panel) + point2(panel)) / 2
 panel_length(panel :: Panel2D) = norm(point2(panel) - point1(panel))

@@ -4,6 +4,8 @@ using JuMP
 using Ipopt
 using StaticArrays
 using AeroMDAO
+using PlotlyJS
+
 
 # Wing setup
 #============================================#
@@ -29,52 +31,46 @@ function naca4_wing(m, p, t, c)
     Wing(wing_right, wing_right)
 end
 
+function run_case(wing, V, α, β)
+    ρ = 1.225
+    Ω = SVector(0.0, 0.0, 0.0)
+    uniform = Freestream(V, α, β, Ω)
+    ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
+    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
+end
+
 # Objective function
 function optimize_cdi_chords(chords...)
     wing = make_wing(chords...)
-    ρ = 1.225
-    Ω = SVector(0.0, 0.0, 0.0)
-    uniform = Freestream(10.0, 0.0, 0.0, Ω)
-    ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
+    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, 10., 0., 0.)
 
     cdi = ff_coeffs[2]
 end
 
 function optimize_cdi_naca4(m, p, t, c)
     wing = naca4_wing(m, p, t, c)
-    ρ = 1.225
-    Ω = SVector(0.0, 0.0, 0.0)
-    uniform = Freestream(10.0, 0.0, 0.0, Ω)
-    ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
-
+    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, 10., 0., 0.)
+    
     cdi = ff_coeffs[2]
 end
 
 # Lift constraint function
 function chords_lift(chords...)
+    ρ, speed = 1.225, 10.
     wing = make_wing(chords...)
-    ρ = 1.225
-    Ω = SVector(0.0, 0.0, 0.0)
-    uniform = Freestream(10.0, 0.0, 0.0, Ω)
-    ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
-
+    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, speed, 0., 0.)
+    
     cl = ff_coeffs[1]
-    lift = 1/2 * ρ * uniform.mag^2 * projected_area(wing) * cl
+    lift = 1/2 * ρ * speed^2 * projected_area(wing) * cl
 end
 
 function naca4_lift(m, p, t, c)
+    ρ, speed = 1.225, 10.
     wing = naca4_wing(m, p, t, c)
-    ρ = 1.225
-    Ω = SVector(0.0, 0.0, 0.0)
-    uniform = Freestream(10.0, 0.0, 0.0, Ω)
-    ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    nf_coeffs, ff_coeffs, cps, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10)
+    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, speed, 0., 0.)
 
     cl = ff_coeffs[1]
-    lift = 1/2 * ρ * uniform.mag^2 * projected_area(wing) * cl
+    lift = 1/2 * ρ * speed^2 * projected_area(wing) * cl
 end
 
 ## Test runs
@@ -101,25 +97,66 @@ println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, 10.), projected
 chord_design = Model(with_optimizer(Ipopt.Optimizer))
 num_dv = 5
 
-@variable(chord_design, 1e-4 <= chords[1:num_dv] <= 1.) 
+@variable(chord_design, 0. <= chords[1:num_dv] <= 1.) 
 
 register(chord_design, :optimize_cdi_chords, num_dv, optimize_cdi_chords, autodiff = true)
 
 register(chord_design, :chords_lift, num_dv, chords_lift, autodiff = true)
 
 @NLobjective(chord_design, Min, optimize_cdi_chords(chords...))
-@NLconstraint(chord_design, chords_lift(chords...) == 5)
+@NLconstraint(chord_design, chords_lift(chords...) == 1)
 
 ## Run optimization
 optimize!(chord_design)
 
-## Print
+## Print optimal case
 println("Chords: $(value.(chords)), Optimal CDi: $(objective_value(chord_design))")
 chord_vals = value.(chords)
-cdi = optimize_cdi_chords(chord_vals...)
-lifter = chords_lift(chord_vals...)
-println("CDi: $cdi")
-println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, 10.), projected_area(wing)))")
+uniform = Freestream(10., 0., 0.)
+wing = make_wing(chord_vals...)
+nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, 10., 0., 0.)
+cdi = ff_coeffs[2]
+cl = ff_coeffs[1]
+begin
+    println("\nNearfield:")
+    print_dynamics(nf_coeffs...)
+    println("\nFarfield:")
+    print_dynamics(ff_coeffs...)
+end
+
+##
+layout = Layout(title = "Vortex Lattice",
+                scene = attr(aspectratio=attr(x=1,y=1,z=1)));
+
+## Streamlines
+num_points = 30
+max_z = 0.02
+y = span(wing) / 2 - 0.5
+# seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
+
+span_points = 10
+init = trailing_chopper(wing.right, span_points) 
+dx, dy, dz = 0, 0, 1e-3
+seed = [ init .+ Ref([dx, dy, dz]); 
+         init .+ Ref([dx, dy, -dz]) ]
+
+trace_streams = trace_streamlines(uniform, seed, horseshoes[:], Γs[:], 2, 100);
+
+##
+trace_horsies = trace_panels(horseshoe_panels[:])
+trace_horses = trace_panels(horseshoe_panels[:], Γs[:])
+trace_cambers = trace_panels(camber_panels[:])
+trace_wing = trace_surface(wing)
+
+PlotlyJS.plot(
+            [
+                (trace for trace in trace_horsies)...,
+                (trace for trace in trace_horses)...,
+                (trace for trace in trace_streams)...,
+                (trace for trace in trace_cambers)...,
+                # [ trace for trace in trace_wing ]...,
+            ],
+            layout)
 
 ## NACA-4 optimization
 #============================================#
@@ -133,7 +170,7 @@ register(naca4_design, :optimize_cdi_naca4, 4, optimize_cdi_naca4, autodiff = tr
 register(naca4_design, :naca4_lift, 4, naca4_lift, autodiff = true)
 
 @NLobjective(naca4_design, Min, optimize_cdi_naca4(digits...))
-@NLconstraint(naca4_design, naca4_lift(digits...) == 0.6)
+@NLconstraint(naca4_design, naca4_lift(digits...) == 5)
 
 ## Run optimization
 optimize!(naca4_design)
