@@ -29,7 +29,7 @@ function solve_symmetric_case(wing :: HalfWing, freestream :: Freestream, span_n
 end
 
 function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; span_num :: Integer = 15, chord_num :: Integer = 5)
-    if wing.left === wing.right && freestream.β == 0. && freestream.Ω[1] == 0. && freestream.Ω[3] && == 0.
+    if wing.left === wing.right && freestream.β == 0.
         solve_symmetric_case(wing.right, freestream, span_num, chord_num, r_ref, ρ)
     else
         # Compute panels
