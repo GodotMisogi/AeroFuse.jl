@@ -6,6 +6,7 @@ using StaticArrays
 using LinearAlgebra
 using Rotations
 using CoordinateTransformations
+using Zygote
 
 include("../Tools/MathTools.jl")
 using .MathTools: span, structtolist, inverse_rotation, rotation, affine_2D
@@ -30,7 +31,7 @@ struct Panel2D{T} <: Panel where T <: Real
     p2 :: SVector{2,T}
 end
 
-Panel2D(p1 :: SVector{2,T}, p2 :: SVector{2,T}) where T <: Real = Panel2D{T}(p1, p2)
+Panel2D(p1 :: Union{SVector{2, T}, MVector{2,T}}, p2 :: Union{SVector{2, T}, MVector{2,T}}) where T <: Real = Panel2D{T}(p1, p2)
 
 # Methods on panels
 point1(p :: Panel) = p.p1
@@ -38,6 +39,11 @@ point2(p :: Panel) = p.p2
 
 a :: Panel2D + b :: Panel2D = Panel2D(point1(a) + point1(b), point2(a) + point2(b))
 a :: Panel2D - b :: Panel2D = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
+
+zero(::Panel2D) = Panel2D(MVector(0.,0.), MVector(0.,0.))
+@Zygote.adjoint point1(p::Panel2D) = p.p1, x̄ -> (Panel2D(x̄, MVector(0., 0.)),)
+@Zygote.adjoint point2(p::Panel2D) = p.p2, ȳ -> (Panel2D(MVector(0., 0.), ȳ),)
+@Zygote.adjoint Panel2D(a, b) = Panel2D(a, b), p̄ -> (p̄.p1, p̄.p2)
 
 collocation_point(panel :: Panel2D) = (point1(panel) + point2(panel)) / 2
 panel_length(panel :: Panel2D) = norm(point2(panel) - point1(panel))

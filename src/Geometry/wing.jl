@@ -91,9 +91,9 @@ function leading_edge(wing :: HalfWing, flip :: Bool = false)
     dihedraled_spans = [ 0; cumsum(spans .* tan.(dihedrals)) ]
     cum_spans = [ 0; cumsum(spans) ]
     
-    leading = SVector.(sweeped_spans, flip ? -cum_spans : cum_spans, dihedraled_spans)
+    leading = SVector.(sweeped_spans, ifelse(flip, -cum_spans, cum_spans), dihedraled_spans)
 
-    flip ? leading[end:-1:1] : leading
+    ifelse(flip, leading[end:-1:1], leading)
 end
 
 """
@@ -106,7 +106,7 @@ function wing_bounds(wing :: HalfWing, flip :: Bool = false)
     leading = leading_edge(wing, flip)
     trailing = SVector.(chords, (zeros ∘ length)(chords), twisted_chords) 
 
-    leading, (flip ? trailing[end:-1:1] : trailing) .+ leading
+    leading, (ifelse(flip, trailing[end:-1:1], trailing) .+ leading)
 end
 
 """
@@ -117,8 +117,8 @@ function wing_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer
     
     scaled_foils = wing.chords .* (coordinates ∘ cut_foil).(wing.foils, chord_num)
     
-    scaled_foils = flip ? scaled_foils[end:-1:1] : scaled_foils
-    twists = flip ? wing.twists[end:-1:1] : wing.twists
+    scaled_foils = ifelse(flip, scaled_foils[end:-1:1], scaled_foils)
+    twists = ifelse(flip, wing.twists[end:-1:1], wing.twists)
 
     foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) ∈ zip(scaled_foils, twists, leading_xyz) ]
 
@@ -133,8 +133,8 @@ function camber_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integ
     
     scaled_foils = wing.chords .* (coordinates ∘ camber_thickness).(wing.foils, chord_num)
 
-    scaled_foils = flip ? scaled_foils[end:-1:1] : scaled_foils
-    twists = flip ? wing.twists[end:-1:1] : wing.twists
+    scaled_foils = ifelse(flip, scaled_foils[end:-1:1], scaled_foils)
+    twists = ifelse(flip, wing.twists[end:-1:1], wing.twists)
 
     foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) ∈ zip(scaled_foils, twists, leading_xyz) ]
 

@@ -32,7 +32,7 @@ using .PanelGeometry: Panel, Panel2D, split_panels, panel_dist, panel_length, pa
 
 export Panel, Panel2D, collocation_point
 
-## Matrix assembly
+## Matrix helpers
 #===========================================================================#
 
 function doublet_influence(panel_j :: Panel2D, panel_i :: Panel2D)
@@ -52,7 +52,7 @@ function wake_panel(panels, bound)
     Panel2D(SVector(lastx, lasty), SVector(bound * lastx, lasty))
 end
 
-## Dynamics evaluations
+## Dynamics helpers
 #===========================================================================#
 
 panel_velocity(dφ, dr, u, α) = dφ / dr + dot(u, α)

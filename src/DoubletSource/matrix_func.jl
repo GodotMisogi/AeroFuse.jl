@@ -3,7 +3,7 @@ doublet_matrix(panels_1, panels_2)
 
 Creates the matrix of doublet potential influence coefficients between pairs of panels_1 and panels_2.
 """
-doublet_matrix(panels_1 :: AbstractVector{<: Panel2D}, panels_2 :: AbstractVector{<: Panel2D}) = [ panel_i === panel_j ? 0.5 : doublet_influence(panel_j, panel_i) for panel_i ∈ panels_1, panel_j ∈ panels_2 ]
+doublet_matrix(panels_1 :: AbstractVector{<: Panel2D}, panels_2 :: AbstractVector{<: Panel2D}) = map(x -> ifelse(x[1] === x[2], 0.5, doublet_influence(x[2], x[1])), Iterators.product(panels_1, panels_2))
 
 """
     kutta_condition(panels)
@@ -26,8 +26,8 @@ wake_vector(woke_panel :: Panel2D, panels :: AbstractVector{<: Panel2D}) = doubl
 Assembles the Aerodynamic Influence Coefficient matrix consisting of the doublet matrix, wake vector, Kutta condition given Panel2Ds and the wake panel.
 """
 influence_matrix(panels :: AbstractVector{<: Panel2D}, woke_panel :: Panel2D) = 
-    [ doublet_matrix(panels, panels)   wake_vector(woke_panel, panels) ;
-         kutta_condition(panels)'                     0                ]
+    vcat(hcat(doublet_matrix(panels, panels), wake_vector(woke_panel, panels)), hcat(kutta_condition(panels)', 0))
+                            #  0                ]
 
 """
     source_matrix(panels_1, panels_2)
