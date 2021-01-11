@@ -30,6 +30,15 @@ _ndims(x) = Base.IteratorSize(x) isa Base.HasShape ? _ndims(Base.IteratorSize(x)
     Iterators.product(xs...), back
 end
 
+@Zygote.adjoint function Iterators.Zip(xs)
+    back(dy::NamedTuple{(:is,)}) = tuple(dy.is)
+    back(dy::AbstractArray) = ntuple(length(xs)) do d
+      dx = map(y->y[d], dy)
+      length(dx) == length(xs[d]) ? dx : vcat(dx, falses(length(xs[d])-length(dx)))
+    end |> tuple
+    Iterators.Zip(xs), back
+end
+
 
 
 ## 2D doublet-source panel method
@@ -37,19 +46,19 @@ end
 alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
 alpha_l = [-0.2, -0.1, -0.1, -0.001]
 dzs = (1e-4, 1e-4)
+airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), 0., 80)
 
 ## Objective function
-
-function test2_zygote(alpha_u, alpha_l)
+function test_zygote(alpha_u, alpha_l)
     airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), 0., 80)
     uniform = Uniform2D(1.0, 5.0)
     solve_case(airfoil, uniform)
 end
 
-@time test2_zygote(alpha_u, alpha_l)
+@time test_zygote(alpha_u, alpha_l)
 
 ##
-gradient(test2_zygote, alpha_u, alpha_l)
+gradient(test_zygote, alpha_u, alpha_l)
 
 
 ##

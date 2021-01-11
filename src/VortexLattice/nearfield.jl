@@ -12,7 +12,7 @@ trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = trailing_legs_velocities(r
 
 Evaluates the induced velocity by the trailing legs at a given location ``r``, by summing over the velocities of Horseshoes with vortex strengths ``\\Gamma``s, rotation rates ``\\Omega``, and a freestream flow vector ``U`` in the aircraft reference frame.
 """
-midpoint_velocity(r, Ω, horseshoes :: AbstractVector{<: Horseshoe}, Γs, U) = sum(x -> trailing_velocity(r, x[1], x[2], -normalize(U)), zip(horseshoes, Γs)) - U - Ω × r
+midpoint_velocity(r, Ω, horseshoes :: AbstractVector{<: Horseshoe}, Γs, U) = @timeit "Midpoint Velocity" sum(x -> trailing_velocity(r, x[1], x[2], -normalize(U)), zip(horseshoes, Γs)) - U - Ω × r
 
 """
 	nearfield_forces(Γs, horseshoes, U, Ω, ρ)

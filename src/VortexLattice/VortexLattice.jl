@@ -23,10 +23,7 @@ export Freestream, velocity, aircraft_velocity
 ## Panel geometry
 #==========================================================================================#
 
-include("../Geometry/PanelGeometry.jl")
-import .PanelGeometry: Panel, Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform
-
-export Panel, Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform
+import ..AeroMDAO: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform
 
 ## Horseshoe setup
 #==========================================================================================#
@@ -53,7 +50,7 @@ export solve_horseshoes
 """
 Placeholder.
 """
-make_horseshoes(horseshoe_panels :: AbstractVector{Panel3D}) =
+make_horseshoes(horseshoe_panels :: AbstractVector{<: Panel3D}) =
     @. horseshoe_lines(horseshoe_panels), collocation_point(horseshoe_panels)
 
 function solve_system(colpoints, horseshoes, normals, total_vel, U, symmetry)
@@ -78,7 +75,7 @@ end
 
 Solves the AIC matrix with the boundary condition given Panel3Ds and a Freestream, with the option to use the symmetry of the problem in the ``x``-``z`` plane.
 """
-function solve_horseshoes(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :: AbstractVector{Panel3D}, freestream :: Freestream, symmetry = false) 
+function solve_horseshoes(horseshoe_panels :: AbstractVector{<: Panel3D}, camber_panels :: AbstractVector{<: Panel3D}, freestream :: Freestream, symmetry = false) 
     @timeit "Freestream Velocity" U = aircraft_velocity(freestream)
 
     horseshoes, colpoints = make_horseshoes(horseshoe_panels)

@@ -6,6 +6,8 @@ using StaticArrays
 using Statistics
 using TimerOutputs
 
+using ..AeroMDAO: Panel2D, Point2D, point1, point2, trans_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist
+
 ## Non-dimensionalization
 #===========================================================================#
 
@@ -24,13 +26,6 @@ using .MathTools: rotation, inverse_rotation, midpair_map
 include("../Tools/Laplace.jl")
 import .Laplace: source_potential, doublet_potential
 
-## Panels
-#===========================================================================#
-
-include("../Geometry/PanelGeometry.jl")
-using .PanelGeometry: Panel, Panel2D, split_panels, panel_dist, panel_length, panel_normal, panel_angle, panel_normal, panel_tangent, point1, point2, collocation_point, trans_panel
-
-export Panel, Panel2D, collocation_point
 
 ## Matrix helpers
 #===========================================================================#
@@ -49,7 +44,7 @@ boundary_condition(panel_j :: Panel2D, panel_i :: Panel2D, u) = source_influence
 
 function wake_panel(panels, bound)
     lastx, lasty = (point2 ∘ last)(panels)
-    Panel2D(SVector(lastx, lasty), SVector(bound * lastx, lasty))
+    Panel2D(Point2D(lastx, lasty), Point2D(bound * lastx, lasty))
 end
 
 ## Dynamics helpers
@@ -69,7 +64,7 @@ include("matrix_prealloc.jl")
 
 export solve_problem
 
-function solve_problem(panels :: AbstractVector{<: Panel2D}, u :: SVector{2, <: Real})
+function solve_problem(panels :: AbstractVector{<: Panel2D}, u)
     # @timeit "Solve System" 
     φs = solve_strengths(panels, u)
     # @timeit "Lift Coefficient" 

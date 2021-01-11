@@ -20,7 +20,7 @@ function matrix_assembly!(AIC, boco, panels :: AbstractVector{<: Panel2D}, woke_
     for i in eachindex(panels)
         for j in eachindex(panels)
             boco[i] -= boundary_condition(panels[j], panels[i], u)
-            AIC[i,j] = i == j ? 0.5 : doublet_influence(panels[j], panels[i])
+            AIC[i,j] = ifelse(i == j, 0.5, doublet_influence(panels[j], panels[i]))
         end
         AIC[i,end] = doublet_influence(woke_panel, panels[i])
     end

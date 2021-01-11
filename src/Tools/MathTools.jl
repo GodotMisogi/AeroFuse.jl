@@ -5,6 +5,24 @@ using Base.Iterators
 using Base: product
 using Interpolations
 
+struct Point2D{T <: Real} <: FieldVector{2, T} 
+    x :: T
+    y :: T
+end
+
+x(p :: Point2D) = p.x
+y(p :: Point2D) = p.y
+
+struct Point3D{T <: Real} <: FieldVector{2, T} 
+    x :: T
+    y :: T
+    z :: T
+end
+
+x(p :: Point3D) = p.x
+y(p :: Point3D) = p.y
+z(p :: Point3D) = p.z
+
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
 columns(M) = tuple([ view(M, :, i) for i in 1:size(M, 2) ]...)
@@ -87,7 +105,7 @@ fwddiff(xs) = @. xs[2:end] - xs[1:end-1]
 fwddiv(xs) = @. xs[2:end] / xs[1:end-1]
 ord2diff(xs) = @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
 
-adj3(xs) = [ xs[1:end-2,:] xs[2:end-1,:] xs[3:end,:] ]
+adj3(xs) = zip(xs[1:end-2], xs[2:end-1,:], xs[3:end])
 
 # Central differencing schema for pairs except at the trailing edge
 
@@ -118,8 +136,8 @@ Provides the projections to the x-axis for a circle of given diameter and center
 """
 cosine_dist(x_center :: Real, diameter :: Real, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(-π, stop = 0, length = n))
 
-function cosine_interp(coords :: Array{<:Real, 2}, n :: Integer = 40)
-    xs, ys = coords[:,1], coords[:,2]
+function cosine_interp(coords, n :: Integer = 40)
+    xs, ys = first.(coords[:]), last.(coords[:])
 
     d = maximum(xs) - minimum(xs)
     x_center = (maximum(xs) + minimum(xs)) / 2
@@ -128,7 +146,7 @@ function cosine_interp(coords :: Array{<:Real, 2}, n :: Integer = 40)
     itp_circ = LinearInterpolation(xs, ys)
     y_circ = itp_circ(x_circ)
 
-    [ x_circ y_circ ]
+    SVector.(x_circ, y_circ)
 end
 
 ## Iterator methods

@@ -8,7 +8,7 @@ using AeroMDAO
 
 ## Wing section setup
 foil        =   naca4((2,4,1,2))
-wing_right  =   HalfWing(Foil.(foil for i ∈ 1:3),   # Foils
+wing_right  =   HalfWing(Foil.(Point2D.(first.(foil), last.(foil)) for i ∈ 1:3),   # Foils
                         [0.18, 0.16, 0.08],         # Chords
                         [2., 0., -2.],              # Twists
                         [0.5, 0.5],                 # Spans

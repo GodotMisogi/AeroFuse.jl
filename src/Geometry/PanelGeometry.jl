@@ -8,8 +8,9 @@ using Rotations
 using CoordinateTransformations
 using Zygote
 
-include("../Tools/MathTools.jl")
-using .MathTools: span, structtolist, inverse_rotation, rotation, affine_2D
+using ..AeroMDAO: Point2D, affine_2D, rotation, inverse_rotation, span
+
+export panel_dist, split_panels, Panel2D, point1, point2, point3, point4, zero, collocation_point, panel_length, trans_panel, panel_angle, panel_tangent, panel_normal, panel_location, Panel3D, panel_area, panel_coords, transform, midpoint
 
 ## Panel setup
 #==========================================================================================#
@@ -27,22 +28,24 @@ split_panels(panels :: AbstractVector{<: Panel}) = collect.(span(panel -> panel_
 #==========================================================================================#
 
 struct Panel2D{T} <: Panel where T <: Real
-    p1 :: SVector{2,T}
-    p2 :: SVector{2,T}
+    p1 :: Union{Point2D{T}, SVector{2,T}, MVector{2,T}}
+    p2 :: Union{Point2D{T}, SVector{2,T}, MVector{2,T}}
 end
 
-Panel2D(p1 :: Union{SVector{2, T}, MVector{2,T}}, p2 :: Union{SVector{2, T}, MVector{2,T}}) where T <: Real = Panel2D{T}(p1, p2)
+Panel2D(p1 :: Union{Point2D{T}, SVector{2,T}, MVector{2,T}}, p2 :: Union{Point2D{T}, SVector{2,T}, MVector{2,T}}) where T <: Real = Panel2D{T}(p1, p2)
 
 # Methods on panels
 point1(p :: Panel) = p.p1
 point2(p :: Panel) = p.p2
+point3(p :: Panel) = p.p3
+point4(p :: Panel) = p.p4
 
 a :: Panel2D + b :: Panel2D = Panel2D(point1(a) + point1(b), point2(a) + point2(b))
 a :: Panel2D - b :: Panel2D = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
 
-zero(::Panel2D) = Panel2D(MVector(0.,0.), MVector(0.,0.))
-@Zygote.adjoint point1(p::Panel2D) = p.p1, x̄ -> (Panel2D(x̄, MVector(0., 0.)),)
-@Zygote.adjoint point2(p::Panel2D) = p.p2, ȳ -> (Panel2D(MVector(0., 0.), ȳ),)
+zero(::Panel2D) = Panel2D(Point2D(0.,0.), Point2D(0.,0.))
+@Zygote.adjoint point1(p::Panel2D) = p.p1, x̄ -> (Panel2D(x̄, Point2D(0., 0.)),)
+@Zygote.adjoint point2(p::Panel2D) = p.p2, ȳ -> (Panel2D(Point2D(0., 0.), ȳ),)
 @Zygote.adjoint Panel2D(a, b) = Panel2D(a, b), p̄ -> (p̄.p1, p̄.p2)
 
 collocation_point(panel :: Panel2D) = (point1(panel) + point2(panel)) / 2
@@ -80,12 +83,14 @@ x
         |       |
         p2 —→— p3
 """
-struct Panel3D <: Panel
-    p1 :: SVector{3, Real}
-    p2 :: SVector{3, Real}
-    p3 :: SVector{3, Real}
-    p4 :: SVector{3, Real}
+struct Panel3D{T <: Real} <: Panel
+    p1 :: SVector{3,T}
+    p2 :: SVector{3,T}
+    p3 :: SVector{3,T}
+    p4 :: SVector{3,T}
 end
+
+Panel3D(p1 :: SVector{3,T}, p2 :: SVector{3,T}, p3 :: SVector{3,T}, p4 :: SVector{3,T}) where T <: Real = Panel3D{T}(p1, p2, p3, p4)
 
 """
 Computes the area of Panel3D.

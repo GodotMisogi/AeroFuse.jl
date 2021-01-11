@@ -4,14 +4,14 @@
 Definition for a HalfWing consisting of airfoils, span lengths, dihedrals, and sweep angles.
 """
 # chords :: Array{Float64} # Chord lengths (m)
-struct HalfWing <: Aircraft
-    foils :: AbstractVector{Foil} # Airfoil profiles
-    chords :: AbstractVector{<: Real} # Airfoil chord lengths (m)
-    twists :: AbstractVector{<: Real} # Twist angles (deg)
-    spans :: AbstractVector{<: Real}  # Leading-edge to leading-edge distance between foils (m)
-    dihedrals :: AbstractVector{<: Real} # Dihedral angles (deg)
-    sweeps :: AbstractVector{<: Real} # Leading-edge sweep angles (deg)
-    HalfWing(foils, chords, twists, spans, dihedrals, sweeps) = new(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps)) # Convert to radians
+struct HalfWing{T <: Real} <: Aircraft
+    foils :: AbstractVector{Foil{T}} # Airfoil profiles
+    chords :: AbstractVector{T} # Airfoil chord lengths (m)
+    twists :: AbstractVector{T} # Twist angles (deg)
+    spans :: AbstractVector{T}  # Leading-edge to leading-edge distance between foils (m)
+    dihedrals :: AbstractVector{T} # Dihedral angles (deg)
+    sweeps :: AbstractVector{T} # Leading-edge sweep angles (deg)
+    HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps)) # Convert to radians
 end
 
 """
@@ -115,7 +115,7 @@ Computes the coordinates of a HalfWing consisting of Foils and relevant geometri
 function wing_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
     leading_xyz = leading_edge(wing, flip)
     
-    scaled_foils = wing.chords .* (coordinates ∘ cut_foil).(wing.foils, chord_num)
+    scaled_foils = wing.chords .* (camber_coordinates ∘ cut_foil).(wing.foils, chord_num)
     
     scaled_foils = ifelse(flip, scaled_foils[end:-1:1], scaled_foils)
     twists = ifelse(flip, wing.twists[end:-1:1], wing.twists)
@@ -131,7 +131,7 @@ Computes the coordinates of a HalfWing consisting of camber distributions of Foi
 function camber_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
     leading_xyz = leading_edge(wing, flip)
     
-    scaled_foils = wing.chords .* (coordinates ∘ camber_thickness).(wing.foils, chord_num)
+    scaled_foils = wing.chords .* (camber_coordinates ∘ camber_thickness).(wing.foils, chord_num)
 
     scaled_foils = ifelse(flip, scaled_foils[end:-1:1], scaled_foils)
     twists = ifelse(flip, wing.twists[end:-1:1], wing.twists)
@@ -198,9 +198,9 @@ mesh_cambers(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip =
 """
 A composite type consisting of two HalfWings. `left' is meant to have its y-coordinates flipped ∈ Cartesian representation.
 """
-struct Wing <: Aircraft
-    left :: HalfWing
-    right :: HalfWing
+struct Wing{T <: Real} <: Aircraft
+    left :: HalfWing{T}
+    right :: HalfWing{T}
 end
 
 span(wing :: Wing) = span(wing.left) + span(wing.right)

@@ -11,9 +11,10 @@ using TimerOutputs
 #==========================================================================================#
 
 include("Tools/MathTools.jl")
-using .MathTools: tupvector, fwdsum, fwddiv, cosine_dist, weighted_vector, vectarray, slope, splitat, adj3, cosine_interp, columns
-
-export tupvector
+import .MathTools: tupvector, fwdsum, fwddiv, weighted_vector, vectarray, slope, splitat, adj3, columns,
+cosine_dist, cosine_interp, # For Foil.jl
+span, structtolist, inverse_rotation, rotation, affine_2D,
+Point2D, Point3D, x, y, z  # For DoubletSource.jl
 
 
 ## Non-dimensionalization
@@ -23,6 +24,15 @@ include("Tools/NonDimensional.jl")
 using .NonDimensional
 
 export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_dynamics, reynolds_number
+
+## Panels
+#===========================================================================#
+
+include("Geometry/PanelGeometry.jl")
+using .PanelGeometry
+
+export Panel, Panel2D, Point2D, collocation_point
+
 
 ## Wing geometry
 #==========================================================================================#
@@ -36,7 +46,7 @@ include("Geometry/AircraftGeometry.jl")
 include("VortexLattice/VortexLattice.jl")
 using .VortexLattice
 
-export Panel3D, Horseshoe, Freestream, velocity, streamlines, solve_horseshoes, transform, panel_coords
+export Horseshoe, Freestream, velocity, streamlines, solve_horseshoes, transform, panel_coords
 
 ## Doublet-source panel method
 #==========================================================================================#
@@ -49,7 +59,7 @@ export Uniform2D, velocity
 include("DoubletSource/DoubletSource.jl")
 using .DoubletSource
 
-export Panel2D, lift_coefficient
+export lift_coefficient
 
 ## Aerodynamic analyses
 #==========================================================================================#

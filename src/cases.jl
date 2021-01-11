@@ -1,4 +1,4 @@
-# function solve_case(horseshoe_panels :: AbstractVector{Panel3D}, camber_panels :: AbstractVector{Panel3D}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; symmetry = false)
+# function solve_case(horseshoe_panels :: AbstractVector{<: Panel3D}, camber_panels :: AbstractVector{<: Panel3D}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; symmetry = false)
 
 # end
 
