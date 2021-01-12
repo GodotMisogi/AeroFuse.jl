@@ -4,6 +4,7 @@ using StaticArrays
 using Base.Iterators
 using Base: product
 using Interpolations
+using Zygote
 
 struct Point2D{T <: Real} <: FieldVector{2, T} 
     x :: T
@@ -12,6 +13,11 @@ end
 
 x(p :: Point2D) = p.x
 y(p :: Point2D) = p.y
+
+zero(::Point2D) = Point2D(0., 0.)
+@Zygote.adjoint x(p::Point2D) = p.p1, x̄ -> (Point2D(x̄, 0.),)
+@Zygote.adjoint y(p::Point2D) = p.p2, ȳ -> (Point2D(0., ȳ),)
+@Zygote.adjoint Point2D(a, b) = Point2D(a, b), p̄ -> (p̄[1], p̄[2])
 
 struct Point3D{T <: Real} <: FieldVector{2, T} 
     x :: T
@@ -137,7 +143,8 @@ Provides the projections to the x-axis for a circle of given diameter and center
 cosine_dist(x_center :: Real, diameter :: Real, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(-π, stop = 0, length = n))
 
 function cosine_interp(coords, n :: Integer = 40)
-    xs, ys = first.(coords[:]), last.(coords[:])
+    xs, ys = first.(coords)[:], last.(coords)[:]
+    display(xs)
 
     d = maximum(xs) - minimum(xs)
     x_center = (maximum(xs) + minimum(xs)) / 2
