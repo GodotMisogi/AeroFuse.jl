@@ -144,7 +144,6 @@ cosine_dist(x_center :: Real, diameter :: Real, n :: Integer = 40) = x_center .+
 
 function cosine_interp(coords, n :: Integer = 40)
     xs, ys = first.(coords)[:], last.(coords)[:]
-    display(xs)
 
     d = maximum(xs) - minimum(xs)
     x_center = (maximum(xs) + minimum(xs)) / 2
