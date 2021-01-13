@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.17
+# v0.12.18
 
 using Markdown
 using InteractiveUtils
@@ -40,8 +40,8 @@ md"""## Progress
 * Development of initial weight estimation code. ✓
 * Development of constraint analysis code. ✓
 * Development of tail sizing code. ✓
-* Development of doublet-source panel method code for 2D aerodynamics analyses. (WIP)
-* Development of vortex-lattice method code for 3D aerodynamics analyses. (WIP)
+* Development of doublet-source panel method code for 2D aerodynamics analyses. ✓
+* Development of vortex-lattice method code for 3D aerodynamics analyses. ✓
 """
 
 # ╔═╡ 067fe520-4092-11eb-2cb9-c70f29ceb3da
@@ -72,5 +72,5 @@ hint(md"""
 # ╟─0700cbf0-40f5-11eb-1243-47e213dd19fb
 # ╟─2a2ab690-4091-11eb-0c34-89a03ac496c5
 # ╟─067fe520-4092-11eb-2cb9-c70f29ceb3da
-# ╠═00a45890-4103-11eb-2fcf-cdb152320810
+# ╟─00a45890-4103-11eb-2fcf-cdb152320810
 # ╠═fbcffce2-40f1-11eb-2eee-87b8f493931c

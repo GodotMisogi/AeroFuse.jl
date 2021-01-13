@@ -49,17 +49,17 @@ begin
 end;
 
 # ╔═╡ 0add0b10-404d-11eb-0b56-91f9e3431c70
-@time coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 10, print = true);
+nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 10, chord_num = 10);
 
 # ╔═╡ 81833050-404d-11eb-0dbd-7fc5e4d69d77
-(collect ∘ zip)(["CL", "CDi", "CY", "Cl", "Cm", "Cn", "p", "q", "r"], coeffs)
+(collect ∘ zip)(["CL", "CDi", "CY", "Cl", "Cm", "Cn", "p", "q", "r"], ff_coeffs)
 
 # ╔═╡ 0b11fdc2-404d-11eb-269c-6904c57e599d
 begin
 	horseshoe_coords = plot_panels(horseshoe_panels[:])
 	# horses_coords = plot_panels(horseshoe_panels[:], Γs[:])
 	camber_coords = plot_panels(camber_panels[:])
-	wing_coords = plot_surface(wing);
+	# wing_coords = plot_surface(wing);
 end;
 
 # ╔═╡ 158416d0-40f7-11eb-34a9-c193e6456ff3
@@ -94,7 +94,7 @@ end
 # ╠═0aaf4450-404d-11eb-31ba-757f8422c1ab
 # ╠═0ac53d50-404d-11eb-0485-637991172933
 # ╠═0add0b10-404d-11eb-0b56-91f9e3431c70
-# ╠═81833050-404d-11eb-0dbd-7fc5e4d69d77
+# ╟─81833050-404d-11eb-0dbd-7fc5e4d69d77
 # ╠═0b11fdc2-404d-11eb-269c-6904c57e599d
 # ╟─158416d0-40f7-11eb-34a9-c193e6456ff3
 # ╟─0b4346f0-404d-11eb-1af9-e9b0f2a7ee21

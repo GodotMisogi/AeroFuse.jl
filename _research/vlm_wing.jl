@@ -8,7 +8,7 @@ using AeroMDAO
 
 ## Wing section setup
 foil        =   naca4((2,4,1,2))
-wing_right  =   HalfWing(Foil.(Point2D.(first.(foil), last.(foil)) for i ∈ 1:3),   # Foils
+wing_right  =   HalfWing(Foil.(foil for i ∈ 1:3),   # Foils
                         [0.18, 0.16, 0.08],         # Chords
                         [2., 0., -2.],              # Twists
                         [0.5, 0.5],                 # Spans
@@ -40,40 +40,16 @@ end
 ##
 using PlotlyJS
 
-##
-layout = Layout(title = "Vortex Lattice",
-                scene = attr(aspectratio=attr(x=1,y=1,z=1)));
-
-## Streamlines
-reset_timer!()
-
 num_points = 30
 max_z = 0.1
 y = span(wing) / 2 - 0.5
-# seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
+seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
 
-span_points = 10
-init = trailing_chopper(wing, span_points) 
-dx, dy, dz = 0, 0, 1e-3
-seed = [ init .+ Ref([dx, dy, dz]); 
-         init .+ Ref([dx, dy, -dz]) ]
-
-@timeit "Computing Streamlines" trace_streams = trace_streamlines(uniform, seed, horseshoes[:], Γs[:], 2, 100);
-
-print_timer()
+# span_points = 20
+# init        = trailing_chopper(wing, span_points) 
+# dx, dy, dz  = 0, 0, 1e-3
+# seed        = [ init .+ Ref([dx, dy, dz])  ; 
+#                 init .+ Ref([dx, dy, -dz]) ];
 
 ##
-trace_horsies = trace_panels(horseshoe_panels[:])
-trace_horses = trace_panels(horseshoe_panels[:], Γs[:])
-trace_cambers = trace_panels(camber_panels[:])
-trace_wing = trace_surface(wing)
-
-PlotlyJS.plot(
-            [
-                (trace for trace in trace_horsies)...,
-                (trace for trace in trace_horses)...,
-                (trace for trace in trace_streams)...,
-                (trace for trace in trace_cambers)...,
-                # [ trace for trace in trace_wing ]...,
-            ],
-            layout)
+plot_case(horseshoe_panels, camber_panels, Γs, horseshoes, uniform, seed, 5., 100)

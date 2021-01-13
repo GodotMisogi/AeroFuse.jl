@@ -42,6 +42,24 @@ end
 
 trace_streamlines(freestream :: Freestream, points, horseshoes :: AbstractVector{<: Horseshoe}, Γs :: AbstractVector{<: Real}, length :: Real, num_steps :: Integer = 100) = trace_coords((panel_splits ∘ streamlines)(freestream, points, horseshoes, Γs, length, num_steps)..., :lightblue)
 
+function plot_case(horseshoe_panels, camber_panels, Γs, horseshoes, freestream, seed,length = 2, num_steps = 100)
+    trace_horsies = trace_panels(horseshoe_panels[:])
+    trace_horses  = trace_panels(horseshoe_panels[:], Γs[:])
+    trace_cambers = trace_panels(camber_panels[:])
+    trace_streams = trace_streamlines(freestream, seed, horseshoes[:], Γs[:], length, num_steps)
+
+
+    layout = Layout(title = "Vortex Lattice", scene = attr(aspectratio=attr(x=1,y=1,z=1)))
+    PlotlyJS.plot(
+                [
+                    (trace for trace in trace_horsies)...,
+                    (trace for trace in trace_horses)...,
+                    (trace for trace in trace_streams)...,
+                    (trace for trace in trace_cambers)...,
+                ],
+                layout)
+end
+
 ## Doublet-source
 #==========================================================================================#
 

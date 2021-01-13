@@ -5,6 +5,7 @@ version = "0.1.1"
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Blink = "ad839575-38b3-5650-b840-f874b8c74a25"
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"

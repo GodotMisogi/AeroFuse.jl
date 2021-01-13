@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.17
+# v0.12.18
 
 using Markdown
 using InteractiveUtils
@@ -71,7 +71,9 @@ md"### Climb"
 climbWF = 0.985;
 
 # ╔═╡ 4f886920-4085-11eb-3720-45a3b9fa0a37
-md"### Cruise"
+md"### Cruise
+
+$$WF_{\mathrm{cruise}} = \exp\left(-\frac{R \times SFC}{V \times L/D}\right)$$"
 
 # ╔═╡ 9682d72e-4084-11eb-269d-0bc3efc1c8e2
 cruise_weight_fraction(range, SFC, V, L_D) = exp(-range * SFC / (V * L_D) )
@@ -91,7 +93,12 @@ end;
 cruise1WF = cruise_weight_fraction(R1, cruise_SFC, V, LD_cruise)
 
 # ╔═╡ 54b79ec0-4085-11eb-3386-41981e608e45
-md"### Loiter"
+md"### Loiter
+
+$$WF_{\mathrm{loiter}} = \exp\left(-\frac{E \times SFC}{L/D}\right)$$"
+
+# ╔═╡ e956f3a0-5570-11eb-2311-59cedf436b9a
+md"""Call your function `loiter_weight_fraction`!"""
 
 # ╔═╡ bcb4fa50-4084-11eb-3474-618341f94e86
 loiter_weight_fraction(endurance, SFC, L_D) = exp(-endurance * SFC / L_D)
@@ -103,10 +110,13 @@ begin
 end;
 
 # ╔═╡ 3b336710-4083-11eb-3990-8ff6fcd8c645
-loiter1WF = loiter_weight_fraction(E1, loiter_SFC, LD_max)   
+loiter1WF = 1.
 
 # ╔═╡ 2db14640-4086-11eb-34ab-7982af7dd0b5
 md"Range of cruise segment 2:"
+
+# ╔═╡ 3e6e5430-5573-11eb-26f6-554ffbc33de5
+
 
 # ╔═╡ 27ee5c20-4086-11eb-25e6-3ff461fb24dd
 R2 = 2800 * 1000;
@@ -243,7 +253,7 @@ end
 # ╟─5c4d5f00-4083-11eb-31ad-d70d906e4825
 # ╟─2ede8630-4087-11eb-0f6b-4ddfbf717726
 # ╟─0bd8d880-4103-11eb-01aa-6f908fa8cd9e
-# ╟─edc9887e-4102-11eb-1452-7336ed39e616
+# ╠═edc9887e-4102-11eb-1452-7336ed39e616
 # ╠═c2c891f0-4083-11eb-1164-f78e70d8cd88
 # ╟─49a58902-4087-11eb-27ae-61c820955b7a
 # ╠═82e6a100-4086-11eb-0ee0-197bf26577e1
@@ -256,12 +266,14 @@ end
 # ╠═8f3f4b10-4085-11eb-36f7-0de9a630e3e3
 # ╠═36093a82-4083-11eb-346a-23528f9cd4d5
 # ╟─54b79ec0-4085-11eb-3386-41981e608e45
-# ╠═bcb4fa50-4084-11eb-3474-618341f94e86
-# ╠═3afb38b0-4086-11eb-31c0-cd32f6feeed6
-# ╠═3b336710-4083-11eb-3990-8ff6fcd8c645
+# ╟─e956f3a0-5570-11eb-2311-59cedf436b9a
+# ╟─bcb4fa50-4084-11eb-3474-618341f94e86
+# ╟─3afb38b0-4086-11eb-31c0-cd32f6feeed6
+# ╟─3b336710-4083-11eb-3990-8ff6fcd8c645
 # ╟─2db14640-4086-11eb-34ab-7982af7dd0b5
-# ╠═27ee5c20-4086-11eb-25e6-3ff461fb24dd
-# ╠═f8b34110-4084-11eb-2b95-2fb540813285
+# ╟─3e6e5430-5573-11eb-26f6-554ffbc33de5
+# ╟─27ee5c20-4086-11eb-25e6-3ff461fb24dd
+# ╟─f8b34110-4084-11eb-2b95-2fb540813285
 # ╟─191983f0-4086-11eb-0575-7d769008814e
 # ╠═1197d2d0-4086-11eb-2134-4bf31d078ddc
 # ╠═07ecf590-4085-11eb-1181-633ab1ab1e4e
@@ -276,15 +288,15 @@ end
 # ╟─ba7a8fb0-40fd-11eb-1d5e-7bd861fae148
 # ╠═c6bbec32-4083-11eb-32a6-93488d9abc07
 # ╟─df1745c0-40fd-11eb-21ed-3b2ebf4f1dbd
-# ╠═cbe0c190-4083-11eb-020e-bbf9f4f7d67a
+# ╟─cbe0c190-4083-11eb-020e-bbf9f4f7d67a
 # ╟─bb6c4652-4087-11eb-0818-2515b67bccc0
 # ╠═d9628ce0-4083-11eb-2d1d-c951a4c14425
 # ╟─33ab3060-40fe-11eb-00d9-071f7ca836e9
-# ╠═089674a0-4088-11eb-1534-ef06a695815f
+# ╟─089674a0-4088-11eb-1534-ef06a695815f
 # ╠═89e9ac40-4086-11eb-3ca3-f1352e475899
 # ╠═bf757a70-40f3-11eb-3948-31c68d44746d
 # ╟─b2820c70-40f3-11eb-0600-037e8d844797
 # ╠═05618530-4084-11eb-325c-1fe833f089dc
 # ╟─6c04f612-4083-11eb-017a-0f6e29496ddd
 # ╟─58da9050-408c-11eb-310e-6106a7b11edd
-# ╟─caca53a0-40f3-11eb-211d-45d2e919cda0
+# ╠═caca53a0-40f3-11eb-211d-45d2e919cda0

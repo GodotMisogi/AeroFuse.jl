@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.17
+# v0.12.18
 
 using Markdown
 using InteractiveUtils
@@ -107,7 +107,7 @@ Wing Parameters
 begin
 	wing_foil = naca4((4,4,1,2))
 	wing_num_secs = 3
-	wing_foils = Foil.(wing_foil for i ∈ 1:wing_num_secs)
+	wing_foils = Foil.(Point2D.(first.(wing_foil), last.(wing_foil)) for i ∈ 1:wing_num_secs)
 	
 	wing_right = HalfWing(wing_foils,		# Foils
 						 [0.2, 0.2, 0.1], 	# Chords
@@ -233,7 +233,7 @@ end;
 # ╔═╡ c1522370-332e-11eb-258f-a96268d86a87
 begin
 	htail_foil = naca4((0,0,1,2))
-	htail_foils = Foil.(htail_foil for i ∈ 1:2)
+	htail_foils = Foil.(Point2D.(first.(htail_foil), last.(htail_foil)) for i ∈ 1:2)
 	
 	htail_right = HalfWing(htail_foils,
 						  [c_h, c_h], 	# Chords
@@ -249,7 +249,7 @@ end
 # ╔═╡ 7dcd3140-3328-11eb-2e98-fbc13dbfcfa4
 begin
 	vtail_foil = naca4((0,0,0,9))
-	vtail_foils = Foil.(vtail_foil for i ∈ 1:2)
+	vtail_foils = Foil.(Point2D.(first.(vtail_foil), last.(vtail_foil))  for i ∈ 1:2)
 	
 	vtail_left = HalfWing(vtail_foils,
 						 [c_r_v, λ_v * c_r_v], 	# Chords
@@ -336,11 +336,11 @@ side_view = plot(cuck, camera = (0, 0))
 # ╠═d72bd840-3305-11eb-362b-0f6a7a774a13
 # ╟─df735200-3263-11eb-3c15-c9f42ce9fbef
 # ╟─5fb5d550-3093-11eb-0691-09050e6939eb
-# ╠═304ebdb0-3091-11eb-0603-dd2131ef1226
+# ╟─304ebdb0-3091-11eb-0603-dd2131ef1226
 # ╟─4da4b550-32ed-11eb-1709-1903b01b356c
-# ╠═4ba38e1e-32ed-11eb-2ed4-154da8d4afe8
+# ╟─4ba38e1e-32ed-11eb-2ed4-154da8d4afe8
 # ╟─6d9bd820-32ed-11eb-29c0-2b1f35984e1b
-# ╠═4ba47880-32ed-11eb-206a-033b74ac2bc5
+# ╟─4ba47880-32ed-11eb-206a-033b74ac2bc5
 # ╠═4ba53bd0-32ed-11eb-25b2-89385a3cecdc
 # ╠═4bb0d490-32ed-11eb-1fe6-e72b49f18433
 # ╠═f5ae15b2-3091-11eb-3c08-53653717475a
@@ -354,15 +354,15 @@ side_view = plot(cuck, camera = (0, 0))
 # ╠═8d97a350-30d3-11eb-307f-cd48a69b8300
 # ╟─98a56ace-3267-11eb-3627-ed82836734c2
 # ╠═3d4d2870-3263-11eb-3e80-1f3f5db82243
-# ╠═0fdf3ec2-32cf-11eb-399f-cb4281c72cc8
+# ╟─0fdf3ec2-32cf-11eb-399f-cb4281c72cc8
 # ╠═322ba6c0-32d0-11eb-1557-dd4a0c9510b1
 # ╠═4d9a5b40-32d0-11eb-3977-c3a6511f65d1
 # ╟─34a80ae0-32f0-11eb-1dc3-07cae4d044ce
 # ╠═fdc41530-32ce-11eb-22c0-a9bd5a40611d
 # ╠═f926e9c0-32f7-11eb-1e53-3ba8e9f52056
 # ╠═8503ef50-332b-11eb-2953-03dc7826b417
-# ╠═c1522370-332e-11eb-258f-a96268d86a87
-# ╠═7dcd3140-3328-11eb-2e98-fbc13dbfcfa4
+# ╟─c1522370-332e-11eb-258f-a96268d86a87
+# ╟─7dcd3140-3328-11eb-2e98-fbc13dbfcfa4
 # ╠═bc905010-32f6-11eb-0557-91743b6fe9e3
 # ╠═ab52a460-349a-11eb-1028-27f26f3c9606
 # ╟─82248a1e-33fc-11eb-3cc1-9b4ae3379bef

@@ -41,17 +41,10 @@ using Plots
 plotlyjs();
 
 ## Cosine and camber-thickness
-plot(cos_foil[:,1], cos_foil[:,2],
-     label = "Cosine")
-plot!(xcamthick[:,1], xcamthick[:,2],
-     label = "Camber")
-plot!(xcamthick[:,1], xcamthick[:,3], 
-     label = "Thickness", aspectratio = 1)
-plot!(cst_foil[:,1], cst_foil[:,2], 
-     label = "CST Coordinates Fit")
-plot!(cam_foil[:,1], cam_foil[:,2], 
-     label = "CST Camber-Thickness Fit", aspectratio = 1)
-plot!(foil[:,1], foil[:,2], 
-    label = "CST", aspectratio = 1)
-plot!(naca[:,1], naca[:,2], 
-    label = "NACA", aspectratio = 1)
+plot(first.(cos_foil), last.(cos_foil), label = "Cosine")
+plot!(xcamthick[:,1], xcamthick[:,2], label = "Camber")
+plot!(xcamthick[:,1], xcamthick[:,3], label = "Thickness", aspectratio = 1)
+plot!(first.(cst_foil), last.(cst_foil), label = "CST Coordinates Fit")
+plot!(first.(cam_foil), last.(cam_foil), label = "CST Camber-Thickness Fit", aspectratio = 1)
+plot!(first.(foil), last.(foil), label = "CST", aspectratio = 1)
+plot!(first.(naca), last.(naca), label = "NACA", aspectratio = 1)

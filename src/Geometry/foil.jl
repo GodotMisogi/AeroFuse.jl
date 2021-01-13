@@ -1,7 +1,3 @@
-using Base.Math
-using Base.Iterators
-using DelimitedFiles
-
 ## Foil type
 #==========================================================================================#
 
@@ -9,7 +5,7 @@ using DelimitedFiles
 Airfoil structure consisting of foil coordinates as an array of points.
 """
 struct Foil{T <: Real}
-    coords :: AbstractVector{Point2D{T}} # The foil profile as an array of coordinates, must be in Selig format.
+    coords :: AbstractVector{SVector{2,T}} # The foil profile as an array of coordinates, must be in Selig format.
 end
 
 """
@@ -20,16 +16,12 @@ scale_foil(foil :: Foil, chord) = chord * foil.coords
 """
 Returns a Foil with cosine spacing for a given number of points. 
 """
-function cut_foil(foil :: Foil, num)
-    coords = cosine_foil(foil.coords, n = num)
-    display(coords)
-    @. Point2D(first(coords), last(coords))
-end
+cosine_foil(foil :: Foil, num :: Integer) = cosine_foil(foil.coords, num)
 
 """
 Computes the camber-thickness distribution of a Foil with cosine spacing..
 """
-camber_thickness(foil :: Foil, num) = foil_camthick(cosine_foil(foil.coords), num + 1)
+camber_thickness(foil :: Foil, num :: Integer) = foil_camthick(cosine_foil(foil.coords), num + 1)
 
 
 ## Foil processing
@@ -40,7 +32,7 @@ Reads a '.dat' file consisting of 2D coordinates, for an airfoil.
 """
 function read_foil(path :: String; header = true)
     coords = readdlm(path, skipstart = header ? 1 : 0)
-    Point2D.(coords[:,1], coords[:,2])
+    SVector.(coords[:,1], coords[:,2])
 end
 
 function split_foil(coords)
@@ -57,14 +49,14 @@ function split_foil(coords)
 end
 
 function paneller(foil :: Foil, num_panels :: Integer) 
-    coords = cosine_foil(foil.coords, n = num_panels)
-    [ Panel2D(Point2D(p1), Point2D(p2)) for (p1, p2) ∈ zip(coords[2:end], coords[1:end-1]) ][end:-1:1]
+    coords = cosine_foil(foil.coords, num_panels)
+    [ Panel2D(p1, p2) for (p1, p2) ∈ zip(coords[2:end], coords[1:end-1]) ][end:-1:1]
 end
 
 """
 Discretises a foil profile into panels by projecting the x-coordinates of a circle onto the geometry.
 """
-function cosine_foil(coords; n :: Integer = 40)
+function cosine_foil(coords, n :: Integer = 40)
     upper, lower = split_foil(coords)
     n_upper = [upper; [lower[1]]] # Append leading edge from lower to upper
     upper_cos, lower_cos = cosine_interp(n_upper[end:-1:1], n), cosine_interp(lower, n)
@@ -77,14 +69,14 @@ end
 #==========================================================================================#
 
 # Basic shape function
-function shape_function(x :: Real, basis_func :: Function, coeffs, coeff_LE :: Real = 0)
+function shape_function(x, basis_func, coeffs, coeff_LE = 0)
     n = length(coeffs)
     terms = [ basis_func(x, n - 1, i) for i in 0:n-1 ]
     sum(coeffs .* terms) + coeff_LE * (x^0.5) * (1 - x)^(n - 0.5)
 end
 
 # Computing coordinates
-cst_coords(class_func :: Function, basis_func :: Function, x :: Real, alphas, dz :: Real, coeff_LE :: Real = 0) = class_func(x) * shape_function(x, basis_func, alphas, coeff_LE) + x * dz
+cst_coords(class_func, basis_func, x, alphas, dz, coeff_LE = 0) = class_func(x) * shape_function(x, basis_func, alphas, coeff_LE) + x * dz
 
 ## Bernstein basis
 #==========================================================================================#
@@ -102,7 +94,7 @@ bernstein_basis(x, n, k) = binomial(n, k) * bernstein_class(x, k, n - k)
 """
 Defines a cosine-spaced airfoil using the Class Shape Transformation method on a Bernstein polynomial basis, with support for leading edge modifications.
 """
-function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
+function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_LE = 0, num_points :: Integer = 40)
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
 
@@ -114,13 +106,13 @@ function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l) :: NTuple{2, <: Real}, coeff_
     lower_surf = [ bernie(x, alpha_l, dz_l) for x ∈ xs ]
 
     # Counter-clockwise ordering
-    coords = [ [xs upper_surf][end:-1:2,:] ; 
-                xs lower_surf              ]
+    coords = [ SVector.(xs, upper_surf)[end:-1:2] ; 
+               SVector.(xs, lower_surf)           ]
 
-    Point2D.(coords[:,1], coords[:,2])
+    # SVector.(coords[:,1], coords[:,2])
 end
 
-function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc) :: NTuple{2, <: Real}, coeff_LE :: Real = 0, num_points :: Integer = 40)
+function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc) :: NTuple{2, <: Real}, coeff_LE = 0, num_points :: Integer = 40)
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_dist(0.5, 1, num_points)
 
@@ -135,11 +127,10 @@ function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc) :: NTuple{2, <: R
 end
 
 function coords_to_CST(coords, num_dvs)
-    xs = [ pt[1] for pt in coords ]
-    ys = [ pt[2] for pt in coords ]
+    xs = first.(coords)
     S_matrix = hcat((@. bernstein_class(xs) * bernstein_basis(xs, num_dvs - 1, i) for i in 0:num_dvs - 1)...)
 
-    alphas = S_matrix \ ys
+    alphas = S_matrix \ last.(coords)
     
     return alphas
 end
@@ -160,9 +151,9 @@ end
 Converts an airfoil to its camber-thickness representation in cosine spacing.
 """
 function foil_camthick(coords, num :: Integer = 40)
-    upper, lower = split_foil(cosine_foil(coords, n = num))
+    upper, lower = split_foil(cosine_foil(coords, num))
 
-    xs, y_LE = first.(lower), lower[1][2]   # Getting abscissa and leading edge ordinate
+    xs, y_LE = first.(lower), first(lower)[2]   # Getting abscissa and leading edge ordinate
     y_upper, y_lower = last.(upper[end:-1:1]), last.(lower[2:end]) # Excluding leading edge point
 
     camber = [ y_LE; (y_upper + y_lower) / 2 ]
@@ -174,17 +165,19 @@ end
 """
 Converts the camber-thickness representation to coordinates.
 """
-camthick_foil(xs, camber, thickness) = let coords = [ [xs camber .+ thickness / 2][end:-1:2,:]; xs camber .- thickness / 2 ]; Point2D.(coords[:,1], coords[:,2]) end
+camthick_foil(xs, camber, thickness) = let coords = [ [xs camber + thickness / 2][end:-1:2,:] ; 
+                                                       xs camber - thickness / 2              ]; 
+                                                       SVector.(coords[:,1], coords[:,2]) end
 
 """
 Provides the camber coordinates on the x-z plane at y = 0.
 """
-camber_coordinates(coords) = [ first.(coords) (zeros ∘ length)(coords[:]) last.(coords) ]
+camber_coordinates(coords) = [ coords[:,1] (zeros ∘ length)(coords[:,1]) coords[:,2] ]
 
 """
 Provides the thickness coordinates on the x-z plane at y = 0.
 """
-thickness_coordinates(coords) = [ coords[:,1] (zeros ∘ length)(coords) coords[:,3] ]
+thickness_coordinates(coords) = [ coords[:,1] (zeros ∘ length)(coords[:,1]) coords[:,3] ]
 
 
 ## NACA Parametrisation
@@ -193,7 +186,7 @@ thickness_coordinates(coords) = [ coords[:,1] (zeros ∘ length)(coords) coords[
 # NACA 4-digit parameter functions
 naca4_thickness(t_by_c, xc, sharp_trailing_edge :: Bool) = 5 * t_by_c * (0.2969 * √xc - 0.1260 * xc - 0.3516 * xc^2 + 0.2843 * xc^3 - (ifelse(sharp_trailing_edge, 0.1036, 0.1015) * xc^4))
 naca4_camberline(pos, cam, xc) = ifelse(xc < pos, (cam / pos^2) * xc * (2 * pos - xc), cam / (1 - pos)^2 * ( (1 - 2 * pos) + 2 * pos * xc - xc^2) )
-naca4_gradient(pos, cam, xc) = atan(2 * cam / (xc < pos ? pos^2 : (1 - pos)^2) * (pos - xc))
+naca4_gradient(pos, cam, xc) = atan(2 * cam / (ifelse(xc < pos, pos^2, (1 - pos)^2)) * (pos - xc))
 
 function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_edge :: Bool = false)
     # Camber

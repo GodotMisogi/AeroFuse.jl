@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.17
+# v0.12.18
 
 using Markdown
 using InteractiveUtils
@@ -102,7 +102,7 @@ md"""
 ```
 """
 
-# ╔═╡ 919724f0-3b7b-11eb-35ce-bbb61bfb605f
+# ╔═╡ 0b8b51b0-5570-11eb-0f19-7bf6626ebe1a
 thrust_to_weight_fw_climb(wing_loading, rate_of_climb, best_climb_rate, q, CD0) = rate_of_climb / best_climb_rate + (q / wing_loading) * CD0 + (k / q) * wing_loading;
 
 # ╔═╡ 65be11e0-3b80-11eb-1fab-0f96a6f46162
@@ -191,6 +191,12 @@ md"""
 ## Matching Charts
 """
 
+# ╔═╡ 824736f0-5572-11eb-2966-85bf07b88d2a
+hint(text) = Markdown.MD(Markdown.Admonition("hint", "Hint", [text]));
+
+# ╔═╡ 67778190-5572-11eb-2db3-4d6202789a01
+hint(md"""Call the `plot(x, y)` function""")
+
 # ╔═╡ dd39bc4e-3b90-11eb-17df-09f9d206a6b2
 begin
 	plot(ylabel = "P/W", xlabel = "W/S", title = "Matching Chart (VTOL)")
@@ -202,32 +208,34 @@ end
 # ╟─993c5b40-406b-11eb-3d8b-356e309163f0
 # ╠═d99d87f0-3b7e-11eb-30cb-e9db3f912b69
 # ╟─6ecda840-3b7b-11eb-2f36-a37e3aa55916
-# ╠═3b52cb30-3b7b-11eb-1562-9f528047143b
-# ╠═c25785d0-4071-11eb-23e1-b59dbe97ea29
+# ╟─3b52cb30-3b7b-11eb-1562-9f528047143b
+# ╟─c25785d0-4071-11eb-23e1-b59dbe97ea29
 # ╟─4ecf1920-3b80-11eb-063e-57d0c44af555
 # ╟─61cd2ad0-4071-11eb-197e-ebd10d747a99
-# ╠═6beccf70-3b7b-11eb-12e6-d100322561d0
-# ╠═1b50c100-3b7d-11eb-1886-f7c9833720da
-# ╠═9e25b9d0-3b7f-11eb-1588-2d40cc56f40c
-# ╠═84a3c4b0-3b80-11eb-3819-09f88564eccc
+# ╟─6beccf70-3b7b-11eb-12e6-d100322561d0
+# ╟─1b50c100-3b7d-11eb-1886-f7c9833720da
+# ╟─9e25b9d0-3b7f-11eb-1588-2d40cc56f40c
+# ╟─84a3c4b0-3b80-11eb-3819-09f88564eccc
 # ╟─411af330-3b80-11eb-17c6-611dfa0feb1e
 # ╟─f3ce6010-4072-11eb-170d-5b6f24a452d0
-# ╠═8c993880-3b7b-11eb-07b4-51c590a54a38
-# ╠═0da45f10-3b84-11eb-2750-15deba04fc1e
+# ╟─8c993880-3b7b-11eb-07b4-51c590a54a38
+# ╟─0da45f10-3b84-11eb-2750-15deba04fc1e
 # ╟─f0da3940-3b83-11eb-28fc-c144bad9a9a3
 # ╟─388948f0-4073-11eb-2396-6dd666582a97
-# ╠═919724f0-3b7b-11eb-35ce-bbb61bfb605f
-# ╠═65be11e0-3b80-11eb-1fab-0f96a6f46162
+# ╟─0b8b51b0-5570-11eb-0f19-7bf6626ebe1a
+# ╟─65be11e0-3b80-11eb-1fab-0f96a6f46162
 # ╟─fa9c6480-3b83-11eb-0dcc-7b93769f018f
 # ╟─90406c90-4073-11eb-3217-7d0291296c4f
-# ╠═91977310-3b7b-11eb-1391-67b38f3aaa31
-# ╠═41130720-3b84-11eb-2f38-fde35179f361
+# ╟─91977310-3b7b-11eb-1391-67b38f3aaa31
+# ╟─41130720-3b84-11eb-2f38-fde35179f361
 # ╟─44f60a80-3b80-11eb-08f1-c7e3d84c276d
 # ╟─058af970-4074-11eb-3b86-5766ff193840
-# ╠═25094f50-3b7d-11eb-2ab4-93c376e1b193
-# ╠═f6ac2640-3b7d-11eb-02de-21ef4c02ecac
+# ╟─25094f50-3b7d-11eb-2ab4-93c376e1b193
+# ╟─f6ac2640-3b7d-11eb-02de-21ef4c02ecac
 # ╟─5a681fe0-3b83-11eb-3da0-cbca7e455391
-# ╠═621e7590-3b83-11eb-1700-91b2f71716d1
+# ╟─621e7590-3b83-11eb-1700-91b2f71716d1
 # ╟─9a3c25c0-4070-11eb-25e2-05c4934b6332
+# ╠═824736f0-5572-11eb-2966-85bf07b88d2a
+# ╟─67778190-5572-11eb-2db3-4d6202789a01
 # ╟─413bd390-3b7e-11eb-34f9-bf8ad1968b0f
 # ╟─dd39bc4e-3b90-11eb-17df-09f9d206a6b2

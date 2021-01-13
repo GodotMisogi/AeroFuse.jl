@@ -26,7 +26,7 @@ struct Line{T <: Real}
     r2 :: SVector{3,T}
 end
 
-Line(r1 :: SVector{3,T}, r2 :: SVector{3,T}) where T <: Real = Line{T}(r1, r2)
+Line(r1 :: FieldVector{3,T}, r2 :: FieldVector{3,T}) where T <: Real = Line{T}(r1, r2)
 
 point1(line :: Line) = line.r1
 point2(line :: Line) = line.r2

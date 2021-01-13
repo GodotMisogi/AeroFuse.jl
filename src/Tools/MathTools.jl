@@ -103,6 +103,8 @@ tupvector(xs) = [ tuple(x...) for x in xs ]
 tuparray(xs) = tuple.(eachcol(xs)...)
 vectarray(xs) = SVector.(eachcol(xs)...)
 
+extend_yz(coords) = [ first.(coords) (zeros ∘ length)(coords) last.(coords) ]
+
 ## Difference opettions
 #===========================================================================#
 
@@ -117,7 +119,7 @@ adj3(xs) = zip(xs[1:end-2], xs[2:end-1,:], xs[3:end])
 
 midpair_map(f, xs) = [        f(xs[1], xs[2])     ;
                        f.(xs[1:end-2], xs[3:end]) ;
-                          f(xs[end-1],  xs[end])  ]
+                          f(xs[end-1], xs[end])   ]
 
 # stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
 # parts(xs) = le/t adj = stencil(xs, 1); adj[1,:], adj[end,:] end

@@ -8,9 +8,9 @@ using Rotations
 using CoordinateTransformations
 using Zygote
 
-using ..AeroMDAO: Point2D, affine_2D, rotation, inverse_rotation, span, structtolist
+using ..AeroMDAO: Point2D, affine_2D, rotation, inverse_rotation, structtolist
 
-export panel_dist, split_panels, Panel2D, point1, point2, point3, point4, zero, collocation_point, panel_length, trans_panel, panel_angle, panel_tangent, panel_normal, panel_location, Panel3D, panel_area, panel_coords, transform, midpoint
+export panel_dist, Panel2D, point1, point2, point3, point4, zero, collocation_point, panel_length, trans_panel, panel_angle, panel_tangent, panel_normal, panel_location, Panel3D, panel_area, panel_coords, transform, midpoint
 
 ## Panel setup
 #==========================================================================================#
@@ -22,17 +22,17 @@ abstract type Panel end
 
 panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) - collocation_point(panel_1))
 
-split_panels(panels :: AbstractVector{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
+# split_panels(panels :: AbstractVector{<: Panel}) = collect.(span(panel -> panel_location(panel) == "upper", panels))
 
 ## 2D Panels
 #==========================================================================================#
 
-struct Panel2D{T} <: Panel where T <: Real
-    p1 :: Union{Point2D{T}, SVector{2,T}, MVector{2,T}}
-    p2 :: Union{Point2D{T}, SVector{2,T}, MVector{2,T}}
+struct Panel2D{T <: Real} <: Panel
+    p1 :: Point2D{T}
+    p2 :: Point2D{T}
 end
 
-Panel2D(p1 :: Union{Point2D{T}, SVector{2,T}, MVector{2,T}}, p2 :: Union{Point2D{T}, SVector{2,T}, MVector{2,T}}) where T <: Real = Panel2D{T}(p1, p2)
+Panel2D(p1 :: SVector{2,T}, p2 :: SVector{2,T}) where T <: Real = Panel2D{T}(Point2D(p1), Point2D(p2))
 
 # Methods on panels
 point1(p :: Panel) = p.p1
@@ -66,7 +66,7 @@ end
 
 panel_tangent(panel :: Panel2D) = rotation(1., 0., -panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0., 1., panel_angle(panel))
-panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π/2 <= angle <= π) || (-π <= angle <= -π/2) ? "lower" : "upper" end
+# panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π/2 <= angle <= π) || (-π <= angle <= -π/2) ? "lower" : "upper" end
 
 ## 3D Panels
 #==========================================================================================#
@@ -90,7 +90,7 @@ struct Panel3D{T <: Real} <: Panel
     p4 :: SVector{3,T}
 end
 
-Panel3D(p1 :: SVector{3,T}, p2 :: SVector{3,T}, p3 :: SVector{3,T}, p4 :: SVector{3,T}) where T <: Real = Panel3D{T}(p1, p2, p3, p4)
+Panel3D(p1 :: FieldVector{3,T}, p2 :: FieldVector{3,T}, p3 :: FieldVector{3,T}, p4 :: FieldVector{3,T}) where T <: Real = Panel3D{T}(p1, p2, p3, p4)
 
 """
 Computes the area of Panel3D.

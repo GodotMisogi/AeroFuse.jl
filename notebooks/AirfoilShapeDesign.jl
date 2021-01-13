@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.17
+# v0.12.18
 
 using Markdown
 using InteractiveUtils
@@ -44,7 +44,7 @@ CST_cl = optimize_CST(α_ul0, α, n_upper, le)
 # ╔═╡ d7d91370-4093-11eb-0be4-01686a5cec7d
 begin
 	CST_test = kulfan_CST(α_u0, α_l0, dzs, le, 80)
-	plot(CST_test[:,1], CST_test[:,2], 
+	plot(first.(CST_test), last.(CST_test), 
 		 label = "Initial Surface", aspectratio = 1)
 end
 
@@ -83,15 +83,16 @@ resi_CST = optimize(target_cl,
 md"""### Banana Design"""
 
 # ╔═╡ 0afe7d80-4094-11eb-0830-1d3a7e58c1db
-begin
-	CST_opt = kulfan_CST(resi_CST.minimizer[1:n_upper],
-						 resi_CST.minimizer[n_upper+1:end], 
-						 dzs, le, 80)
+CST_opt = kulfan_CST(resi_CST.minimizer[1:n_upper],
+					 resi_CST.minimizer[n_upper+1:end], 
+					 dzs, le, 80)
 
+# ╔═╡ 52141ff0-5574-11eb-029f-1d882484e835
+begin
 	fig = plot(aspectratio = 1)
-	plot!(CST_test[:,1], CST_test[:,2], 
+	plot!(first.(CST_test), last.(CST_test), 
 			label = "Initial Surface")
-	plot!(CST_opt[:,1], CST_opt[:,2], 
+	plot!(first.(CST_opt), last.(CST_opt), 
 			label = "Optimal Surface")
 end
 
@@ -200,4 +201,5 @@ end
 # ╠═ec6e16a2-4093-11eb-1904-23cad91aff99
 # ╟─e34b0360-4108-11eb-085b-d11a73ecf61d
 # ╠═0afe7d80-4094-11eb-0830-1d3a7e58c1db
+# ╠═52141ff0-5574-11eb-029f-1d882484e835
 # ╟─8ed3fdc0-4093-11eb-1743-332b9934cbf8

@@ -5,12 +5,12 @@ Definition for a HalfWing consisting of airfoils, span lengths, dihedrals, and s
 """
 # chords :: Array{Float64} # Chord lengths (m)
 struct HalfWing{T <: Real} <: Aircraft
-    foils :: AbstractVector{Foil{T}} # Airfoil profiles
-    chords :: AbstractVector{T} # Airfoil chord lengths (m)
-    twists :: AbstractVector{T} # Twist angles (deg)
-    spans :: AbstractVector{T}  # Leading-edge to leading-edge distance between foils (m)
-    dihedrals :: AbstractVector{T} # Dihedral angles (deg)
-    sweeps :: AbstractVector{T} # Leading-edge sweep angles (deg)
+    foils :: Vector{Foil{T}} # Airfoil profiles
+    chords :: Vector{T} # Airfoil chord lengths (m)
+    twists :: Vector{T} # Twist angles (deg)
+    spans :: Vector{T}  # Leading-edge to leading-edge distance between foils (m)
+    dihedrals :: Vector{T} # Dihedral angles (deg)
+    sweeps :: Vector{T} # Leading-edge sweep angles (deg)
     HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps)) # Convert to radians
 end
 
@@ -114,10 +114,9 @@ Computes the coordinates of a HalfWing consisting of Foils and relevant geometri
 """
 function wing_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
     leading_xyz = leading_edge(wing, flip)
+    temp_foils = @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num)
     
-    scaled_foils = wing.chords .* (camber_coordinates ∘ cut_foil).(wing.foils, chord_num)
-    
-    scaled_foils = ifelse(flip, scaled_foils[end:-1:1], scaled_foils)
+    scaled_foils = ifelse(flip, temp_foils[end:-1:1], temp_foils)
     twists = ifelse(flip, wing.twists[end:-1:1], wing.twists)
 
     foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) ∈ zip(scaled_foils, twists, leading_xyz) ]
@@ -131,7 +130,7 @@ Computes the coordinates of a HalfWing consisting of camber distributions of Foi
 function camber_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
     leading_xyz = leading_edge(wing, flip)
     
-    scaled_foils = wing.chords .* (camber_coordinates ∘ camber_thickness).(wing.foils, chord_num)
+    scaled_foils = @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num)
 
     scaled_foils = ifelse(flip, scaled_foils[end:-1:1], scaled_foils)
     twists = ifelse(flip, wing.twists[end:-1:1], wing.twists)
@@ -164,7 +163,7 @@ wing_chopper(lead, trail, span_num, chord_num) = chord_chopper(chord_sections(sp
 """
 Useless for now, but looks cool.
 """
-panel(root_lead, root_trail, tip_trail, tip_lead) = [ root_lead  tip_lead;
+panel(root_lead, root_trail, tip_trail, tip_lead) = [ root_lead  tip_lead  ;
                                                       root_trail tip_trail ]
 
 """
@@ -266,6 +265,8 @@ function paneller(wing :: Union{Wing, HalfWing}, span_num, chord_num; rotation =
     [ transform(panel, rotation, translation) for panel in cambers ]
 end
 
+info(wing :: Union{Wing, HalfWing}) = span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing)
+
 """
 Prints the relevant geometric characteristics of a HalfWing or Wing.
 """
@@ -276,9 +277,6 @@ function print_info(wing :: Union{Wing, HalfWing})
     println("MAC: ", data[3], " m")
     println("Aspect Ratio: ", data[4])
 end
-
-info(wing :: Union{Wing, HalfWing}) =
-    span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing)
 
 # """
 # Performs an affine transformation on a list of coordinates.
