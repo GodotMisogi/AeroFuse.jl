@@ -20,3 +20,5 @@ function streamlines(point, freestream :: Freestream, horseshoes :: AbstractVect
     end
     streamlines
 end
+
+streamlines(freestream :: Freestream, points, horseshoes, Γs, length, num_steps :: Integer) = streamlines.(points, Ref(freestream), Ref(horseshoes), Ref(Γs), Ref(length), Ref(num_steps))

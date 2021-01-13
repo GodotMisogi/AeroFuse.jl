@@ -83,9 +83,9 @@ version = "0.5.10"
 
 [[Blink]]
 deps = ["Base64", "BinDeps", "Distributed", "JSExpr", "JSON", "Lazy", "Logging", "MacroTools", "Mustache", "Mux", "Reexport", "Sockets", "WebIO", "WebSockets"]
-git-tree-sha1 = "434893c1f9e9ce59be3f114641e99ef84c4d8f1a"
+git-tree-sha1 = "8cc2a5f880e832ef5b0d222673a7fdd082f9c2fc"
 uuid = "ad839575-38b3-5650-b840-f874b8c74a25"
-version = "0.12.3"
+version = "0.12.4"
 
 [[Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -118,10 +118,10 @@ uuid = "082447d4-558c-5d27-93f4-14fc19e9eca2"
 version = "0.7.27"
 
 [[ChainRulesCore]]
-deps = ["LinearAlgebra", "MuladdMacro", "SparseArrays"]
-git-tree-sha1 = "15081c431bb25848ad9b0d172a65794f3a3e197a"
+deps = ["LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "0acfdec745cb4cb38ad23c8668a1b7e58b42594a"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "0.9.24"
+version = "0.9.25"
 
 [[CodeTracking]]
 deps = ["InteractiveUtils", "UUIDs"]
@@ -771,11 +771,6 @@ git-tree-sha1 = "a8cbf066b54d793b9a48c5daa5d586cf2b5bd43d"
 uuid = "99f44e22-a591-53d1-9472-aa23ef4bd671"
 version = "1.1.0"
 
-[[MuladdMacro]]
-git-tree-sha1 = "c6190f9a7fc5d9d5915ab29f2134421b12d24a68"
-uuid = "46d2c3a1-f734-5fdb-9937-b9b9aeba4221"
-version = "0.2.2"
-
 [[Mustache]]
 deps = ["Printf", "Tables"]
 git-tree-sha1 = "36995ef0d532fe08119d70b2365b7b03d4e00f48"
@@ -877,9 +872,9 @@ version = "8.42.0+4"
 
 [[PackageCompiler]]
 deps = ["Libdl", "Pkg", "UUIDs"]
-git-tree-sha1 = "0d51c12a249d4f1e590a8d592243c28849405a6f"
+git-tree-sha1 = "d448727c4b86be81b225b738c88d30334fda6779"
 uuid = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
-version = "1.2.4"
+version = "1.2.5"
 
 [[Pango_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Pkg"]
@@ -923,9 +918,9 @@ version = "2.0.0"
 
 [[PlotUtils]]
 deps = ["ColorSchemes", "Colors", "Dates", "Printf", "Random", "Reexport", "Statistics"]
-git-tree-sha1 = "90ed6dcd2d5c40f35dcdc4f74ccb4a8e088ceb44"
+git-tree-sha1 = "ae9a295ac761f64d8c2ec7f9f24d21eb4ffba34d"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
-version = "1.0.9"
+version = "1.0.10"
 
 [[Plotly]]
 deps = ["Base64", "DelimitedFiles", "HTTP", "JSON", "PlotlyJS", "Reexport"]

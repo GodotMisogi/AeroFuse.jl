@@ -8,7 +8,7 @@ using Rotations
 using CoordinateTransformations
 using Zygote
 
-using ..AeroMDAO: Point2D, affine_2D, rotation, inverse_rotation, span
+using ..AeroMDAO: Point2D, affine_2D, rotation, inverse_rotation, span, structtolist
 
 export panel_dist, split_panels, Panel2D, point1, point2, point3, point4, zero, collocation_point, panel_length, trans_panel, panel_angle, panel_tangent, panel_normal, panel_location, Panel3D, panel_area, panel_coords, transform, midpoint
 

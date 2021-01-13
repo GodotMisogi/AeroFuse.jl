@@ -20,7 +20,11 @@ scale_foil(foil :: Foil, chord) = chord * foil.coords
 """
 Returns a Foil with cosine spacing for a given number of points. 
 """
-cut_foil(foil :: Foil, num) = (Foil ∘ cosine_foil)(foil.coords, n = num)
+function cut_foil(foil :: Foil, num)
+    coords = cosine_foil(foil.coords, n = num)
+    display(coords)
+    @. Point2D(first(coords), last(coords))
+end
 
 """
 Computes the camber-thickness distribution of a Foil with cosine spacing..
@@ -175,7 +179,7 @@ camthick_foil(xs, camber, thickness) = let coords = [ [xs camber .+ thickness / 
 """
 Provides the camber coordinates on the x-z plane at y = 0.
 """
-camber_coordinates(coords) = [ coords[:,1] (zeros ∘ length)(coords[:,1]) coords[:,2] ]
+camber_coordinates(coords) = [ first.(coords) (zeros ∘ length)(coords[:]) last.(coords) ]
 
 """
 Provides the thickness coordinates on the x-z plane at y = 0.

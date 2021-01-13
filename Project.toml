@@ -4,6 +4,7 @@ authors = ["GodotMisogi <arjitseth@gmail.com>"]
 version = "0.1.1"
 
 [deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
