@@ -40,7 +40,7 @@ end
 ##
 using PlotlyJS
 
-num_points = 30
+num_points = 50
 max_z = 0.1
 y = span(wing) / 2 - 0.5
 seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))

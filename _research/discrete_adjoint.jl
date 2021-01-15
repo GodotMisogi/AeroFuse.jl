@@ -54,20 +54,20 @@ end
 
 residual(T, β, q, dx, dy, T_boundary) = 
         [ let Ts = stencil_1(T, T_ind.I..., T_boundary);
-                residual_cell(Ts, β, q[T_ind], dx, dy) end
-                for T_ind in CartesianIndices(T) ]
+            residual_cell(Ts, β, q[T_ind], dx, dy) end
+            for T_ind in CartesianIndices(T) ]
 
 # Derivative stuff
 function solve_direct(x, u, ∂R∂x, ∂R∂u)
-    
-    reshape(∂R∂u, (length(R[:]) + length(x[:]), length(u[:]) + length(x[:]))) \ -(∂R∂x)[:]
+    ∂R∂u_sq = reshape(∂R∂u, (length(u[:]), length(u[:])))
+    reshape(hcat((∂R∂u_sq \ -(∂R∂x)[:,:,i][:] for i in eachindex(x))...), (size(u)..., length(x)))
 end
 
 function solve_adjoint(u, ∂R∂u, dfdu) 
     reshape(∂R∂u, (length(u[:]), length(u[:])))' \ -(dfdu)'[:]
 end
 
-total_derivative_direct(∂f∂x, ψ, ∂f∂u) = ∂f∂x + [ sum(reshape(∂f∂u, (length(R[:]), length(∂f∂x)))[:,n] * ψ) for n in eachindex(∂f∂x) ]
+total_derivative_direct(∂f∂x, ψ, ∂f∂u) = ∂f∂x + [ sum(∂f∂u * ψ[n]) for n in eachindex(∂f∂x) ]
 
 total_derivative_adjoint(∂f∂x, φ, ∂R∂x) = ∂f∂x + [ sum(permutedims(φ) * reshape(∂R∂x, (length(R[:]), length(∂f∂x)))[:,n]) for n in eachindex(∂f∂x) ]
 
@@ -207,19 +207,21 @@ for i in 1:num_adjoint
     # println("Computing df/dT")
     dfdT = ∇cost(T, T_truth, indices)[1]
 
+    # println("Computing ∂f/∂x")
+    ∂f∂x = zeros(length(β))    
+
     # println("Solving adjoint problem: (∂R/∂T)ᵗ φ = -(df/dT)ᵗ")
     φ = solve_adjoint(T, ∂R∂T, dfdT)
 
     # println("Computing ∂R/∂x")
     ∂R∂x = ∇residual_β(T, β, q₀, dx, dy, T_boundary)
 
-    display(∂R∂x)
+    # display(∂R∂x)
+    dTdx = solve_direct(β, T, ∂R∂x, ∂R∂T)
+    # display(dTdx)
 
-    # println("Computing ∂f/∂x")
-    ∂f∂x = zeros(length(β))
-    
-    # println("Evaluating total derivative: df/dβ = ∂f/∂β + φᵗ(∂R/∂x)")
-    dfdβ = total_derivative_adjoint(∂f∂x, φ, ∂R∂x)
+    # dfdβ = total_derivative_direct(∂f∂x, dTdx, dfdT)
+    display(dfdβ)
 
     # println("Updating design variables β")
     @. β -= γs * dfdβ

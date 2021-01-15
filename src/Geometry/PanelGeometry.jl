@@ -32,7 +32,7 @@ struct Panel2D{T <: Real} <: Panel
     p2 :: Point2D{T}
 end
 
-Panel2D(p1 :: SVector{2,T}, p2 :: SVector{2,T}) where T <: Real = Panel2D{T}(Point2D(p1), Point2D(p2))
+Panel2D(p1 :: Union{Point2D{T}, MVector{2,T}, SVector{2,T}}, p2 :: Union{Point2D{T}, MVector{2,T}, SVector{2,T}}) where T <: Real = Panel2D{T}(Point2D(p1), Point2D(p2))
 
 # Methods on panels
 point1(p :: Panel) = p.p1
