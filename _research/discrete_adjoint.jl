@@ -172,7 +172,7 @@ indices = eachindex(T_truth)
 
 ##
 β =  [13000., 10., 10., 5.]
-γs = [10., 1e-5, 1e-5, 1e-5]
+γs = [100., 5., 5., 5.]
 
 num_adjoint = 100
 num_iters   = 30
@@ -210,18 +210,19 @@ for i in 1:num_adjoint
     # println("Computing ∂f/∂x")
     ∂f∂x = zeros(length(β))    
 
-    # println("Solving adjoint problem: (∂R/∂T)ᵗ φ = -(df/dT)ᵗ")
-    φ = solve_adjoint(T, ∂R∂T, dfdT)
-
     # println("Computing ∂R/∂x")
     ∂R∂x = ∇residual_β(T, β, q₀, dx, dy, T_boundary)
 
     # display(∂R∂x)
-    dTdx = solve_direct(β, T, ∂R∂x, ∂R∂T)
-    # display(dTdx)
 
-    # dfdβ = total_derivative_direct(∂f∂x, dTdx, dfdT)
-    display(dfdβ)
+    # println("Solving adjoint problem: (∂R/∂T)ᵗ φ = -(df/dT)ᵗ")
+    # φ = solve_adjoint(T, ∂R∂T, dfdT)
+    # dfdβ = total_derivative_adjoint(∂f∂x, φ, ∂R∂x)
+
+    dTdx = solve_direct(β, T, ∂R∂x, ∂R∂T)
+    dfdβ = total_derivative_direct(∂f∂x, dTdx, dfdT)
+
+    # display(dfdβ)
 
     # println("Updating design variables β")
     @. β -= γs * dfdβ
