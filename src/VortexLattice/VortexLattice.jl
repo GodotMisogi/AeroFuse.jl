@@ -75,12 +75,10 @@ end
 
 Solves the AIC matrix with the boundary condition given Panel3Ds and a Freestream, with the option to use the symmetry of the problem in the ``x``-``z`` plane.
 """
-function solve_horseshoes(horseshoe_panels :: AbstractVector{<: Panel3D}, camber_panels :: AbstractVector{<: Panel3D}, freestream :: Freestream, symmetry = false) 
+function solve_horseshoes(horseshoe_panels :: AbstractVector{<: Panel3D}, normals, freestream :: Freestream, symmetry = false) 
     @timeit "Freestream Velocity" U = aircraft_velocity(freestream)
 
     horseshoes, colpoints = make_horseshoes(horseshoe_panels)
-    
-    @timeit "Normals" normals = panel_normal.(camber_panels)
 
     @timeit "Total Velocity" total_vel = [ U + freestream.Ω × colpoint for colpoint in colpoints ]
 

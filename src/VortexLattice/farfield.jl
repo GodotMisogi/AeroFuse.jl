@@ -3,7 +3,7 @@
 
 trefftz_potential(r_i, r_j, Γ_j) = let r = r_i - r_j; Γ_j / 2π * SVector(1, 0, 0) × r / norm(r)^2 end
 
-∇φ(r, points, Γs) = sum(trefftz_potential.(Ref(r), points, Γs))
+∇φ(r, points, Γs) = sum(x -> trefftz_potential(r, x[1], x[2]), zip(points, Γs))
 
 ∂φ∂n(trefftz_line :: Line, points, Γs, normal) = dot(∇φ(center(trefftz_line), points, Γs), normal)
 

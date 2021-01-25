@@ -19,16 +19,16 @@ wing = Wing(wing_right, wing_right)
 print_info(wing)
 
 ## Assembly
-reset_timer!()
+# reset_timer!()
 
 ρ = 1.225
 ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
 Ω = SVector(0.0, 0.0, 0.0)
-uniform = Freestream(10.0, 5.0, 5.0, Ω)
-nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = @time solve_case(wing, uniform, ref, span_num = 10, chord_num = 10) 
+uniform = Freestream(10.0, 5.0, 0.0, Ω)
+@benchmark nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 25, chord_num = 25) 
 
-#
-print_timer();
+##
+# print_timer();
 
 begin
     println("\nNearfield:")

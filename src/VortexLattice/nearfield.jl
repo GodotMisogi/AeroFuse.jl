@@ -31,7 +31,7 @@ sym_nearfield_forces(Γs, horseshoes :: AbstractVector{<: Horseshoe}, U, Ω, ρ)
 
 Computes the near-field drag given the sum of the local Kutta-Jowkowski forces and a Freestream.
 """
-nearfield_drag(force, freestream :: Freestream) = dot(force, velocity(freestream) / freestream.mag)
+nearfield_drag(force, freestream :: Freestream) = dot(force, velocity(freestream)) / freestream.mag
 
 """
 Placeholder.
@@ -39,7 +39,7 @@ Placeholder.
 horseshoe_moment(horseshoe :: Horseshoe, force, r_ref) = (bound_leg_center(horseshoe) - r_ref) × force
 
 """
-Placeholder. Unsure whether to change this to a generic moment computation function.
+Placeholder.
 """
 moments(horseshoes :: AbstractVector{<: Horseshoe}, forces, r_ref) = horseshoe_moment.(horseshoes, forces, Ref(r_ref))
 

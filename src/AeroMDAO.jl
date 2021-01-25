@@ -68,7 +68,7 @@ export lift_coefficient
 ## Aerodynamic analyses
 #==========================================================================================#
 
-include("cases.jl")
+include("PreliminaryDesign/cases.jl")
 
 export solve_case
 

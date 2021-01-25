@@ -1,28 +1,28 @@
 VLM.jl -
 
 BenchmarkTools.Trial: 
-  memory estimate:  3.41 MiB
-  allocs estimate:  29689
+  memory estimate:  100.91 MiB
+  allocs estimate:  175779
   --------------
-  minimum time:     38.912 ms (0.00% GC)
-  median time:      46.955 ms (0.00% GC)
-  mean time:        46.521 ms (0.54% GC)
-  maximum time:     55.667 ms (5.76% GC)
+  minimum time:     872.428 ms (0.17% GC)
+  median time:      882.353 ms (1.27% GC)
+  mean time:        908.851 ms (4.30% GC)
+  maximum time:     978.742 ms (12.20% GC)
   --------------
-  samples:          108
+  samples:          6
   evals/sample:     1
 
 
 VortexLattice.jl -
 
 BenchmarkTools.Trial: 
-  memory estimate:  4.03 MiB
-  allocs estimate:  33659
+  memory estimate:  29.00 MiB
+  allocs estimate:  151958
   --------------
-  minimum time:     25.325 ms (0.00% GC)
-  median time:      31.130 ms (0.00% GC)
-  mean time:        31.029 ms (1.04% GC)
-  maximum time:     36.018 ms (10.22% GC)
+  minimum time:     350.237 ms (0.00% GC)
+  median time:      363.668 ms (0.95% GC)
+  mean time:        364.460 ms (1.07% GC)
+  maximum time:     399.813 ms (1.91% GC)
   --------------
-  samples:          162
+  samples:          14
   evals/sample:     1
