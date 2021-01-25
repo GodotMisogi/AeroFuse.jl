@@ -9,14 +9,6 @@ md"""
 # TLIP - Aircraft Design
 """
 
-# ╔═╡ e6e5cbe0-4090-11eb-355d-b59a4e83187c
-md"""## Why Julia?
-> Students and instructors are familiar with MATLAB.
-1. Its syntax is very similar to MATLAB's.
-2. It's faster than MATLAB.
-3. It has Pluto, this nice notebook format for running experiments and giving instructive presentations.
-"""
-
 # ╔═╡ 670c4350-408f-11eb-0ded-f7d2115bd86c
 md"""### Fixed Wing-VTOL Hybrid Case
 
@@ -65,12 +57,11 @@ hint(md"""
 	""")
 
 # ╔═╡ Cell order:
-# ╟─25d361d0-407a-11eb-2e31-e393bd8aa7e1
-# ╟─e6e5cbe0-4090-11eb-355d-b59a4e83187c
+# ╠═25d361d0-407a-11eb-2e31-e393bd8aa7e1
 # ╟─edc6d920-40f1-11eb-04af-cf216294003a
 # ╟─670c4350-408f-11eb-0ded-f7d2115bd86c
 # ╟─0700cbf0-40f5-11eb-1243-47e213dd19fb
 # ╟─2a2ab690-4091-11eb-0c34-89a03ac496c5
 # ╟─067fe520-4092-11eb-2cb9-c70f29ceb3da
 # ╟─00a45890-4103-11eb-2fcf-cdb152320810
-# ╠═fbcffce2-40f1-11eb-2eee-87b8f493931c
+# ╟─fbcffce2-40f1-11eb-2eee-87b8f493931c

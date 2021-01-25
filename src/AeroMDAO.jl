@@ -77,6 +77,6 @@ export solve_case
 
 include("Tools/plot_tools.jl")
 
-export plot_panels, plot_surface, plot_streamlines, trace_surface, trace_panels, trace_coords, trace_streamlines, panel_splits, plot_case
+export plot_panels, plot_streams, plot_surface, plot_streamlines, trace_surface, trace_panels, trace_coords, trace_streamlines, panel_splits, plot_case
 
 end

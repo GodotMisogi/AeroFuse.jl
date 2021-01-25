@@ -2,7 +2,9 @@
 #==========================================================================================#
 
 """
-Airfoil structure consisting of foil coordinates as an array of points.
+    Foil(coords)
+
+Airfoil structure consisting of foil coordinates as an array of points. Should be in Selig format for compatibility with other AeroMDAO tools.
 """
 struct Foil{T <: Real}
     coords :: AbstractVector{SVector{2,T}} # The foil profile as an array of coordinates, must be in Selig format.
@@ -188,6 +190,11 @@ naca4_thickness(t_by_c, xc, sharp_trailing_edge :: Bool) = 5 * t_by_c * (0.2969 
 naca4_camberline(pos, cam, xc) = ifelse(xc < pos, (cam / pos^2) * xc * (2 * pos - xc), cam / (1 - pos)^2 * ( (1 - 2 * pos) + 2 * pos * xc - xc^2) )
 naca4_gradient(pos, cam, xc) = atan(2 * cam / (ifelse(xc < pos, pos^2, (1 - pos)^2)) * (pos - xc))
 
+"""
+    naca4(digits :: NTuple{4, <: Real}, n :: Integer; sharp_trailing_edge :: Bool)
+
+Defines a NACA 4-digit series profile.
+"""
 function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_edge :: Bool = false)
     # Camber
     cam = digits[1] / 100
@@ -221,5 +228,6 @@ function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_e
     end
     coords = [ [x_upper y_upper][end:-1:2,:]; 
                 x_lower y_lower             ]
+                
     SVector.(coords[:,1], coords[:,2])
 end

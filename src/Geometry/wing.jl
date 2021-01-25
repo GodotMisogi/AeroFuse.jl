@@ -1,9 +1,15 @@
 #-----------------WING---------------------#
 
 """
-Definition for a HalfWing consisting of airfoils, span lengths, dihedrals, and sweep angles.
+    HalfWing(foils  	:: Vector{Foil}, 
+             chords 	:: Vector{Real}, 
+             twists 	:: Vector{Real}, 
+             spans  	:: Vector{Real}, 
+             dihedrals  :: Vector{Real}, 
+             sweeps 	:: Vector{Real})
+             
+Definition for a HalfWing consisting of airfoils and their associated chord lengths, twist angles, span lengths, dihedrals, and sweep angles.
 """
-# chords :: Array{Float64} # Chord lengths (m)
 struct HalfWing{T <: Real} <: Aircraft
     foils :: Vector{Foil{T}} # Airfoil profiles
     chords :: Vector{T} # Airfoil chord lengths (m)
@@ -35,6 +41,8 @@ Computes the area given a span and chord.
 area(span, chord) = span * chord
 
 """
+    mean_aerodynamic_chord(root_chord, taper_ratio)
+
 Computes the mean aerodynamic chord, essentially a root-mean-square chord, given a root chord and taper ratio.
 """
 mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
@@ -61,6 +69,8 @@ function projected_area(wing :: HalfWing)
 end
 
 """
+    mean_aerodynamic_chord(half_wing :: HalfWing)
+    
 Computes the mean aerodynamic chord of a HalfWing.
 """
 function mean_aerodynamic_chord(wing :: HalfWing)
@@ -195,16 +205,39 @@ Meshes a HalfWing into panels based on the camber distributions of the airfoil s
 mesh_cambers(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ camber_coords)(wing, span_num, chord_num, flip)
 
 """
-A composite type consisting of two HalfWings. `left' is meant to have its y-coordinates flipped ∈ Cartesian representation.
+A composite type consisting of two HalfWings with fields `left` and `right`. `left` is meant to have its y-coordinates flipped in Cartesian representation.
 """
 struct Wing{T <: Real} <: Aircraft
     left :: HalfWing{T}
     right :: HalfWing{T}
 end
 
+"""
+    span(wing :: Wing)
+    
+Computes the span of a Wing.
+"""
 span(wing :: Wing) = span(wing.left) + span(wing.right)
+
+"""
+    projected_area(wing :: Wing)
+    
+Computes the projected_area of a Wing.
+"""
 projected_area(wing :: Wing) = projected_area(wing.left) + projected_area(wing.right)
+
+"""
+    mean_aerodynamic_chord(wing :: Wing)
+    
+Computes the mean aerodynamic chord of a Wing.
+"""
 mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean_aerodynamic_chord(wing.right)) / 2
+
+"""
+    mean_aerodynamic_chord(wing :: Union{Wing, HalfWing})
+    
+Computes the mean aerodynamic chord of a HalfWing or Wing.
+"""
 aspect_ratio(wing :: Union{Wing, HalfWing}) = aspect_ratio(span(wing), projected_area(wing))
 
 """
@@ -225,7 +258,9 @@ leading_chopper(obj :: Wing, span_num :: Integer; flip = false) = span_chopper(w
 trailing_chopper(obj :: Wing, span_num :: Integer; flip = false) = span_chopper(wing_bounds(obj)..., span_num)[2]
 
 """
-Meshes a Wing into panels meant for lifting-line analyses using horseshoe elements.
+    mesh_horseshoes(wing :: Wing, n_s, n_c)
+
+Meshes a Wing into panels of `n_s` spanwise divisions per section and `n_s` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
 """
 function mesh_horseshoes(wing :: Wing, span_num, chord_num)
     left_panels = mesh_horseshoes(wing.left, span_num, chord_num, flip = true)
@@ -265,6 +300,9 @@ function paneller(wing :: Union{Wing, HalfWing}, span_num, chord_num; rotation =
     [ transform(panel, rotation, translation) for panel in cambers ]
 end
 
+"""
+Returns the relevant geometric characteristics of a HalfWing or Wing.
+"""
 info(wing :: Union{Wing, HalfWing}) = span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing)
 
 """

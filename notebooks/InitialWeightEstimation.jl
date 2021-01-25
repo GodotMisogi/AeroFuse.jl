@@ -37,13 +37,6 @@ W_0 = \frac{W_\text{payload} + W_\text{crew}}{1 - W_{f_N} / W_0 - W_e / W_0}
 # ╔═╡ 0bd8d880-4103-11eb-01aa-6f908fa8cd9e
 hint(text) = Markdown.MD(Markdown.Admonition("hint", "Hint", [text]));
 
-# ╔═╡ edc9887e-4102-11eb-1452-7336ed39e616
-hint(md"""
-	```math
-	W_0 = W_\text{payload}...
-	```
-	""")
-
 # ╔═╡ c2c891f0-4083-11eb-1164-f78e70d8cd88
 """
 	maximum_takeoff_weight(payload_weight, crew_weight, fuel_weight_frac, empty_weight_frac)
@@ -115,9 +108,6 @@ loiter1WF = 1.
 # ╔═╡ 2db14640-4086-11eb-34ab-7982af7dd0b5
 md"Range of cruise segment 2:"
 
-# ╔═╡ 3e6e5430-5573-11eb-26f6-554ffbc33de5
-
-
 # ╔═╡ 27ee5c20-4086-11eb-25e6-3ff461fb24dd
 R2 = 2800 * 1000;
 
@@ -128,7 +118,7 @@ cruise2WF = cruise_weight_fraction(R2, cruise_SFC, V, LD_cruise)
 md"Endurance of loiter segment 2 in seconds:"
 
 # ╔═╡ 1197d2d0-4086-11eb-2134-4bf31d078ddc
-E2 = 0.33 * 3600;
+E2 = 0.33 * 3600
 
 # ╔═╡ 07ecf590-4085-11eb-1181-633ab1ab1e4e
 loiter2WF = loiter_weight_fraction(E2, loiter_SFC, LD_max)
@@ -146,6 +136,11 @@ md"""## Fuel Weight Fractions
 W_{f_N} / W_0 = a\left(1 - \prod_{i = 1}^{N}\frac{W_{f_i}}{W_{f_{i-1}}}\right)
 ```
 """
+
+# ╔═╡ edc9887e-4102-11eb-1452-7336ed39e616
+hint(md"""
+	You can evaluate the product of an array using `prod()`!
+	""")
 
 # ╔═╡ 08eb3da0-4083-11eb-2eac-45e93f3e99f4
 fuel_weight_fraction(fracs, a = 1.00) = a * (1 - prod(fracs))
@@ -240,7 +235,7 @@ begin
 end
 
 # ╔═╡ 05618530-4084-11eb-325c-1fe833f089dc
-WTOs, errors = compute_mtow(WPL, Wcrew, A, B, num)
+WTOs, errors = compute_mtow(WPL, Wcrew, A, B, num);
 
 # ╔═╡ 58da9050-408c-11eb-310e-6106a7b11edd
 begin
@@ -253,7 +248,6 @@ end
 # ╟─5c4d5f00-4083-11eb-31ad-d70d906e4825
 # ╟─2ede8630-4087-11eb-0f6b-4ddfbf717726
 # ╟─0bd8d880-4103-11eb-01aa-6f908fa8cd9e
-# ╠═edc9887e-4102-11eb-1452-7336ed39e616
 # ╠═c2c891f0-4083-11eb-1164-f78e70d8cd88
 # ╟─49a58902-4087-11eb-27ae-61c820955b7a
 # ╠═82e6a100-4086-11eb-0ee0-197bf26577e1
@@ -262,31 +256,31 @@ end
 # ╟─706b07f0-4086-11eb-358d-9f296a4bf423
 # ╠═4df075f0-4083-11eb-0f64-c5fd6c41772f
 # ╟─4f886920-4085-11eb-3720-45a3b9fa0a37
-# ╠═9682d72e-4084-11eb-269d-0bc3efc1c8e2
+# ╟─9682d72e-4084-11eb-269d-0bc3efc1c8e2
 # ╠═8f3f4b10-4085-11eb-36f7-0de9a630e3e3
-# ╠═36093a82-4083-11eb-346a-23528f9cd4d5
+# ╟─36093a82-4083-11eb-346a-23528f9cd4d5
 # ╟─54b79ec0-4085-11eb-3386-41981e608e45
 # ╟─e956f3a0-5570-11eb-2311-59cedf436b9a
 # ╟─bcb4fa50-4084-11eb-3474-618341f94e86
 # ╟─3afb38b0-4086-11eb-31c0-cd32f6feeed6
-# ╟─3b336710-4083-11eb-3990-8ff6fcd8c645
+# ╠═3b336710-4083-11eb-3990-8ff6fcd8c645
 # ╟─2db14640-4086-11eb-34ab-7982af7dd0b5
-# ╟─3e6e5430-5573-11eb-26f6-554ffbc33de5
-# ╟─27ee5c20-4086-11eb-25e6-3ff461fb24dd
-# ╟─f8b34110-4084-11eb-2b95-2fb540813285
+# ╠═27ee5c20-4086-11eb-25e6-3ff461fb24dd
+# ╠═f8b34110-4084-11eb-2b95-2fb540813285
 # ╟─191983f0-4086-11eb-0575-7d769008814e
-# ╠═1197d2d0-4086-11eb-2134-4bf31d078ddc
+# ╟─1197d2d0-4086-11eb-2134-4bf31d078ddc
 # ╠═07ecf590-4085-11eb-1181-633ab1ab1e4e
 # ╟─0ec73130-4087-11eb-064c-f5695f578c69
 # ╠═4950af0e-4083-11eb-2ec1-1dd821c489b4
 # ╟─158ee120-4087-11eb-188b-f13671908d3f
-# ╠═08eb3da0-4083-11eb-2eac-45e93f3e99f4
+# ╟─edc9887e-4102-11eb-1452-7336ed39e616
+# ╟─08eb3da0-4083-11eb-2eac-45e93f3e99f4
 # ╟─2816e82e-4085-11eb-33d7-93dac498b4ff
 # ╠═0e95bdc0-4083-11eb-267c-07ddf6161aa6
 # ╠═13bc67e2-4083-11eb-1b48-d5fa25a4cd95
 # ╟─3bd51360-4085-11eb-240e-e189c1d79c9c
 # ╟─ba7a8fb0-40fd-11eb-1d5e-7bd861fae148
-# ╠═c6bbec32-4083-11eb-32a6-93488d9abc07
+# ╟─c6bbec32-4083-11eb-32a6-93488d9abc07
 # ╟─df1745c0-40fd-11eb-21ed-3b2ebf4f1dbd
 # ╟─cbe0c190-4083-11eb-020e-bbf9f4f7d67a
 # ╟─bb6c4652-4087-11eb-0818-2515b67bccc0
@@ -299,4 +293,4 @@ end
 # ╠═05618530-4084-11eb-325c-1fe833f089dc
 # ╟─6c04f612-4083-11eb-017a-0f6e29496ddd
 # ╟─58da9050-408c-11eb-310e-6106a7b11edd
-# ╠═caca53a0-40f3-11eb-211d-45d2e919cda0
+# ╟─caca53a0-40f3-11eb-211d-45d2e919cda0

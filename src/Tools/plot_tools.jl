@@ -4,6 +4,8 @@ plot_panels(panels :: AbstractVector{<: Panel3D}) = (tupvector ∘ panel_coords)
 
 panel_splits(coords) = [ [ c[1] for c in panel ] for panel in coords ], [ [ c[2] for c in panel ] for panel in coords ], [ [ c[3] for c in panel ] for panel in coords ]
 
+plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = tupvector.(streamlines(freestream, points, horseshoes, Γs, length, num_steps))
+
 trace_coords(xs, ys, zs, color = :black) = [ scatter3d(
                                                 x = x,
                                                 y = y,
@@ -42,7 +44,7 @@ end
 
 trace_streamlines(freestream :: Freestream, points, horseshoes :: AbstractVector{<: Horseshoe}, Γs :: AbstractVector{<: Real}, length :: Real, num_steps :: Integer = 100) = trace_coords((panel_splits ∘ streamlines)(freestream, points, horseshoes, Γs, length, num_steps)..., :lightblue)
 
-function plot_case(horseshoe_panels, camber_panels, Γs, horseshoes, freestream, seed,length = 2, num_steps = 100)
+function plot_case(horseshoe_panels, camber_panels, Γs, horseshoes, freestream, seed, length = 2, num_steps = 100)
     trace_horsies = trace_panels(horseshoe_panels[:])
     trace_horses  = trace_panels(horseshoe_panels[:], Γs[:])
     trace_cambers = trace_panels(camber_panels[:])
