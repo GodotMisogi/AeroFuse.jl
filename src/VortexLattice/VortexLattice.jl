@@ -104,7 +104,7 @@ export farfield_dynamics
 
 export case_dynamics
 
-function case_dynamics(Γs :: AbstractArray{<: Real}, horseshoes :: AbstractArray{<: Horseshoe}, freestream :: Freestream, r_ref :: SVector{3, <: Real}, ρ :: Real, symmetry :: Bool = false)
+function case_dynamics(Γs :: AbstractArray{<: Real}, horseshoes :: AbstractArray{<: Horseshoe}, freestream :: Freestream, r_ref, ρ :: Real, symmetry :: Bool = false)
     # Compute near-field dynamics
     @timeit "Nearfield Dynamics" geom_forces, geom_moments = nearfield_dynamics(Γs[:], horseshoes[:], freestream, r_ref, ρ, symmetry)
     force, moment = sum(geom_forces), sum(geom_moments)
