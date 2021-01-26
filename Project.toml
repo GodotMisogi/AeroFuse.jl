@@ -18,8 +18,9 @@ Xfoil = "19641d66-a62d-11e8-2441-8f57a969a9c4"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-Interpolations = "0.13"
+PlotlyJS = "0.14"
 Revise = "3.1"
+Interpolations = "0.13"
 Rotations = "1.0"
 TimerOutputs = "0.5"
 Xfoil = "0.4"
