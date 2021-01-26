@@ -26,3 +26,5 @@ Thumbs.db
 # IPython checkpoints
 */.ipynb_checkpoints/
 
+# Documenter
+docs/build/
