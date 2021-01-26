@@ -9,7 +9,7 @@ foilpath = "data/airfoil_database/CRM.dat"
 coords = read_foil(foilpath)
 
 ## Cosine spacing
-cos_foil = cosine_foil(coords, n = 51)
+cos_foil = cosine_foil(coords, 51)
 
 ## Camber-thickness transformations
 xcamthick = foil_camthick(cos_foil)

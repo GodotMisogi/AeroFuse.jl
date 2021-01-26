@@ -18,7 +18,7 @@ function trefftz_preprocessing(horseshoes :: AbstractArray{<: Horseshoe}, freest
     trefftz_proj_vecs   = @. trefftz_vectors - dot(U_ref, trefftz_vectors) * U_ref
     normals             = @. U_ref × trefftz_proj_vecs
 
-    @timeit "Dihedrals" dihedrals = [ atan(vec[3], vec[2]) for vec in trefftz_proj_vecs ]
+    @timeit "Dihedrals" dihedrals = @. atan(getindex(trefftz_proj_vecs, 3), getindex(trefftz_proj_vecs, 2))
     @timeit "Projected Leg Norms" Δs = norm.(trefftz_proj_vecs)
 
     trefftz_lines, trefftz_proj_vecs, normals, dihedrals, Δs

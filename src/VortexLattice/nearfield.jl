@@ -17,13 +17,15 @@ midpoint_velocity(r, Ω, horseshoes :: AbstractVector{<: Horseshoe}, Γs, U) = @
 """
 	nearfield_forces(Γs, horseshoes, U, Ω, ρ)
 
-Computes the nearfield forces via the local Kutta-Jowkowski given an array of horseshoes, their associated vortex strengths ``\\Gamma``s, a freestream flow vector ``U``, rotation rates ``\\Omega``, and a density ``\\rho``. The velocities are evaluated at the midpoint of the bound leg of each horseshoe.
+Computes the nearfield forces via the local Kutta-Jowkowski theorem given an array of horseshoes, their associated vortex strengths ``\\Gamma``s, a freestream flow vector ``U``, rotation rates ``\\Omega``, and a density ``\\rho``. The velocities are evaluated at the midpoint of the bound leg of each horseshoe.
 """
-function nearfield_forces(Γs, horseshoes :: AbstractVector{<: Horseshoe}, U, Ω, ρ)
-    ρ_ref, Ω_ref, hs_ref, Γ_ref, U_ref = Ref(ρ), Ref(Ω), Ref(horseshoes), Ref(Γs), Ref(U)
-    @. kutta_joukowsky(ρ_ref, Γs, midpoint_velocity(bound_leg_center(horseshoes), Ω_ref, hs_ref, Γ_ref, U_ref), bound_leg_vector(horseshoes))
-end
+nearfield_forces(Γs, horseshoes :: AbstractVector{<: Horseshoe}, U, Ω, ρ) = kutta_joukowsky.(Ref(ρ), Γs, midpoint_velocity.(bound_leg_center.(horseshoes), Ref(Ω), Ref(horseshoes), Ref(Γs), Ref(U)), bound_leg_vector.(horseshoes))
 
+"""
+	sym_nearfield_forces(Γs, horseshoes, U, Ω, ρ)
+
+Computes the nearfield forces via the local Kutta-Jowkowski theorem for a symmetric case. 
+"""
 sym_nearfield_forces(Γs, horseshoes :: AbstractVector{<: Horseshoe}, U, Ω, ρ) = [ nearfield_forces(Γs, reflect_xz.(horseshoes), U, Ω, ρ)[end:-1:1]; nearfield_forces(Γs, horseshoes, U, Ω, ρ) ]
 
 """
