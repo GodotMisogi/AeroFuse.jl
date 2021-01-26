@@ -20,8 +20,7 @@ Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
 Interpolations = "0.13"
-Revise = "3.1"
-TimerOutputs = "0.5"
+Rotations = "1.0"
 Revise = "3.1"
 TimerOutputs = "0.5"
 Zygote = "0.6"
