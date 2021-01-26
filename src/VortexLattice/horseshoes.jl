@@ -21,17 +21,19 @@ collocation_point(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, pane
 """
 A composite type consisting of two vectors to define a line.
 """
-struct Line
-    r1 :: SVector{3, Real}
-    r2 :: SVector{3, Real}
+struct Line{T <: Real}
+    r1 :: SVector{3,T}
+    r2 :: SVector{3,T}
 end
+
+Line(r1 :: FieldVector{3,T}, r2 :: FieldVector{3,T}) where T <: Real = Line{T}(r1, r2)
 
 point1(line :: Line) = line.r1
 point2(line :: Line) = line.r2
 vector(line :: Line) = point2(line) - point1(line)
 center(line :: Line) = (point1(line) + point2(line)) / 2
 
-points(lines :: AbstractVector{Line}) = [ point1.(lines)..., (point2 ∘ last)(lines) ]
+points(lines :: AbstractVector{<: Line}) = [ point1.(lines); [(point2 ∘ last)(lines)] ]
 
 transform(line :: Line, rotation, translation) = let trans = Translation(translation) ∘ LinearMap(rotation); Line((trans ∘ point1)(line), (trans ∘ point2)(line)) end
 
@@ -56,7 +58,8 @@ total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_
 """
 Computes the velocity induced at a point `r` by a vortex Line with constant strength Γ.
 """
-horseshoe_velocity(r, line :: Line, Γ, direction) = @timeit "Sum Legs" total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
+horseshoe_velocity(r, line :: Line, Γ, direction) = total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
+
 ## Arrays of vortex lines
 #==========================================================================================#
 
@@ -68,8 +71,8 @@ abstract type AbstractVortexArray end
 """
 A horseshoe type consisting of a bound leg of type Line represening a vortex line.
 """
-struct Horseshoe <: AbstractVortexArray
-    bound_leg :: Line
+struct Horseshoe{T <: Real} <: AbstractVortexArray
+    bound_leg :: Line{T}
 end
 
 """
@@ -102,4 +105,4 @@ bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
 
 Computes the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
 """
-velocity(r :: SVector{3, <: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3, <: Real}) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
+velocity(r :: SVector{3,<: Real}, horseshoe :: Horseshoe, Γ :: Real, V_hat :: SVector{3,<: Real}) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)

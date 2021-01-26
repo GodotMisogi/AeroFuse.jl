@@ -1,17 +1,23 @@
 #-----------------WING---------------------#
 
 """
-Definition for a HalfWing consisting of airfoils, span lengths, dihedrals, and sweep angles.
+    HalfWing(foils  	:: Vector{Foil}, 
+             chords 	:: Vector{Real}, 
+             twists 	:: Vector{Real}, 
+             spans  	:: Vector{Real}, 
+             dihedrals  :: Vector{Real}, 
+             sweeps 	:: Vector{Real})
+             
+Definition for a HalfWing consisting of airfoils and their associated chord lengths, twist angles, span lengths, dihedrals, and sweep angles.
 """
-# chords :: Array{Float64} # Chord lengths (m)
-struct HalfWing <: Aircraft
-    foils :: AbstractVector{Foil} # Airfoil profiles
-    chords :: AbstractVector{<: Real} # Airfoil chord lengths (m)
-    twists :: AbstractVector{<: Real} # Twist angles (deg)
-    spans :: AbstractVector{<: Real}  # Leading-edge to leading-edge distance between foils (m)
-    dihedrals :: AbstractVector{<: Real} # Dihedral angles (deg)
-    sweeps :: AbstractVector{<: Real} # Leading-edge sweep angles (deg)
-    HalfWing(foils, chords, twists, spans, dihedrals, sweeps) = new(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps)) # Convert to radians
+struct HalfWing{T <: Real} <: Aircraft
+    foils :: Vector{Foil{T}} # Airfoil profiles
+    chords :: Vector{T} # Airfoil chord lengths (m)
+    twists :: Vector{T} # Twist angles (deg)
+    spans :: Vector{T}  # Leading-edge to leading-edge distance between foils (m)
+    dihedrals :: Vector{T} # Dihedral angles (deg)
+    sweeps :: Vector{T} # Leading-edge sweep angles (deg)
+    HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps)) # Convert to radians
 end
 
 """
@@ -35,6 +41,8 @@ Computes the area given a span and chord.
 area(span, chord) = span * chord
 
 """
+    mean_aerodynamic_chord(root_chord, taper_ratio)
+
 Computes the mean aerodynamic chord, essentially a root-mean-square chord, given a root chord and taper ratio.
 """
 mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
@@ -61,6 +69,8 @@ function projected_area(wing :: HalfWing)
 end
 
 """
+    mean_aerodynamic_chord(half_wing :: HalfWing)
+    
 Computes the mean aerodynamic chord of a HalfWing.
 """
 function mean_aerodynamic_chord(wing :: HalfWing)
@@ -91,9 +101,9 @@ function leading_edge(wing :: HalfWing, flip :: Bool = false)
     dihedraled_spans = [ 0; cumsum(spans .* tan.(dihedrals)) ]
     cum_spans = [ 0; cumsum(spans) ]
     
-    leading = SVector.(sweeped_spans, flip ? -cum_spans : cum_spans, dihedraled_spans)
+    leading = SVector.(sweeped_spans, ifelse(flip, -cum_spans, cum_spans), dihedraled_spans)
 
-    flip ? leading[end:-1:1] : leading
+    ifelse(flip, leading[end:-1:1], leading)
 end
 
 """
@@ -106,7 +116,7 @@ function wing_bounds(wing :: HalfWing, flip :: Bool = false)
     leading = leading_edge(wing, flip)
     trailing = SVector.(chords, (zeros ∘ length)(chords), twisted_chords) 
 
-    leading, (flip ? trailing[end:-1:1] : trailing) .+ leading
+    leading, (ifelse(flip, trailing[end:-1:1], trailing) .+ leading)
 end
 
 """
@@ -114,11 +124,10 @@ Computes the coordinates of a HalfWing consisting of Foils and relevant geometri
 """
 function wing_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
     leading_xyz = leading_edge(wing, flip)
+    temp_foils = @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num)
     
-    scaled_foils = wing.chords .* (coordinates ∘ cut_foil).(wing.foils, chord_num)
-    
-    scaled_foils = flip ? scaled_foils[end:-1:1] : scaled_foils
-    twists = flip ? wing.twists[end:-1:1] : wing.twists
+    scaled_foils = ifelse(flip, temp_foils[end:-1:1], temp_foils)
+    twists = ifelse(flip, wing.twists[end:-1:1], wing.twists)
 
     foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) ∈ zip(scaled_foils, twists, leading_xyz) ]
 
@@ -131,10 +140,10 @@ Computes the coordinates of a HalfWing consisting of camber distributions of Foi
 function camber_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip :: Bool = false)
     leading_xyz = leading_edge(wing, flip)
     
-    scaled_foils = wing.chords .* (coordinates ∘ camber_thickness).(wing.foils, chord_num)
+    scaled_foils = @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num)
 
-    scaled_foils = flip ? scaled_foils[end:-1:1] : scaled_foils
-    twists = flip ? wing.twists[end:-1:1] : wing.twists
+    scaled_foils = ifelse(flip, scaled_foils[end:-1:1], scaled_foils)
+    twists = ifelse(flip, wing.twists[end:-1:1], wing.twists)
 
     foil_coords = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) ∈ zip(scaled_foils, twists, leading_xyz) ]
 
@@ -164,7 +173,7 @@ wing_chopper(lead, trail, span_num, chord_num) = chord_chopper(chord_sections(sp
 """
 Useless for now, but looks cool.
 """
-panel(root_lead, root_trail, tip_trail, tip_lead) = [ root_lead  tip_lead;
+panel(root_lead, root_trail, tip_trail, tip_lead) = [ root_lead  tip_lead  ;
                                                       root_trail tip_trail ]
 
 """
@@ -196,16 +205,39 @@ Meshes a HalfWing into panels based on the camber distributions of the airfoil s
 mesh_cambers(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ camber_coords)(wing, span_num, chord_num, flip)
 
 """
-A composite type consisting of two HalfWings. `left' is meant to have its y-coordinates flipped ∈ Cartesian representation.
+A composite type consisting of two HalfWings with fields `left` and `right`. `left` is meant to have its y-coordinates flipped in Cartesian representation.
 """
-struct Wing <: Aircraft
-    left :: HalfWing
-    right :: HalfWing
+struct Wing{T <: Real} <: Aircraft
+    left :: HalfWing{T}
+    right :: HalfWing{T}
 end
 
+"""
+    span(wing :: Wing)
+    
+Computes the span of a Wing.
+"""
 span(wing :: Wing) = span(wing.left) + span(wing.right)
+
+"""
+    projected_area(wing :: Wing)
+    
+Computes the projected_area of a Wing.
+"""
 projected_area(wing :: Wing) = projected_area(wing.left) + projected_area(wing.right)
+
+"""
+    mean_aerodynamic_chord(wing :: Wing)
+    
+Computes the mean aerodynamic chord of a Wing.
+"""
 mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean_aerodynamic_chord(wing.right)) / 2
+
+"""
+    mean_aerodynamic_chord(wing :: Union{Wing, HalfWing})
+    
+Computes the mean aerodynamic chord of a HalfWing or Wing.
+"""
 aspect_ratio(wing :: Union{Wing, HalfWing}) = aspect_ratio(span(wing), projected_area(wing))
 
 """
@@ -226,7 +258,9 @@ leading_chopper(obj :: Wing, span_num :: Integer; flip = false) = span_chopper(w
 trailing_chopper(obj :: Wing, span_num :: Integer; flip = false) = span_chopper(wing_bounds(obj)..., span_num)[2]
 
 """
-Meshes a Wing into panels meant for lifting-line analyses using horseshoe elements.
+    mesh_horseshoes(wing :: Wing, n_s, n_c)
+
+Meshes a Wing into panels of `n_s` spanwise divisions per section and `n_s` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
 """
 function mesh_horseshoes(wing :: Wing, span_num, chord_num)
     left_panels = mesh_horseshoes(wing.left, span_num, chord_num, flip = true)
@@ -267,6 +301,11 @@ function paneller(wing :: Union{Wing, HalfWing}, span_num, chord_num; rotation =
 end
 
 """
+Returns the relevant geometric characteristics of a HalfWing or Wing.
+"""
+info(wing :: Union{Wing, HalfWing}) = span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing)
+
+"""
 Prints the relevant geometric characteristics of a HalfWing or Wing.
 """
 function print_info(wing :: Union{Wing, HalfWing})
@@ -276,9 +315,6 @@ function print_info(wing :: Union{Wing, HalfWing})
     println("MAC: ", data[3], " m")
     println("Aspect Ratio: ", data[4])
 end
-
-info(wing :: Union{Wing, HalfWing}) =
-    span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing)
 
 # """
 # Performs an affine transformation on a list of coordinates.

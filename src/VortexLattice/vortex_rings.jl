@@ -13,7 +13,8 @@ Helper function to compute the vortex ring given four points following Panel3D o
 """
 function vortex_ring(p1, p2, p3, p4)
     v1, v4 = quarter_point(p1, p2), quarter_point(p4, p3)
-    v2, v3 = v1 .+ p2 .- p1, v4 .+ p3 .- p4
+    v2 = @. v1 + p2 - p1
+    v3 = @. v4 + p3 - p4
     [ v1, v2, v3, v4 ]
 end
 
@@ -47,7 +48,7 @@ end
 """
 Sums the velocities evaluated at a point `r` of vortex lines with constant strength Γ.
 """
-sum_vortices(r, vortex_lines :: Array{Line}, Γ) = sum(velocity(r, line, Γ) for line ∈ vortex_lines)
+sum_vortices(r, vortex_lines :: Array{<: Line}, Γ) = sum(velocity(r, line, Γ) for line ∈ vortex_lines)
 
 """
 Computes the induced velocities at a point `r` of a Vortex Ring with constant strength Γ.

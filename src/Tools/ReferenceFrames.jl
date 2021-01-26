@@ -6,35 +6,35 @@
 
 Converts coordinates into stability axes with angle ``\\alpha``.
 """
-body_to_stability_axes(coords, α :: Real) = RotY{Float64}(α) * coords
+body_to_stability_axes(coords, α :: T) where T <: Real = RotY{T}(α) * coords
                                             
 """
     body_to_wind_axes(coords, α, β)
 
 Converts coordinates from body axes to wind axes with angles ``\\alpha,~ \\beta``.
 """
-body_to_wind_axes(coords, α :: Real, β :: Real) = RotZY{Float64}(β, α) * coords
+body_to_wind_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(β, α) * coords
 
 """
     body_to_wind_axes(coords, α, β)
 
 Converts coordinates from body axes to wind axes with angles ``\\alpha,~ \\beta``.
 """
-body_to_wind_axes(vector :: SVector{3, <: Real}, freestream :: Freestream) = body_to_wind_axes(vector, freestream.α, freestream.β)
+body_to_wind_axes(vector, freestream :: Freestream) = body_to_wind_axes(vector, freestream.α, freestream.β)
 
 """
     reflect_xz(vector)
 
 Reflects the y-coordinate of a given SVector about the x-z plane.
 """
-reflect_xz(vector :: SVector{3, <: Real}) = SVector(vector[1], -vector[2], vector[3])
+reflect_xz(vector) = SVector(vector[1], -vector[2], vector[3])
 
 """
     project_yz(vector)
 
 Projects the y-coordinate of a given SVector about the x-z plane.
 """
-project_yz(vector :: SVector{3, <: Real}) = SVector(0, vector[2], vector[3])
+project_yz(vector) = SVector(0, vector[2], vector[3])
 
 """
     reflect_yz(line)
@@ -62,7 +62,7 @@ project_yz(line :: Line) = Line((project_yz ∘ point1)(line), (project_yz ∘ p
 
 Reflects the x- and z- coordinates of a given SVector about the y-z and x-y planes respectively.
 """
-stability_flip(vector :: SVector{3, <: Real}) = SVector(-vector[1], vector[2], -vector[3])
+stability_flip(vector) = SVector(-vector[1], vector[2], -vector[3])
 
 """
     body_to_wind_axes(line, freestream)
