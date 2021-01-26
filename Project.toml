@@ -18,6 +18,7 @@ Xfoil = "19641d66-a62d-11e8-2441-8f57a969a9c4"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
+CoordinateTransformations = "0.6"
 Interpolations = "0.13"
 Revise = "3.1"
 Rotations = "1.0"
