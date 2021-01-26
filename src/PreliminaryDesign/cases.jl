@@ -27,6 +27,10 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
         geom_forces, geom_moments, force, moment, drag, trans_rates, trefftz_force, trefftz_moment, Γs, horseshoes = solve_case(horseshoe_panels, normals, freestream, r_ref, ρ, symmetry = true)
 
         nearfield_coeffs, farfield_coeffs = symmetric_case_coefficients(wing.right, force, moment, drag / 2, trans_rates, trefftz_force, trefftz_moment, freestream.mag, ρ)
+
+        horseshoe_panels = [ horseshoe_panels[:,end:-1:1]; horseshoe_panels ]
+        camber_panels = [ camber_panels[:,end:-1:1]; camber_panels ]
+        horseshoes = [ horseshoes[:,end:-1:1]; horseshoes ]
     else
         # Compute panels and normals
         @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing, span_num, chord_num)

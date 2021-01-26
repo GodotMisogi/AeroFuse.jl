@@ -107,14 +107,14 @@ Wing Parameters
 begin
 	wing_foil = naca4((4,4,1,2))
 	wing_num_secs = 3
-	wing_foils = Foil.(Point2D.(first.(wing_foil), last.(wing_foil)) for i ∈ 1:wing_num_secs)
+	wing_foils = Foil.(wing_foil for i ∈ 1:wing_num_secs)
 	
 	wing_right = HalfWing(wing_foils,		# Foils
-						 [0.2, 0.2, 0.1], 	# Chords
-						 [0., 0., 0.],		# Twists
-						 [1.705 / 2, 0.1], # Spans
-						 [0., 60.], 		# Dihedrals
-						 [0., 60.]) 		# Sweeps
+						  [0.2, 0.2, 0.1], 	# Chords
+						  [0., 0., 0.],		# Twists
+						  [1.705 / 2, 0.1], # Spans
+						  [0., 60.], 		# Dihedrals
+						  [0., 60.]) 		# Sweeps
 	wing = Wing(wing_right, wing_right)
 	info(wing)
 end
@@ -233,7 +233,7 @@ end;
 # ╔═╡ c1522370-332e-11eb-258f-a96268d86a87
 begin
 	htail_foil = naca4((0,0,1,2))
-	htail_foils = Foil.(Point2D.(first.(htail_foil), last.(htail_foil)) for i ∈ 1:2)
+	htail_foils = Foil.(htail_foil for i ∈ 1:2)
 	
 	htail_right = HalfWing(htail_foils,
 						  [c_h, c_h], 	# Chords
@@ -249,7 +249,7 @@ end
 # ╔═╡ 7dcd3140-3328-11eb-2e98-fbc13dbfcfa4
 begin
 	vtail_foil = naca4((0,0,0,9))
-	vtail_foils = Foil.(Point2D.(first.(vtail_foil), last.(vtail_foil))  for i ∈ 1:2)
+	vtail_foils = Foil.(vtail_foil for i ∈ 1:2)
 	
 	vtail_left = HalfWing(vtail_foils,
 						 [c_r_v, λ_v * c_r_v], 	# Chords

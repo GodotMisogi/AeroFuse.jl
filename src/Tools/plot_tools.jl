@@ -4,6 +4,11 @@ plot_panels(panels :: AbstractVector{<: Panel3D}) = (tupvector ∘ panel_coords)
 
 panel_splits(coords) = [ [ c[1] for c in panel ] for panel in coords ], [ [ c[2] for c in panel ] for panel in coords ], [ [ c[3] for c in panel ] for panel in coords ]
 
+function plot_wing(wing :: Wing) 
+    leading, trailing = tupvector.(wing_bounds(wing))
+    [ leading; trailing[end:-1:1]; leading[1] ]
+end
+
 plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = tupvector.(streamlines(freestream, points, horseshoes, Γs, length, num_steps))
 
 trace_coords(xs, ys, zs, color = :black) = [ scatter3d(
