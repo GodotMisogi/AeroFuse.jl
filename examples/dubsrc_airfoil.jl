@@ -12,7 +12,7 @@ alpha_l = [-0.2, -0.1, -0.1, -0.001]
 dzs     = (1e-4, 1e-4)
 airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, dzs, 0.0, 60);
 uniform = Uniform2D(1., 5.)
-@time cl = solve_case(airfoil, uniform, 100)
+@time cl = solve_case(airfoil, uniform, num_panels = 100)
 
 #
 println("Lift Coefficient: $cl")
@@ -22,7 +22,7 @@ println("Lift Coefficient: $cl")
 ##
 function alpha_sweep(α, airfoil)
     uniform = Uniform2D(1.0, α)
-    solve_case(airfoil, uniform, 60)
+    solve_case(airfoil, uniform, num_panels = 60)
 end
 
 ##
@@ -34,7 +34,7 @@ end
 function optimize_CST(alpha_u, alpha_l)
     @timeit "Make Airfoil" airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), 0., 80)
     @timeit "Make Uniform2D" uniform = Uniform2D(1.0, 5.0)
-    @timeit "Solve Case" solve_case(airfoil, uniform, 60)
+    @timeit "Solve Case" solve_case(airfoil, uniform, num_panels = 60)
 end
 
 ##
