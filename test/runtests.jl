@@ -9,7 +9,7 @@ using Test
     airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, dzs, 0.0, 60);
     
     uniform = Uniform2D(1., 5.)
-    cl = solve_case(airfoil, uniform, 100)
+    cl = solve_case(airfoil, uniform, num_panels = 100)
 
     @test isapprox(cl, 0.8911785, atol=1e-6)
 end
@@ -28,7 +28,7 @@ end
     cst_foil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (1e-4, -1e-4), 0.0)
 
     uniform = Uniform2D(1., 5.)
-    cl = solve_case(cst_foil, uniform, 100)
+    cl = solve_case(cst_foil, uniform, num_panels = 100)
 
     @test isapprox(cl, 0.2486895, atol=1e-5)
 end
@@ -48,7 +48,7 @@ end
     ref = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
     Ω = [0.0, 0.0, 0.0]
     uniform = Freestream(10.0, 5.0, 5.0, Ω)
-    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 5, chord_num = 5) 
+    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ρ, ref, span_num = 5, chord_num = 5) 
 
     CL_nf, CDi_nf, CY_nf, Cl_nf, Cm_nf, Cn_nf, p_b_nf, q_b_nf, r_b_nf = nf_coeffs
     CL_ff, CDi_ff, CY_ff, Cl_ff, Cm_ff, Cn_ff, p_b_ff, q_b_ff, r_b_ff = ff_coeffs
