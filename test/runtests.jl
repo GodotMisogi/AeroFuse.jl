@@ -1,6 +1,5 @@
 using AeroMDAO
 using Test
-using Pkg
 
 path = pathof(AeroMDAO)
 
