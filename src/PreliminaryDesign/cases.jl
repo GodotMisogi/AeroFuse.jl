@@ -1,4 +1,4 @@
-function solve_case(horseshoe_panels :: AbstractMatrix{<: Panel3D}, normals, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; symmetry = false)
+function solve_case(horseshoe_panels, normals, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; symmetry = false)
     # Solve system
     @timeit "Solve System" Γs, horseshoes = reshape.(solve_horseshoes(horseshoe_panels[:], normals[:], freestream, symmetry), size(horseshoe_panels)...)
 
