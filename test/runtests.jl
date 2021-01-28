@@ -1,5 +1,8 @@
 using AeroMDAO
 using Test
+using Pkg
+
+path = pathof(AeroMDAO)
 
 @testset "Kulfan CST Doublet-Source Panel Method" begin
     alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
@@ -15,7 +18,7 @@ using Test
 end
 
 @testset "Airfoil Processing" begin
-    foilpath = "test/CRM.dat"
+    foilpath = string(path, "/../../test/CRM.dat")
     coords = read_foil(foilpath)
 
     cos_foil = cosine_foil(coords, 51)
