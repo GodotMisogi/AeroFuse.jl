@@ -17,8 +17,8 @@ end
 
 symmetric_case_coefficients(wing :: Union{Wing, HalfWing}, force, moment, drag, trans_rates, trefftz_force, trefftz_moment, V, ρ) = case_coefficients(wing, force, moment, drag, trans_rates, trefftz_force, trefftz_moment, V, 2ρ)
 
-function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_ref = SVector(0.25, 0., 0.), ρ = 1.225; span_num :: Integer = 15, chord_num :: Integer = 5)
-    if wing.left === wing.right && freestream.β == 0.
+function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, ρ :: Real, r_ref = [0.25, 0., 0.]; span_num :: Integer = 5, chord_num :: Integer = 10)
+    if typeof(wing) == Wing && wing.left === wing.right && freestream.β == 0. && freestream.Ω == zeros(3)
         # Compute panels and normals
         @timeit "Make Panels" horseshoe_panels, camber_panels = vlmesh_wing(wing.right, span_num, chord_num)
 
@@ -45,7 +45,7 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, r_r
     nearfield_coeffs, farfield_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs
 end
 
-function solve_case(foil :: Foil, freestream :: Uniform2D, num_panels :: Integer = 60)
+function solve_case(foil :: Foil, freestream :: Uniform2D; num_panels :: Integer = 60)
     # @timeit "Make Panels" 
     airfoil = paneller(foil, num_panels)
     
