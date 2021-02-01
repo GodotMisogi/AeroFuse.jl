@@ -44,15 +44,17 @@ The following image depicts the parametrization schema used for wing planforms i
 
 ![](https://godot-bloggy.xyz/post/diagrams/WingGeometry.svg)
 
-This parametrization is implemented as a composite type called a `HalfWing`:
+This parametrization is implemented as a composite type called a `HalfWing`: 
 
 ```julia
-HalfWing(foils  	:: Vector{Foil}, 	# Foil profiles
-		 chords 	:: Vector{Real}, 	# Chord lengths
-		 twists 	:: Vector{Real}, 	# Twist angles
-		 spans  	:: Vector{Real}, 	# Section span lengths
-		 dihedrals  :: Vector{Real}, 	# Dihedral angles
-		 sweeps 	:: Vector{Real})	# Leading-edge sweep angles
+HalfWing(
+	foils  	:: Vector{Foil}, 	# Foil profiles
+	chords 	:: Vector{Real}, 	# Chord lengths
+	twists 	:: Vector{Real}, 	# Twist angles (deg)
+	spans  	:: Vector{Real}, 	# Section span lengths
+	dihedrals  :: Vector{Real},	# Dihedral angles (deg)
+	sweeps 	:: Vector{Real}		# Leading-edge sweep angles (deg)
+	)
 ```
 
 We can create a `Wing` by feeding two `HalfWing`s to it:
@@ -64,12 +66,14 @@ _e.g._
 ```julia
 airfoil = naca4((2,4,1,2))
 foils = Foil.(airfoil for i in 1:3)
-wing_right = HalfWing(foils,
-                      [0.4, 0.2, 0.1],
-					  [0., 2., 5.],
-					  [1.0, 0.1],
-					  [0., 60.],
-                      [0., 30.])
+wing_right = HalfWing(
+					foils,
+					[0.4, 0.2, 0.1],
+					[0., 2., 5.],
+					[1.0, 0.1],
+					[0., 60.],
+					[0., 30.]
+					)
 
 wing = Wing(wing_right, wing_right)
 ```
