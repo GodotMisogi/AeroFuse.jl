@@ -30,7 +30,9 @@ camber_thickness(foil :: Foil, num :: Integer) = foil_camthick(cosine_foil(foil.
 #==========================================================================================#
 
 """
-Reads a '.dat' file consisting of 2D coordinates, for an airfoil.
+    read_foil(path :: String; header = true)
+
+Read a '.dat' file consisting of 2D coordinates, for an airfoil as an array of `SVector`s, with an optional argument to skip the header.
 """
 function read_foil(path :: String; header = true)
     coords = readdlm(path, skipstart = header ? 1 : 0)
@@ -84,22 +86,27 @@ cst_coords(class_func, basis_func, x, alphas, dz, coeff_LE = 0) = class_func(x) 
 ## Bernstein basis
 #==========================================================================================#
 
-"""
-Bernstein basis for class function.
-"""
+# """
+# Bernstein basis for class function.
+# """
 bernstein_class(x, N1 = 0.5, N2 = 1) = x^N1 * (1 - x)^N2 
 
-"""
-Bernstein basis element.
-"""
+# """
+# Bernstein basis element.
+# """
 bernstein_basis(x, n, k) = binomial(n, k) * bernstein_class(x, k, n - k)
 
 """
-Defines a cosine-spaced airfoil using the Class Shape Transformation method on a Bernstein polynomial basis, with support for leading edge modifications.
+    kulfan_CST(alpha_u, alpha_l, 
+               (dz_u, dz_l) :: NTuple{2, Real}, 
+               coeff_LE = 0, 
+               n :: Integer = 40)
+
+Define a cosine-spaced airfoil with ``2n`` points using the Class Shape Transformation method on a Bernstein polynomial basis using arrays of coefficients ``(\\alpha_u,~ \\alpha_l)`` for the upper and lower surfaces, trailing-edge spacing values ``(\\Delta z_u,~ \\Delta z_l)``, with support for leading edge modifications.
 """
-function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l), coeff_LE = 0, num_points :: Integer = 40)
+function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l), coeff_LE = 0, n :: Integer = 40)
     # Cosine spacing for airfoil of unit chord length
-    xs = cosine_dist(0.5, 1, num_points)
+    xs = cosine_dist(0.5, 1, n)
 
     # λ-function for Bernstein polynomials
     bernie(x, alphas, dz) = cst_coords(bernstein_class, bernstein_basis, x, alphas, dz, coeff_LE)
@@ -115,9 +122,9 @@ function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l), coeff_LE = 0, num_points :: 
     # SVector.(coords[:,1], coords[:,2])
 end
 
-function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc), coeff_LE = 0, num_points :: Integer = 40)
+function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc), coeff_LE = 0, n :: Integer = 40)
     # Cosine spacing for airfoil of unit chord length
-    xs = cosine_dist(0.5, 1, num_points)
+    xs = cosine_dist(0.5, 1, n)
 
     # λ-function for Bernstein polynomials
     bernie(x, alphas, dz) = cst_coords(bernstein_class, bernstein_basis, x, alphas, dz, coeff_LE)
@@ -166,19 +173,25 @@ function foil_camthick(coords, num :: Integer = 40)
 end
 
 """
-Converts the camber-thickness representation to coordinates.
+    camthick_foil(xs, camber, thickness)
+
+Converts the camber-thickness representation to coordinates given the ``x``-locations and their corresponding camber and thickness values.
 """
-camthick_foil(xs, camber, thickness) = let coords = [ [xs camber + thickness / 2][end:-1:2,:] ; 
-                                                       xs camber - thickness / 2              ]; 
-                                                       SVector.(coords[:,1], coords[:,2]) end
+camthick_foil(xs, camber, thickness) = let coords = [   [xs camber + thickness / 2][end:-1:2,:] ; 
+                                                        xs camber - thickness / 2             ]; 
+                                                        SVector.(coords[:,1], coords[:,2]) end
 
 """
-Provides the camber coordinates on the x-z plane at y = 0.
+    camber_coordinates(coords :: Array{2, <: Real})
+
+Provides the camber coordinates on the ``x``-``z`` plane at ``y = 0``.
 """
 camber_coordinates(coords) = [ coords[:,1] (zeros ∘ length)(coords[:,1]) coords[:,2] ]
 
 """
-Provides the thickness coordinates on the x-z plane at y = 0.
+    thickness_coordinates(coords :: Array{2, <: Real})
+
+Provides the thickness coordinates on the ``x``-``z`` plane at ``y = 0``.
 """
 thickness_coordinates(coords) = [ coords[:,1] (zeros ∘ length)(coords[:,1]) coords[:,3] ]
 

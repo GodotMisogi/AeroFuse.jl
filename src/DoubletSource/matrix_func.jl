@@ -32,7 +32,7 @@ influence_matrix(panels :: AbstractVector{<: Panel2D}, woke_panel :: Panel2D) =
 """
     source_matrix(panels_1, panels_2)
 
-Creates the matrix of source potential influence coefficients between pairs of panels_1 and panels_2.
+Creates the matrix of source potential influence coefficients between pairs of `panels_1` and `panels_2`.
 """
 source_matrix(panels_1 :: AbstractVector{<: Panel2D}, panels_2 :: AbstractVector{<: Panel2D}) = [ source_influence(panel_j, panel_i) for panel_i ∈ panels_1, panel_j ∈ panels_2 ]
 
@@ -53,7 +53,7 @@ boundary_vector(panels :: AbstractVector{<: Panel2D}, u) = [ - source_matrix(pan
 """
     solve_strengths(panels, u, bound)
 
-Solves the matrix system `AIC * φs = boco` given the array of Panel2Ds, a velocity ``u``, and an optional bound for the length of the wake.
+Solve the system of equations ``[AIC][\\phi] = [\\hat{U} \\cdot \\vec{n}]`` condition given the array of Panel2Ds, a velocity ``u``, and an optional bound for the length of the wake.
 """
 function solve_strengths(panels :: AbstractVector{<: Panel2D}, u, bound = 1e3) 
     AIC  = influence_matrix(panels, wake_panel(panels, bound))

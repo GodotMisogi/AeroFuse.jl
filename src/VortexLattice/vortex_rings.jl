@@ -15,7 +15,8 @@ function vortex_ring(p1, p2, p3, p4)
     v1, v4 = quarter_point(p1, p2), quarter_point(p4, p3)
     v2 = @. v1 + p2 - p1
     v3 = @. v4 + p3 - p4
-    [ v1, v2, v3, v4 ]
+    
+    v1, v2, v3, v4
 end
 
 """

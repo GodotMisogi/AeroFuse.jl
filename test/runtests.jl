@@ -9,9 +9,9 @@ using Test
     airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, dzs, 0.0, 60);
     
     uniform = Uniform2D(1., 5.)
-    cl = solve_case(airfoil, uniform, num_panels = 100)
+    cl = solve_case(airfoil, uniform, num_panels = 60)
 
-    @test isapprox(cl, 0.8911785, atol=1e-6)
+    @test isapprox(cl, 0.8817056, atol=1e-6)
 end
 
 @testset "Airfoil Processing" begin
