@@ -18,9 +18,23 @@ body_to_wind_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(β, α) *
 """
     body_to_wind_axes(coords, α, β)
 
+Converts coordinates from wind axes to body axes with angles ``\\alpha,~ \\beta``.
+"""
+wind_to_body_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(-α, -β) * coords
+
+"""
+    body_to_wind_axes(coords, α, β)
+
 Converts coordinates from body axes to wind axes with angles ``\\alpha,~ \\beta``.
 """
 body_to_wind_axes(vector, freestream :: Freestream) = body_to_wind_axes(vector, freestream.α, freestream.β)
+
+"""
+    body_to_wind_axes(coords, freestream :: Freestream)
+
+Converts coordinates from wind axes to body axes given a vector and a Freestream. 
+"""
+wind_to_body_axes(vector, freestream :: Freestream) = wind_to_body_axes(vector, freestream.α, freestream.β)
 
 """
     reflect_xz(vector)

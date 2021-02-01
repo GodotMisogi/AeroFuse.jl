@@ -73,9 +73,9 @@ end
 """
     solve_horseshoes(horseshoe_panels, camber_panels, freestream, symmetry) 
 
-Solves the AIC matrix with the boundary condition given Panel3Ds and a Freestream, with the option to use the symmetry of the problem in the ``x``-``z`` plane.
+ Evaluate and return the vortex strengths ``\\Gamma s`` and associated horsehoes given Panel3Ds, their associated normal vectors (not necessarily the same as the panels' normals), and a Freestream, with the option to use the symmetry of the problem in the ``x``-``z`` plane.
 """
-function solve_horseshoes(horseshoe_panels :: AbstractVector{<: Panel3D}, normals, freestream :: Freestream, symmetry = false) 
+function solve_horseshoes(horseshoe_panels, normals, freestream :: Freestream, symmetry = false) 
     @timeit "Freestream Velocity" U = aircraft_velocity(freestream)
 
     horseshoes, colpoints = make_horseshoes(horseshoe_panels)
@@ -110,6 +110,7 @@ function case_dynamics(Γs :: AbstractArray{<: Real}, horseshoes :: AbstractArra
     force, moment = sum(geom_forces), sum(geom_moments)
     drag = nearfield_drag(force, freestream)
 
+    # Transform near-field dynamics to wind axes
     @timeit "Transforming Axes" trans_forces, trans_moments, trans_rates = body_to_wind_axes(force, moment, freestream)
 
     # Compute farfield dynamics
@@ -118,6 +119,7 @@ function case_dynamics(Γs :: AbstractArray{<: Real}, horseshoes :: AbstractArra
     geom_forces, geom_moments, force, moment, drag, trans_rates, trefftz_force, trefftz_moment
 end
 
+# Streamlines
 include("streamlines.jl")
 
 export streamlines

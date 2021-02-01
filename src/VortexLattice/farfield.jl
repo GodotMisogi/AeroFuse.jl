@@ -24,6 +24,11 @@ function trefftz_preprocessing(horseshoes :: AbstractArray{<: Horseshoe}, freest
     trefftz_lines, trefftz_proj_vecs, normals, dihedrals, Δs
 end
 
+"""
+    trefftz_compute(Δφs, Δs, ∂φ_∂n, θs, V, ρ, symmetry)
+
+Compute the aerodynamic forces in the Trefftz plane given cumulative doublet strengths ``\\Delta \\phi``s, Trefftz panel lengths ``Δs``, doublet-normal directional derivatives ``\\partial \\phi / \\partial n``, Trefftz panel angles ``\\theta``s, the freestream speed and density ``V, \\rho``, and an option for symmetry.
+"""
 function trefftz_compute(Δφs, Δs, ∂φ_∂n, dihedrals, V, ρ, symmetry)     
     D_i = - 1/2 * ρ * sum(@. Δφs * Δs * ∂φ_∂n)
     Y   = - ρ * V * sum(@. Δφs * Δs * sin(dihedrals))
@@ -35,7 +40,7 @@ end
 """
     trefftz_forces(Γs, horseshoes, freestream, ρ)
 
-Computes the aerodynamic forces in the Trefftz plane normal to the freestream given horseshoes, their associated strengths Γs, and a density ρ.
+Compute the aerodynamic forces in the Trefftz plane normal to the freestream given horseshoes, their associated strengths Γs, and a density ρ.
 """
 function trefftz_forces(Γs, horseshoes :: AbstractArray{<: Horseshoe}, freestream :: Freestream, ρ, symmetry :: Bool)
     # Project trailing edge horseshoes' bound legs into Trefftz plane along wind axes
@@ -50,13 +55,13 @@ function trefftz_forces(Γs, horseshoes :: AbstractArray{<: Horseshoe}, freestre
 end 
 
 """
-    trefftz_forces(Γs, horseshoes, freestream, r_ref, ρ)
+    farfield_dynamics(Γs, horseshoes, freestream, r_ref, ρ)
 
 Compute farfield forces and moments in the Trefftz plane normal to the freestream given horseshoes, their associated strengths Γs, a reference point for calculation of moments, and a density ρ.
 """
 function farfield_dynamics(Γs :: AbstractArray{<: Real}, horseshoes :: AbstractArray{<: Horseshoe}, freestream :: Freestream, r_ref, ρ = 1.225, symmetry = false)
     @timeit "Trefftz Force" trefftz_force = trefftz_forces(Γs, horseshoes, freestream, ρ, symmetry)
-    @timeit "Trefftz Moment" trefftz_moment = r_ref × trefftz_force
+    @timeit "Trefftz Moment" trefftz_moment = body_to_wind_axes(r_ref, freestream) × trefftz_force
 
     trefftz_force, trefftz_moment
 end
