@@ -48,13 +48,13 @@ This parametrization is implemented as a composite type called a `HalfWing`:
 
 ```julia
 HalfWing(
-	foils  	    :: Vector{Foil}, 	# Foil profiles
-	chords 	    :: Vector{Real}, 	# Chord lengths
-	twists 	    :: Vector{Real}, 	# Twist angles (deg)
-	spans  	    :: Vector{Real}, 	# Section span lengths
-	dihedrals   :: Vector{Real},	# Dihedral angles (deg)
-	sweeps 	    :: Vector{Real}     # Leading-edge sweep angles (deg)
-	)
+        foils  	    :: Vector{Foil}, 	# Foil profiles
+        chords 	    :: Vector{Real}, 	# Chord lengths
+        twists 	    :: Vector{Real}, 	# Twist angles (deg)
+        spans  	    :: Vector{Real}, 	# Section span lengths
+        dihedrals   :: Vector{Real},	# Dihedral angles (deg)
+        sweeps 	    :: Vector{Real}     # Leading-edge sweep angles (deg)
+        )
 ```
 
 We can create a `Wing` by feeding two `HalfWing`s to it:
