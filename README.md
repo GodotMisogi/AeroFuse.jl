@@ -53,7 +53,7 @@ HalfWing(
 	twists 	    :: Vector{Real}, 	# Twist angles (deg)
 	spans  	    :: Vector{Real}, 	# Section span lengths
 	dihedrals   :: Vector{Real},	# Dihedral angles (deg)
-	sweeps 	    :: Vector{Real}		# Leading-edge sweep angles (deg)
+	sweeps 	    :: Vector{Real} # Leading-edge sweep angles (deg)
 	)
 ```
 
