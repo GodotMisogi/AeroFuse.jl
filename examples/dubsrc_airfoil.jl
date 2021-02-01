@@ -1,12 +1,8 @@
 ##
 using Revise
-using BenchmarkTools
-using TimerOutputs
 using AeroMDAO
 
 ##
-# reset_timer!();
-
 alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
 alpha_l = [-0.2, -0.1, -0.1, -0.001]
 dzs     = (1e-4, 1e-4)
@@ -17,8 +13,6 @@ uniform = Uniform2D(1., 5.)
 #
 println("Lift Coefficient: $cl")
 
-# print_timer();
-
 ##
 function alpha_sweep(α, airfoil)
     uniform = Uniform2D(1.0, α)
@@ -27,7 +21,7 @@ end
 
 ##
 αs = 0:10
-@benchmark cls = alpha_sweep.(αs, Ref(airfoil))
+cls = alpha_sweep.(αs, Ref(airfoil))
 
 ## Overall
 
@@ -38,15 +32,11 @@ function optimize_CST(alpha_u, alpha_l)
 end
 
 ##
-reset_timer!();
-
-@time optimize_CST(alpha_u, alpha_l)
-
-print_timer();
+optimize_CST(alpha_u, alpha_l)
 
 ## Plotting libraries
 using Plots
 plotlyjs();
 
 ## Lift polar
-plot(αs, cls, xlabel = "α", ylabel = "CL")
+Plots.plot(αs, cls, xlabel = "α", ylabel = "CL")
