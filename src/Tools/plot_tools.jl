@@ -1,24 +1,26 @@
-using PlotlyJS
+# using PlotlyJS
+using CoordinateTransformations
+using Rotations
 
 plot_panels(panels :: AbstractVector{<: Panel3D}) = (tupvector ∘ panel_coords).(panels)
 
 panel_splits(coords) = [ [ c[1] for c in panel ] for panel in coords ], [ [ c[2] for c in panel ] for panel in coords ], [ [ c[3] for c in panel ] for panel in coords ]
 
-function plot_wing(wing :: Wing) 
-    leading, trailing = tupvector.(wing_bounds(wing))
-    [ leading; trailing[end:-1:1]; leading[1] ]
+function plot_wing(wing :: Union{HalfWing, Wing}; rotation = [1 0 0; 0 1 0; 0 0 1], translation = [0,0,0]) 
+    leading, trailing = wing_bounds(wing)
+    [ tuple((Translation(translation) ∘ LinearMap(rotation))(coords)...) for coords in [ leading; trailing[end:-1:1]; [ first(leading) ] ] ]
 end
 
 plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = tupvector.(streamlines(freestream, points, horseshoes, Γs, length, num_steps))
 
 trace_coords(xs, ys, zs, color = :black) = [ scatter3d(
-                                                x = x,
-                                                y = y,
-                                                z = z,
-                                                mode = :lines, 
-                                                line = attr(color = color),
-                                                showlegend = false,
-                                                ) 
+                                                       x = x,
+                                                       y = y,
+                                                       z = z,
+                                                       mode = :lines, 
+                                                       line = attr(color = color),
+                                                       showlegend = false,
+                                                       ) 
                                             for (x, y, z) in zip(xs, ys, zs) ]
 
 trace_panels(panels :: AbstractVector{<: Panel3D}) = trace_coords(panel_splits(panel_coords.(panels))...)

@@ -108,7 +108,7 @@ extend_yz(coords) = [ first.(coords) (zeros ∘ length)(coords) last.(coords) ]
 ## Difference opettions
 #===========================================================================#
 
-fwdsum(xs) = @. xs[2:end] .+ xs[1:end-1]
+fwdsum(xs) = @. xs[2:end] + xs[1:end-1]
 fwddiff(xs) = @. xs[2:end] - xs[1:end-1]
 fwddiv(xs) = @. xs[2:end] / xs[1:end-1]
 ord2diff(xs) = @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
