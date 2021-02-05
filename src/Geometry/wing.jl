@@ -17,49 +17,14 @@ struct HalfWing{T <: Real} <: Aircraft
     spans       :: Vector{T}
     dihedrals   :: Vector{T}
     sweeps      :: Vector{T}
-    HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps)) # Convert to radians
+    HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
 end
 
-# """
-#     aspect_ratio(span, area)
-
-# Compute the aspect ratio given a span and area.
-# """
 aspect_ratio(span, area) = span^2 / area
-
-# """
-#     mean_geometric_chord(span, area)
-
-# Compute the mean geometric chord given a span and area.
-# """
 mean_geometric_chord(span, area) = area / span
-
-# """
-#     taper_ratio(root_chord, tip_chord)
-
-# Compute the taper ratio given root and tip chords.
-# """
 taper_ratio(root_chord, tip_chord) = tip_chord / root_chord
-
-# """
-#     area(span, chord)
-
-# Compute the area given a span and chord.
-# """
 area(span, chord) = span * chord
-
-# """
-#     mean_aerodynamic_chord(root_chord, taper_ratio)
-
-# Compute the mean aerodynamic chord, essentially a root-mean-square chord, given a root chord and taper ratio.
-# """
 mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
-
-# """
-#     quarter_chord(chord)
-
-# Compute the quarter-chord length given a chord.
-# """
 quarter_chord(chord) = 0.25 * chord
 
 """
@@ -108,9 +73,6 @@ function chop_sections(set1, set2, n :: Integer; spacing = "cosine")
     [ weighted_vector.(set1, set2, μ) for μ ∈ space ][1:end-1]
 end
 
-# """
-# Divides a set of directional vectors into `n` sections with cosine spacing.
-# """
 coords_chopper(coords, n) = [ chop_sections.(coords[1:end-1], coords[2:end], n)...; [ coords[end] ] ]
 
 """
@@ -148,11 +110,7 @@ end
 """
     wing_coords(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
 
-<<<<<<< HEAD
 Compute the coordinates of a `HalfWing` consisting of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
-=======
-Compute the coordinates of a HalfWing consisting of Foils and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
->>>>>>> b74366748775db74fdc0070c46f5902ff4fb7590
 """
 function wing_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip = false)
     leading_xyz = leading_edge(wing, flip)
@@ -184,31 +142,10 @@ function camber_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integ
     coords_chopper(foil_coords, span_num)
 end
 
-# """
-# Zips leading and trailing edge coordinates into an array of arrays.
-# """
 chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) ∈ zip(lead, trail) ]
-
-# """
-# Returns an array of cosine distributed coordinates.
-# """
 chord_chopper(coords, n) = [ [ weighted_vector(chord[1,:], chord[2,:], μ) for μ ∈ cosine_dist(0.5, 1., n + 1)  ] for chord ∈ coords ]
-
-# """
-# Applies spanwise spacing divisions on leading and trailing edge coordinates.
-# """
 span_chopper(lead, trail, div) = coords_chopper(lead, div), coords_chopper(trail, div)
-
-# """
-# Chops the bounds of a wing (leading and trailing edge coordinates) into a wingbox for a given number of spanwise and chordwise panels.
-# """
 wing_chopper(lead, trail, span_num, chord_num) = chord_chopper(chord_sections(span_chopper(lead, trail, span_num)...), chord_num)
-
-# """
-# Useless for now, but looks cool.
-# """
-panel(root_lead, root_trail, tip_trail, tip_lead) = [ root_lead  tip_lead  ;
-                                                      root_trail tip_trail ]
 
 """
     make_panels(coords)
