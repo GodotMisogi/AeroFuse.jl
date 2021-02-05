@@ -3,8 +3,6 @@ using Rotations
 
 plot_panels(panels :: AbstractVector{<: Panel3D}) = (tupvector ∘ panel_coords).(panels)
 
-panel_splits(coords) = [ [ c[1] for c in panel ] for panel in coords ], [ [ c[2] for c in panel ] for panel in coords ], [ [ c[3] for c in panel ] for panel in coords ]
-
 function plot_wing(wing :: Union{HalfWing, Wing}; rotation = [1 0 0; 0 1 0; 0 0 1], translation = [0,0,0]) 
     leading, trailing = wing_bounds(wing)
     [ tuple((Translation(translation) ∘ LinearMap(rotation))(coords)...) for coords in [ leading; trailing[end:-1:1]; [ first(leading) ] ] ]
