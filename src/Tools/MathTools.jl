@@ -4,7 +4,6 @@ using StaticArrays
 using Base.Iterators
 using Base: product
 using Interpolations
-using Zygote
 
 struct Point2D{T <: Real} <: FieldVector{2, T} 
     x :: T
@@ -13,11 +12,6 @@ end
 
 x(p :: Point2D) = p.x
 y(p :: Point2D) = p.y
-
-zero(::Point2D) = Point2D(0., 0.)
-@Zygote.adjoint x(p::Point2D) = p.p1, x̄ -> (Point2D(x̄, 0.),)
-@Zygote.adjoint y(p::Point2D) = p.p2, ȳ -> (Point2D(0., ȳ),)
-@Zygote.adjoint Point2D(a, b) = Point2D(a, b), p̄ -> (p̄[1], p̄[2])
 
 struct Point3D{T <: Real} <: FieldVector{2, T} 
     x :: T
