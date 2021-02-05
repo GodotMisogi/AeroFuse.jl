@@ -6,7 +6,6 @@ using StaticArrays
 using LinearAlgebra
 using Rotations
 using CoordinateTransformations
-using Zygote
 
 using ..AeroMDAO: Point2D, affine_2D, rotation, inverse_rotation, structtolist
 
