@@ -6,7 +6,7 @@ A toolbox for aircraft design analyses. (WIP)
 
 ```julia
 julia> using Pkg; Pkg.add("https://github.com/GodotMisogi/AeroMDAO")
-julia> Pkg.test(AeroMDAO)
+julia> Pkg.test("AeroMDAO")
 julia> using AeroMDAO
 ```
 ---
