@@ -148,7 +148,11 @@ end
 """
     wing_coords(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
 
+<<<<<<< HEAD
 Compute the coordinates of a `HalfWing` consisting of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+=======
+Compute the coordinates of a HalfWing consisting of Foils and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+>>>>>>> b74366748775db74fdc0070c46f5902ff4fb7590
 """
 function wing_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip = false)
     leading_xyz = leading_edge(wing, flip)
