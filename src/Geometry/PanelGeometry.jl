@@ -15,9 +15,7 @@ export panel_dist, Panel2D, point1, point2, point3, point4, zero, collocation_po
 ## Panel setup
 #==========================================================================================#
 
-# """
-# Placeholder. Panels should be an abstract type as they have some common methods, at least in 2D and 3D. 
-# """
+
 abstract type Panel end
 
 panel_dist(panel_1 :: Panel, panel_2 :: Panel) = norm(collocation_point(panel_2) - collocation_point(panel_1))
@@ -43,11 +41,6 @@ point4(p :: Panel) = p.p4
 a :: Panel2D + b :: Panel2D = Panel2D(point1(a) + point1(b), point2(a) + point2(b))
 a :: Panel2D - b :: Panel2D = Panel2D(point1(a) - point1(b), point2(a) - point2(b))
 
-zero(::Panel2D) = Panel2D(Point2D(0.,0.), Point2D(0.,0.))
-@Zygote.adjoint point1(p::Panel2D) = p.p1, x̄ -> (Panel2D(x̄, Point2D(0., 0.)),)
-@Zygote.adjoint point2(p::Panel2D) = p.p2, ȳ -> (Panel2D(Point2D(0., 0.), ȳ),)
-@Zygote.adjoint Panel2D(a, b) = Panel2D(a, b), p̄ -> (p̄.p1, p̄.p2)
-
 collocation_point(panel :: Panel2D) = (point1(panel) + point2(panel)) / 2
 panel_length(panel :: Panel2D) = norm(point2(panel) - point1(panel))
 
@@ -72,7 +65,9 @@ panel_normal(panel :: Panel2D) = inverse_rotation(0., 1., panel_angle(panel))
 #==========================================================================================#
 
 """
-A composite type consisting of 4 coordinates. The following ASCII art depicts the order:
+    Panel3D(p1, p2, p3, p4)
+
+A composite type consisting of 4 Cartesian coordinates ``p_1,~p_2,~p_3,~p_4`` representing corners of a panel in 3 dimensions. The following ASCII art depicts the order:
 
 ```
 z → y
