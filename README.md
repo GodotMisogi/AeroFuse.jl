@@ -6,19 +6,17 @@ AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently pro
 
 ```julia
 julia> using Pkg; Pkg.add("https://github.com/GodotMisogi/AeroMDAO")
-julia> Pkg.test(AeroMDAO)
+julia> Pkg.test("AeroMDAO")
 julia> using AeroMDAO
 ```
 ---
 
-## Aircraft Geometry
-
-### Airfoil Parametrization
+## Airfoil Parametrization
 
 *NACA 4-digit Airfoil Parametrization*
 
 ```julia
-airfoil = naca4(digits :: NTuple{4, Real})
+naca4(digits :: NTuple{4, Real})
 ```
 
 ```julia
@@ -27,11 +25,11 @@ airfoil = naca4((2,4,1,2))
 
 *Kulfan Class Shape Transformation (CST) Method*
 ```julia
-foil = kulfan_CST(alpha_u       :: Vector{Real}, 
-                  alpha_l       :: Vector{Real},
-                  dzs           :: NTuple{2, Real},
-                  coeff_LE = 0. :: Real,
-                  n = 0         :: Integer)
+kulfan_CST(alpha_u       :: Vector{Real},    # Upper surface parameters
+           alpha_l       :: Vector{Real},    # Lower surface parameters
+           dzs           :: NTuple{2, Real}, # Upper and lower trailing edge points
+           coeff_LE = 0. :: Real,            # Leading-edge modification coefficient
+           n = 40        :: Integer)         # Number of points on each surface
 ```
 
 ```julia
@@ -43,8 +41,8 @@ foil = kulfan_CST(alpha_u, alpha_l, dzs, 0.2)
 
 *Camber-Thickness Representation*
 ```julia
-foil_camthick(coords    :: Array{2, Real}, 
-              num = 40  :: Integer)
+foil_camthick(coords    :: Array{2, Real},  # 2D coordinates 
+              num = 40  :: Integer)         # Number of points for distributions 
 ```
 
 ```julia
@@ -57,9 +55,9 @@ foiler = camthick_foil(xcamthick[:,1],  # x-components
                        xcamthick[:,3])  # Thickness distribution
 ```
 
-### Doublet-Source Panel Method
+## Doublet-Source Panel Method
 
-AeroMDAO provides convenience functions using its specific types for analyses. To analyse this airfoil using the doublet-source panel method, the following method is called:
+AeroMDAO provides convenience functions using its specific types for analyses. To analyse this airfoil using the 2D doublet-source panel method, the following method is called:
 
 ```julia
 solve_case(foil             :: Foil, 
@@ -67,16 +65,22 @@ solve_case(foil             :: Foil,
            num_panels = 60  :: Integer)
 ```
 
-```@example aeromdao
-airfoil = naca4((2,4,1,2)) # hide
-V, α = 1.0, 3.0 
+The `Foil` type converts the coordinates into a friendly type for the function. 
 
+```julia
+airfoil = naca4((2,4,1,2))
 foil = Foil(airfoil)
+```
+
+The `Uniform2D` type consists of the freestream speed and angle of attack. We feed these to `solve_case` with a specification for the number of panels, if required. 
+
+```julia
+V, α = 1.0, 3.0 
 uniform = Uniform2D(V, α)
 cl = solve_case(foil, uniform, num_panels = 60)
 ```
 
-### Wing Parametrization
+## Wing Parametrization
 
 The following image depicts the parametrization schema used for wing planforms in terms of nested trapezoids.
 
@@ -95,10 +99,10 @@ HalfWing(foils  	:: Vector{Foil}, 	# Foil profiles
 
 We can create a `Wing` by feeding two `HalfWing`s to it:
 ```julia
-Wing(left :: HalfWing, right :: HalfWing)
+Wing(left   :: HalfWing,    # Left side
+     right  :: HalfWing)    # Right side
 ```
 
-_e.g._
 ```julia
 airfoil = naca4((2,4,1,2))
 foils = Foil.(airfoil for i in 1:3)
@@ -112,12 +116,28 @@ wing_right = HalfWing(foils,
 wing = Wing(wing_right, wing_right)
 ```
 
-### Vortex Lattice Method
+We can obtain the relevant geometric information of the wing for design analyses by calling convenience methods, which automatically perform the necessary calculations on the nested trapezoidal planforms.
 
-For a 3D case, we use the vortex lattice method for initial designs, given its quick speed for fast analyses. For an analysis, you require ambient reference conditions. In this case, you need the density $\rho$ and a reference location $x_\text{ref}$ for calculating forces and moments.
+```julia
+span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing)
+```
 
+You can access each side of a `Wing` by calling either `wing.left` or `wing.right`, and the previous functions should work identically on these `HalfWing`s.
 
-Now we run the case with specifications of the number of spanwise and chordwise panels by calling the `solve_case()` function, which has an associated method:
+## Vortex Lattice Method
+
+To run a vortex lattice analysis on a `Wing`, we first define a `Freestream` object consisting of the boundary conditions for the analyses, parametrised by the freestream speed, angle of attack, side-slip angle, and a quasi-steady rotation vector.
+
+```julia
+U = 10.0
+α = 5.0
+β = 0.0
+Ω = [0.0, 0.0, 0.0]
+
+freestream = Freestream(U, α, β, Ω);
+```
+
+Now we run the case with specifications of the number of spanwise and chordwise panels by calling the `solve_case()` function, which has an associated method.
 ```julia
 solve_case(wing                     :: Union{Wing, HalfWing},
            freestream               :: Freestream, 
@@ -127,13 +147,12 @@ solve_case(wing                     :: Union{Wing, HalfWing},
            chord_num = 10           :: Integer)
 ```
 
+We specify the density and reference location for calculating moments generated by the forces, and call the method. It returns nearfield and farfield coefficients, and other arrays for plotting purposes or further analyses (see the examples folder).
+
 ```julia
 ρ = 1.225
 r_ref = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
-U = 10.0
-α = 5.0
-β = 0.0
-Ω = [0.0, 0.0, 0.0]
-freestream = Freestream(U, α, β, Ω);
-nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, freestream, ρ, r_ref; span_num = 5, chord_num = 10);
+
+nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = 
+        solve_case(wing, freestream, ρ, r_ref; span_num = 5, chord_num = 10);
 ```
