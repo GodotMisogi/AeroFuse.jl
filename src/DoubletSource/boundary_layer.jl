@@ -40,5 +40,9 @@ function solve_system!(R, x, source_AIC, doublet_AIC, boco, )
     R2 = R_2()
     Q  = Q(source_AIC, doublet_AIC, ms, μs, boco)
 
-    R .= [R1, R2, Q]
+    R[1] = R1
+    R[2] = R2
+    R[3] = Q
+
+    R
 end
