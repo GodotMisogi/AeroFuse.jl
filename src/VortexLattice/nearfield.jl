@@ -44,7 +44,7 @@ Compute the nearfield forces and associated moments.
 function nearfield_dynamics(Γs, horseshoes :: AbstractVector{<: Horseshoe}, freestream :: Freestream, r_ref, ρ, symmetry :: Bool)
 	if symmetry
 		reflect_hs = reflect_xz.(horseshoes)
-		geom_forces = [ nearfield_forces(Γs, reflect_hs, U, Ω, ρ)[end:-1:1]; nearfield_forces(Γs, horseshoes, U, Ω, ρ) ]
+		geom_forces = [ nearfield_forces(Γs, reflect_hs, aircraft_velocity(freestream), freestream.Ω, ρ)[end:-1:1]; 					nearfield_forces(Γs, horseshoes, aircraft_velocity(freestream), freestream.Ω, ρ) ]
 		geom_moments = moments([ reflect_hs[end:-1:1]; horseshoes ], geom_forces, r_ref)
 	else
 		geom_forces = nearfield_forces(Γs, horseshoes, aircraft_velocity(freestream), freestream.Ω, ρ)

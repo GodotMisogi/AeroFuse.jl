@@ -8,9 +8,7 @@
              dihedrals  :: Vector{Real},
              sweeps     :: Vector{Real})
              
-Definition for a HalfWing consisting of airfoils and their associated chord lengths ``c_n``, twist angles ``\\iota_n``, span lengths ``b_n``, dihedrals ``\\delta_n``, and sweep angles ``\\Lambda_n``, with all angles in degrees. The following parametrization is used:
-
-![](https://godot-bloggy.xyz/post/diagrams/WingGeometry.svg)
+Definition for a `HalfWing` consisting of airfoils and their associated chord lengths ``c_n``, twist angles ``\\iota_n``, span lengths ``b_n``, dihedrals ``\\delta_n``, and sweep angles ``\\Lambda_n``, with all angles in degrees.
 """
 struct HalfWing{T <: Real} <: Aircraft
     foils       :: Vector{Foil{T}}
@@ -67,14 +65,14 @@ quarter_chord(chord) = 0.25 * chord
 """
     span(half_wing :: HalfWing)
 
-Compute the planform span of a HalfWing.
+Compute the planform span of a `HalfWing`.
 """
 span(wing :: HalfWing) = sum(wing.spans .* cos.(wing.dihedrals) .* cos.(fwdsum(wing.twists) / 2))
 
 """
     projected_area(half_wing :: HalfWing)
     
-Compute the projected area of a HalfWing.
+Compute the projected area of a `HalfWing`.
 """
 function projected_area(wing :: HalfWing)
     mean_chords = fwdsum(wing.chords) / 2 # Mean chord lengths of sections.
@@ -85,7 +83,7 @@ end
 """
     mean_aerodynamic_chord(half_wing :: HalfWing)
     
-Compute the mean aerodynamic chord of a HalfWing.
+Compute the mean aerodynamic chord of a `HalfWing`.
 """
 function mean_aerodynamic_chord(wing :: HalfWing)
     mean_chords = fwdsum(wing.chords) / 2
@@ -118,7 +116,7 @@ coords_chopper(coords, n) = [ chop_sections.(coords[1:end-1], coords[2:end], n).
 """
     leading_edge(wing :: HalfWing, flip = false)
 
-Compute the leading edge coordinates of a HalfWing, with an option to flip the signs of the ``y``-coordinates.
+Compute the leading edge coordinates of a `HalfWing`, with an option to flip the signs of the ``y``-coordinates.
 """
 function leading_edge(wing :: HalfWing, flip = false)
     spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
@@ -135,7 +133,7 @@ end
 """
     wing_bounds(wing :: HalfWing, flip = false)
 
-Compute the leading and trailing edge coordinates of a HalfWing, with an option to flip the signs of the ``y``-coordinates.
+Compute the leading and trailing edge coordinates of a `HalfWing`, with an option to flip the signs of the ``y``-coordinates.
 """
 function wing_bounds(wing :: HalfWing, flip = false)
     chords = wing.chords
@@ -150,7 +148,7 @@ end
 """
     wing_coords(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
 
-Compute the coordinates of a HalfWing consisting of Foils and relevant geometric quantities, given numbers of spanwise ``n_s``` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+Compute the coordinates of a `HalfWing` consisting of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
 """
 function wing_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip = false)
     leading_xyz = leading_edge(wing, flip)
@@ -167,7 +165,7 @@ end
 """
     camber_coords(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
 
-Compute the coordinates of a HalfWing consisting of camber distributions of Foils and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+Compute the coordinates of a `HalfWing` consisting of camber distributions of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
 """
 function camber_coords(wing :: HalfWing, span_num :: Integer, chord_num :: Integer, flip = false)
     leading_xyz = leading_edge(wing, flip)
@@ -224,30 +222,30 @@ leading_chopper(obj :: HalfWing, span_num :: Integer; flip = false) = coords_cho
 trailing_chopper(obj :: HalfWing, span_num :: Integer; flip = false) = coords_chopper(leading_edge(obj, flip), span_num)
 
 """
-    mesh_horseshoes(obj :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false)
+    mesh_horseshoes(obj :: HalfWing, n_s :: Integer, n_c :: Integer; flip = false)
 
-Mesh a HalfWing into panels of ``n_s`` spanwise divisions per section and ``n_s`` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
+Mesh a `HalfWing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
 """
 mesh_horseshoes(obj :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ wing_chopper)(wing_bounds(obj, flip)..., span_num, chord_num)
 
 """
-    mesh_wing(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false)
+    mesh_wing(wing :: HalfWing, n_s :: Integer, n_c :: Integer; flip = false)
 
-Mesh a HalfWing into panels meant for full 3D analyses using doublet-source elements. Also works as a surface mesh. TODO: Tip meshing.
+Mesh a `HalfWing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for 3D analyses using doublet-source elements or equivalent formulations. TODO: Tip meshing.
 """
 mesh_wing(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ wing_coords)(wing, span_num, chord_num, flip)
 
 """
-    mesh_cambers(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false)
+    mesh_cambers(wing :: HalfWing, n_s :: Integer, n_c :: Integer; flip = false)
 
-Mesh the camber distribution of a HalfWing into panels meant for vortex lattice analyses.
+Mesh the camber distribution of a `HalfWing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for vortex lattice analyses.
 """
 mesh_cambers(wing :: HalfWing, span_num :: Integer, chord_num :: Integer; flip = false) = (make_panels ∘ camber_coords)(wing, span_num, chord_num, flip)
 
 """
     Wing(left :: HalfWing, right :: HalfWing)
 
-A composite type consisting of two HalfWings with fields `left` and `right` for constructing a wing.
+A composite type consisting of two `HalfWing`s with fields `left` and `right` for constructing a wing.
 """
 struct Wing{T <: Real} <: Aircraft
     left :: HalfWing{T}
@@ -271,21 +269,21 @@ projected_area(wing :: Wing) = projected_area(wing.left) + projected_area(wing.r
 """
     mean_aerodynamic_chord(wing :: Wing)
     
-Compute the mean aerodynamic chord of a Wing.
+Compute the mean aerodynamic chord of a `Wing`.
 """
 mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean_aerodynamic_chord(wing.right)) / 2
 
 """
     mean_aerodynamic_chord(wing :: Union{Wing, HalfWing})
     
-Compute the mean aerodynamic chord of a HalfWing or Wing.
+Compute the mean aerodynamic chord of a `HalfWing` or `Wing`.
 """
 aspect_ratio(wing :: Union{Wing, HalfWing}) = aspect_ratio(span(wing), projected_area(wing))
 
 """
     wing_bounds(wing :: Wing)
 
-Return the leading and trailing edge coordinates of a Wing.
+Return the leading and trailing edge coordinates of a `Wing`.
 """
 function wing_bounds(wing :: Wing)
     left_lead, left_trail = wing_bounds(wing.left, true)
@@ -302,9 +300,9 @@ leading_chopper(obj :: Wing, span_num :: Integer; flip = false) = span_chopper(w
 trailing_chopper(obj :: Wing, span_num :: Integer; flip = false) = span_chopper(wing_bounds(obj)..., span_num)[2]
 
 """
-    mesh_horseshoes(wing :: Wing, n_s, n_c)
+    mesh_horseshoes(wing :: Wing, n_s :: Integer, n_c :: Integer)
 
-Mesh a Wing into panels of ``n_s`` spanwise divisions per section and ``n_s`` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
+Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
 """
 function mesh_horseshoes(wing :: Wing, span_num, chord_num)
     left_panels = mesh_horseshoes(wing.left, span_num, chord_num, flip = true)
@@ -314,9 +312,9 @@ function mesh_horseshoes(wing :: Wing, span_num, chord_num)
 end
 
 """
-    mesh_wing(wing :: Wing, span_num, chord_num)
+    mesh_wing(wing :: Wing, n_s :: Integer, n_c :: Integer)
 
-Mesh a Wing into panels meant for full 3D analyses using doublet-source elements. Also works as a surface mesh. TODO: Tip meshing.
+Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for 3D analyses using doublet-source elements or equivalent formulations. TODO: Tip meshing.
 """
 function mesh_wing(wing :: Wing, span_num, chord_num)
     left_panels = mesh_wing(wing.left, span_num, chord_num, flip = true)
@@ -326,9 +324,9 @@ function mesh_wing(wing :: Wing, span_num, chord_num)
 end
 
 """
-    mesh_cambers(wing :: Wing, span_num, chord_num)
+    mesh_cambers(wing :: Wing, n_s :: Integer, n_c :: Integer)
 
-Mesh the camber distribution of a Wing into panels meant for vortex lattice analyses.
+Mesh the camber distribution of a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for vortex lattice analyses.
 """
 function mesh_cambers(wing :: Wing, span_num, chord_num)
     left_panels = mesh_cambers(wing.left, span_num, chord_num, flip = true)
@@ -338,9 +336,9 @@ function mesh_cambers(wing :: Wing, span_num, chord_num)
 end
 
 """
-    vlmesh_wing(wing :: Union{Wing, HalfWing}, span_num, chord_num)
+    vlmesh_wing(wing :: Union{Wing, HalfWing}, n_s :: Integer, n_c :: Integer)
 
-Return the horseshoe and camber panel distributions of a HalfWing or Wing for vortex lattice analyses.
+Return the horseshoe and camber panel distributions of a `HalfWing` or `Wing` consisting of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions for vortex lattice analyses.
 """
 vlmesh_wing(wing :: Union{Wing, HalfWing}, span_num, chord_num) = mesh_horseshoes(wing, span_num, chord_num), mesh_cambers(wing, span_num, chord_num)
 
@@ -353,14 +351,14 @@ end
 """
     info(wing :: Union{Wing, HalfWing})
 
-Return the relevant geometric characteristics of a HalfWing or Wing.
+Return the relevant geometric characteristics of a `HalfWing` or `Wing`.
 """
 info(wing :: Union{Wing, HalfWing}) = span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing)
 
 """
     print_info(wing :: Union{Wing, HalfWing})
 
-Print the relevant geometric characteristics of a HalfWing or Wing.
+Print the relevant geometric characteristics of a `HalfWing` or `Wing`.
 """
 function print_info(wing :: Union{Wing, HalfWing})
     data = info(wing)
@@ -369,13 +367,3 @@ function print_info(wing :: Union{Wing, HalfWing})
     println("MAC: ", data[3], " m")
     println("Aspect Ratio: ", data[4])
 end
-
-# """
-# Performs an affine transformation on a list of coordinates.
-# """
-# transform(coords, rotation, translation) = coords * rotation' .+ translation
-
-# """
-# Performs an affine transformation on the leading and trailing edges of a HalfWing.
-# """
-# transform(lead, trail; rotation = one(RotMatrix{3, Float64}), translation = [ 0 0 0 ]) = transform(lead, rotation', translation), transform(trail, rotation', translation)
