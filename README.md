@@ -168,7 +168,7 @@ solve_case(wing 					:: Union{Wing, HalfWing},
 
 The method uses the planform of the wing to compute the horseshoe elements, and the camber distribution to compute the normal vectors for the analyses.
 
-It returns the nearfield and farfield coefficients, the non-dimensionalised forces and moments over the panels, the panels used for the horseshoe elements, the camber panels, the horseshoe elements used for plotting streamlines, and the associated vortex strengths `Γ`s corresponding to the solution of the system.
+It returns the nearfield and farfield coefficients, the non-dimensionalised forces and moments over the panels, the panels used for the horseshoe elements, the camber panels, the horseshoe elements used for plotting streamlines, and the associated vortex strengths `Γs` corresponding to the solution of the system.
 ```julia
 nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = 
 	solve_case(wing, freestream, ρ, r_ref; span_num = 10, chord_num = 10) 

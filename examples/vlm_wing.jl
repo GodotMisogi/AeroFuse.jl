@@ -94,5 +94,5 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
 	camera = (30, 30),
 	zlim = (-0.1, z_limit))
 plot!(wing_coords, label = :none)
-scatter!(cl_pts, zcolor = CLs[:], marker = 1, label = "CL", smooth = true)
+scatter!(cl_pts, zcolor = CLs[:], marker = 1, label = "CL")
 plot!(size = (1280, 720))
