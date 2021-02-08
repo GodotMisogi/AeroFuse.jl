@@ -18,7 +18,8 @@ AeroMDAO provides some basic parametrizations commonly used for airfoils, with c
 *NACA 4-digit Airfoil Parametrization*
 
 ```julia
-naca4(digits :: NTuple{4, Real})
+naca4(digits :: NTuple{4, Real};    # Digits, e.g. (2,4,1,2)
+      sharp_trailing_edge = true)   # Sharp or blunt trailing edge
 ```
 
 ```julia
