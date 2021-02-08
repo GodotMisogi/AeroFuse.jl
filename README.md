@@ -30,7 +30,7 @@ airfoil = naca4((2,4,1,2))
 kulfan_CST(alpha_u      :: Vector{Real},	# Upper surface parameters
            alpha_l      :: Vector{Real},	# Lower surface parameters
            dzs          :: NTuple{2, Real},	# Upper and lower trailing edge points
-           coeff_LE = 0 :: Real,			# Leading-edge modification coefficient
+           coeff_LE = 0 :: Real,            # Leading-edge modification coefficient
            n = 40       :: Integer)         # Number of points on each surface
 ```
 
