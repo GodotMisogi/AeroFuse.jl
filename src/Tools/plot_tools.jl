@@ -1,11 +1,11 @@
 using CoordinateTransformations
 using Rotations
 
-plot_panels(panels :: AbstractVector{<: Panel3D}) = (tupvector ∘ panel_coords).(panels)
+plot_panels(panels :: Vector{<: Panel3D}) = (tupvector ∘ panel_coords).(panels)
 
 function plot_wing(wing :: Union{HalfWing, Wing}; rotation = [1 0 0; 0 1 0; 0 0 1], translation = [0,0,0]) 
-    leading, trailing = wing_bounds(wing)
-    [ tuple((Translation(translation) ∘ LinearMap(rotation))(coords)...) for coords in [ leading; trailing[end:-1:1]; [ first(leading) ] ] ]
+	leading, trailing = wing_bounds(wing)
+	[ tuple((Translation(translation) ∘ LinearMap(rotation))(coords)...) for coords in [ leading; trailing[end:-1:1]; [ first(leading) ] ] ]
 end
 
 plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = tupvector.(streamlines(freestream, points, horseshoes, Γs, length, num_steps))
