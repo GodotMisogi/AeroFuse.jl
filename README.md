@@ -115,8 +115,8 @@ HalfWing(foils		:: Vector{Foil},	# Foil profiles
 We can create a `Wing` by feeding two `HalfWing`s to it.
 
 ```julia
-Wing(left	:: HalfWing,	# Left side
-     right	:: HalfWing)	# Right side
+Wing(left   :: HalfWing,    # Left side
+     right  :: HalfWing)    # Right side
 ```
 
 ```julia
