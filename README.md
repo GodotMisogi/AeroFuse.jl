@@ -27,9 +27,9 @@ airfoil = naca4((2,4,1,2))
 
 *Kulfan Class Shape Transformation (CST) Method*
 ```julia
-kulfan_CST(alpha_u      :: Vector{Real},	# Upper surface parameters
-           alpha_l      :: Vector{Real},	# Lower surface parameters
-           dzs          :: NTuple{2, Real},	# Upper and lower trailing edge points
+kulfan_CST(alpha_u      :: Vector{Real},    # Upper surface parameters
+           alpha_l      :: Vector{Real},    # Lower surface parameters
+           dzs          :: NTuple{2, Real}, # Upper and lower trailing edge points
            coeff_LE = 0 :: Real,            # Leading-edge modification coefficient
            n = 40       :: Integer)         # Number of points on each surface
 ```
@@ -43,7 +43,7 @@ foil = kulfan_CST(alpha_u, alpha_l, dzs, 0.2)
 
 *Camber-Thickness Representation*
 ```julia
-foil_camthick(coords	:: Array{2, Real},	# 2D coordinates
+foil_camthick(coords	:: Array{2, Real},  # 2D coordinates
               num = 40	:: Integer)         # Number of points for distributions 
 ```
 
