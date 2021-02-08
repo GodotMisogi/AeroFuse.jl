@@ -27,11 +27,11 @@ airfoil = naca4((2,4,1,2))
 
 *Kulfan Class Shape Transformation (CST) Method*
 ```julia
-kulfan_CST(alpha_u		:: Vector{Real},	# Upper surface parameters
-           alpha_l		:: Vector{Real},	# Lower surface parameters
-           dzs			:: NTuple{2, Real},	# Upper and lower trailing edge points
-           coeff_LE = 0	:: Real,			# Leading-edge modification coefficient
-           n = 40		:: Integer)			# Number of points on each surface
+kulfan_CST(alpha_u      :: Vector{Real},	# Upper surface parameters
+           alpha_l      :: Vector{Real},	# Lower surface parameters
+           dzs          :: NTuple{2, Real},	# Upper and lower trailing edge points
+           coeff_LE = 0 :: Real,			# Leading-edge modification coefficient
+           n = 40		:: Integer)         # Number of points on each surface
 ```
 
 ```julia
@@ -44,7 +44,7 @@ foil = kulfan_CST(alpha_u, alpha_l, dzs, 0.2)
 *Camber-Thickness Representation*
 ```julia
 foil_camthick(coords	:: Array{2, Real},	# 2D coordinates
-              num = 40	:: Integer)			# Number of points for distributions 
+              num = 40	:: Integer)         # Number of points for distributions 
 ```
 
 ```julia
@@ -78,11 +78,11 @@ uniform = Uniform2D(V, α)
 To analyse this foil with these boundary conditions using the incompressible 2D doublet-source panel method, the following method is called. Optional named arguments are provided to specify whether the source terms are non-zero, the length of the wake, and the number of panels for the analysis.
 
 ```julia
-solve_case(foil					:: Foil
-           uniform				:: Uniform2D;
-           sources = false		:: Bool,
-           wake_length = 1e3	:: Float,
-           num_panels = 60		:: Integer)
+solve_case(foil                 :: Foil
+           uniform              :: Uniform2D;
+           sources = false      :: Bool,
+           wake_length = 1e3    :: Float,
+           num_panels = 60      :: Integer)
 ```
 
 The method returns the lift coefficient calculated by the doublet strength of the wake panel, the lift and pressure coefficients over the panels, and the panels generated for post-processing.
@@ -123,11 +123,11 @@ Wing(left	:: HalfWing,	# Left side
 airfoil = naca4((2,4,1,2))
 foils = Foil.(airfoil for i in 1:3)
 wing_right = HalfWing(foils,
-                    [0.4, 0.2, 0.1],
-                    [0., 2., 5.],
-                    [1.0, 0.1],
-                    [0., 60.],
-                    [0., 30.])
+                      [0.4, 0.2, 0.1],
+                      [0., 2., 5.],
+                      [1.0, 0.1],
+                      [0., 60.],
+                      [0., 30.])
 
 wing = Wing(wing_right, wing_right)
 ```
@@ -158,12 +158,12 @@ r_ref = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
 
 Now we run the case with specifications of the number of spanwise and chordwise panels by calling the `solve_case()` function, which has an associated method.
 ```julia
-solve_case(wing 					:: Union{Wing, HalfWing},
-           freestream 				:: Freestream,
-           ρ 						:: Real,
-           r_ref = [0.25, 0., 0.] 	:: Vector{Real};
-           span_num = 5 			:: Integer,
-           chord_num = 10			:: Integer)
+solve_case(wing                     :: Union{Wing, HalfWing},
+           freestream               :: Freestream,
+           ρ                        :: Real,
+           r_ref = [0.25, 0., 0.]   :: Vector{Real};
+           span_num = 5             :: Integer,
+           chord_num = 10           :: Integer)
 ```
 
 The method uses the planform of the wing to compute the horseshoe elements, and the camber distribution to compute the normal vectors for the analyses.
