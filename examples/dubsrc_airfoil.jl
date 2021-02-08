@@ -5,10 +5,15 @@ using AeroMDAO
 ##
 alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
 alpha_l = [-0.2, -0.1, -0.1, -0.001]
-dzs     = (1e-4, 1e-4)
-airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, dzs, 0.0, 60);
+dzs     = (0., 0.)
+# airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, dzs, 0.0, 60);
+airfoil = Foil(naca4((0,0,1,2), 100; sharp_trailing_edge = true))
 uniform = Uniform2D(1., 5.)
-@time cl = solve_case(airfoil, uniform, num_panels = 100)
+@time cl, cls, cps, panels = solve_case(airfoil, 
+                                        uniform; 
+                                        sources = false, 
+                                        wake_length = 1e3, 
+                                        num_panels = 80)
 
 #
 println("Lift Coefficient: $cl")
@@ -38,5 +43,8 @@ optimize_CST(alpha_u, alpha_l)
 using Plots
 plotlyjs();
 
+## Pressure coefficients
+plot((first ∘ collocation_point).(panels), cps, marker = 2, yflip = true, xlabel = "(x/c)", ylabel = "Cp")
+
 ## Lift polar
-Plots.plot(αs, cls, xlabel = "α", ylabel = "CL")
+plot((first ∘ collocation_point).(panels), cls, marker = 2, xlabel = "(x/c)", ylabel = "CL")
