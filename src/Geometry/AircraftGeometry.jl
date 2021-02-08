@@ -6,6 +6,7 @@ using DelimitedFiles
 using StaticArrays
 using CoordinateTransformations
 using Rotations
+using LinearAlgebra
 
 using ..AeroMDAO: cosine_dist, cosine_interp, splitat, adj3, slope, columns, fwdsum, fwddiv, weighted_vector, vectarray, Point2D, Panel2D, Panel3D, extend_yz, transform
 
