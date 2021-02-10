@@ -18,3 +18,7 @@ TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
 StaticArrays = "1.0"
+Rotations = "1.0"
+CoordinateTransformations = "0.6"
+Documenter = "0.26"
+TimerOutputs = "0.5"
