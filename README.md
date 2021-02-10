@@ -89,7 +89,7 @@ solve_case(foil                 :: Foil
 The method returns the lift coefficient calculated by the doublet strength of the wake panel, the lift and pressure coefficients over the panels, and the panels generated for post-processing.
 
 ```julia
-cl, cls, cps, panels = solve_case(airfoil,
+cl, cls, cps, panels = solve_case(foil,
                                   uniform;
                                   sources = false,
                                   wake_length = 1e3,
