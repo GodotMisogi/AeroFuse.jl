@@ -44,7 +44,7 @@ using Plots
 plotlyjs();
 
 ## Pressure coefficients
-plot((first ∘ collocation_point).(panels), cps, marker = 2, yflip = true, xlabel = "(x/c)", ylabel = "Cp")
+plot((first ∘ collocation_point).(panels), cps, marker = 2, label = :none, yflip = true, xlabel = "(x/c)", ylabel = "Cp")
 
 ## Lift polar
-plot((first ∘ collocation_point).(panels), cls, marker = 2, xlabel = "(x/c)", ylabel = "CL")
+plot((first ∘ collocation_point).(panels), cls, marker = 2, label = :none, xlabel = "(x/c)", ylabel = "CL")

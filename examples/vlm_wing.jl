@@ -35,7 +35,7 @@ end
 
 ## Plotting
 using Plots
-plotlyjs()
+gr()
 
 ## Coordinates
 horseshoe_coords 	= plot_panels(horseshoe_panels[:])
@@ -75,7 +75,7 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
 	 aspect_ratio = 1, 
 	 camera = (30, 30),
 	 zlim = (-0.1, z_limit),
-	 size = (1280, 720))
+	 size = (800, 600))
 # plot!.(horseshoe_coords, color = :black, label = :none)
 plot!.(camber_coords, color = :black, label = :none)
 scatter!(tupvector(colpoints)[:], marker = 1, color = :black, label = :none)
@@ -86,7 +86,7 @@ plot!()
 plot1 = plot(ys[1,:], sum(CDis, dims = 1)[:], label = :none, xlabel = "y", ylabel = "CDi")
 plot2 = plot(ys[1,:], abs.(sum(CYs, dims = 1)[:]), label = :none, xlabel = "y", ylabel = "CY")
 plot3 = plot(ys[1,:], sum(CLs, dims = 1)[:], label = :none, xlabel = "y", ylabel = "CL")
-plot(plot1, plot2, plot3, size = (1280, 720))
+plot(plot1, plot2, plot3, layout = (3,1), size = (800, 600))
 
 ## Lift distribution
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
@@ -95,4 +95,4 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
 	zlim = (-0.1, z_limit))
 plot!(wing_coords, label = :none)
 scatter!(cl_pts, zcolor = CLs[:], marker = 1, label = "CL")
-plot!(size = (1280, 720))
+plot!(size = (800, 600))
