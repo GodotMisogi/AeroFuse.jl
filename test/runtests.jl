@@ -16,7 +16,7 @@ using Test
 end
 
 @testset "Airfoil Processing" begin
-    foilpath = "test/CRM.dat"
+    foilpath = joinpath((dirname ∘ dirname ∘ pathof)(AeroMDAO), "test/CRM.dat")
     coords = read_foil(foilpath)
 
     cos_foil = cosine_foil(coords, 51)
