@@ -58,9 +58,9 @@ end
 
 panel_velocity(dφ, dr, u, α) = dφ / dr + dot(u, α)
 
-lift_coefficient(cp :: Real, dist_colpoints :: Real, panel_angle :: Real) = - cp * dist_colpoints * cos(panel_angle)
+lift_coefficient(cp, dist_colpoints, panel_angle) = - cp * dist_colpoints * cos(panel_angle)
 
-lift_coefficient(wake_strength :: Real, speed :: Real) = 2. * wake_strength / speed
+lift_coefficient(wake_strength, speed) = 2. * wake_strength / speed
 
 ## Matrix assembly
 #===========================================================================#
@@ -70,18 +70,27 @@ include("matrix_prealloc.jl")
 
 export solve_problem
 
-function solve_problem(panels :: Vector{<: Panel2D}, u, sources, wake_length)
+function solve_problem(panels :: Vector{<: Panel2D}, u, sources :: Bool, wake_length)
 	φs			= solve_strengths(panels, u, sources; bound = wake_length)
 	cps, cls	= aerodynamic_coefficients(panels, φs, u, sources)
 	cl_wake 	= lift_coefficient(last(φs), norm(u))
 
-	# @timeit "Solve System (Pre-allocated)" 
-	# φs = solve_strengths_prealloc(panels, u)
-	# @timeit "Lift Coefficient (Pre-allocated)" 
-	# cl = lift_coefficient_prealloc(panels, φs, u)
+	cps, cls, cl_wake
+end
+
+function solve_problem(panels :: Vector{<: Panel2D}, u, num_wake :: Integer, wake_length)
+	wakes 		= wake_panels(panels, wake_length, num_wake)
+	φs			= solve_strengths(panels, u, wakes; bound = wake_length)
+	cps, cls	= aerodynamic_coefficients(panels, φs, u, true)
+	cl_wake 	= lift_coefficient(last(φs), norm(u))
 
 	cps, cls, cl_wake
 end
 
+# Pre-allocated versions
+# @timeit "Solve System (Pre-allocated)" 
+# φs = solve_strengths_prealloc(panels, u)
+# @timeit "Lift Coefficient (Pre-allocated)" 
+# cl = lift_coefficient_prealloc(panels, φs, u)
 
 end

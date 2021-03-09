@@ -30,7 +30,7 @@ export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient
 include("Geometry/PanelGeometry.jl")
 using .PanelGeometry
 
-export Panel, Panel2D, Panel3D, Point2D, collocation_point, point1, point2, point3, point4, transform, panel_normal, midpoint
+export Panel, Panel2D, Panel3D, Point2D, collocation_point, point1, point2, point3, point4, transform, panel_normal, midpoint, panel_location, panel_tangent
 
 
 ## Wing geometry

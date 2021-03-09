@@ -54,7 +54,7 @@ end
 panel_angle(panel :: Panel2D) = let (x, y) = point2(panel) - point1(panel); atan(y, x) end
 panel_tangent(panel :: Panel2D) = rotation(1., 0., -panel_angle(panel))
 panel_normal(panel :: Panel2D) = inverse_rotation(0., 1., panel_angle(panel))
-# panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π/2 <= angle <= π) || (-π <= angle <= -π/2) ? "lower" : "upper" end
+panel_location(panel :: Panel2D) = let angle = panel_angle(panel); (π/2 <= angle <= π) || (-π <= angle <= -π/2) ? "lower" : "upper" end
 
 ## 3D Panels
 #==========================================================================================#
