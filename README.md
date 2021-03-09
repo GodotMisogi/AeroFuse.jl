@@ -163,7 +163,7 @@ solve_case(wing                     :: Union{Wing, HalfWing},
            freestream               :: Freestream,
            ρ                        :: Real,
            r_ref = [0.25, 0., 0.]   :: Vector{Real};
-           span_num = 5             :: Integer,
+           span_num = 25            :: Integer,
            chord_num = 10           :: Integer)
 ```
 

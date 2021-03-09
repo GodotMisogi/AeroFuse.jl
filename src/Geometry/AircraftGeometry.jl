@@ -12,6 +12,8 @@ using ..AeroMDAO: cosine_dist, cosine_interp, splitat, adj3, slope, columns, fwd
 
 abstract type Aircraft end
 
+export Aircraft
+
 ## Foil geometry
 #==========================================================================================#
 
