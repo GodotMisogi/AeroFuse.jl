@@ -10,9 +10,11 @@ dzs     = (0., 0.)
 airfoil = Foil(naca4((0,0,1,2), 100; sharp_trailing_edge = true))
 uniform = Uniform2D(1., 5.)
 @time cl, cls, cps, panels = solve_case(airfoil, 
-                                        uniform; 
+                                        uniform;
+                                        viscous = false,
                                         sources = false, 
-                                        wake_length = 1e3, 
+                                        wake_length = 1e3,
+                                        wake_panels = 100,
                                         num_panels = 80)
 
 #

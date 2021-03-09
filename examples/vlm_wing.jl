@@ -9,7 +9,7 @@ foil        =   naca4((2,4,1,2))
 wing_right  =   HalfWing(Foil.(foil for i ∈ 1:3),   # Foils
 						[0.18, 0.16, 0.08],         # Chords
 						[2., 0., -2.],              # Twists
-						[0.5, 0.5],                 # Spans
+						[0.5, 0.2],                 # Spans
 						[0., 11.3],                 # Dihedrals
 						[1.14, 8.])                 # Sweeps
 
@@ -20,10 +20,10 @@ print_info(wing)
 ## Assembly
 ρ 			= 1.225
 ref 		= [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
-V, α, β 	= 10.0, 5.0, 0.0
+V, α, β 	= 10.0, 5.0, 5.0
 Ω 			= [0.0, 0.0, 0.0]
 freestream 	= Freestream(V, α, β, Ω)
-@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, freestream, ρ, ref; span_num = 10, chord_num = 10) 
+@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, freestream, ρ, ref; span_num = 25, chord_num = 10) 
 
 #
 begin
@@ -35,7 +35,6 @@ end
 
 ## Plotting
 using Plots
-gr()
 
 ## Coordinates
 horseshoe_coords 	= plot_panels(horseshoe_panels[:])
@@ -83,10 +82,10 @@ plot!.(streams, color = :green, label = :none)
 plot!()
 
 ## Span forces
-plot1 = plot(ys[1,:], sum(CDis, dims = 1)[:], label = :none, xlabel = "y", ylabel = "CDi")
-plot2 = plot(ys[1,:], abs.(sum(CYs, dims = 1)[:]), label = :none, xlabel = "y", ylabel = "CY")
+plot1 = plot(ys[1,:], sum(CDis, dims = 1)[:], label = :none, ylabel = "CDi")
+plot2 = plot(ys[1,:], abs.(sum(CYs, dims = 1)[:]), label = :none, ylabel = "CY")
 plot3 = plot(ys[1,:], sum(CLs, dims = 1)[:], label = :none, xlabel = "y", ylabel = "CL")
-plot(plot1, plot2, plot3, layout = (3,1), size = (800, 600))
+plot(plot1, plot2, plot3, layout = (3,1))
 
 ## Lift distribution
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
