@@ -73,7 +73,7 @@ function chop_sections(set1, set2, n :: Integer; spacing = "uniform")
 	[ weighted_vector.(set1, set2, μ) for μ ∈ space ][1:end-1]
 end
 
-coords_chopper(coords, n, spacing = "uniform") = [ chop_sections.(coords[1:end-1], coords[2:end], n; spacing = spacing)...; [coords[end]] ]
+coords_chopper(coords, n, spacing = "cosine") = [ chop_sections.(coords[1:end-1], coords[2:end], n; spacing = spacing)...; [coords[end]] ]
 chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) ∈ zip(lead, trail) ]
 chord_chopper(coords, n) = [ [ weighted_vector(chord[1,:], chord[2,:], μ) for μ ∈ cosine_dist(0.5, 1., n + 1) ] for chord ∈ coords ]
 span_chopper(lead, trail, div) = coords_chopper(lead, div), coords_chopper(trail, div)
