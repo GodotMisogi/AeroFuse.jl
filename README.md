@@ -1,5 +1,7 @@
 # AeroMDAO
 
+[![Build Status](https://travis-ci.com/GodotMisogi/AeroMDAO.svg?branch=main)](https://travis-ci.com/GodotMisogi/AeroMDAO)
+
 AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics, with aims to develop implementations in other relevant fields such as structures, propulsion, stability, etc.
 
 ## Installation
