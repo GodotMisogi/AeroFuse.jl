@@ -56,7 +56,7 @@ end
     CL_ff, CDi_ff, CY_ff, Cl_ff, Cm_ff, Cn_ff, p_b_ff, q_b_ff, r_b_ff = ff_coeffs
     
     @test isapprox(CL_ff, 0.66443308, atol = 1e-6)
-    @test isapprox(CDi_ff, 0.00116649, atol = 1e-6)
+    @test isapprox(CDi_ff, 0.01005873, atol = 1e-6)
     @test isapprox(CY_ff, -0.00370586, atol = 1e-6)
     @test isapprox(Cl_nf, 0.00813689, atol = 1e-6)
     @test isapprox(Cm_nf, -0.12987126, atol = 1e-6)
