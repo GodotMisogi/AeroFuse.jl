@@ -47,10 +47,10 @@ influence_coefficient(velocity_func :: F, angle_func, panel_j :: Panel, panel_i 
 neumann_influence_matrix(func, angle_func, panel_is :: Vector{<: Panel}, panel_js :: Vector{<: Panel}) = [ influence_coefficient(func, angle_func, panel_j, panel_i) for (panel_i, panel_j) in product(panel_is, panel_js) ]
 
 function two_point_matrix(vel_a :: F, vel_b :: G, panels_1 :: Vector{<: Panel}, panels_2 :: Vector{<: Panel}) where F where G
-	N 	  = min(length(panels_1), length(panels_2))
-	inf_a = neumann_influence_matrix(vel_a, panel_normal, panels_1, panels_2)
-	inf_b = neumann_influence_matrix(vel_b, panel_normal, panels_1, panels_2)
-	[ inf_a zeros(N) ] + [ zeros(N) inf_b ]
+    N 	  = min(length(panels_1), length(panels_2))
+    inf_a = neumann_influence_matrix(vel_a, panel_normal, panels_1, panels_2)
+    inf_b = neumann_influence_matrix(vel_b, panel_normal, panels_1, panels_2)
+    [ inf_a zeros(N) ] + [ zeros(N) inf_b ]
 end
 
 neumann_boundary_condition(panels :: Vector{<: Panel}, u) = [ -dot.(Ref(u), panel_normal.(panels)); 0 ]

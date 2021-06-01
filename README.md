@@ -32,10 +32,10 @@ If you use AeroMDAO in your research, please cite the following until any releva
 
 ```bibtex
 @software{aeromdao,
-  author = {Arjit Seth, Rhea P. Liem, Stephane Redonnet},
-  title = {AeroMDAO},
-  url = {https://github.com/GodotMisogi/AeroMDAO},
+  author  = {Arjit Seth, Rhea P. Liem, Stephane Redonnet},
+  title   = {AeroMDAO},
+  url     = {https://github.com/GodotMisogi/AeroMDAO},
   version = {0.2.0},
-  date = {2021-06-01},
+  date    = {2021-06-01},
 }
 ```
