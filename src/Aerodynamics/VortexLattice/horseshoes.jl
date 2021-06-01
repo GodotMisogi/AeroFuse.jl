@@ -1,6 +1,16 @@
 ## Horseshoe methods
 #==========================================================================================#
 
+"""
+Compute the quarter point between two points in the x-z plane.
+"""
+quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(1/4, 0, 1/4))
+
+"""
+Compute the 3-quarter point between two points in the x-z plane.
+"""
+three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
+
 collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
 bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2), quarter_point(p4, p3) ]
 
@@ -42,24 +52,12 @@ transform(line :: Line, rotation, translation) = let trans = Translation(transla
 r1(r, line :: Line) = r - point1(line)
 r2(r, line :: Line) = r - point2(line)
 
-"""
-Helper function to compute the velocity induced by a bound vortex leg.
-"""
 bound_leg_velocity(a, b, Γ) = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
 
-"""
-Helper function to compute the velocity induced by trailing vortex legs.
-"""
 trailing_legs_velocities(a, b, Γ, u) = Γ/4π * (a × u / (norm(a) - dot(a, u)) / norm(a) - b × u / (norm(b) - dot(b, u)) / norm(b))
 
-"""
-Placeholder.
-"""
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
 
-"""
-Compute the velocity induced at a point `r` by a vortex Line with constant strength Γ.
-"""
 horseshoe_velocity(r, line :: Line, Γ, direction) = total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
 
 ## Arrays of vortex lines
