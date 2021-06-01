@@ -5,51 +5,51 @@ using AeroMDAO
 ## Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
 wing_right = HalfWing(wing_foils,
-					  [1.0, 0.6],
-					  [2.0, 2.0],
-					  [5.0],
-					  [11.3],
-					  [2.29]);
+                      [1.0, 0.6],
+                      [2.0, 2.0],
+                      [5.0],
+                      [11.3],
+                      [2.29]);
 wing = Wing(wing_right, wing_right)
 print_info(wing, "Wing")
 
 # Horizontal tail
 htail_foil = Foil(naca4((0,0,1,2)))
 htail_right = HalfWing(fill(htail_foil, 2),
-					   [0.7, 0.42],
-					   [0.0, 0.0],
-					   [1.25],
-					   [0.],
-					   [6.39])
+                       [0.7, 0.42],
+                       [0.0, 0.0],
+                       [1.25],
+                       [0.],
+                       [6.39])
 htail = Wing(htail_right, htail_right)
 print_info(htail, "Horizontal Tail")
 
 # Vertical tail
 vtail_foil = Foil(naca4((0,0,0,9)))
 vtail = HalfWing(fill(vtail_foil, 2), 
-					  [0.7, 0.42],
-					  [0.0, 0.0],
-					  [1.0],
-					  [0.],
-					  [7.97])
+                      [0.7, 0.42],
+                      [0.0, 0.0],
+                      [1.0],
+                      [0.],
+                      [7.97])
 print_info(vtail, "Vertical Tail")
 
 # Assembly
 wing_panels  = panel_wing(wing, [20], 10);
 htail_panels = panel_wing(htail, [12], 12;
-						  position	= [4., 0, 0],
-						  angle 	= deg2rad(-2.),
-						  axis 	  	= [0., 1., 0.]
-						 )
+                          position	= [4., 0, 0],
+                          angle 	= deg2rad(-2.),
+                          axis 	  	= [0., 1., 0.]
+                         )
 vtail_panels = panel_wing(vtail, [12], 10; 
-						  position 	= [4., 0, 0],
-						  angle 	= π/2, 
-						  axis 	 	= [1., 0., 0.]
-						 )
+                          position 	= [4., 0, 0],
+                          angle 	= π/2, 
+                          axis 	 	= [1., 0., 0.]
+                         )
 
 aircraft = Dict("Wing" 			  	=> wing_panels,
-				"Horizontal Tail" 	=> htail_panels,
-				"Vertical Tail"   	=> vtail_panels)
+                "Horizontal Tail" 	=> htail_panels,
+                "Vertical Tail"   	=> vtail_panels)
 
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
 
@@ -62,16 +62,16 @@ V, α, β = 1.0, 0.0, 0.0
 fs 	    = Freestream(V, α, β, Ω)
 
 data = 
-	solve_case(aircraft, fs; 
-			   rho_ref     = ρ, 		# Reference density
-			   r_ref       = ref, 		# Reference point for moments
-			   area_ref    = S, 		# Reference area
-			   span_ref    = b, 		# Reference span
-			   chord_ref   = c, 		# Reference chord
-			   name        = ac_name,	# Aircraft name
-			   print       = true,		# Prints the results for the entire aircraft
-			   print_components = true,	# Prints the results for each component
-			  );
+    solve_case(aircraft, fs; 
+               rho_ref     = ρ, 		# Reference density
+               r_ref       = ref, 		# Reference point for moments
+               area_ref    = S, 		# Reference area
+               span_ref    = b, 		# Reference span
+               chord_ref   = c, 		# Reference chord
+               name        = ac_name,	# Aircraft name
+               print       = true,		# Prints the results for the entire aircraft
+               print_components = true,	# Prints the results for each component
+              );
 
 ##
 names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
@@ -91,7 +91,7 @@ span_points = 50
 init        = leading_chopper(ifelse(β == 0 && Ω == zeros(3), wing.right, wing), span_points) 
 dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy, dz]) ; 
-			 	init .+ Ref([dx, dy,-dz]) ];
+                 init .+ Ref([dx, dy,-dz]) ];
 
 distance = 8
 num_stream_points = 200
@@ -108,12 +108,12 @@ gr(size = (200, 100), dpi = 300)
 ##
 z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
-	 aspect_ratio = 1, 
-	 camera = (30, 60),
-	 xlim = (-z_limit/2, z_limit/2),
-	 zlim = (-z_limit/2, z_limit/2),
-	 size = (1280, 720)
-	)
+     aspect_ratio = 1, 
+     camera = (30, 60),
+     xlim = (-z_limit/2, z_limit/2),
+     zlim = (-z_limit/2, z_limit/2),
+     size = (1280, 720)
+    )
 plot!.(camber_coords, color = :black, label = :none)
 plot!.(streams, color = :green, label = :none)
 plot!()

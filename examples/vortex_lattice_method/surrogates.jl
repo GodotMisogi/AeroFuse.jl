@@ -6,41 +6,41 @@ using AeroMDAO
 ## Wing
 wing_foils = Foil.(fill(naca4((2,4,1,2)), 2))
 wing_right = HalfWing(wing_foils,
-					  [1.0, 0.6],
-					  [2.0, 2.0],
-					  [5.0],
-					  [11.3],
-					  [2.29]);
+                      [1.0, 0.6],
+                      [2.0, 2.0],
+                      [5.0],
+                      [11.3],
+                      [2.29]);
 wing = Wing(wing_right, wing_right)
 wing_mac 	= mean_aerodynamic_center(wing)
 wing_pos    = [0., 0., 0.]
 wing_plan  	= plot_wing(wing;  
-						position = wing_pos)
+                        position = wing_pos)
 print_info(wing, "Wing")
 
 # Horizontal tail
 htail_right = HalfWing([0.7, 0.42],
-					   [0.0, 0.0],
-					   [1.25],
-					   [0.],
-					   [6.39])
+                       [0.0, 0.0],
+                       [1.25],
+                       [0.],
+                       [6.39])
 htail = Wing(htail_right, htail_right)
 htail_mac	= mean_aerodynamic_center(htail)
 htail_pos	= [5., 0., 0.]
 α_h_i		= 0.
 htail_plan	= plot_wing(htail;
-						position = htail_pos)
+                        position = htail_pos)
 print_info(htail, "Horizontal Tail")
 
 
 # Vertical tail
 vtail_foil = Foil(naca4((0,0,0,9)))
 vtail = HalfWing(fill(vtail_foil, 2), 
-					  [0.7, 0.42],
-					  [0.0, 0.0],
-					  [1.0],
-					  [0.],
-					  [7.97])
+                      [0.7, 0.42],
+                      [0.0, 0.0],
+                      [1.0],
+                      [0.],
+                      [7.97])
 vtail_mac	= mean_aerodynamic_center(vtail) # NEEDS FIXING FOR ROTATION
 vtail_pos	= [5., 0., 0.]
 vtail_plan	= plot_wing(vtail; 
@@ -53,26 +53,26 @@ print_info(vtail, "Vertical Tail")
 wing_panels  = panel_wing(wing, [20], 10,
                           position = wing_pos);
 htail_panels = panel_wing(htail, [6], 6;
-						  position	= htail_pos,
-						  angle 	= deg2rad(α_h_i),
-						  axis 	  	= [0., 1., 0.]
-						 )
+                          position	= htail_pos,
+                          angle 	= deg2rad(α_h_i),
+                          axis 	  	= [0., 1., 0.]
+                         )
 vtail_panels = panel_wing(vtail, [6], 6; 
-						  position 	= vtail_pos,
-						  angle 	= π/2, 
-						  axis 	 	= [1., 0., 0.]
-						 )
+                          position 	= vtail_pos,
+                          angle 	= π/2, 
+                          axis 	 	= [1., 0., 0.]
+                         )
 
 aircraft = Dict(
-				"Wing" 			  => wing_panels,
-				"Horizontal Tail" => htail_panels,
-				"Vertical Tail"   => vtail_panels
-				)
+                "Wing" 			  => wing_panels,
+                "Horizontal Tail" => htail_panels,
+                "Vertical Tail"   => vtail_panels
+                )
 
 ## VLM setup
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
-	# Evaluate case
-	data = 	solve_case(aircraft, fs; 
+    # Evaluate case
+    data = 	solve_case(aircraft, fs; 
                        rho_ref   = ρ, 
                        r_ref     = ref,
                        area_ref  = S,
@@ -80,12 +80,12 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
                        chord_ref = c,
                        print 	 = print
                       );
-	
-	# Get data
-	nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = data["Aircraft"]
+    
+    # Get data
+    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = data["Aircraft"]
 
-	# Filter relevant data
-	ff_coeffs[1:3], nf_coeffs[4:6]
+    # Filter relevant data
+    ff_coeffs[1:3], nf_coeffs[4:6]
 end
 
 ## Evaluate one case

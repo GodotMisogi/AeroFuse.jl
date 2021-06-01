@@ -6,7 +6,7 @@ using AeroMDAO
 
 ## Tests
 wedge_pts 	 = @. Point2D([0.5, 0.0, -0.5, 0.0, 0.5],
-						  [-0.0, -0.5, 0.0, 0.5, 0.0])
+                          [-0.0, -0.5, 0.0, 0.5, 0.0])
 wedge_panels = @. Panel2D(wedge_pts[1:end-1], wedge_pts[2:end])
 uniform 	 = Uniform2D(1.0, 0.0)
 
