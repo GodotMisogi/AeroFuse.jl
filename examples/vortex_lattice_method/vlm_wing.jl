@@ -7,18 +7,18 @@ wing_right = HalfWing(wing_foils,
                       [1.0, 0.6, 0.2],
                       [0.0, 0.0, 0.0],
                       [5.0, 0.5],
-                      [0., 0.],
-                      [0., 0.]);
+                      [5., 5.],
+                      [5., 5.]);
 wing = Wing(wing_right, wing_right)
 print_info(wing, "Wing")
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 
 ## Assembly
-ρ 		= 1.225
-ref 	= [0.25, 0., 0.]
+ρ       = 1.225
+ref     = [0.25, 0., 0.]
 V, α, β = 1.0, 1.0, 1.0
-Ω 		= [0.0, 0.0, 0.0]
-fs 		= Freestream(V, α, β, Ω)
+Ω       = [0.0, 0.0, 0.0]
+fs      = Freestream(V, α, β, Ω)
 
 ## Evaluate case
 @time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = 
@@ -28,7 +28,7 @@ solve_case(wing, fs;
            area_ref  = S,
            span_ref  = b,
            chord_ref = c,
-           span_num  = [15, 9], 
+           span_num  = [25, 4], 
            chord_num = 6,
            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
            x_tr      = [0.3, 0.3]);
@@ -43,7 +43,7 @@ solve_stability_case(wing, fs;
                      area_ref   = S, 
                      span_ref   = b, 
                      chord_ref  = c, 
-                     span_num   = [15, 9], 
+                     span_num   = [25, 4], 
                      chord_num  = 6, 
                      name       = "My Wing",
                      viscous    = true,
@@ -60,20 +60,23 @@ using Plots
 gr(size = (600, 400), dpi = 300)
 
 ## Coordinates
-horseshoe_coords 	= plot_panels(horseshoe_panels[:])
-camber_coords		= plot_panels(camber_panels[:])
-wing_coords 		= plot_wing(wing);
+horseshoe_coords = plot_panels(horseshoe_panels[:])
+camber_coords    = plot_panels(camber_panels[:])
+wing_coords      = plot_wing(wing);
 
-CDis = getindex.(CFs, 1) # TODO: This is in the wrong axes for plots, needs to be fixed
-CYs	 = getindex.(CFs, 2)
-CLs  = getindex.(CFs, 3);
+wind_CFs    = body_to_wind_axes.(CFs, α, β) # Transforming body forces to wind axes, needs further checking
+CDis        = getindex.(wind_CFs, 1) 
+CYs	        = getindex.(wind_CFs, 2)
+CLs         = getindex.(wind_CFs, 3);
 CL_loadings = 2sum(Γs, dims = 1)[:] / (V * b)
 
-colpoints 	= horseshoe_point.(horseshoe_panels)
-xs 			= getindex.(colpoints, 1);
-ys 			= getindex.(colpoints, 2);
-zs 			= getindex.(colpoints, 3);
-cl_pts 		= tupvector(SVector.(xs[:], ys[:], zs[:] .+ CLs[:]));
+colpoints = horseshoe_point.(horseshoe_panels)
+xs        = getindex.(colpoints, 1);
+ys        = getindex.(colpoints, 2);
+zs        = getindex.(colpoints, 3);
+
+# Exaggerated CZ distribution for plot
+cz_pts    = tupvector(SVector.(xs[:], ys[:], zs[:] .+ 100. * getindex.(CFs, 3)[:]));
 
 ## Streamlines
 
@@ -98,7 +101,7 @@ streams = plot_streams(fs, seed, horseshoes, Γs, distance, num_stream_points);
 z_limit = 5
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1, 
-     camera = (15,30),
+     camera = (30, 60),
      zlim = (-0.1, z_limit),
      size = (800, 600))
 # plot!.(horseshoe_coords, color = :black, label = :none)
@@ -118,9 +121,10 @@ plot(plot_CD, plot_CY, plot_CL, layout = (3,1))
 
 ## Lift distribution
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
-    aspect_ratio = 1,
-    camera = (30, 30),
-    zlim = (-0.1, z_limit))
-plot!(wing_coords, label = :none)
-scatter!(cl_pts, zcolor = CLs[:], marker = 1, label = "CL")
-plot!(size = (800, 600))
+     aspect_ratio = 1,
+     camera = (25, 30),
+     zlim = (-0.1, z_limit)
+    )
+plot!(wing_coords, label = "Wing Planform")
+scatter!(cz_pts, zcolor = CLs[:], marker = 2, label = "CL (Exaggerated)")
+plot!(size = (800, 600), colorbar = :none)

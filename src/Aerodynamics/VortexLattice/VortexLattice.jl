@@ -21,7 +21,7 @@ export Horseshoe, horseshoe_line, horseshoe_point
 
 include("reference_frames.jl")
 
-export body_to_stability_axes, body_to_wind_axes, reflect_xz
+export body_to_stability_axes, stability_to_body_axes, body_to_wind_axes, wind_to_body_axes, reflect_xz
 
 ## Influence matrix and solution of system
 #==========================================================================================#

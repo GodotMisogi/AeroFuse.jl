@@ -86,7 +86,7 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
 using .VortexLattice
 
-export Horseshoe, streamlines, solve_horseshoes, transform, horseshoe_line, horseshoe_point, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes
+export Horseshoe, streamlines, solve_horseshoes, transform, horseshoe_line, horseshoe_point, nearfield_drag, evaluate_coefficients, body_to_stability_axes, stability_to_body_axes, body_to_wind_axes, wind_to_body_axes
 
 ## Profile drag estimation
 
