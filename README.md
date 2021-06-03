@@ -6,7 +6,7 @@ AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently pro
 
 The current focus is to enable tutorials in computation for undergraduates in an aerospace educational curriculum, particularly at The Hong Kong University of Science and Technology. For this purpose, the code is written in a functional style replicating the mathematics presented in textbooks as much as possible.
 
-**Aside**: This also turns out to develop very efficient code without the need for functions that modify their arguments in-place (read mutation), which is against functional style. Of course, the code is not written in a higher-order Haskellian style using monads or any other category theory constructs, although that would probably be very interesting and pleasing to implement! *Hint*: Lists are secretly monads.
+**Aside**: This also turns out to develop very efficient (and more readable!) code without the need for functions that modify their arguments in-place (read mutation), which is against functional style. Of course, the code is not written in a higher-order Haskellian style using monads or any other category theory constructs, although that would probably be very interesting and pleasing to implement! *Hint*: Lists are secretly monads.
 
 ## Features
 

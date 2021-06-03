@@ -182,8 +182,8 @@ nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs
                x_tr      = [0.3, 0.3]);
 ```
 
-AeroMDAO uses the `ForwardDiff` package, which leverages forward-mode automatic differentiation to obtain the stability derviatives with respect to the angle of attack and sideslip and the non-dimensionalized roll rates at low computational cost. To obtain the stability derivatives, simply replace `solve_case()` with `solve_stability_case()`, which will return **only** the nearfield, farfield and stability derivative coefficients. This is due to limitations in `ForwardDiff`, and hence no post-processing values are provided using this function.
+AeroMDAO uses the [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl) package, which leverages forward-mode automatic differentiation to obtain the stability derviatives with respect to the angle of attack and sideslip and the non-dimensionalized roll rates at low computational cost. To obtain the stability derivatives, simply replace `solve_case()` with `solve_stability_case()`, which will return **only** the nearfield, farfield and stability derivative coefficients. This is due to limitations in `ForwardDiff`, and hence no post-processing values are provided using this function.
 
 ### Aircraft Analysis
 
-To be completed. For now, refer to the these [analysis](vortex_lattice_method/vlm_aircraft.jl) and [stability analysis](vortex_lattice_method/stability_aircraft.jl) scripts with a full aircraft configuration. There's also an interesting test [surrogate model test script](vortex_lattice_method/surrogates.jl)!
+To be completed. For now, refer to these [analysis](vortex_lattice_method/vlm_aircraft.jl) and [stability analysis](vortex_lattice_method/stability_aircraft.jl) scripts with a full aircraft configuration. There's also an interesting test [surrogate model test script](vortex_lattice_method/surrogates.jl)!

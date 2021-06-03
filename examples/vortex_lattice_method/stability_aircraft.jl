@@ -4,11 +4,11 @@ using LinearAlgebra # For norm()
 ## Trapezoidal lifting surface - consists of one section
 TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip, foil_root, foil_tip) =
     HalfWing([ Foil(foil_root), Foil(foil_tip) ], # Foils
-               [c_root, λ * c_root], 			  # Chords
-               [τ_root, τ_tip], 				  # Twists
-               [b],             				  # Span
-               [δ],             				  # Dihedral
-               [Λ])             				  # LE sweep
+               [c_root, λ * c_root],              # Chords
+               [τ_root, τ_tip],                   # Twists
+               [b],                               # Span
+               [δ],                               # Dihedral
+               [Λ])                               # LE sweep
 
 # Lifting surfaces
 wing_right  = TrapezoidalWing(4.0, 0.0, 15.0, 0.4, 2.0, 0.0, -2.0, naca4((2,4,1,2)), naca4((2,4,1,2)))
@@ -62,18 +62,18 @@ wing_panels  = 	panel_wing(wing, [20], 10;
                            position = wing_pos
                           )
 htail_panels =	panel_wing(htail, [10], 5;
-                           position	= htail_pos,
-                           angle 	= deg2rad(α_h_i),
-                           axis 	= [0., 1., 0.]
+                           position = htail_pos,
+                           angle    = deg2rad(α_h_i),
+                           axis     = [0., 1., 0.]
                           )
 vtail_panels = 	panel_wing(vtail, [10], 5;
                            position = vtail_pos,
                            angle    = π/2
                           )
 
-aircraft = Dict("Wing" 			  	=> wing_panels,
-                "Horizontal Tail" 	=> htail_panels,
-                "Vertical Tail"     => vtail_panels);
+aircraft = Dict("Wing"            => wing_panels,
+                "Horizontal Tail" => htail_panels,
+                "Vertical Tail"   => vtail_panels);
 
 ## Evaluate case
 ac_name = "My Aircraft"
@@ -85,21 +85,21 @@ fs 	    = Freestream(V, α, β, Ω)
 
 @time dv_data = 
 solve_stability_case(aircraft, fs; 
-                     rho_ref     = ρ, 			# Reference density
-                     r_ref       = ref, 		# Reference point for moments
-                     area_ref    = S, 			# Reference area
-                     span_ref    = b, 			# Reference span
-                     chord_ref   = c, 			# Reference chord
-                     name        = ac_name,		# Aircraft name
-                     print       = true,		# Prints the results for the entire aircraft
-                     print_components = true,	# Prints the results for each component
+                     rho_ref     = ρ,           # Reference density
+                     r_ref       = ref,         # Reference point for moments
+                     area_ref    = S,           # Reference area
+                     span_ref    = b,           # Reference span
+                     chord_ref   = c,           # Reference chord
+                     name        = ac_name,	    # Aircraft name
+                     print       = true,        # Prints the results for the entire aircraft
+                     print_components = true,   # Prints the results for each component
                     );
 
 ## Process data
-labels = (collect ∘ keys)(dv_data)	# Get aircraft component names from analysis
-comp = labels[1]					# Pick your component
-nf, ff, dvs = dv_data[comp];		# Get the nearfield, farfield, and stablity derivative coefficients
-print_case(dv_data, comp)			# Pretty-print the results
+labels = (collect ∘ keys)(dv_data) # Get aircraft component names from analysis
+comp = labels[1]                   # Pick your component
+nf, ff, dvs = dv_data[comp];       # Get the nearfield, farfield, and stablity derivative coefficients
+print_case(dv_data, comp)          # Pretty-print the results
 
 ## Aerodynamic quantities
 nf_plane, ff_plane, dvs_plane = dv_data[labels[1]]

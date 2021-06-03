@@ -11,11 +11,9 @@ wing_right = HalfWing(wing_foils,
                       [5.0],
                       [11.3],
                       [2.29]);
-wing = Wing(wing_right, wing_right)
-wing_mac 	= mean_aerodynamic_center(wing)
-wing_pos    = [0., 0., 0.]
-wing_plan  	= plot_wing(wing;  
-                        position = wing_pos)
+wing       = Wing(wing_right, wing_right)
+wing_mac   = mean_aerodynamic_center(wing)
+wing_pos   = [0., 0., 0.]
 print_info(wing, "Wing")
 
 # Horizontal tail
@@ -24,14 +22,11 @@ htail_right = HalfWing([0.7, 0.42],
                        [1.25],
                        [0.],
                        [6.39])
-htail = Wing(htail_right, htail_right)
-htail_mac	= mean_aerodynamic_center(htail)
-htail_pos	= [5., 0., 0.]
-α_h_i		= 0.
-htail_plan	= plot_wing(htail;
-                        position = htail_pos)
+htail       = Wing(htail_right, htail_right)
+htail_mac   = mean_aerodynamic_center(htail)
+htail_pos   = [5., 0., 0.]
+α_h_i       = 0.
 print_info(htail, "Horizontal Tail")
-
 
 # Vertical tail
 vtail_foil = Foil(naca4((0,0,0,9)))
@@ -43,15 +38,12 @@ vtail = HalfWing(fill(vtail_foil, 2),
                       [7.97])
 vtail_mac	= mean_aerodynamic_center(vtail) # NEEDS FIXING FOR ROTATION
 vtail_pos	= [5., 0., 0.]
-vtail_plan	= plot_wing(vtail; 
-                        position = vtail_pos,
-                        angle 	= π/2)
 print_info(vtail, "Vertical Tail")
-
 
 ## Panelling and assembly
 wing_panels  = panel_wing(wing, [20], 10,
-                          position = wing_pos);
+                          position = wing_pos
+                         );
 htail_panels = panel_wing(htail, [6], 6;
                           position	= htail_pos,
                           angle 	= deg2rad(α_h_i),
@@ -63,22 +55,22 @@ vtail_panels = panel_wing(vtail, [6], 6;
                           axis 	 	= [1., 0., 0.]
                          )
 
-aircraft = Dict(
-                "Wing" 			  => wing_panels,
-                "Horizontal Tail" => htail_panels,
-                "Vertical Tail"   => vtail_panels
-                )
+aircraft     = Dict(
+                    "Wing"            => wing_panels,
+                    "Horizontal Tail" => htail_panels,
+                    "Vertical Tail"   => vtail_panels
+                   )
 
 ## VLM setup
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
     # Evaluate case
-    data = 	solve_case(aircraft, fs; 
+    data =  solve_case(aircraft, fs; 
                        rho_ref   = ρ, 
                        r_ref     = ref,
                        area_ref  = S,
                        span_ref  = b,
                        chord_ref = c,
-                       print 	 = print
+                       print     = print
                       );
     
     # Get data
@@ -90,13 +82,13 @@ end
 
 ## Evaluate one case
 # Case
-x_w 	= wing_pos + [ wing_mac[1], 0, 0 ]
+x_w     = wing_pos + [ wing_mac[1], 0, 0 ]
 ac_name = "My Aircraft"
-ρ 		= 1.225
+ρ       = 1.225
 ref     = x_w
 V, α, β = 1.0, 0.0, -3.0
-Ω 		= [0.0, 0.0, 0.0]
-fs 	    = Freestream(V, α, β, Ω)
+Ω       = [0.0, 0.0, 0.0]
+fs      = Freestream(V, α, β, Ω)
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
 
 @time coeffs = vlm_analysis(aircraft, fs, ρ, ref, S, b, c, true)
@@ -113,7 +105,7 @@ CFs = first.(results)
 CMs = last.(results);
 
 ## Generate DataFrame
-αβs = [ (α, β) for α in αs, β in βs ]
+αβs  = [ (α, β) for α in αs, β in βs ]
 data = DataFrame([ (α, β, CD, CY, CL, Cl, Cm, Cn) for ((α, β), (CD, CY, CL), (Cl, Cm, Cn)) in zip(αβs, CFs, CMs) ][:])
 rename!(data, [:α, :β, :CD, :CY, :CL, :Cl, :Cm, :Cn])
 
@@ -140,9 +132,9 @@ zs = data[:,3]
 kriging_surrogate = LobachevskySurrogate(αβs, zs, lower_bound, upper_bound); 
 
 ## Evaluate surrogate
-num = 100
-xs, ys = range(-4, 4, length = num), range(-3, 3, length = num)
-xys = [ (x, y) for x in xs, y in ys ]
+num     = 100
+xs, ys  = range(-4, 4, length = num), range(-3, 3, length = num)
+xys     = [ (x, y) for x in xs, y in ys ]
 surr_zs = kriging_surrogate.(xys)
 
 ## Create DataFrame
