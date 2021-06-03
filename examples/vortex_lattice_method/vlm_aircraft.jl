@@ -113,7 +113,7 @@ span_points = 50
 init        = leading_chopper(ifelse(β == 0 && Ω == zeros(3), wing.right, wing), span_points) 
 dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy, dz]) ; 
-                 init .+ Ref([dx, dy,-dz]) ];
+                init .+ Ref([dx, dy,-dz]) ];
 
 distance = 8
 num_stream_points = 200

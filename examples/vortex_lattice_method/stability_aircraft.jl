@@ -1,3 +1,4 @@
+## Aircraft stability analysis example
 using AeroMDAO
 using LinearAlgebra # For norm()
 
@@ -13,19 +14,19 @@ TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip, foil_root, foil_tip) =
 # Lifting surfaces
 wing_right  = TrapezoidalWing(4.0, 0.0, 15.0, 0.4, 2.0, 0.0, -2.0, naca4((2,4,1,2)), naca4((2,4,1,2)))
 wing        = Wing(wing_right, wing_right)
-wing_mac 	= mean_aerodynamic_center(wing)
+wing_mac    = mean_aerodynamic_center(wing)
 wing_pos    = [0., 0., 0.]
-wing_plan  	= plot_wing(wing;  
+wing_plan   = plot_wing(wing;  
                         position = wing_pos)
 
 print_info(wing, "Wing")
 
 htail_right = TrapezoidalWing(1.0, 0.0, 15.0, 0.6, 0.8, 0.0, 0.0, naca4((0,0,1,2)), naca4((0,0,0,9)));
-htail		= Wing(htail_right, htail_right)
-htail_mac	= mean_aerodynamic_center(htail)
-htail_pos	= [5., 0., 0.]
-α_h_i		= 0.
-htail_plan	= plot_wing(htail;
+htail       = Wing(htail_right, htail_right)
+htail_mac   = mean_aerodynamic_center(htail)
+htail_pos   = [5., 0., 0.]
+α_h_i       = 0.
+htail_plan  = plot_wing(htail;
                         position = htail_pos)
 
 print_info(htail, "Horizontal Tail")
@@ -33,9 +34,9 @@ print_info(htail, "Horizontal Tail")
 vtail		= TrapezoidalWing(0.8, 0.0, 8.0, 0.6, 0.8, 0.0, 0., naca4((0,0,0,9)), naca4((0,0,0,9)))
 vtail_mac	= mean_aerodynamic_center(vtail) # NEEDS FIXING FOR ROTATION
 vtail_pos	= [5., 0., 0.]
-vtail_plan	= plot_wing(vtail; 
+vtail_plan	= plot_wing(vtail;
                         position = vtail_pos,
-                        angle 	= π/2)
+                        angle    = π/2)
                         
 print_info(vtail, "Vertical Tail")
 
@@ -90,7 +91,7 @@ solve_stability_case(aircraft, fs;
                      area_ref    = S,           # Reference area
                      span_ref    = b,           # Reference span
                      chord_ref   = c,           # Reference chord
-                     name        = ac_name,	    # Aircraft name
+                     name        = ac_name,     # Aircraft name
                      print       = true,        # Prints the results for the entire aircraft
                      print_components = true,   # Prints the results for each component
                     );
@@ -101,22 +102,22 @@ comp = labels[1]                   # Pick your component
 nf, ff, dvs = dv_data[comp];       # Get the nearfield, farfield, and stablity derivative coefficients
 print_case(dv_data, comp)          # Pretty-print the results
 
-## Aerodynamic quantities
+## Aerodynamic quantities of aircraft
 nf_plane, ff_plane, dvs_plane = dv_data[labels[1]]
 
 # Center of pressure
-Cm 		= nf_plane[5]	# Moment coefficient
-CL 		= nf_plane[3]	# Lift coefficient
-cp 		= -c * Cm / CL
+Cm   = nf_plane[5]	# Moment coefficient
+CL   = nf_plane[3]	# Lift coefficient
+cp   = -c * Cm / CL
 
 # Neutral point
-Cm_α 	= dvs_plane[5,1]
-CL_α 	= dvs_plane[3,1]
-np   	= -c * Cm_α / CL_α
+Cm_α = dvs_plane[5,1]
+CL_α = dvs_plane[3,1]
+np   = -c * Cm_α / CL_α
 
 # Locations
-x_np 	= [ ref[1] .+ np; zeros(2) ]	# Neutral point
-x_cp 	= [ ref[1] .+ cp; zeros(2) ]	# Center of pressure
+x_np = [ ref[1] .+ np; zeros(2) ]	# Neutral point
+x_cp = [ ref[1] .+ cp; zeros(2) ]	# Center of pressure
 
 println("Aerodynamic Center x_ac: $(x_w[1]) m")
 println("Neutral Point      x_np: $(x_np[1]) m")

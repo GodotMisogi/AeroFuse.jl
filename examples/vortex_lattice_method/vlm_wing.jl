@@ -7,8 +7,8 @@ wing_right = HalfWing(wing_foils,
                       [1.0, 0.6, 0.2],
                       [0.0, 0.0, 0.0],
                       [5.0, 0.5],
-                      [5., 5.],
-                      [5., 5.]);
+                      [0., 0.],
+                      [0., 0.]);
 wing = Wing(wing_right, wing_right)
 print_info(wing, "Wing")
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
@@ -55,6 +55,7 @@ print_coefficients("Wing", nf, ff)
 print_derivatives("Wing", dvs)
 
 ## Plotting
+using StaticArrays
 using Plots
 gr(size = (600, 400), dpi = 300)
 
@@ -63,7 +64,7 @@ horseshoe_coords 	= plot_panels(horseshoe_panels[:])
 camber_coords		= plot_panels(camber_panels[:])
 wing_coords 		= plot_wing(wing);
 
-CDis = getindex.(CFs, 1)
+CDis = getindex.(CFs, 1) # TODO: This is in the wrong axes for plots, needs to be fixed
 CYs	 = getindex.(CFs, 2)
 CLs  = getindex.(CFs, 3);
 CL_loadings = 2sum(Γs, dims = 1)[:] / (V * b)
@@ -76,7 +77,7 @@ cl_pts 		= tupvector(SVector.(xs[:], ys[:], zs[:] .+ CLs[:]));
 
 ## Streamlines
 
-# Chordwise distirbution
+# Chordwise distribution
 # num_points = 50
 # max_z = 0.1
 # y = span(wing) / 2 - 0.05
@@ -97,7 +98,7 @@ streams = plot_streams(fs, seed, horseshoes, Γs, distance, num_stream_points);
 z_limit = 5
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1, 
-     camera = (90,0),
+     camera = (15,30),
      zlim = (-0.1, z_limit),
      size = (800, 600))
 # plot!.(horseshoe_coords, color = :black, label = :none)
@@ -107,10 +108,13 @@ plot!.(streams, color = :green, label = :none)
 plot!()
 
 ## Span forces
-plot1 = plot(ys[1,:], sum(CDis, dims = 1)[:], label = :none, ylabel = "CDi")
-plot2 = plot(ys[1,:], abs.(sum(CYs, dims = 1)[:]), label = :none, ylabel = "CY")
-plot3 = plot(ys[1,:], sum(CLs, dims = 1)[:], label = :none, xlabel = "y", ylabel = "CL")
-plot(plot1, plot2, plot3, layout = (3,1))
+plot_CD = plot(ys[1,:], sum(CDis, dims = 1)[:], label = :none, ylabel = "CDi")
+plot_CY = plot(ys[1,:], abs.(sum(CYs, dims = 1)[:]), label = :none, ylabel = "CY")
+plot_CL = begin 
+            plot(ys[1,:], sum(CLs, dims = 1)[:], label = :none, xlabel = "y", ylabel = "CL")
+            plot!(ys[1,:], CL_loadings, label = "Normalized", xlabel = "y", ylabel = "CL")
+          end
+plot(plot_CD, plot_CY, plot_CL, layout = (3,1))
 
 ## Lift distribution
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
