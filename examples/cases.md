@@ -130,9 +130,18 @@ c  = mean_aerodynamic_chord(wing)
 AR = aspect_ratio(wing)
 ```
 
+There is also a convenient function for printing this information, whose last optional argument provides the name of the wing. [Pretty Tables](https://github.com/ronisbr/PrettyTables.jl) is used for pretty-printing.
+
+```julia
+print_info(wing, "My Wing")
+```
+
 You can access each side of a `Wing` by calling either `wing.left` or `wing.right`, and the previous functions should work identically on these `HalfWing`s.
 
+
 ## Vortex Lattice Method
+
+The vortex lattice method used in AeroMDAO follows Mark Drela's *Flight Vehicle Aerodynamics*. The geometry "engine" generates panels for horseshoes and the camber distribution using the airfoil data in the definition of the wing. This geometry is analysed at given freestream angles of attack and sideslip. The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces and a Trefftz plane integration for farfield forces, of which the latter is usually more accurate.
 
 ### Wing Analysis
 
@@ -151,6 +160,7 @@ r_ref = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
 ```
 
 Now we run the case with specifications of the number of spanwise and chordwise panels by calling the `solve_case()` function, which has an associated method.
+
 ```julia
 solve_case(wing                   :: Union{Wing, HalfWing},
            freestream             :: Freestream;
@@ -185,8 +195,40 @@ nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs
                x_tr      = [0.3, 0.3]);
 ```
 
-AeroMDAO uses the [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl) package, which leverages forward-mode automatic differentiation to obtain the stability derviatives with respect to the angle of attack and sideslip and the non-dimensionalized roll rates at low computational cost. To obtain the stability derivatives, simply replace `solve_case()` with `solve_stability_case()`, which will return **only** the nearfield, farfield and stability derivative coefficients. This is due to limitations in `ForwardDiff`, and hence no post-processing values are provided using this function.
+You can pretty-print the aerodynamic coefficients with the following function, whose first argument provides the name of the wing:
+
+```julia
+print_coefficients("My Wing", nf_coeffs, ff_coeffs)
+```
+
+If the viscous option is enabled, this function also prints the pressure, induced, and total drags separately.
+
+#### Stability Derivatives
+
+AeroMDAO uses the [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl) package, which leverages forward-mode automatic differentiation to obtain the stability derviatives with respect to the angle of attack and sideslip and the non-dimensionalized roll rates at low computational cost. To obtain the stability derivatives, simply replace `solve_case()` with `solve_stability_case()`, which will return **only** the nearfield, farfield and stability derivative coefficients. This is due to limitations of using closures in `ForwardDiff`, and hence no post-processing values are provided using this function.
+
+```julia
+nf_coeffs, ff_coeffs, dv_coeffs = 
+    solve_stability_case(wing, freestream; 
+                         rho_ref   = ρ, 
+                         r_ref     = r_ref,
+                         area_ref  = S,
+                         span_ref  = b,
+                         chord_ref = c,
+                         span_num  = [15, 9], 
+                         chord_num = 6,
+                         viscous   = false,
+                         x_tr      = [0.3, 0.3]);
+```
+
+You can pretty-print the stability derivatives with the following function, whose first argument again provides the name of the wing:
+
+```julia
+print_derivatives("Wing", dv_coeffs)
+```
+
+**TODO**: Add description of differences between viscous cases in array output of `dv_coeffs`.
 
 ### Aircraft Analysis
 
-To be completed. For now, refer to these [analysis](vortex_lattice_method/vlm_aircraft.jl) and [stability analysis](vortex_lattice_method/stability_aircraft.jl) scripts with a full aircraft configuration. There's also an interesting test [surrogate model test script](vortex_lattice_method/surrogates.jl)!
+Documentation to be completed. For now, refer to these [analysis](vortex_lattice_method/vlm_aircraft.jl) and [stability analysis](vortex_lattice_method/stability_aircraft.jl) scripts with a full aircraft configuration. There's also an interesting test [surrogate model test script](vortex_lattice_method/surrogates.jl)!

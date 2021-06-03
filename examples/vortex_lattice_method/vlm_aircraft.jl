@@ -1,5 +1,4 @@
-##
-using StaticArrays
+## Aircraft analysis case
 using AeroMDAO
 
 ## Wing
@@ -55,11 +54,11 @@ S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
 
 # Case
 ac_name = "My Aircraft"
-ρ 		= 1.225
+ρ       = 1.225
 ref     = [0.25c, 0., 0.]
-V, α, β = 1.0, 0.0, 0.0
-Ω 		= [0.0, 0.0, 0.0]
-fs 	    = Freestream(V, α, β, Ω)
+V, α, β = 1.0, 1.0, 1.0
+Ω       = [0.0, 0.0, 0.0]
+fs      = Freestream(V, α, β, Ω)
 
 data = 
     solve_case(aircraft, fs; 
@@ -73,14 +72,37 @@ data =
                print_components = true,	# Prints the results for each component
               );
 
-##
+## Data collection
 names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
 comp  = names[1]			   # Pick your component
 nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
+print_coefficients(comp, nf_coeffs, ff_coeffs)
+
+## Stability case
+dv_data = 
+    solve_stability_case(aircraft, fs;
+                         rho_ref     = ρ,
+                         r_ref       = ref,
+                         area_ref    = S,
+                         span_ref    = b,
+                         chord_ref   = c,
+                         name        = ac_name,
+                         print       = true,
+                         print_components = true,
+                        );
+
+## Data collection
+names = (collect ∘ keys)(dv_data) 
+comp  = names[1]
+nf, ff, dvs = dv_data[comp];
+print_coefficients(comp, nf, ff)
+print_derivatives(comp, dvs)
 
 ## Streamlines
 
-# Chordwise distirbution
+# Chordwise distribution
+# using StaticArrays
+
 # num_points = 100
 # max_z = 2
 # y = span(wing) / 10

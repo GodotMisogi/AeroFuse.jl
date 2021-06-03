@@ -1,4 +1,4 @@
-## 
+## Wing analysis case
 using AeroMDAO
 
 ## Wing section setup
@@ -16,7 +16,7 @@ S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ## Assembly
 ρ 		= 1.225
 ref 	= [0.25, 0., 0.]
-V, α, β = 1.0, 1.0, 0.0
+V, α, β = 1.0, 1.0, 1.0
 Ω 		= [0.0, 0.0, 0.0]
 fs 		= Freestream(V, α, β, Ω)
 
