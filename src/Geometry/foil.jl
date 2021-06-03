@@ -224,7 +224,7 @@ naca4_gradient(pos, cam, xc) = atan(2 * cam / (ifelse(xc < pos, pos^2, (1 - pos)
 
 Defines a NACA 4-digit series profile.
 """
-function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_edge= false)
+function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_edge = true)
 	# Camber
 	cam = digits[1] / 100
 	# Position

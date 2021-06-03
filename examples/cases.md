@@ -45,8 +45,8 @@ coords    = read_foil(foilpath)           # Read coordinates file
 cos_foil  = cosine_foil(coords, 51)       # Cosine spacing with 51 points on upper and lower surfaces
 xcamthick = foil_camthick(cos_foil)       # Convert to camber-thickness representation
 foiler    = camthick_foil(xcamthick[:,1], # x-components
-                       xcamthick[:,2],	  # Camber distribution
-                       xcamthick[:,3])	  # Thickness distribution
+                          xcamthick[:,2],	# Camber distribution
+                          xcamthick[:,3])	# Thickness distribution
 ```
 
 ## Doublet-Source Panel Method
@@ -70,7 +70,7 @@ uniform = Uniform2D(V, α)
 To analyse this foil with these boundary conditions using the incompressible 2D doublet-source panel method, the following method is called. Optional named arguments are provided to specify whether the source terms are non-zero, the length of the wake, and the number of panels for the analysis.
 
 ```julia
-solve_case(foil            :: Foil
+solve_case(foil            :: Foil,
            uniform         :: Uniform2D;
            num_panels = 60 :: Integer)
 ```
