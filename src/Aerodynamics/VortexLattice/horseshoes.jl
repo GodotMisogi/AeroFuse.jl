@@ -15,27 +15,27 @@ collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarte
 bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2), quarter_point(p4, p3) ]
 
 """
-	bound_leg(panel :: Panel3D)
+    bound_leg(panel :: Panel3D)
 
 Compute the bound leg for a `Panel3D`, for horseshoes/vortex rings.
 """
 bound_leg(panel :: Panel3D) = bound_leg(panel.p1, panel.p2, panel.p3, panel.p4)
 
 """
-	collocation_point(panel :: Panel3D)
+    collocation_point(panel :: Panel3D)
 
 Compute the collocation point of a `Panel3D` for horseshoes/vortex rings, which is the 3-quarter point on each side in the ``x``-``z`` plane.
 """
 horseshoe_point(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, panel.p3, panel.p4)
 
 """
-	Line(r1 :: SVector{3,<: Real}, r2 :: SVector{3,<: Real})
+    Line(r1 :: SVector{3,<: Real}, r2 :: SVector{3,<: Real})
 
 A composite type consisting of two vectors to define a line.
 """
 struct Line{T <: Real}
-	r1 :: SVector{3,T}
-	r2 :: SVector{3,T}
+    r1 :: SVector{3,T}
+    r2 :: SVector{3,T}
 end
 
 Line(r1 :: FieldVector{3,T}, r2 :: FieldVector{3,T}) where T <: Real = Line{T}(r1, r2)
@@ -72,11 +72,11 @@ abstract type AbstractVortexArray end
 A horseshoe type consisting of a bound leg of type Line represening a vortex line.
 """
 struct Horseshoe{T <: Real} <: AbstractVortexArray
-	bound_leg :: Line{T}
+    bound_leg :: Line{T}
 end
 
 """
-	bound_leg(horseshoe :: Horseshoe)
+    bound_leg(horseshoe :: Horseshoe)
 
 Getter for bound leg field of a `Horseshoe`.
 """
@@ -101,7 +101,7 @@ Compute the direction vector of the bound leg of a `Horseshoe`.
 bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
 
 """
-	velocity(r, horseshoe, Γ, V_hat)
+    velocity(r, horseshoe, Γ, V_hat)
 
 Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
 """

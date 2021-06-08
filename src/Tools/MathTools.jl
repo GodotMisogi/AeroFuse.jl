@@ -6,17 +6,17 @@ using Base: product
 using Interpolations
 
 struct Point2D{T <: Real} <: FieldVector{2, T} 
-	x :: T
-	y :: T
+    x :: T
+    y :: T
 end
 
 x(p :: Point2D) = p.x
 y(p :: Point2D) = p.y
 
 struct Point3D{T <: Real} <: FieldVector{2, T} 
-	x :: T
-	y :: T
-	z :: T
+    x :: T
+    y :: T
+    z :: T
 end
 
 x(p :: Point3D) = p.x
@@ -99,9 +99,9 @@ adj3(xs) = zip(xs[1:end-2], xs[2:end-1,:], xs[3:end])
 
 # Central differencing schema for pairs except at endpoints
 midpair_map(f :: H, xs) where {H} = 
-		[        f.(xs[1,:], xs[2,:])'       ;
-		  f.(xs[1:end-2,:], xs[3:end,:]) / 2 ;
-			 f.(xs[end-1,:], xs[end,:])'     ]
+        [        f.(xs[1,:], xs[2,:])'       ;
+          f.(xs[1:end-2,:], xs[3:end,:]) / 2 ;
+             f.(xs[end-1,:], xs[end,:])'     ]
 
 # stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
 # parts(xs) = let adj = stencil(xs, 1); adj[1,:], adj[end,:] end
@@ -113,7 +113,7 @@ midpair_map(f :: H, xs) where {H} =
 # function midgrad(xs) 
 #     first_two_pairs, last_two_pairs = permutedims.(parts(xs))
 #     central_diff_pairs = stencil(xs, 2)
-	
+    
 #     [first_two_pairs; central_diff_pairs; last_two_pairs]
 # end
 
@@ -122,52 +122,52 @@ midpair_map(f :: H, xs) where {H} =
 #===========================================================================#
 
 function sine_dist(x_center, radius, n :: Integer = 40, factor = 1) 
-	xs = cosine_dist(x_center, diameter, 2n)
-	if factor == 1
-		xs[1:Int(n/2)]
-	else
-		xs[Int(n/2):end]
-	end
+    xs = cosine_dist(x_center, diameter, 2n)
+    if factor == 1
+        xs[1:Int(n/2)]
+    else
+        xs[Int(n/2):end]
+    end
 end
 
 """
-	cosine_dist(x_center, diameter, n :: Integer = 40) 
+    cosine_dist(x_center, diameter, n :: Integer = 40) 
 
 Provide the projections to the x-axis for a circle with given center and diameter, and optionally the number of points.
 """
 cosine_dist(x_center, diameter, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(-π, stop = 0, length = n))
 
 function cosine_interp(coords, n :: Integer = 40)
-	xs, ys = first.(coords)[:], last.(coords)[:]
+    xs, ys = first.(coords)[:], last.(coords)[:]
 
-	d = maximum(xs) - minimum(xs)
-	x_center = (maximum(xs) + minimum(xs)) / 2
-	x_circ = cosine_dist(x_center, d, n)
-	
-	itp_circ = LinearInterpolation(xs, ys)
-	y_circ = itp_circ(x_circ)
+    d = maximum(xs) - minimum(xs)
+    x_center = (maximum(xs) + minimum(xs)) / 2
+    x_circ = cosine_dist(x_center, d, n)
+    
+    itp_circ = LinearInterpolation(xs, ys)
+    y_circ = itp_circ(x_circ)
 
-	SVector.(x_circ, y_circ)
+    SVector.(x_circ, y_circ)
 end
 
 ## Iterator methods
 #===========================================================================#
 
 function accumap(f, n, xs)
-	data = [ xs ]
-	for i = 1:n
-		ys = map(f, xs)
-		data = [ data..., ys ]
-		xs = ys
-	end
-	return hcat(data...)
+    data = [ xs ]
+    for i = 1:n
+        ys = map(f, xs)
+        data = [ data..., ys ]
+        xs = ys
+    end
+    return hcat(data...)
 end
 
 ## Helper functions
 #===========================================================================#
 
 """
-	weighted(x1, x2, μ)
+    weighted(x1, x2, μ)
 
 Compute the weighted value between two values ``x_1`` and ``x_2`` with weight ``\\mu \\in [0,1]``.
 """

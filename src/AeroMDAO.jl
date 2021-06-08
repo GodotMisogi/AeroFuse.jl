@@ -97,11 +97,10 @@ export wetted_area_drag
 ## Cases
 
 include("Aerodynamics/Cases/cases.jl")
-include("Aerodynamics/Cases/systems.jl")
 include("Aerodynamics/Cases/stability_cases.jl")
 include("Aerodynamics/Cases/foil_cases.jl")
 
-export VLMAnalysis, solve_case, stability_derivatives, solve_stability_case, streamlines, print_case
+export solve_case, solve_stability_case, streamlines, print_case
 
 ## Post-processing
 #==========================================================================================#

@@ -59,8 +59,6 @@ end
     uniform = Freestream(10.0, 2.0, 2.0, Ω)
     nf_coeffs, ff_coeffs, dv_coeffs = solve_stability_case(wing, uniform; rho_ref = ρ, r_ref = ref, span_num = 20, chord_num = 5)
 
-    display(dv_coeffs)
-
     CL_nf, CDi_nf, CY_nf, Cl_nf, Cm_nf, Cn_nf, p_b_nf, q_b_nf, r_b_nf = nf_coeffs
     CL_ff, CDi_ff, CY_ff = ff_coeffs
 
