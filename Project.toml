@@ -20,6 +20,7 @@ Surrogates = "6fc51010-71bc-11e9-0e15-a3fcc6593c49"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
+CoordinateTransformations = "0.6"
 DataFrames = "1"
 Surrogates = "2"
 Interpolations = "0.13"
