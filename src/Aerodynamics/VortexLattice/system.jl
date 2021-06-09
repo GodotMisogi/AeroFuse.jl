@@ -198,7 +198,7 @@ function aerodynamic_coefficients(surf :: VLMSurface, U, α, β, Ω, ρ, S, b, c
     CF_body = (sum ∘ surface_force_coefficients)(surf, U, ρ, S)
     CM_body = (sum ∘ surface_moment_coefficients)(surf, U, ρ, S, b, c)
     CF_wind = body_to_wind_axes(CF_body, α, β) # Consider axes specification in state
-    CM_wind = body_to_wind_axes(stability_flip(CM_body), α, β)
+    CM_wind = body_to_stability_axes(stability_flip(CM_body), α)
     CR      = rate_coefficient(Ω, U, b, c)
 
     [ CF_wind; CM_wind; CR ]
