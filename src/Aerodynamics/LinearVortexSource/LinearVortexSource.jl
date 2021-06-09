@@ -4,7 +4,7 @@ using LinearAlgebra
 using StaticArrays
 using Base.Iterators
 
-using ..AeroMDAO: Panel, Panel2D, WakePanel2D, Point2D, collocation_point, point1, point2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, rotation, inverse_rotation, midpair_map, panel_velocity, pressure_coefficient, wake_panel, wake_panels, panel_points
+using ..AeroMDAO: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, Point2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, rotation, inverse_rotation, midpair_map, panel_velocity, pressure_coefficient, wake_panel, wake_panels, panel_points
 
 include("singularities.jl")
 
