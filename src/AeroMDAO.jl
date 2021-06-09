@@ -68,19 +68,6 @@ import .LinearVortexSource: total_velocity, source_velocity, vortex_velocity, vo
 
 export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition
 
-## Vorticity-streamfunction panel method
-
-# include("Aerodynamics/VorticityStream/VorticityStream.jl")
-# import .VorticityStream: influence_matrix, boundary
-
-# export influence_matrix, boundary
-
-## Viscous-inviscid analysis
-# include("Aerodynamics/ViscFoil/ViscFoil.jl")
-# import .ViscFoil: solve_bl_case, defect_block, edge_velocities, solve_inviscid_vortices, solve_inviscid_doublets
-
-# export solve_bl_case, defect_block, edge_velocities, solve_inviscid_vortices, solve_inviscid_doublets
-
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
