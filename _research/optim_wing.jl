@@ -19,7 +19,7 @@ end
 function run_case(wing, V, α)
     uniform = Freestream(V, α, 0.0)
     ref = SVector(0.25 * mean_aerodynamic_chord(wing), 0., 0.)
-    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 10, chord_num = 10)
+    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = solve_case(wing, uniform, ref, span_num = 10, chord_num = 10)
 
     ff_coeffs
 end

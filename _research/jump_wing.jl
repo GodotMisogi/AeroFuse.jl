@@ -35,20 +35,20 @@ function run_case(wing, V, α, β)
     fs = Freestream(V, α, β, Ω)
     c = mean_aerodynamic_chord(wing)
     ref = SVector(0.25 * c, 0., 0.)
-    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, fs; rho_ref = ρ, r_ref = ref, area_ref = projected_area(wing), span_ref = span(wing), chord_ref = c, span_num = 80, chord_num = 20);
+    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = solve_case(wing, fs; rho_ref = ρ, r_ref = ref, area_ref = projected_area(wing), span_ref = span(wing), chord_ref = c, span_num = 80, chord_num = 20);
 end
 
 # Objective function
 function optimize_cdi_chords(x...)
     wing = make_wing(x)
-    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, 10., 0., 0.)
+    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, 10., 0., 0.)
 
     cdi = ff_coeffs[1]
 end
 
 function optimize_cdi_naca4(m, p, t, c)
     wing = naca4_wing(m, p, t, c)
-    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, 10., 0., 0.)
+    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, 10., 0., 0.)
     
     cdi = ff_coeffs[1]
 end
@@ -57,7 +57,7 @@ end
 function chords_lift(x...)
     ρ, speed = 1.225, 10.
     wing = make_wing(x)
-    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, speed, 0., 0.)
+    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, speed, 0., 0.)
     
     cl = ff_coeffs[3]
     lift = 1/2 * ρ * speed^2 * projected_area(wing) * cl
@@ -66,7 +66,7 @@ end
 function naca4_lift(m, p, t, c)
     ρ, speed = 1.225, 10.
     wing = naca4_wing(m, p, t, c)
-    nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, speed, 0., 0.)
+    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, speed, 0., 0.)
 
     cl = ff_coeffs[3]
     lift = 1/2 * ρ * speed^2 * projected_area(wing) * cl
@@ -117,7 +117,7 @@ println("Chords: $(value.(chords)), Optimal CDi: $(objective_value(chord_design)
 chord_vals = value.(chords)
 uniform = Freestream(10., 0., 0.)
 wing = make_wing(chord_vals...)
-nf_coeffs, ff_coeffs, horseshoe_panels, camber_panels, horseshoes, Γs = run_case(wing, 10., 0., 0.)
+nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, 10., 0., 0.)
 cdi = ff_coeffs[2]
 cl = ff_coeffs[1]
 begin
@@ -148,7 +148,6 @@ trace_streams = trace_streamlines(uniform, seed, horseshoes[:], Γs[:], 2, 100);
 ##
 trace_horsies = trace_panels(horseshoe_panels[:])
 trace_horses = trace_panels(horseshoe_panels[:], Γs[:])
-trace_cambers = trace_panels(camber_panels[:])
 trace_wing = trace_surface(wing)
 
 PlotlyJS.plot(
@@ -156,7 +155,6 @@ PlotlyJS.plot(
                 (trace for trace in trace_horsies)...,
                 (trace for trace in trace_horses)...,
                 (trace for trace in trace_streams)...,
-                (trace for trace in trace_cambers)...,
                 # [ trace for trace in trace_wing ]...,
             ],
             layout)

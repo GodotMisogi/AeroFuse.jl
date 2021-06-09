@@ -30,7 +30,7 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
                        print 	 = print
                       );
 		
-	nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = data["Aircraft"]
+	nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = data["Aircraft"]
 			   
 	[ ff_coeffs[1:3]; nf_coeffs[4:6] ]
 end
