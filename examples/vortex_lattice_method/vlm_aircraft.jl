@@ -3,34 +3,32 @@ using AeroMDAO
 
 ## Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-wing_right = HalfWing(wing_foils,
-                      [1.0, 0.6],
-                      [2.0, 2.0],
-                      [5.0],
-                      [11.3],
-                      [2.29]);
-wing = Wing(wing_right, wing_right)
+wing = Wing(foils     = wing_foils,
+            chords    = [1.0, 0.6],
+            twists    = [2.0, 2.0],
+            spans     = [5.0],
+            dihedrals = [11.31],
+            sweep_LEs = [2.291]);
 print_info(wing, "Wing")
 
 # Horizontal tail
-htail_foil = Foil(naca4((0,0,1,2)))
-htail_right = HalfWing(fill(htail_foil, 2),
-                       [0.7, 0.42],
-                       [0.0, 0.0],
-                       [1.25],
-                       [0.],
-                       [6.39])
-htail = Wing(htail_right, htail_right)
+htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
+htail = Wing(foils     = htail_foils,
+             chords    = [0.7, 0.42],
+             twists    = [0.0, 0.0],
+             spans     = [1.25],
+             dihedrals = [0.],
+             sweep_LEs = [6.39])
 print_info(htail, "Horizontal Tail")
 
 # Vertical tail
-vtail_foil = Foil(naca4((0,0,0,9)))
-vtail = HalfWing(fill(vtail_foil, 2), 
-                      [0.7, 0.42],
-                      [0.0, 0.0],
-                      [1.0],
-                      [0.],
-                      [7.97])
+vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
+vtail = HalfWing(foils     = vtail_foils, 
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.0],
+                 dihedrals = [0.],
+                 sweep_LEs = [7.97])
 print_info(vtail, "Vertical Tail")
 
 # Assembly
@@ -73,10 +71,10 @@ data =
               );
 
 ## Data collection
-names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
-comp  = names[1]			   # Pick your component
+comp_names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
+comp  = comp_names[1]			   # Pick your component
 nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
-print_coefficients(comp, nf_coeffs, ff_coeffs)
+print_coefficients(nf_coeffs, ff_coeffs, comp)
 
 ## Stability case
 dv_data = 

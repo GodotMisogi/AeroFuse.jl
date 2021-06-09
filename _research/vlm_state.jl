@@ -5,10 +5,10 @@ using ForwardDiff
 
 ## Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-wing_right = HalfWing(wing_foils,
-                      [1.0, 0.6],
-                      [2.0, 2.0],
-                      [5.0],
+wing_right = HalfWing(foils  = wing_foils,
+                      chords = [1.0, 0.6],
+                      twists = [2.0, 2.0],
+                      spans  = [5.0],
                       [11.3],
                       [2.29]);
 wing = Wing(wing_right, wing_right)
@@ -73,13 +73,13 @@ println("Pure -")
                chord_ref   = c, 		# Reference chord
                name        = ac_name,	# Aircraft name
             #    print       = true,		# Prints the results for the entire aircraft
-               print_components = true,	# Prints the results for each component
+            #    print_components = true,	# Prints the results for each component
               );
 end;
 
 ## Data collection
-names = (collect ∘ keys)(data) 
-comp  = names[1]			   
+comp_names = (collect ∘ keys)(data)
+comp = comp_names[1]
 nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = data[comp];
 print_coefficients(nf_coeffs, ff_coeffs, comp)
 
@@ -87,19 +87,19 @@ print_coefficients(nf_coeffs, ff_coeffs, comp)
 println("Impure -")
 @time begin
     state = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, 
-    rho_ref   = ρ,
-    r_ref     = ref,
-    area_ref  = S, 
-    chord_ref = c, 
-    span_ref  = b, 
-    name      = ac_name);
+                     rho_ref   = ρ,
+                     r_ref     = ref,
+                     area_ref  = S, 
+                     chord_ref = c, 
+                     span_ref  = b, 
+                     name      = ac_name);
 
     system, surfs, nf_t, ff_t = AeroMDAO.VortexLattice.solve_case!(aircraft, state);
 end;
 
 ##
-surf_names = (collect ∘ keys)(surfs) 
-comp = surf_names[2]			   
+surf_names = (collect ∘ keys)(surfs)
+comp = surf_names[2]
 nf_coeffs, ff_coeffs, surf = surfs[comp];
 # print_coefficients(nf_coeffs, ff_coeffs, comp)
 print_coefficients(nf_t, ff_t, state.name)

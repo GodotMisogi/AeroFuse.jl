@@ -3,12 +3,12 @@ using AeroMDAO
 
 ## Wing section setup
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 3))
-wing_right = HalfWing(wing_foils,
-                      [1.0, 0.6, 0.2],
-                      [0.0, 0.0, 0.0],
-                      [5.0, 0.5],
-                      [5., 5.],
-                      [5., 5.]);
+wing_right = HalfWing(foils     = wing_foils,
+                      chords    = [1.0, 0.6, 0.2],
+                      twists    = [0.0, 0.0, 0.0],
+                      spans     = [5.0, 0.5],
+                      dihedrals = [5., 5.],
+                      sweep_LEs = [5., 5.]);
 wing = Wing(wing_right, wing_right)
 print_info(wing, "Wing")
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);

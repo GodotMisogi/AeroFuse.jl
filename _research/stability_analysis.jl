@@ -4,7 +4,7 @@ using NLsolve
 
 ## Stability analysis
 function aircraft_nearfield_forces(aircraft, fs, ρ, ref, S, b, c)
-    nf, ff, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = 
+    nf, ff, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = 
         solve_case(aircraft, fs; 
                    rho_ref     = ρ, 
                    r_ref       = ref, 
@@ -19,30 +19,55 @@ end
 pitching_moment_coefficient(aircraft, α :: Real, ρ, ref, S, b, c) = aircraft_nearfield_forces(aircraft, Freestream(1.0, α, 0., zeros(3)), ρ, ref, S, b, c)[5]
 
 ## Define aircraft
-TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip, foil_root, foil_tip) =
-    HalfWing([ Foil(foil_root), Foil(foil_tip) ], # Foils
-               [c_root, λ * c_root], 			  # Chords
-               [τ_root, τ_tip], 				  # Twists
-               [b],             				  # Span
-               [δ],             				  # Dihedral
-               [Λ])             				  # LE sweep
 
 # Wing
-wing_right  = TrapezoidalWing(4.0, 0.0, 15.0, 0.4, 2.0, 0.0, -2.0, naca4((2,4,1,2)), naca4((2,4,1,2)))
-wing        = Wing(wing_right, wing_right)
-wing_pos    = [0., 0., 0.];
-S, b, c     = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
-x_w         = wing_pos + [ c, 0, 0 ]
+wing  = WingSection(span       = 4.0,
+                    dihedral   = 5.0,
+                    sweep_LE   = 15.0,
+                    taper      = 0.4,
+                    root_chord = 2.0,
+                    root_twist = 0.0,
+                    tip_twist  = -2.0,
+                    root_foil  = naca4((2,4,1,2)),
+                    tip_foil   = naca4((2,4,1,2)))
+wing_mac  = mean_aerodynamic_center(wing)
+wing_pos  = [0., 0., 0.]
+wing_plan = plot_wing(wing;  
+                      position = wing_pos)
 
-# Horizontal Tail
-htail_right = TrapezoidalWing(1.0, 0.0, 15.0, 0.6, 0.8, 0.0, 0.0, naca4((0,0,1,2)), naca4((0,0,0,9)));
-htail		= Wing(htail_right, htail_right)
-htail_pos	= [5., 0., 0.]
-α_h_i		= 0.;
+print_info(wing, "Wing")
 
-# Vertical Tail
-vtail		= TrapezoidalWing(0.8, 0.0, 8.0, 0.6, 0.8, 0.0, 0., naca4((0,0,0,9)), naca4((0,0,0,9)))
-vtail_pos	= [5., 0., 0.];
+htail = WingSection(span       = 1.0,
+                    dihedral   = 0.0,
+                    sweep_LE   = 15.0,
+                    taper      = 0.6,
+                    root_chord = 0.8,
+                    root_twist = 0.0,
+                    tip_twist  = 0.0,
+                    root_foil  = naca4((0,0,1,2)),
+                    tip_foil   = naca4((0,0,0,9)));
+htail_mac  = mean_aerodynamic_center(htail)
+htail_pos  = [5., 0., 0.]
+α_h_i      = 0.
+htail_plan = plot_wing(htail;
+                       position = htail_pos)
+
+print_info(htail, "Horizontal Tail")
+
+vtail = HalfWingSection(span       = 0.8,
+                        dihedral   = 0.0,
+                        sweep_LE   = 8.0,
+                        taper      = 0.6,
+                        root_chord = 0.8,
+                        root_twist = 0.0,
+                        tip_twist  = 0.,
+                        root_foil  = naca4((0,0,0,9)),
+                        tip_foil   = naca4((0,0,0,9)))
+vtail_mac  = mean_aerodynamic_center(vtail) # NEEDS FIXING FOR ROTATION
+vtail_pos  = [5., 0., 0.]
+vtail_plan = plot_wing(vtail;
+                       position = vtail_pos,
+                       angle    = π/2)
                         
 ## Panelling and assembly
 wing_panels  = panel_wing(wing, [20], 10;
@@ -71,10 +96,10 @@ V, α, β = 1.0, 0.0, 0.0
 fs 	    = Freestream(V, α, β, Ω)
 
 ## Evaluate trim
-trim_state!(R, α) = R -= pitching_moment_coefficient(aircraft, α[1], ρ, ref, S, b, c)
-prob = nlsolve(trim_state!, [-1.0], 
+trim_state!(R, α) = R .-= pitching_moment_coefficient(aircraft, α[1], ρ, ref, S, b, c)
+prob = nlsolve(trim_state!, [1.0], 
                method = :newton,
             #    autodiff = :forward,
-            #    show_trace = true, 
-            #    extended_trace = true
+               show_trace = true, 
+               extended_trace = true
                )

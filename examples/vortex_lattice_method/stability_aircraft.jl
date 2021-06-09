@@ -2,41 +2,54 @@
 using AeroMDAO
 using LinearAlgebra # For norm()
 
-## Trapezoidal lifting surface - consists of one section
-TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip, foil_root, foil_tip) =
-    HalfWing([ Foil(foil_root), Foil(foil_tip) ], # Foils
-               [c_root, λ * c_root],              # Chords
-               [τ_root, τ_tip],                   # Twists
-               [b],                               # Span
-               [δ],                               # Dihedral
-               [Λ])                               # LE sweep
-
 # Lifting surfaces
-wing_right  = TrapezoidalWing(4.0, 0.0, 15.0, 0.4, 2.0, 0.0, -2.0, naca4((2,4,1,2)), naca4((2,4,1,2)))
-wing        = Wing(wing_right, wing_right)
-wing_mac    = mean_aerodynamic_center(wing)
-wing_pos    = [0., 0., 0.]
-wing_plan   = plot_wing(wing;  
-                        position = wing_pos)
+wing  = WingSection(span       = 4.0,
+                    dihedral   = 5.0,
+                    sweep_LE   = 15.0,
+                    taper      = 0.4,
+                    root_chord = 2.0,
+                    root_twist = 0.0,
+                    tip_twist  = -2.0,
+                    root_foil  = naca4((2,4,1,2)),
+                    tip_foil   = naca4((2,4,1,2)))
+wing_mac  = mean_aerodynamic_center(wing)
+wing_pos  = [0., 0., 0.]
+wing_plan = plot_wing(wing;  
+                      position = wing_pos)
 
 print_info(wing, "Wing")
 
-htail_right = TrapezoidalWing(1.0, 0.0, 15.0, 0.6, 0.8, 0.0, 0.0, naca4((0,0,1,2)), naca4((0,0,0,9)));
-htail       = Wing(htail_right, htail_right)
-htail_mac   = mean_aerodynamic_center(htail)
-htail_pos   = [5., 0., 0.]
-α_h_i       = 0.
-htail_plan  = plot_wing(htail;
-                        position = htail_pos)
+htail = WingSection(span       = 1.0,
+                    dihedral   = 0.0,
+                    sweep_LE   = 15.0,
+                    taper      = 0.6,
+                    root_chord = 0.8,
+                    root_twist = 0.0,
+                    tip_twist  = 0.0,
+                    root_foil  = naca4((0,0,1,2)),
+                    tip_foil   = naca4((0,0,0,9)));
+htail_mac  = mean_aerodynamic_center(htail)
+htail_pos  = [5., 0., 0.]
+α_h_i      = 0.
+htail_plan = plot_wing(htail;
+                       position = htail_pos)
 
 print_info(htail, "Horizontal Tail")
 
-vtail		= TrapezoidalWing(0.8, 0.0, 8.0, 0.6, 0.8, 0.0, 0., naca4((0,0,0,9)), naca4((0,0,0,9)))
-vtail_mac	= mean_aerodynamic_center(vtail) # NEEDS FIXING FOR ROTATION
-vtail_pos	= [5., 0., 0.]
-vtail_plan	= plot_wing(vtail;
-                        position = vtail_pos,
-                        angle    = π/2)
+vtail = HalfWingSection(span       = 0.8,
+                        dihedral   = 0.0,
+                        sweep_LE   = 8.0,
+                        taper      = 0.6,
+                        root_chord = 0.8,
+                        root_twist = 0.0,
+                        tip_twist  = 0.,
+                        root_foil  = naca4((0,0,0,9)),
+                        tip_foil   = naca4((0,0,0,9)))
+vtail_mac  = mean_aerodynamic_center(vtail) # NEEDS FIXING FOR ROTATION
+vtail_pos  = [5., 0., 0.]
+vtail_plan = plot_wing(vtail;
+                       position = vtail_pos,
+                       angle    = π/2)
                         
 print_info(vtail, "Vertical Tail")
 
@@ -115,6 +128,14 @@ Cm_α = dvs_plane[5,1]
 CL_α = dvs_plane[3,1]
 np   = -c * Cm_α / CL_α
 
+# Spiral stability
+Cl_β = dvs_plane[4,2]
+Cl_r = dvs_plane[4,5]
+Cn_r = dvs_plane[6,5]
+Cn_β = dvs_plane[6,2]
+
+γ = Cl_β * Cn_r / (Cl_r * Cn_β) # NEEDS TESTING
+
 # Locations
 x_np = [ ref[1] .+ np; zeros(2) ]	# Neutral point
 x_cp = [ ref[1] .+ cp; zeros(2) ]	# Center of pressure
@@ -122,6 +143,7 @@ x_cp = [ ref[1] .+ cp; zeros(2) ]	# Center of pressure
 println("Aerodynamic Center x_ac: $(x_w[1]) m")
 println("Neutral Point      x_np: $(x_np[1]) m")
 println("Center of Pressure x_cp: $(x_cp[1]) m")
+# println("Spiral Stability   ????: $γ")
 
 ## Plotting everything
 using Plots
