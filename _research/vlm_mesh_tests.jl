@@ -31,11 +31,12 @@ panel_case(x, y) = solve_case(wing, fs;
                               span_num  = y, 
                               chord_num = x,
                               viscous   = false,
-                              x_tr      = [0.3, 0.3]);
+                              x_tr      = [0.3, 0.3]
+                             );
 
 ## Distributions
-xs = 6:30
-ys = xs .* 4
+xs = 10:30
+ys = fill(maximum(xs) * 4, length(xs))
 
 nf_data, ff_data = zeros(5)', zeros(5)'
 for (x, y) in zip(xs, ys)
@@ -56,15 +57,21 @@ rename!(data, [:chord_num, :span_num, :CD_nf, :CY_nf, :CL_nf, :CD_ff, :CY_ff, :C
 errors = @. abs((data[3:end,3:end] - data[2:end-1,3:end]) / data[2:end-1,3:end])
 
 ##
-plot(xlabel = "Spanwise Panels", ylabel = "Error", yscale = :log10)
-plot!(data[2:end-1,"span_num"], errors[!,"CD_nf"], label = "CD Nearfield")
-plot!(data[2:end-1,"span_num"], errors[!,"CY_nf"], label = "CY Nearfield")
-plot!(data[2:end-1,"span_num"], errors[!,"CL_nf"], label = "CL Nearfield")
-plot!(data[2:end-1,"span_num"], errors[!,"CD_ff"], label = "CD Farfield")
-plot!(data[2:end-1,"span_num"], errors[!,"CY_ff"], label = "CY Farfield")
-plot!(data[2:end-1,"span_num"], errors[!,"CL_ff"], label = "CL Farfield")
+plot(xlabel = "Chordwise Panels", ylabel = "Error", yscale = :log10)
+
+# CDs
+plot!(data[2:end-1,"chord_num"], errors[!,"CD_nf"], label = "CD Nearfield")
+plot!(data[2:end-1,"chord_num"], errors[!,"CD_ff"], label = "CD Farfield")
+
+# CLs
+plot!(data[2:end-1,"chord_num"], errors[!,"CL_nf"], label = "CL Nearfield")
+plot!(data[2:end-1,"chord_num"], errors[!,"CL_ff"], label = "CL Farfield")
+
+# CYs
+plot!(data[2:end-1,"chord_num"], errors[!,"CY_nf"], label = "CY Nearfield")
+plot!(data[2:end-1,"chord_num"], errors[!,"CY_ff"], label = "CY Farfield")
 
 ##
 plot()
-plot!(data[2:end,"span_num"], data[2:end,"CL_nf"], marker = :dot, label = "Nearfield")
-plot!(data[2:end,"span_num"], data[2:end,"CL_ff"], marker = :dot, label = "Farfield") 
+plot!(data[2:end,"chord_num"], data[2:end,"CL_nf"], marker = :dot, label = "Nearfield")
+plot!(data[2:end,"chord_num"], data[2:end,"CL_ff"], marker = :dot, label = "Farfield") 
