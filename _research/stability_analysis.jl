@@ -32,6 +32,7 @@ wing  = WingSection(span       = 4.0,
                     tip_foil   = naca4((2,4,1,2)))
 wing_mac  = mean_aerodynamic_center(wing)
 wing_pos  = [0., 0., 0.]
+x_w       = [ wing_pos[1]; 0.; 0. ]
 wing_plan = plot_wing(wing;  
                       position = wing_pos)
 
@@ -94,12 +95,13 @@ ref     = x_w
 V, α, β = 1.0, 0.0, 0.0
 Ω 		= [0.0, 0.0, 0.0]
 fs 	    = Freestream(V, α, β, Ω)
+S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
 
 ## Evaluate trim
-trim_state!(R, α) = R .-= pitching_moment_coefficient(aircraft, α[1], ρ, ref, S, b, c)
-prob = nlsolve(trim_state!, [1.0], 
+trim_state!(R, α) = R .= pitching_moment_coefficient(aircraft, α[1], ρ, ref, S, b, c)
+prob = nlsolve(trim_state!, [-1.0], 
                method = :newton,
-            #    autodiff = :forward,
+               autodiff = :forward,
                show_trace = true, 
-               extended_trace = true
+            #    extended_trace = true
                )

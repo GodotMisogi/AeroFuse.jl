@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.2
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -68,7 +68,7 @@ HalfWing(foils  	:: Vector{Foil}, 	# Foil profiles
 		 twists 	:: Vector{Real}, 	# Twist angles
 		 spans  	:: Vector{Real}, 	# Section span lengths
 		 dihedrals  :: Vector{Real}, 	# Dihedral angles
-		 sweeps 	:: Vector{Real})	# Leading-edge sweep angles
+		 sweep_LEs 	:: Vector{Real})	# Leading-edge sweep angles
 ```
 """
 
@@ -82,12 +82,12 @@ sd7037 = read_foil(foil_path);
 foils = Foil.([ sd7037, sd7037 ]);
 
 # ╔═╡ 80c5f3b0-819c-11eb-071c-af01954bed9d
-wing_right = HalfWing(foils,
-                      [1.0, 0.6],
-					  [0., 0.],
-					  [5.0],
-					  [11.3],
-					  [2.29]);
+wing_right = HalfWing(foils     = foils,
+                      chords    = [1.0, 0.6],
+					  twists    = [0., 0.],
+					  spans     = [5.0],
+					  dihedrals = [11.3],
+					  sweep_LEs = [2.29]);
 
 # ╔═╡ 80c6de10-819c-11eb-15b5-6fb90139ca04
 md"We can create a `Wing` by feeding two `HalfWing`s to it:
@@ -125,7 +125,7 @@ begin
 end
 
 # ╔═╡ 80d758d0-819c-11eb-271c-65d473efee7a
-gr() # Change to plotlyjs() for interactive animation, but it's slow to render.
+gr(dpi = 300) # Change to plotlyjs() for interactive animation, but it's slow to render.
 
 # ╔═╡ 80deabce-819c-11eb-1c8b-95f6c533dc06
 begin
@@ -171,7 +171,7 @@ end;
 # ╔═╡ 80fba9b0-819c-11eb-155a-d98d67761735
 begin
 	U = 10.0
-	α = 1.0
+	α = 3.0
 	β = 3.0
 	Ω = [0.0, 0.0, 0.0]
 end;
@@ -211,11 +211,8 @@ solve_case(wing 				:: Union{Wing, HalfWing},
 # ╔═╡ 81063100-819c-11eb-15b2-9d20b017ed47
 md"It returns nearfield and farfield coefficients, and other arrays for plotting purposes or further analyses."
 
-# ╔═╡ 21111d8e-830f-11eb-2589-dde883171dc9
-typeof(wing) <: Wing
-
 # ╔═╡ 810e6e60-819c-11eb-16b2-2943f30a18a1
-nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = solve_case(wing, freestream; 
+nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = solve_case(wing, freestream; 
 		   rho_ref = ρ, 
 		   r_ref = ref, 
 		   area_ref = wing_area, 
@@ -228,16 +225,16 @@ nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs
 		  );
 
 # ╔═╡ 810fa6e0-819c-11eb-258f-fb8e4c74369a
-HTML(print_coefficients("Wing", nf_coeffs, ff_coeffs; browser = true))
+HTML(print_coefficients(nf_coeffs, ff_coeffs, "Wing"; browser = true))
 
 # ╔═╡ 9f7fb000-8306-11eb-1630-53c2be904d85
 size(horseshoe_panels)
 
 # ╔═╡ cb9012fa-3234-4635-90f3-9bea0fa7e572
 begin
-	CL_nf, CL_ff = nf_coeffs[5], ff_coeffs[5]
-	CY_nf, CY_ff = nf_coeffs[4], ff_coeffs[4]
-	CDi_nf, CDi_ff = nf_coeffs[3], ff_coeffs[3]
+	CL_nf, CL_ff = nf_coeffs[3], ff_coeffs[3]
+	CY_nf, CY_ff = nf_coeffs[2], ff_coeffs[2]
+	CDi_nf, CDi_ff = nf_coeffs[1], ff_coeffs[1]
 end
 
 # ╔═╡ ff10a514-f249-490c-b8ab-4c5c8f441f98
@@ -247,13 +244,36 @@ C_{D_i} = \frac{C_L^2 + C_Y^2}{\pi e AR}
 ```"
 
 # ╔═╡ a093e82d-4f4b-42a8-87dc-43386b77b50d
-e_nf = (CL_nf^2) / (π * aspect_ratio(wing) * CDi_nf)
+e_nf = (CL_nf^2 + CY_nf^2) / (π * aspect_ratio(wing) * CDi_nf)
 
 # ╔═╡ e281d210-8316-11eb-3642-efd8f3029a6c
-e_ff = (CL_ff^2) / (π * aspect_ratio(wing) * CDi_ff)
+e_ff = (CL_ff^2 + CY_ff^2) / (π * aspect_ratio(wing) * CDi_ff)
 
 # ╔═╡ 6983d510-81a0-11eb-3a6c-81a91699f8f8
 exercise(md"Test your wing for different cases and plot the results of the coefficients.")
+
+# ╔═╡ 5fc213dc-a94b-44cf-a33c-9cf53d253e10
+md"### Stability Derivatives"
+
+# ╔═╡ 52fff6e6-979a-40a5-8b5f-8b6e05677eee
+nf, ff, dvs = 
+solve_stability_case(wing, freestream; 
+					 rho_ref = ρ, 
+					 r_ref = ref, 
+					 area_ref = wing_area, 
+					 span_ref = wing_span, 
+					 chord_ref = wing_mac, 
+					 viscous = true, 
+					 x_tr = [0.4, 0.3, 0.25], 
+					 span_num = 24, 
+					 chord_num = 12
+		   			 );
+
+# ╔═╡ 4a848535-c761-43e4-a5a9-d0e6921edc08
+HTML(print_coefficients(nf, ff, "Wing"; browser = true))
+
+# ╔═╡ 3232bb1e-db45-477e-bf29-3b7ff94159c2
+HTML(print_derivatives(dvs, "Wing"; browser = true))
 
 # ╔═╡ 811db0a0-819c-11eb-2935-e3cd5d1cf036
 md"""### Plotting
@@ -263,7 +283,6 @@ AeroMDAO provides convenient functions to get quick plots of wings and their sol
 # ╔═╡ 811ee91e-819c-11eb-3dad-0708c43b3003
 begin
 	horseshoe_coords = plot_panels(horseshoe_panels[:])
-	camber_coords = plot_panels(camber_panels[:])
 	# wing_coords = plot_surface(wing);
 end;
 
@@ -282,18 +301,28 @@ begin
 	"""
 end
 
+# ╔═╡ f33c6c37-6227-42ca-b67d-ce251fe71fce
+begin
+	span_CF_refs = body_to_wind_axes.(sum(CFs, dims = 1), α, β) # CHECK
+	span_areas 	 = sum(panel_area.(horseshoe_panels), dims = 1)
+	span_CFs     = @. span_CF_refs * wing_area / span_areas
+end
+
 # ╔═╡ 8148df50-819c-11eb-2486-95e681f4b1da
 begin
 	sec_ys = getindex.(midpoint.(horseshoe_panels[1,:]), 2)
-	span_CFs = sum(CFs, dims = 1)
-	CDis = getindex.(CFs, 1)
-	CYs	 = abs.(getindex.(CFs, 2))
-	CLs  = getindex.(CFs, 3);
-	CL_loadings = 2sum(Γs, dims = 1)[:] / (freestream.V * wing_span)
+
+	CDis = getindex.(span_CFs, 1)[:]
+	CYs	 = getindex.(span_CFs, 2)[:]
+	CLs  = getindex.(span_CFs, 3)[:]
+	CL_loadings = 2sum(Γs, dims = 1)[:] / (freestream.V * wing_mac)
 	
-	plot1 = plot(sec_ys, sum(CDis, dims = 1)[:], label = nothing, ylabel = "CDi")
-	plot2 = plot(sec_ys, sum(CYs, dims = 1)[:], label = nothing, ylabel = "CY")
-	plot3 = plot(sec_ys, CL_loadings, label = nothing, xlabel = "y", ylabel = "CL Loading")
+	plot1 = plot(sec_ys, CDis, label = nothing, ylabel = "CDi")
+	plot2 = plot(sec_ys, CYs, label = nothing, ylabel = "CY")
+	plot3 = begin
+				plot(sec_ys, CLs, label = nothing, xlabel = "y", ylabel = "CL")
+				plot!(sec_ys, CL_loadings, label = "CL Loading", xlabel = "y")
+			end
 	plot(plot1, plot2, plot3, layout = (3, 1))
 end
 
@@ -333,37 +362,13 @@ begin
 		 camera = (φ, ψ),
 		 zlim = (-0.1, z_limit)
 		)
-	# plot!.(horseshoe_coords, color = :orange, label = :none)
-	plot!.(camber_coords, color = :gray, label = :none)
+	plot!.(horseshoe_coords, color = :gray, label = :none)
 	scatter!(tupvector(horseshoe_point.(horseshoe_panels))[:], marker = 1, label = :none)
 	if stream
 		plot!.(streams, color = :green, label = :none)
 	end
 	plot!()
 end
-
-# ╔═╡ 5fc213dc-a94b-44cf-a33c-9cf53d253e10
-md"### Stability Derivatives"
-
-# ╔═╡ 52fff6e6-979a-40a5-8b5f-8b6e05677eee
-nf, ff, dvs = 
-solve_stability_case(wing, freestream; 
-					 rho_ref = ρ, 
-					 r_ref = ref, 
-					 area_ref = wing_area, 
-					 span_ref = wing_span, 
-					 chord_ref = wing_mac, 
-					 viscous = true, 
-					 x_tr = [0.4, 0.3, 0.25], 
-					 span_num = 24, 
-					 chord_num = 12
-		   			 );
-
-# ╔═╡ 4a848535-c761-43e4-a5a9-d0e6921edc08
-HTML(print_coefficients("Wing", nf, ff; browser = true))
-
-# ╔═╡ 3232bb1e-db45-477e-bf29-3b7ff94159c2
-HTML(print_derivatives("Wing", dvs; browser = true))
 
 # ╔═╡ Cell order:
 # ╟─e9306402-5ee0-11eb-1cbb-8dd6f2e08ad6
@@ -396,7 +401,6 @@ HTML(print_derivatives("Wing", dvs; browser = true))
 # ╟─6982eab0-81a0-11eb-0172-03a207172b04
 # ╟─810546a0-819c-11eb-0232-efe3ec97fc26
 # ╟─81063100-819c-11eb-15b2-9d20b017ed47
-# ╠═21111d8e-830f-11eb-2589-dde883171dc9
 # ╠═810e6e60-819c-11eb-16b2-2943f30a18a1
 # ╟─810fa6e0-819c-11eb-258f-fb8e4c74369a
 # ╠═9f7fb000-8306-11eb-1630-53c2be904d85
@@ -414,6 +418,7 @@ HTML(print_derivatives("Wing", dvs; browser = true))
 # ╟─8126b150-819c-11eb-058d-d947006aa11d
 # ╠═8127c2c0-819c-11eb-2d3b-1d5cdbb0bac9
 # ╠═8131d4e0-819c-11eb-1d24-75120ca1247d
+# ╠═f33c6c37-6227-42ca-b67d-ce251fe71fce
 # ╠═8148df50-819c-11eb-2486-95e681f4b1da
 # ╟─104865f0-81a1-11eb-39c5-91c32c702cb8
 # ╟─8132bf40-819c-11eb-2ebd-35a6147c3b4c
