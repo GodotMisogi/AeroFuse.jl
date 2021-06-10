@@ -5,35 +5,33 @@ using ForwardDiff
 
 ## Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-wing_right = HalfWing(foils  = wing_foils,
-                      chords = [1.0, 0.6],
-                      twists = [2.0, 2.0],
-                      spans  = [5.0],
-                      [11.3],
-                      [2.29]);
-wing = Wing(wing_right, wing_right)
+wing = Wing(foils     = wing_foils,
+            chords    = [1.0, 0.6],
+            twists    = [2.0, 2.0],
+            spans     = [5.0],
+            dihedrals = [11.3],
+            sweep_LEs = [2.29]);
 
 # Horizontal tail
 htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-htail_right = HalfWing(htail_foils,
-                       [0.7, 0.42],
-                       [0.0, 0.0],
-                       [1.25],
-                       [0.],
-                       [6.39])
-htail = Wing(htail_right, htail_right)
+htail = Wing(foils     = htail_foils,
+             chords    = [0.7, 0.42],
+             twists    = [0.0, 0.0],
+             spans     = [1.25],
+             dihedrals = [0.],
+             sweep_LEs = [6.39])
 
 # Vertical tail
 vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
-vtail = HalfWing(vtail_foils, 
-                 [0.7, 0.42],
-                 [0.0, 0.0],
-                 [1.0],
-                 [0.],
-                 [7.97]);
+vtail = HalfWing(foils     = vtail_foils, 
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.0],
+                 dihedrals = [0.],
+                 sweep_LEs = [7.97]);
 
 ## Assembly
-wing_panels  = panel_wing(wing, [20], 10);
+wing_panels  = panel_wing(wing, [30], 15);
 htail_panels = panel_wing(htail, [12], 12;
                           position	= [4., 0, 0],
                           angle 	= deg2rad(-2.),
