@@ -56,12 +56,10 @@ Mesh the camber distribution of a `HalfWing` into panels of ``n_s`` spanwise div
 mesh_cambers(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; flip = false) = (make_panels ∘ camber_coords)(wing, span_num, chord_num, flip)
 
 
-leading_chopper(obj :: HalfWing, span_num; flip = false) = coords_chopper(leading_edge(obj, flip), span_num)
-
+leading_chopper(obj :: HalfWing, span_num; flip = false)  = coords_chopper(leading_edge(obj, flip), span_num)
 trailing_chopper(obj :: HalfWing, span_num; flip = false) = coords_chopper(leading_edge(obj, flip), span_num)
 
-leading_chopper(obj :: Wing, span_num :: Integer) = span_chopper(wing_bounds(obj)..., span_num)[1]
-
+leading_chopper(obj :: Wing, span_num :: Integer)  = span_chopper(wing_bounds(obj)..., span_num)[1]
 trailing_chopper(obj :: Wing, span_num :: Integer) = span_chopper(wing_bounds(obj)..., span_num)[2]
 
 """

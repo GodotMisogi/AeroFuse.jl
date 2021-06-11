@@ -14,7 +14,7 @@ chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) ∈ zip(lead, trail) ]
 
 chord_chopper(coords, n) = [ [ weighted_vector(chord[1,:], chord[2,:], μ) for μ ∈ cosine_dist(0.5, 1., n + 1) ] for chord ∈ coords ]
 
-span_chopper(lead, trail, div) = coords_chopper(lead, div), coords_chopper(trail, div)
+span_chopper(lead, trail, div, spacing = "cosine") = coords_chopper(lead, div, spacing), coords_chopper(trail, div, spacing)
 
 wing_chopper(lead, trail, span_num, chord_num) = chord_chopper(chord_sections(span_chopper(lead, trail, span_num)...), chord_num)
 
