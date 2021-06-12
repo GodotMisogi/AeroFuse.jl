@@ -1,7 +1,8 @@
 ## Aircraft analysis case
 using AeroMDAO
-using BenchmarkTools
-using ForwardDiff
+# using BenchmarkTools
+# using ForwardDiff
+using StaticArrays
 
 ## Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
@@ -84,9 +85,9 @@ print_coefficients(nf_coeffs, ff_coeffs, comp)
 ## Impure
 println("Impure -")
 @time begin
-    state = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, 
+    state = VLMState(fs, 
                      rho_ref   = ρ,
-                     r_ref     = ref,
+                     r_ref     = SVector(ref...),
                      area_ref  = S, 
                      chord_ref = c, 
                      span_ref  = b, 

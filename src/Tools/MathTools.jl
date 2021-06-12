@@ -33,7 +33,7 @@ columns(M) = tuple([ view(M, :, i) for i in 1:size(M, 2) ]...)
 # Sieg Heil!
 
 span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
-splitat(n, xs) = (xs[1:n,:], xs[n+1:end,:])  
+splitat(n, xs) = @views (xs[1:n,:], xs[n+1:end,:])  
 
 lisa(pred, iter) = span(!pred, iter)
 
@@ -83,25 +83,25 @@ vectarray(xs) = SVector.(eachcol(xs)...)
 
 extend_yz(coords) = [ first.(coords) (zeros ∘ length)(coords) last.(coords) ]
 
-reflect_mapper(f, xs) = [ f(xs[:,end:-1:1]) xs ]
+reflect_mapper(f, xs) = @views [ f(xs[:,end:-1:1]) xs ]
 
 ## Difference operations
 #===========================================================================#
 
 fwddiff_matrix(n) = [ I zeros(n) ] - [ zeros(n) I ]
 
-fwdsum(xs) 	 = @. xs[2:end] + xs[1:end-1]
-fwddiff(xs)  = @. xs[2:end] - xs[1:end-1]
-fwddiv(xs) 	 = @. xs[2:end] / xs[1:end-1]
-ord2diff(xs) = @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
+fwdsum(xs) 	 = @views @. xs[2:end] + xs[1:end-1]
+fwddiff(xs)  = @views @. xs[2:end] - xs[1:end-1]
+fwddiv(xs) 	 = @views @. xs[2:end] / xs[1:end-1]
+ord2diff(xs) = @views @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
 
-adj3(xs) = zip(xs[1:end-2], xs[2:end-1,:], xs[3:end])
+adj3(xs) = @views zip(xs[1:end-2], xs[2:end-1,:], xs[3:end])
 
 # Central differencing schema for pairs except at endpoints
 midpair_map(f :: H, xs) where {H} = 
-        [        f.(xs[1,:], xs[2,:])'       ;
-          f.(xs[1:end-2,:], xs[3:end,:]) / 2 ;
-             f.(xs[end-1,:], xs[end,:])'     ]
+    @views  [        f.(xs[1,:], xs[2,:])'        ;
+               f.(xs[1:end-2,:], xs[3:end,:]) / 2 ;
+                 f.(xs[end-1,:], xs[end,:])'      ]
 
 # stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
 # parts(xs) = let adj = stencil(xs, 1); adj[1,:], adj[end,:] end
@@ -124,9 +124,9 @@ midpair_map(f :: H, xs) where {H} =
 function sine_dist(x_center, radius, n :: Integer = 40, factor = 1) 
     xs = cosine_dist(x_center, diameter, 2n)
     if factor == 1
-        xs[1:Int(n/2)]
+        @view xs[1:Int(n/2)]
     else
-        xs[Int(n/2):end]
+        @view xs[Int(n/2):end]
     end
 end
 
@@ -187,6 +187,6 @@ weighted_vector(x1, x2, μ) = weighted.(x1, x2, μ)
 #             end))
 # end
 
-reshape_array(arr, inds, sizes) = [ reshape(arr[i1+1:i2], size) for (i1, i2, size) in zip(inds[1:end-1], inds[2:end], sizes) ]
+reshape_array(arr, inds, sizes) = @views [ reshape(arr[i1+1:i2], size) for (i1, i2, size) in zip(inds[1:end-1], inds[2:end], sizes) ]
 
 end
