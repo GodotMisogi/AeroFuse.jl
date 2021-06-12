@@ -1,7 +1,7 @@
 name = "AeroMDAO"
 uuid = "ae1513eb-aba2-415b-9b88-80f66c7c7c76"
 authors = ["GodotMisogi <arjitseth@gmail.com>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
