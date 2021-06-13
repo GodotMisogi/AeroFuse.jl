@@ -68,6 +68,7 @@ Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` 
 """
 function mesh_horseshoes(wing :: Wing, span_num, chord_num)
     if wing.left === wing.right
+        # Need to consider sine distribution at symmetry, and cosine thereafter
         left_panels  = mesh_horseshoes(wing.left, span_num[end:-1:1], chord_num, spacing = "cosine", direction = -1, flip = true)
         right_panels = mesh_horseshoes(wing.right, span_num, chord_num, spacing = "cosine")
     else
@@ -97,6 +98,7 @@ Mesh the camber distribution of a `Wing` into panels of ``n_s`` spanwise divisio
 """
 function mesh_cambers(wing :: Wing, span_num, chord_num)
     if wing.left === wing.right
+        # Need to consider sine distribution at symmetry, and cosine thereafter
         left_panels  = mesh_cambers(wing.left, span_num[end:-1:1], chord_num, spacing = "cosine", flip = true)
         right_panels = mesh_cambers(wing.right, span_num, chord_num, spacing = "cosine")
     else

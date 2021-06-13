@@ -125,16 +125,13 @@ uniform_spacing(x1, x2, n) = range(x1, x2, length = n)
 linear_spacing(x_center, len, n :: Integer) = @. x_center + len * 0:1/(n-1):1
 cosine_spacing(x_center, diameter, n :: Integer = 40) = @. x_center + (diameter / 2) * cos(-π:π/(n-1):0)
 
-function sine_spacing(x1, x2, n :: Integer = 40, w = 0.)
+function sine_spacing(x1, x2, n :: Integer = 40)
     d = x2 - x1
     if n < 0
-       y = @. x2 - d * sin(π/2 * (1. - ((n-1):0) / (n-1)))
-       y[end:-1:1]
+       @. x2 - d * sin(π/2 * (1. - (1:1/(n+1):0)))[end:-1:1]
     else
-       y =  @. x1 + d * sin(π/2 * (0:n-1) / (n-1))
+       @. x1 + d * sin(π/2 * (0:1/(n-1):1))
     end
-
-    # (1 - w) * y + w * [ @. x1 + d/(n-1) * (0:n-2); x2 ]
 end
 
 function cosine_interp(coords, n :: Integer = 40)
