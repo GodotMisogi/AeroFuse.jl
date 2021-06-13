@@ -56,6 +56,8 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho
     # Determine spanwise panel distribution
     span_nums = number_of_spanwise_panels(wing, span_num)
 
+    println("Spanwise panels: ", span_nums)
+
     # Compute panels and normals
     horseshoe_panels, camber_panels = vlmesh_wing(wing, span_nums, chord_num)
     normals = panel_normal.(camber_panels)

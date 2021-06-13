@@ -81,7 +81,7 @@ tupvector(xs) = [ tuple(x...) for x in xs ]
 tuparray(xs)  = tuple.(eachcol(xs)...)
 vectarray(xs) = SVector.(eachcol(xs)...)
 
-extend_yz(coords) = [ first.(coords) (zeros ∘ length)(coords) last.(coords) ]
+extend_yz(coords) = @views [ coords[:,1] (zeros ∘ length)(coords) coords[:,2] ]
 
 reflect_mapper(f, xs) = @views [ f(xs[:,end:-1:1]) xs ]
 
@@ -121,28 +121,28 @@ midpair_map(f :: H, xs) where {H} =
 ## Spacing formulas
 #===========================================================================#
 
-function sine_dist(x_center, radius, n :: Integer = 40, factor = 1) 
-    xs = cosine_dist(x_center, diameter, 2n)
-    if factor == 1
-        @view xs[1:Int(n/2)]
+uniform_spacing(x1, x2, n) = range(x1, x2, length = n)
+linear_spacing(x_center, len, n :: Integer) = @. x_center + len * 0:1/(n-1):1
+cosine_spacing(x_center, diameter, n :: Integer = 40) = @. x_center + (diameter / 2) * cos(-π:π/(n-1):0)
+
+function sine_spacing(x1, x2, n :: Integer = 40, w = 0.)
+    d = x2 - x1
+    if n < 0
+       y = @. x2 - d * sin(π/2 * (1. - ((n-1):0) / (n-1)))
+       y[end:-1:1]
     else
-        @view xs[Int(n/2):end]
+       y =  @. x1 + d * sin(π/2 * (0:n-1) / (n-1))
     end
+
+    # (1 - w) * y + w * [ @. x1 + d/(n-1) * (0:n-2); x2 ]
 end
-
-"""
-    cosine_dist(x_center, diameter, n :: Integer = 40) 
-
-Provide the projections to the x-axis for a circle with given center and diameter, and optionally the number of points.
-"""
-cosine_dist(x_center, diameter, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(-π, stop = 0, length = n))
 
 function cosine_interp(coords, n :: Integer = 40)
     xs, ys = first.(coords)[:], last.(coords)[:]
 
     d = maximum(xs) - minimum(xs)
     x_center = (maximum(xs) + minimum(xs)) / 2
-    x_circ = cosine_dist(x_center, d, n)
+    x_circ = cosine_spacing(x_center, d, n)
     
     itp_circ = LinearInterpolation(xs, ys)
     y_circ = itp_circ(x_circ)

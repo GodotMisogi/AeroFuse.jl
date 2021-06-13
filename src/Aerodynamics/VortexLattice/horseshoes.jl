@@ -54,6 +54,9 @@ r2(r, line :: Line) = r - r2(line)
 
 bound_leg_velocity(a, b, Γ) = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
 
+# Finite-core model
+# bound_leg_velocity(a, b, Γ, core) = Γ/4π * ((norm(a)^2 - dot(a, b)) / √()
+
 trailing_legs_velocities(a, b, Γ, u) = Γ/4π * (a × u / (norm(a) - dot(a, u)) / norm(a) - b × u / (norm(b) - dot(b, u)) / norm(b))
 
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)

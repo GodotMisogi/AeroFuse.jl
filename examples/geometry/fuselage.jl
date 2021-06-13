@@ -10,4 +10,4 @@ projected_area(fuse)
 length(fuse)
 
 ##
-cosine_distribution(fuse, 40)
+cosine_spacing(fuse, 40)

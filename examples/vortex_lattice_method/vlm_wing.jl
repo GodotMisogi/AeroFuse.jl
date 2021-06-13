@@ -19,7 +19,7 @@ print_info(wing, "Wing")
 ρ       = 1.225
 x_w     = wing_mac[1]
 ref     = [ x_w; 0.; 0. ]
-V, α, β = 1.0, 5.0, 5.0
+V, α, β = 1.0, 5.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
@@ -31,8 +31,8 @@ solve_case(wing, fs;
            area_ref  = S,
            span_ref  = b,
            chord_ref = c,
-           span_num  = 12, 
-           chord_num = 20,
+           span_num  = [10, 5], 
+           chord_num = 5,
            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
            x_tr      = [0.3, 0.3]);
 
@@ -109,14 +109,14 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      size = (800, 600))
 plot!.(horseshoe_coords, color = :black, label = :none)
 scatter!(tupvector(colpoints)[:], marker = 1, color = :black, label = :none)
-plot!.(streams, color = :green, label = :none)
+# plot!.(streams, color = :green, label = :none)
 plot!()
 
 ## Spanwise forces
 span_areas = sum(panel_areas, dims = 1)[:]
 span_CDis = sum(CDis, dims = 1)[:] * S ./ span_areas
-span_CYs  = sum(CYs, dims = 1)[:] * S ./ span_areas
-span_CLs  = sum(CLs, dims = 1)[:] * S ./ span_areas
+span_CYs  = sum(CYs, dims = 1)[:]  * S ./ span_areas
+span_CLs  = sum(CLs, dims = 1)[:]  * S ./ span_areas
 
 plot_CD = plot(ys[1,:], span_CDis, label = :none, ylabel = "CDi")
 plot_CY = plot(ys[1,:], span_CYs, label = :none, ylabel = "CY")

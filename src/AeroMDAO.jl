@@ -11,9 +11,9 @@ using PrettyTables
 #==========================================================================================#
 
 include("Tools/MathTools.jl")
-import .MathTools: tupvector, fwdsum, fwddiff, fwddiv, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_dist, sine_dist, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition
+import .MathTools: tupvector, fwdsum, fwddiff, fwddiv, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, linear_spacing, cosine_spacing, sine_spacing
 
-export Point2D, Point3D, tupvector, tuparray, midpair_map, cosine_dist, cosine_interp, sine_dist, rotation, inverse_rotation, affine_2D, fwdsum, fwddiff, fwddiv, partition, weighted_vector
+export Point2D, Point3D, tupvector, tuparray, midpair_map, cosine_interp, sine_spacing, rotation, inverse_rotation, affine_2D, fwdsum, fwddiff, fwddiv, partition, weighted_vector, linear_spacing, cosine_spacing, sine_spacing
 
 
 ## Non-dimensionalization
@@ -40,8 +40,8 @@ include("Geometry/AircraftGeometry/AircraftGeometry.jl")
 using .AircraftGeometry
 
 export Aircraft, Foil, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foil_camthick, camthick_foil, camber_thickness, cosine_foil, camthick_to_CST, coords_to_CST, max_thickness_to_chord_ratio_location, # 2D setups
-Fuselage, projected_area, length, cosine_distribution, # Fuselage
-HalfWing, HalfWingSection, Wing, WingSection, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, print_info, leading_edge, leading_chopper, trailing_chopper, wing_chopper, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing, max_tbyc_sweeps, mean_aerodynamic_center, panel_wing, wetted_area, number_spanwise_panels
+Fuselage, projected_area, length, cosine_spacing, # Fuselage
+HalfWing, HalfWingSection, Wing, WingSection, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, print_info, leading_edge, leading_chopper, trailing_chopper, wing_chopper, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing, max_tbyc_sweeps, mean_aerodynamic_center, panel_wing, wetted_area, number_of_spanwise_panels
 
 ## Laplace
 #==========================================================================================#

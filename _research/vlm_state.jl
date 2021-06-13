@@ -1,6 +1,7 @@
 ## Aircraft analysis case
+using Revise
 using AeroMDAO
-# using BenchmarkTools
+using BenchmarkTools
 # using ForwardDiff
 using StaticArrays
 
@@ -56,7 +57,7 @@ S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ac_name = "My Aircraft"
 ρ       = 1.225
 ref     = [0.25c, 0., 0.]
-V, α, β = 1.0, 1.0, 1.0
+V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω);
 
@@ -84,7 +85,7 @@ print_coefficients(nf_coeffs, ff_coeffs, comp)
 
 ## Impure
 println("Impure -")
-@time begin
+@benchmark begin
     state = VLMState(fs, 
                      rho_ref   = ρ,
                      r_ref     = SVector(ref...),
@@ -94,7 +95,7 @@ println("Impure -")
                      name      = ac_name);
 
     system, surfs, nf_t, ff_t = AeroMDAO.VortexLattice.solve_case!(aircraft, state);
-end;
+end
 
 ##
 surf_names = (collect ∘ keys)(surfs)

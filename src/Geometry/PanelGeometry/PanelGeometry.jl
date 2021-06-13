@@ -7,7 +7,7 @@ using LinearAlgebra
 using Rotations
 using CoordinateTransformations
 
-using ..AeroMDAO: Point2D, affine_2D, rotation, inverse_rotation, structtolist, sine_dist, cosine_dist, partition
+using ..AeroMDAO: Point2D, affine_2D, rotation, inverse_rotation, structtolist, sine_spacing, cosine_spacing, partition
 
 export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, p1, p2, p3, p4, zero, collocation_point, panel_length, transform_panel, transform_panel_points, panel_angle, panel_tangent, panel_normal, panel_location, panel_area, panel_coords, transform, midpoint, panel_points, wake_panel, wake_panels, reverse_panel, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, panel_vector, panel_dist
 
