@@ -12,7 +12,7 @@ Compute the 3-quarter point between two points in the x-z plane.
 three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
 
 collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
-bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2), quarter_point(p4, p3) ]
+bound_leg(p1, p2, p3, p4) = (quarter_point(p1, p2), quarter_point(p4, p3))
 
 """
     bound_leg(panel :: Panel3D)
@@ -54,9 +54,6 @@ r2(r, line :: Line) = r - r2(line)
 
 bound_leg_velocity(a, b, Γ) = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
 
-# Finite-core model
-# bound_leg_velocity(a, b, Γ, core) = Γ/4π * ((norm(a)^2 - dot(a, b)) / √()
-
 trailing_legs_velocities(a, b, Γ, u) = Γ/4π * (a × u / (norm(a) - dot(a, u)) / norm(a) - b × u / (norm(b) - dot(b, u)) / norm(b))
 
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
@@ -76,6 +73,7 @@ A horseshoe type consisting of a bound leg of type Line represening a vortex lin
 """
 struct Horseshoe{T <: Real} <: AbstractVortexArray
     bound_leg :: Line{T}
+    # collocation_point :: SVector{3,T}
 end
 
 """
@@ -84,6 +82,7 @@ end
 Getter for bound leg field of a `Horseshoe`.
 """
 bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
+collocation_point(horseshoe :: Horseshoe) = horseshoe.collocation_point
 
 r1(r, horseshoe :: Horseshoe) = r1(r, bound_leg(horseshoe))
 r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
@@ -91,7 +90,7 @@ r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
 """
 Return a `Horseshoe` bound leg corresponding to a `Panel3D`.
 """
-horseshoe_line(panel :: Panel3D) = (Horseshoe ∘ Line)(bound_leg(panel)...)
+horseshoe_line(panel :: Panel3D) = let (r1, r2) = bound_leg(panel); (Horseshoe ∘ Line)(r1, r2) end
 
 """
 Compute the midpoint of the bound leg of a `Horseshoe`.
