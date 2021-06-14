@@ -33,7 +33,7 @@ Panel3D(p1 :: FieldVector{3,T}, p2 :: FieldVector{3,T}, p3 :: FieldVector{3,T}, 
 
 Compute the area of a Panel3D.
 """
-panel_area(panel :: Panel3D) = norm(p2(panel) - p1(panel)) * norm(p3(panel) - p2(panel))
+panel_area(panel :: Panel3D) = (norm ∘ cross)((p2(panel) - p1(panel) + p3(panel) - p4(panel)) / 2, (p4(panel) - p1(panel) + p3(panel) - p2(panel)) / 2)
 
 """
     panel_coords(panel :: Panel3D)
