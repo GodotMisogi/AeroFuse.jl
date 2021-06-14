@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.14.8
 
 using Markdown
 using InteractiveUtils
@@ -79,15 +79,15 @@ foil_path = "..\\data\\airfoil_database\\sd7037.dat";
 sd7037 = read_foil(foil_path);
 
 # ╔═╡ ea833240-819c-11eb-299e-216fc8c75464
-foils = Foil.([ sd7037, sd7037 ]);
+foils = Foil.(fill(sd7037, 3));
 
 # ╔═╡ 80c5f3b0-819c-11eb-071c-af01954bed9d
 wing_right = HalfWing(foils     = foils,
-                      chords    = [1.0, 0.6],
-					  twists    = [0., 0.],
-					  spans     = [5.0],
-					  dihedrals = [11.3],
-					  sweep_LEs = [2.29]);
+                      chords    = [1.0, 0.6, 0.2],
+					  twists    = [0., 0., 0.],
+					  spans     = [3.0, 0.5],
+					  dihedrals = [0., 11.3],
+					  sweep_LEs = [0., 2.29]);
 
 # ╔═╡ 80c6de10-819c-11eb-15b5-6fb90139ca04
 md"We can create a `Wing` by feeding two `HalfWing`s to it:
@@ -97,11 +97,11 @@ Wing(left 	:: HalfWing,
 ```
 "
 
-# ╔═╡ 80cc8360-819c-11eb-1606-814d961bd0b7
-md"In this case, we'd like a symmetric wing, so we just feed `wing_right` as both arguments."
-
 # ╔═╡ 80d0f030-819c-11eb-2ff2-8ff76d3bbb8b
 wing = Wing(wing_right, wing_right);
+
+# ╔═╡ 80cc8360-819c-11eb-1606-814d961bd0b7
+md"In this case, we'd like a symmetric wing, so we just feed `wing_right` as both arguments."
 
 # ╔═╡ 80d1b380-819c-11eb-057a-652abcf73444
 md"Now let's see what the outline of our wing looks like, using the following function to get the coordinates:
@@ -142,17 +142,20 @@ begin
 end
 
 # ╔═╡ 80e22e3e-819c-11eb-022e-97bf4d5b187a
-wing_span, wing_area, wing_mac, wing_AR = span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing);
+b, S, c, AR = span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing);
 
 # ╔═╡ 80e318a0-819c-11eb-1b92-4b3fa6e70be6
 md"""
 Parameter | Value
 :-------- | -----:
-Span ($m$)     | $wing_span
-Planform Area ($m^2$) | $wing_area 
-Mean Aerodynamic Chord ($m$) | $wing_mac
-Aspect Ratio | $wing_AR
+Span ($m$)     | $b
+Planform Area ($m^2$) | $S
+Mean Aerodynamic Chord ($m$) | $c
+Aspect Ratio | $AR
 """
+
+# ╔═╡ d1b7c3dd-542b-4f00-949f-af9a3d6ec446
+mac = mean_aerodynamic_center(wing)
 
 # ╔═╡ 80e90c10-819c-11eb-1592-1ba9915cac84
 exercise(md"Create an anti-symmetric `Wing` consisting of 4 spanwise sections with different NACA 4-digit foil profiles using whatever dimensions you like, as long as they're physically reasonable.")
@@ -164,15 +167,16 @@ For a 3D case, we use the vortex lattice method for initial designs, given its q
 
 # ╔═╡ 80ef74b0-819c-11eb-22b2-65555b613023
 begin
-	ρ = 1.225
-	ref = [0.50, 0., 0.]
+	ρ   = 1.225
+	x_w = mac[1]
+	ref = [ x_w, 0., 0.]
 end;
 
 # ╔═╡ 80fba9b0-819c-11eb-155a-d98d67761735
 begin
 	U = 10.0
-	α = 3.0
-	β = 3.0
+	α = 5.0
+	β = 0.0
 	Ω = [0.0, 0.0, 0.0]
 end;
 
@@ -190,7 +194,7 @@ $\Omega$  |    $(Ω[1], Ω[2], Ω[3]) | Rotation vector
 """
 
 # ╔═╡ 80fc6d00-819c-11eb-2380-31605f1b2631
-freestream = Freestream(U, α, β, Ω);
+fs = Freestream(U, α, β, Ω);
 
 # ╔═╡ 6982eab0-81a0-11eb-0172-03a207172b04
 alert(md"The vortex lattice method only gives reasonable results for small angles of attack and sideslip.")
@@ -212,15 +216,15 @@ solve_case(wing 				:: Union{Wing, HalfWing},
 md"It returns nearfield and farfield coefficients, and other arrays for plotting purposes or further analyses."
 
 # ╔═╡ 810e6e60-819c-11eb-16b2-2943f30a18a1
-nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = solve_case(wing, freestream; 
-		   rho_ref = ρ, 
-		   r_ref = ref, 
-		   area_ref = wing_area, 
-		   span_ref = wing_span, 
-		   chord_ref = wing_mac, 
-		   viscous = true, 
-		   x_tr = 0.4, 
-		   span_num = 48, 
+nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = solve_case(wing, fs; 
+		   rho_ref 	 = ρ, 
+		   r_ref 	 = ref, 
+		   area_ref  = S, 
+		   span_ref  = b, 
+		   chord_ref = c, 
+		   viscous   = false, 
+		   x_tr 	 = 0.4, 
+		   span_num  = [30, 20], 
 		   chord_num = 12
 		  );
 
@@ -230,18 +234,18 @@ HTML(print_coefficients(nf_coeffs, ff_coeffs, "Wing"; browser = true))
 # ╔═╡ 9f7fb000-8306-11eb-1630-53c2be904d85
 size(horseshoe_panels)
 
-# ╔═╡ cb9012fa-3234-4635-90f3-9bea0fa7e572
-begin
-	CL_nf, CL_ff = nf_coeffs[3], ff_coeffs[3]
-	CY_nf, CY_ff = nf_coeffs[2], ff_coeffs[2]
-	CDi_nf, CDi_ff = nf_coeffs[1], ff_coeffs[1]
-end
-
 # ╔═╡ ff10a514-f249-490c-b8ab-4c5c8f441f98
-md"Let's try computing the span efficiency factors, which use a parabolic drag polar approximation:
+md"Let's try computing the span efficiency factor, which requires a parabolic drag polar approximation:
 ```math
 C_{D_i} = \frac{C_L^2 + C_Y^2}{\pi e AR}
 ```"
+
+# ╔═╡ cb9012fa-3234-4635-90f3-9bea0fa7e572
+begin
+	CDi_nf, CDi_ff = nf_coeffs[1], ff_coeffs[1]
+	CY_nf, CY_ff   = nf_coeffs[2], ff_coeffs[2]
+	CL_nf, CL_ff   = nf_coeffs[3], ff_coeffs[3]
+end;
 
 # ╔═╡ a093e82d-4f4b-42a8-87dc-43386b77b50d
 e_nf = (CL_nf^2 + CY_nf^2) / (π * aspect_ratio(wing) * CDi_nf)
@@ -257,17 +261,14 @@ md"### Stability Derivatives"
 
 # ╔═╡ 52fff6e6-979a-40a5-8b5f-8b6e05677eee
 nf, ff, dvs = 
-solve_stability_case(wing, freestream; 
-					 rho_ref = ρ, 
-					 r_ref = ref, 
-					 area_ref = wing_area, 
-					 span_ref = wing_span, 
-					 chord_ref = wing_mac, 
-					 viscous = true, 
-					 x_tr = [0.4, 0.3, 0.25], 
-					 span_num = 24, 
+solve_stability_case(wing, fs; 
+					 rho_ref   = ρ, 
+					 r_ref 	   = ref,
+					 viscous   = false, 
+					 x_tr 	   = 0.4, 
+					 span_num  = 30, 
 					 chord_num = 12
-		   			 );
+		   			);
 
 # ╔═╡ 4a848535-c761-43e4-a5a9-d0e6921edc08
 HTML(print_coefficients(nf, ff, "Wing"; browser = true))
@@ -301,59 +302,54 @@ begin
 	"""
 end
 
-# ╔═╡ f33c6c37-6227-42ca-b67d-ce251fe71fce
-begin
-	span_CF_refs = body_to_wind_axes.(sum(CFs, dims = 1), α, β) # CHECK
-	span_areas 	 = sum(panel_area.(horseshoe_panels), dims = 1)
-	span_CFs     = @. span_CF_refs * wing_area / span_areas
-end
-
 # ╔═╡ 8148df50-819c-11eb-2486-95e681f4b1da
 begin
 	sec_ys = getindex.(midpoint.(horseshoe_panels[1,:]), 2)
-
-	CDis = getindex.(span_CFs, 1)[:]
-	CYs	 = getindex.(span_CFs, 2)[:]
-	CLs  = getindex.(span_CFs, 3)[:]
-	CL_loadings = 2sum(Γs, dims = 1)[:] / (freestream.V * wing_mac)
 	
-	plot1 = plot(sec_ys, CDis, label = nothing, ylabel = "CDi")
-	plot2 = plot(sec_ys, CYs, label = nothing, ylabel = "CY")
+	wind_CFs    = body_to_wind_axes.(CFs, fs.alpha, fs.beta)
+	CDis        = @. getindex(wind_CFs, 1)
+	CYs	        = @. getindex(CFs, 2)
+	CLs         = @. getindex(CFs, 3)
+	
+	area_scale  = S ./ sum(panel_area, horseshoe_panels, dims = 1)[:]
+	span_CDis   = sum(CDis, dims = 1)[:] .* area_scale
+	span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
+	span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
+	CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * fs.V * c)
+	
+	plot1 = plot(sec_ys, span_CDis, label = nothing, ylabel = "CDi Loading")
+	plot2 = plot(sec_ys, round.(span_CYs, digits = 4), label = nothing, ylabel = "CY Loading")
 	plot3 = begin
-				plot(sec_ys, CLs, label = nothing, xlabel = "y", ylabel = "CL")
-				plot!(sec_ys, CL_loadings, label = "CL Loading", xlabel = "y")
+				plot(sec_ys, span_CLs, label = "Nearfield", xlabel = "y", ylabel = "CL Loading")
+				plot!(sec_ys, CL_loadings, label = "Farfield", xlabel = "y")
 			end
 	plot(plot1, plot2, plot3, layout = (3, 1))
 end
 
 # ╔═╡ 104865f0-81a1-11eb-39c5-91c32c702cb8
-alert(md"The induced drag coefficients computed using nearfield values may be negative at points in the spanwise distribution due to numerical errors or the panel distribution, depending on the case.")
-
-# ╔═╡ 8132bf40-819c-11eb-2ebd-35a6147c3b4c
-md"Seed 1"
+# alert(md"The induced drag coefficients computed using nearfield values may be negative at points in the spanwise distribution due to numerical errors or the panel distribution, depending on the case.")
 
 # ╔═╡ 813dbbc0-819c-11eb-10ed-cf05e3733707
 begin
+	# Seed 1
 	num_points = 50
 	max_z = 0.1
-	y = span(wing) / 2 - 0.01
-	seed_1 = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
+	y = -span(wing) / 2 - 0.01
+	seed_1 = SVector.(fill(-0.1, num_points), fill(y, num_points), range(max_z, stop = -max_z, length = num_points))
 end;
-
-# ╔═╡ 813e7f10-819c-11eb-36b7-4b0c78e16cc2
-md"Seed 2"
 
 # ╔═╡ 81481c02-819c-11eb-0ad8-97014cf886c6
 begin
+	# Seed 2
 	span_points = 20
-	init        = trailing_chopper(ifelse(β == 0, wing_right, wing), span_points) 
+	init        = trailing_chopper(ifelse(β == 0, wing.left, wing), span_points) 
 	dx, dy, dz  = 0, 0, 1e-3
 	seed_2      = [ init .+ Ref([dx, dy, dz])  ;
 					init .+ Ref([dx, dy,-dz])  ]
 end;
 
 # ╔═╡ 8131d4e0-819c-11eb-1d24-75120ca1247d
-streams = ifelse(stream, plot_streams(freestream, seed_2, horseshoes, Γs, 2, 100), nothing)
+streams = ifelse(stream, plot_streams(fs, seed_2, horseshoes, Γs, 2, 100), nothing);
 
 # ╔═╡ 8127c2c0-819c-11eb-2d3b-1d5cdbb0bac9
 begin
@@ -384,14 +380,15 @@ end
 # ╠═ea833240-819c-11eb-299e-216fc8c75464
 # ╠═80c5f3b0-819c-11eb-071c-af01954bed9d
 # ╟─80c6de10-819c-11eb-15b5-6fb90139ca04
-# ╟─80cc8360-819c-11eb-1606-814d961bd0b7
 # ╠═80d0f030-819c-11eb-2ff2-8ff76d3bbb8b
+# ╟─80cc8360-819c-11eb-1606-814d961bd0b7
 # ╟─80d1b380-819c-11eb-057a-652abcf73444
 # ╟─80d69580-819c-11eb-0386-d9eab5152a45
 # ╠═80d758d0-819c-11eb-271c-65d473efee7a
 # ╠═80deabce-819c-11eb-1c8b-95f6c533dc06
 # ╠═80e22e3e-819c-11eb-022e-97bf4d5b187a
 # ╟─80e318a0-819c-11eb-1b92-4b3fa6e70be6
+# ╠═d1b7c3dd-542b-4f00-949f-af9a3d6ec446
 # ╟─80e90c10-819c-11eb-1592-1ba9915cac84
 # ╟─80eeb160-819c-11eb-207d-d339e232cbb3
 # ╠═80ef74b0-819c-11eb-22b2-65555b613023
@@ -404,25 +401,22 @@ end
 # ╠═810e6e60-819c-11eb-16b2-2943f30a18a1
 # ╟─810fa6e0-819c-11eb-258f-fb8e4c74369a
 # ╠═9f7fb000-8306-11eb-1630-53c2be904d85
-# ╠═cb9012fa-3234-4635-90f3-9bea0fa7e572
 # ╟─ff10a514-f249-490c-b8ab-4c5c8f441f98
+# ╠═cb9012fa-3234-4635-90f3-9bea0fa7e572
 # ╠═a093e82d-4f4b-42a8-87dc-43386b77b50d
 # ╠═e281d210-8316-11eb-3642-efd8f3029a6c
 # ╟─6983d510-81a0-11eb-3a6c-81a91699f8f8
 # ╟─5fc213dc-a94b-44cf-a33c-9cf53d253e10
 # ╠═52fff6e6-979a-40a5-8b5f-8b6e05677eee
-# ╠═4a848535-c761-43e4-a5a9-d0e6921edc08
-# ╠═3232bb1e-db45-477e-bf29-3b7ff94159c2
+# ╟─4a848535-c761-43e4-a5a9-d0e6921edc08
+# ╟─3232bb1e-db45-477e-bf29-3b7ff94159c2
 # ╟─811db0a0-819c-11eb-2935-e3cd5d1cf036
 # ╠═811ee91e-819c-11eb-3dad-0708c43b3003
 # ╟─8126b150-819c-11eb-058d-d947006aa11d
-# ╠═8127c2c0-819c-11eb-2d3b-1d5cdbb0bac9
-# ╠═8131d4e0-819c-11eb-1d24-75120ca1247d
-# ╠═f33c6c37-6227-42ca-b67d-ce251fe71fce
-# ╠═8148df50-819c-11eb-2486-95e681f4b1da
+# ╟─8127c2c0-819c-11eb-2d3b-1d5cdbb0bac9
+# ╟─8148df50-819c-11eb-2486-95e681f4b1da
 # ╟─104865f0-81a1-11eb-39c5-91c32c702cb8
-# ╟─8132bf40-819c-11eb-2ebd-35a6147c3b4c
+# ╠═8131d4e0-819c-11eb-1d24-75120ca1247d
 # ╠═813dbbc0-819c-11eb-10ed-cf05e3733707
-# ╟─813e7f10-819c-11eb-36b7-4b0c78e16cc2
 # ╠═81481c02-819c-11eb-0ad8-97014cf886c6
 # ╟─93a864e0-819c-11eb-26d9-71c9b371f684

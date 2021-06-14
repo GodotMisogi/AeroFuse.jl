@@ -33,7 +33,7 @@ vtail = HalfWing(foils     = vtail_foils,
                  sweep_LEs = [7.97]);
 
 ## Assembly
-wing_panels  = panel_wing(wing, [30], 15);
+wing_panels  = panel_wing(wing, [20], 10);
 htail_panels = panel_wing(htail, [12], 12;
                           position	= [4., 0, 0],
                           angle 	= deg2rad(-2.),
@@ -85,7 +85,7 @@ print_coefficients(nf_coeffs, ff_coeffs, comp)
 
 ## Impure
 println("Impure -")
-@benchmark begin
+@time begin
     state = VLMState(fs, 
                      rho_ref   = ρ,
                      r_ref     = SVector(ref...),
@@ -95,13 +95,13 @@ println("Impure -")
                      name      = ac_name);
 
     system, surfs, nf_t, ff_t = AeroMDAO.VortexLattice.solve_case!(aircraft, state);
-end
+end;
 
 ##
 surf_names = (collect ∘ keys)(surfs)
 comp = surf_names[2]
 nf_coeffs, ff_coeffs, surf = surfs[comp];
-# print_coefficients(nf_coeffs, ff_coeffs, comp)
+print_coefficients(nf_coeffs, ff_coeffs, comp)
 print_coefficients(nf_t, ff_t, state.name)
 
 ## Derivatives

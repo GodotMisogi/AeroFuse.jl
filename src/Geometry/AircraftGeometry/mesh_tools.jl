@@ -10,7 +10,7 @@ function chop_sections(set1, set2, n :: Integer; spacing = "uniform", direction 
 	[ weighted_vector.(set1, set2, μ) for μ ∈ space ][1:end-1]
 end
 
-coords_chopper(coords, n, spacing = "cosine", direction = 1) = @views [ chop_sections.(coords[1:end-1], coords[2:end], n; spacing = spacing, direction = direction)...; [coords[end]] ]
+coords_chopper(coords, n, spacings = "cosine", direction = 1) = @views [ chop_sections.(coords[1:end-1], coords[2:end], n; spacing = spacings, direction = direction)...; [coords[end]] ]
 
 chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) ∈ zip(lead, trail) ]
 
@@ -28,7 +28,7 @@ Convert an array of coordinates corresponding to a wing, ordered from root to ti
 function make_panels(coords)
 	spanlist = vectarray.(coords)    
 	adjacent_sections = zip(spanlist, spanlist[2:end])
-	hcat(( Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ adjacent_sections )...)
+	@views hcat(( Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ adjacent_sections )...)
 end
 
 wetted_area(panels :: Matrix{<: Panel3D}) = sum(panel -> panel_area(panel), panels)

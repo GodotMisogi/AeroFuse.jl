@@ -41,7 +41,7 @@ function solve_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β, �
     # Compute aerodynamic coefficients
     nearfield_coeffs, farfield_coeffs, CFs, CMs = evaluate_coefficients(surface_forces, surface_moments, trefftz_force, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref)
 
-    nearfield_coeffs, farfield_coeffs, CFs, CMs, Γs, horseshoes
+    nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs
 end
 
 """
@@ -49,21 +49,19 @@ end
 
 Evaluate a vortex lattice case given a `Wing` or `HalfWing` with a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments, ``n_s`` span-wise panels and ``n_c`` chord-wise panels.
 """
-function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho_ref = 1.225, r_ref = [0.25, 0, 0], area_ref = 1, chord_ref = 1, span_ref = 1, mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3)
+function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho_ref = 1.225, r_ref = [0.25, 0, 0], area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), span_ref = span(wing), mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3)
     # Unpack Freestream
     U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Determine spanwise panel distribution
     span_nums = number_of_spanwise_panels(wing, span_num)
 
-    println("Spanwise panels: ", span_nums)
-
     # Compute panels and normals
     horseshoe_panels, camber_panels = vlmesh_wing(wing, span_nums, chord_num)
     normals = panel_normal.(camber_panels)
 
     # Compute forces and moments
-    nearfield_coeffs, farfield_coeffs, CFs, CMs, Γs, horseshoes = solve_case(horseshoe_panels, normals, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref, r_ref)
+    nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs = solve_case(horseshoe_panels, normals, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref, r_ref)
     
     # Viscous drag evaluation
     if viscous
