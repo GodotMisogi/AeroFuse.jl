@@ -42,9 +42,9 @@ make_horseshoes(horseshoe_panels) =	@. horseshoe_line(horseshoe_panels), horsesh
 
 Evaluate and return the vortex strengths ``\\Gamma``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``\\Omega``.
 """
-function solve_system(horseshoes, collocation_points, normals, U, Ω)
-    V = map(r -> U + Ω × r, collocation_points)
-    AIC  = influence_matrix(horseshoes, collocation_points, normals, -normalize(U))
+function solve_system(horseshoes, normals, U, Ω)
+    V = map(r -> U + Ω × r, collocation_point.(horseshoes))
+    AIC  = influence_matrix(horseshoes, collocation_point.(horseshoes), normals, -normalize(U))
     boco = boundary_condition(V, normals)
     Γs 	 = AIC \ boco 
 end
