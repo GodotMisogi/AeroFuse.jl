@@ -33,16 +33,16 @@ vtail = HalfWing(foils     = vtail_foils,
                  sweep_LEs = [7.97]);
 
 ## Assembly
-wing_panels  = panel_wing(wing, [20], 10);
+wing_panels  = panel_wing(wing,  [20], 10);
 htail_panels = panel_wing(htail, [12], 12;
-                          position	= [4., 0, 0],
-                          angle 	= deg2rad(-2.),
-                          axis 	  	= [0., 1., 0.]
+                          position = [4., 0, 0],
+                          angle    = deg2rad(-2.),
+                          axis 	   = [0., 1., 0.]
                          )
 vtail_panels = panel_wing(vtail, [12], 10; 
-                          position 	= [4., 0, 0],
-                          angle 	= π/2, 
-                          axis 	 	= [1., 0., 0.]
+                          position = [4., 0, 0],
+                          angle    = π/2, 
+                          axis 	   = [1., 0., 0.]
                          )
 
 aircraft = Dict(
@@ -94,7 +94,7 @@ println("Impure -")
                      span_ref  = b, 
                      name      = ac_name);
 
-    system, surfs, nf_t, ff_t = AeroMDAO.VortexLattice.solve_case!(aircraft, state);
+    system, surfs, nf_t, ff_t = solve_case!(aircraft, state);
 end;
 
 ##

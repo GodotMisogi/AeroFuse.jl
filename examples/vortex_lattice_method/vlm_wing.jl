@@ -3,8 +3,7 @@ using Revise
 using AeroMDAO
 
 ## Wing section setup
-wing_foils = Foil.(fill(naca4((0,0,1,2)), 3))
-wing_right = HalfWing(foils     = wing_foils,
+wing_right = HalfWing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
                       chords    = [1.0, 0.6, 0.2],
                       twists    = [0.0, 0.0, 0.0],
                       spans     = [5.0, 0.5],
@@ -34,7 +33,9 @@ solve_case(wing, fs;
            span_num  = [10, 5], 
            chord_num = 5,
            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
-           x_tr      = [0.3, 0.3]);
+           x_tr      = [0.3, 0.3],
+           spacing   = "cosine"
+          );
 
 print_coefficients(nf_coeffs, ff_coeffs, "Wing")
 
@@ -42,16 +43,14 @@ print_coefficients(nf_coeffs, ff_coeffs, "Wing")
 @time nf, ff, dvs = 
 solve_stability_case(wing, fs; 
                      rho_ref    = ρ, 
-                     r_ref      = ref, 
-                     area_ref   = S, 
-                     span_ref   = b, 
-                     chord_ref  = c, 
+                     r_ref      = ref,
                      span_num   = [25, 4], 
                      chord_num  = 6, 
                      name       = "My Wing",
                      viscous    = true,
                      x_tr       = [0.3, 0.3],
-                     print      = false);
+                     print      = false
+                    );
 
 #
 print_coefficients(nf, ff, "Wing")
@@ -61,25 +60,6 @@ print_derivatives(dvs, "Wing")
 using StaticArrays
 using Plots
 gr(size = (600, 400), dpi = 300)
-
-## Coordinates
-horseshoe_coords = plot_panels(horseshoe_panels[:])
-wing_coords      = plot_wing(wing);
-
-wind_CFs    = body_to_wind_axes.(CFs, α, β) # Transforming body forces to wind axes, needs further checkings
-panel_areas = @. panel_area(horseshoe_panels)
-CDis        = @. getindex(wind_CFs, 1)
-CYs	       = @. getindex(wind_CFs, 2)
-CLs         = @. getindex(wind_CFs, 3)
-CL_loadings = 2sum(Γs, dims = 1)[:] / (V * c)
-
-colpoints = horseshoe_point.(horseshoe_panels)
-xs        = getindex.(colpoints, 1);
-ys        = getindex.(colpoints, 2);
-zs        = getindex.(colpoints, 3);
-
-# Exaggerated CZ distribution for plot
-cz_pts    = tupvector(SVector.(xs[:], ys[:], zs[:] .+ CLs[:]));
 
 ## Streamlines
 
@@ -91,9 +71,9 @@ cz_pts    = tupvector(SVector.(xs[:], ys[:], zs[:] .+ CLs[:]));
 
 # Spanwise distribution
 span_points = 20
-init        = trailing_chopper(ifelse(β == 0 && Ω == zeros(3), wing.right, wing), span_points) 
+init        = trailing_chopper(wing, span_points) 
 dx, dy, dz  = 0, 0, 1e-3
-seed        = [ init .+ Ref([dx, dy, dz])  ; 
+seed        = [ init .+ Ref([dx, dy,  dz])  ; 
                 init .+ Ref([dx, dy, -dz]) ];
 
 distance = 5
@@ -101,6 +81,15 @@ num_stream_points = 100
 streams = plot_streams(fs, seed, horseshoes, Γs, distance, num_stream_points);
 
 ## Display
+horseshoe_coords = plot_panels(horseshoe_panels[:])
+wing_coords      = plot_wing(wing);
+colpoints        = horseshoe_point.(horseshoe_panels)
+
+# Coordinates
+xs = getindex.(colpoints, 1);
+ys = getindex.(colpoints, 2);
+zs = getindex.(colpoints, 3);
+
 z_limit = 5
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1, 
@@ -109,14 +98,20 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      size = (800, 600))
 plot!.(horseshoe_coords, color = :black, label = :none)
 scatter!(tupvector(colpoints)[:], marker = 1, color = :black, label = :none)
-# plot!.(streams, color = :green, label = :none)
+plot!.(streams, color = :green, label = :none)
 plot!()
 
 ## Spanwise forces
-span_areas = sum(panel_areas, dims = 1)[:]
-span_CDis = sum(CDis, dims = 1)[:] * S ./ span_areas
-span_CYs  = sum(CYs, dims = 1)[:]  * S ./ span_areas
-span_CLs  = sum(CLs, dims = 1)[:]  * S ./ span_areas
+wind_CFs = body_to_wind_axes.(CFs, fs.alpha, fs.beta)
+CDis     = @. getindex(wind_CFs, 1)
+CYs	     = @. getindex(wind_CFs, 2)
+CLs      = @. getindex(wind_CFs, 3)
+
+area_scale  = S ./ sum(panel_area, horseshoe_panels, dims = 1)[:]
+span_CDis   = sum(CDis, dims = 1)[:] .* area_scale
+span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
+span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
+CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * fs.V * c)
 
 plot_CD = plot(ys[1,:], span_CDis, label = :none, ylabel = "CDi")
 plot_CY = plot(ys[1,:], span_CYs, label = :none, ylabel = "CY")
@@ -127,11 +122,20 @@ plot_CL = begin
 plot(plot_CD, plot_CY, plot_CL, layout = (3,1))
 
 ## Lift distribution
+
+# Exaggerated CF distribution for plot
+hs_pts = bound_leg_center.(horseshoes)
+hs_xs  = getindex.(hs_pts, 1)
+hs_ys  = getindex.(hs_pts, 2)
+hs_zs  = getindex.(hs_pts, 3)
+
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
      camera = (25, 30),
      zlim = (-0.1, z_limit)
     )
-plot!(wing_coords, label = "Wing Planform")
-scatter!(cz_pts, zcolor = CLs[:], marker = 2, label = "CL (Exaggerated)")
-plot!(size = (800, 600), colorbar = :none)
+plot!.(horseshoe_coords, color = :gray, label = :none)
+# scatter!(cz_pts, zcolor = CLs[:], marker = 2, label = "CL (Exaggerated)")
+quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(CDis[:], CYs[:], CLs[:]) .* 100)
+plot!(size = (800, 600))
+plot!()

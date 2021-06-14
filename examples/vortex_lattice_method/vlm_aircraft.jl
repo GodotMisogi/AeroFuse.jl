@@ -93,8 +93,8 @@ dv_data =
 names = (collect ∘ keys)(dv_data) 
 comp  = names[1]
 nf, ff, dvs = dv_data[comp];
-print_coefficients(comp, nf, ff)
-print_derivatives(comp, dvs)
+print_coefficients(nf, ff, comp)
+print_derivatives(dvs, comp)
 
 ## Streamlines
 
@@ -108,7 +108,7 @@ print_derivatives(comp, dvs)
 
 # Spanwise distribution
 span_points = 50
-init        = leading_chopper(ifelse(β == 0 && Ω == zeros(3), wing.right, wing), span_points) 
+init        = leading_chopper(wing, span_points) 
 dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy, dz]) ; 
                 init .+ Ref([dx, dy,-dz]) ];
@@ -127,12 +127,28 @@ gr(size = (200, 100), dpi = 300)
 ##
 z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
+     camera = (60, 60),
+    #  xlim = (-z_limit/2, z_limit/2),
      aspect_ratio = 1, 
-     camera = (30, 60),
-     xlim = (-z_limit/2, z_limit/2),
      zlim = (-z_limit/2, z_limit/2),
      size = (1280, 720)
     )
-plot!.(horseshoe_coords, color = :black, label = :none)
+plot!.(horseshoe_coords, color = :gray, label = :none)
 plot!.(streams, color = :green, label = :none)
+plot!()
+
+## Exaggerated CF distribution for plot
+
+# Forces
+wind_CFs = body_to_wind_axes.(CFs, fs.alpha, fs.beta)
+CDis     = @. getindex(wind_CFs, 1)
+CYs	     = @. getindex(wind_CFs, 2)
+CLs      = @. getindex(wind_CFs, 3)
+
+hs_pts = bound_leg_center.(horseshoes)
+hs_xs  = getindex.(hs_pts, 1)
+hs_ys  = getindex.(hs_pts, 2)
+hs_zs  = getindex.(hs_pts, 3)
+
+quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(CDis[:], CYs[:], CLs[:]) .* 500)
 plot!()

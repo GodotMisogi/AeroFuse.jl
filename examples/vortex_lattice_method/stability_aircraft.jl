@@ -93,7 +93,7 @@ aircraft = Dict("Wing"            => wing_panels,
 ac_name = "My Aircraft"
 ρ 		= 1.225
 ref     = x_w
-V, α, β = 1.0, 0.0, 0.0
+V, α, β = 1.0, 3.0, 0.0
 Ω 		= [0.0, 0.0, 0.0]
 fs 	    = Freestream(V, α, β, Ω)
 
@@ -134,7 +134,7 @@ Cl_r = dvs_plane[4,5]
 Cn_r = dvs_plane[6,5]
 Cn_β = dvs_plane[6,2]
 
-γ = Cl_β * Cn_r / (Cl_r * Cn_β) # NEEDS TESTING
+γ = Cl_β * Cn_r / (Cl_r * Cn_β) # Check degree-radian issue
 
 # Locations
 x_np = [ ref[1] .+ np; zeros(2) ]	# Neutral point
@@ -143,7 +143,7 @@ x_cp = [ ref[1] .+ cp; zeros(2) ]	# Center of pressure
 println("Aerodynamic Center x_ac: $(x_w[1]) m")
 println("Neutral Point      x_np: $(x_np[1]) m")
 println("Center of Pressure x_cp: $(x_cp[1]) m")
-# println("Spiral Stability   ????: $γ")
+println("Spiral Stability      γ: $γ")
 
 ## Plotting everything
 using Plots
@@ -165,11 +165,11 @@ plot!(wing_plan, label = "Wing")
 plot!(htail_plan, label = "Horizontal Tail")
 plot!(vtail_plan, label = "Vertical Tail")
 
-scatter!(tuple(x_w...), label = "Wing MAC")
-scatter!(tuple(x_h...), label = "Horizontal Tail MAC")
-scatter!(tuple(x_v...), label = "Vertical Tail MAC")
+scatter!(tuple(x_w...), color = :blue, label = "Wing MAC")
+scatter!(tuple(x_h...), color = :red, label = "Horizontal Tail MAC")
+scatter!(tuple(x_v...), color = :green, label = "Vertical Tail MAC")
 
-scatter!(tuple(x_np...), label = "Neutral Point")
-scatter!(tuple(x_cp...), label = "Center of Pressure")
+scatter!(tuple(x_np...), color = :orange, label = "Neutral Point")
+scatter!(tuple(x_cp...), color = :brown, label = "Center of Pressure")
 # savefig(aircraft_plot, "Aircraft.png")
 plot!()
