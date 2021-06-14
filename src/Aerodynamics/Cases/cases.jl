@@ -90,14 +90,13 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
 
     # Get required vortex lattice variables, i.e. horseshoes, collocation points and normals
     horseshoes = horseshoe_line.(horsies)
-    collocation_points = horseshoe_point.(horsies)
     horseshoes_arr = [ horseshoe_line.(horses) for horses in horseshoe_panels ]
     
     # Unpack Freestream
     U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Solve system
-    Γs = solve_system(horseshoes, collocation_points, normies, U, Ω)
+    Γs = solve_system(horseshoes, normies, U, Ω)
 
     # Reshaping
     panel_sizes = size.(horseshoe_panels)

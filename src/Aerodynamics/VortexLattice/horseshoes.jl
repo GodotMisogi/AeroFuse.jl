@@ -52,19 +52,10 @@ transform(line :: Line, rotation, translation) = let trans = Translation(transla
 r1(r, line :: Line) = r - r1(line)
 r2(r, line :: Line) = r - r2(line)
 
-bound_leg_velocity(a, b, Γ) = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
+bound_leg_velocity(a, b, Γ)    = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
+trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × u / (norm(r) - dot(r, u))
 
-# Finite-core model
-function bound_leg_velocity(a, b, Γ, ε) 
-    na, nb, σ = norm(a), norm(b), dot(a, b)
-    term_1    = (na^2 - σ) / √(na^2 + ε) + (nb^2 - σ) / √(nb^2 + ε)
-    term_2    = a × b / (na^2 * nb^2 - σ^2 + ε * (na^2 + nb^2 - 2 * na * nb))
-    
-    Γ/4π * term_1 * term_2
-end
-
-trailing_legs_velocities(a, b, Γ, u) = Γ/4π * (a × u / (norm(a) - dot(a, u)) / norm(a) - b × u / (norm(b) - dot(b, u)) / norm(b))
-
+trailing_legs_velocities(a, b, Γ, u) = trailing_leg_velocity(a, Γ, u) - trailing_leg_velocity(b, Γ, u)
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
 
 horseshoe_velocity(r, line :: Line, Γ, direction) = total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
