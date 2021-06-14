@@ -99,8 +99,8 @@ r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
 """
 Return a `Horseshoe` bound leg corresponding to a `Panel3D`.
 """
-horseshoe_line(panel :: Panel3D, drift = zeros(3)) = let (r1, r2) = bound_leg(panel); 
-    Horseshoe(Line(r1, r2), horseshoe_point(panel)) end
+horseshoe_line(panel :: Panel3D, drift = SVector(0., 0., 0.)) = let (r1, r2) = bound_leg(panel); 
+    Horseshoe(Line(r1, r2), horseshoe_point(panel) .+ drift) end
 
 """
 Compute the midpoint of the bound leg of a `Horseshoe`.
