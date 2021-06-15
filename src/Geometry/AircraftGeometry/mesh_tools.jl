@@ -1,10 +1,10 @@
-function chop_sections(set1, set2, n :: Integer, spacing = "uniform"; flip = false) 
-	if lowercase(spacing) == "cosine"
-		space = cosine_spacing(0.5, 1., n + 1)
+function chop_sections(set1, set2, n :: Integer, spacing = "cosine"; flip = false) 
+	if lowercase(spacing) == "uniform"
+		space = uniform_spacing(0., 1., n + 1)
 	elseif lowercase(spacing) == "sine"
 		space = sine_spacing(0., 1., (n + 1) * ifelse(flip, -1, 1))
 	else
-		space = uniform_spacing(0., 1., n + 1)
+		space = cosine_spacing(0.5, 1., n + 1)
 	end
 
 	[ weighted_vector.(set1, set2, μ) for μ ∈ space ][1:end-1]

@@ -66,9 +66,8 @@ trailing_chopper(obj :: Wing, span_num :: Integer) = span_chopper(wing_bounds(ob
 
 Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
 """
-function mesh_horseshoes(wing :: Wing, span_num, chord_num, spacings = "sine")
+function mesh_horseshoes(wing :: Wing, span_num, chord_num, spacings = "cosine")
     if wing.left === wing.right
-        # Need to consider sine distribution at symmetry, and cosine thereafter
         left_panels  = mesh_horseshoes(wing.left, reverse(span_num), chord_num, reverse(spacings), flip = true)
         right_panels = mesh_horseshoes(wing.right, span_num, chord_num, spacings)
     else
@@ -96,7 +95,7 @@ end
 
 Mesh the camber distribution of a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for vortex lattice analyses.
 """
-function mesh_cambers(wing :: Wing, span_num, chord_num, spacings = "sine")
+function mesh_cambers(wing :: Wing, span_num, chord_num, spacings = "cosine")
     if wing.left === wing.right
         # Need to consider sine distribution at symmetry, and cosine thereafter
         left_panels  = mesh_cambers(wing.left, reverse(span_num), chord_num, reverse(spacings), flip = true)
@@ -109,7 +108,7 @@ function mesh_cambers(wing :: Wing, span_num, chord_num, spacings = "sine")
     [ left_panels right_panels ] 
 end
 
-vlmesh_wing(wing :: Union{HalfWing, Wing}, span_num, chord_num, spacings = "sine") = mesh_horseshoes(wing, span_num, chord_num, spacings), mesh_cambers(wing, span_num, chord_num, spacings)
+vlmesh_wing(wing :: Union{HalfWing, Wing}, span_num, chord_num, spacings = "cosine") = mesh_horseshoes(wing, span_num, chord_num, spacings), mesh_cambers(wing, span_num, chord_num, spacings)
 
 function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer; rotation = one(RotMatrix{3, Float64}), translation = zeros(3), spacings = "cosine")
     horseshoes, cambers = vlmesh_wing(wing, span_num, chord_num, spacings) 
