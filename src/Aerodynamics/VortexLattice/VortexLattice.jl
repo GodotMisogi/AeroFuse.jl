@@ -45,7 +45,7 @@ Evaluate and return the vortex strengths ``\\Gamma``s given `Horseshoes`, their 
 """
 function solve_system(horseshoes, normals, U, Ω)
     V = map(r -> U + Ω × r, collocation_point.(horseshoes))
-    AIC  = influence_matrix(horseshoes, collocation_point.(horseshoes), normals, -normalize(U), true)
+    AIC  = influence_matrix(horseshoes, collocation_point.(horseshoes), normals, -normalize(U), false)
     boco = boundary_condition(V, normals)
     Γs 	 = AIC \ boco 
 end
