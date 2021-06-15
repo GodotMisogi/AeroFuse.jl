@@ -30,10 +30,9 @@ Evaluate a vortex lattice case given an array of `Panel3D`s with associated norm
 function solve_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref, r_ref)
     # Make horseshoes and collocation points
     horseshoes = horseshoe_line.(horseshoe_panels)
-    collocation_points = horseshoe_point.(horseshoe_panels)
 
     # Solve system
-    Γs = reshape(solve_system(horseshoes[:], collocation_points[:], normals[:], U, Ω), size(horseshoe_panels))
+    Γs = reshape(solve_system(horseshoes[:], normals[:], U, Ω), size(horseshoe_panels))
 
     # Compute forces and moments
     surface_forces, surface_moments, trefftz_force = case_dynamics(Γs, horseshoes, U, α, β, Ω, rho_ref, r_ref)
@@ -91,14 +90,13 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
 
     # Get required vortex lattice variables, i.e. horseshoes, collocation points and normals
     horseshoes = horseshoe_line.(horsies)
-    collocation_points = horseshoe_point.(horsies)
     horseshoes_arr = [ horseshoe_line.(horses) for horses in horseshoe_panels ]
     
     # Unpack Freestream
     U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Solve system
-    Γs = solve_system(horseshoes, collocation_points, normies, U, Ω)
+    Γs = solve_system(horseshoes, normies, U, Ω)
 
     # Reshaping
     panel_sizes = size.(horseshoe_panels)

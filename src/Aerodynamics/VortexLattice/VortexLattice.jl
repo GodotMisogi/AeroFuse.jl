@@ -7,12 +7,13 @@ using Rotations
 ## Panel geometry and math tools
 #==========================================================================================#
 
-import ..AeroMDAO: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform, p1, p2, p3, p4, dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient, weighted_vector, reshape_array, cartesian_to_freestream, freestream_to_cartesian
+import ..AeroMDAO: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width, dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient, weighted_vector, reshape_array, cartesian_to_freestream, freestream_to_cartesian
 
 ## Horseshoe setup
 #==========================================================================================#
 
 include("horseshoes.jl")
+include("finite_core.jl")
 
 export Horseshoe, horseshoe_line, horseshoe_point, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, make_horseshoes
 
@@ -42,9 +43,9 @@ make_horseshoes(horseshoe_panels) =	@. horseshoe_line(horseshoe_panels), horsesh
 
 Evaluate and return the vortex strengths ``\\Gamma``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``\\Omega``.
 """
-function solve_system(horseshoes, collocation_points, normals, U, Ω)
-    V = map(r -> U + Ω × r, collocation_points)
-    AIC  = influence_matrix(horseshoes, collocation_points, normals, -normalize(U))
+function solve_system(horseshoes, normals, U, Ω)
+    V = map(r -> U + Ω × r, collocation_point.(horseshoes))
+    AIC  = influence_matrix(horseshoes, collocation_point.(horseshoes), normals, -normalize(U), true)
     boco = boundary_condition(V, normals)
     Γs 	 = AIC \ boco 
 end

@@ -52,10 +52,10 @@ transform(line :: Line, rotation, translation) = let trans = Translation(transla
 r1(r, line :: Line) = r - r1(line)
 r2(r, line :: Line) = r - r2(line)
 
-bound_leg_velocity(a, b, Γ) = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
+bound_leg_velocity(a, b, Γ)    = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
+trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × u / (norm(r) - dot(r, u))
 
-trailing_legs_velocities(a, b, Γ, u) = Γ/4π * (a × u / (norm(a) - dot(a, u)) / norm(a) - b × u / (norm(b) - dot(b, u)) / norm(b))
-
+trailing_legs_velocities(a, b, Γ, u) = trailing_leg_velocity(a, Γ, u) - trailing_leg_velocity(b, Γ, u)
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
 
 horseshoe_velocity(r, line :: Line, Γ, direction) = total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
@@ -72,8 +72,9 @@ abstract type AbstractVortexArray end
 A horseshoe type consisting of a bound leg of type Line represening a vortex line.
 """
 struct Horseshoe{T <: Real} <: AbstractVortexArray
-    bound_leg :: Line{T}
-    # collocation_point :: SVector{3,T}
+    bound_leg         :: Line{T}
+    collocation_point :: SVector{3,T}
+    chord             :: T
 end
 
 """
@@ -90,7 +91,8 @@ r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
 """
 Return a `Horseshoe` bound leg corresponding to a `Panel3D`.
 """
-horseshoe_line(panel :: Panel3D) = let (r1, r2) = bound_leg(panel); (Horseshoe ∘ Line)(r1, r2) end
+horseshoe_line(panel :: Panel3D, drift = SVector(0., 0., 0.)) = let (r1, r2) = bound_leg(panel); 
+    Horseshoe(Line(r1, r2), horseshoe_point(panel) .+ drift, (norm ∘ average_chord)(panel)) end
 
 """
 Compute the midpoint of the bound leg of a `Horseshoe`.
@@ -107,4 +109,12 @@ bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
 
 Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
 """
-velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
+function velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat, finite_core = false) 
+    if finite_core
+        width = (norm ∘ bound_leg_vector)(horseshoe)
+        ε = max(horseshoe.chord, width) # Wrong core size? Consider options...
+        horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat, ε)
+    else
+        horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
+    end
+end
