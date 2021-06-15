@@ -3,12 +3,12 @@ using AeroMDAO
 
 ## Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-wing = Wing(foils     = wing_foils,
-            chords    = [1.0, 0.6],
-            twists    = [2.0, 2.0],
-            spans     = [5.0],
-            dihedrals = [11.31],
-            sweep_LEs = [2.291]);
+wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
+            chords    = [1.0, 0.6, 0.2],
+            twists    = [0.0, 0.0, 0.0],
+            spans     = [5.0, 0.5],
+            dihedrals = [5., 5.],
+            sweep_LEs = [5., 5.]);
 print_info(wing, "Wing")
 
 # Horizontal tail
@@ -32,16 +32,19 @@ vtail = HalfWing(foils     = vtail_foils,
 print_info(vtail, "Vertical Tail")
 
 # Assembly
-wing_panels  = panel_wing(wing, [20], 10);
-htail_panels = panel_wing(htail, [12], 12;
+wing_panels  = panel_wing(wing, [20, 3], 10;
+                          spacing = "uniform")
+htail_panels = panel_wing(htail, [6], 6;
                           position	= [4., 0, 0],
                           angle 	= deg2rad(-2.),
-                          axis 	  	= [0., 1., 0.]
+                          axis 	  	= [0., 1., 0.],
+                          spacing = "uniform"
                          )
-vtail_panels = panel_wing(vtail, [12], 10; 
+vtail_panels = panel_wing(vtail, [6], 5; 
                           position 	= [4., 0, 0],
                           angle 	= π/2, 
-                          axis 	 	= [1., 0., 0.]
+                          axis 	 	= [1., 0., 0.],
+                          spacing = "uniform"
                          )
 
 aircraft = Dict("Wing" 			  	=> wing_panels,
@@ -54,7 +57,7 @@ S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
 ac_name = "My Aircraft"
 ρ       = 1.225
 ref     = [0.25c, 0., 0.]
-V, α, β = 1.0, 1.0, 1.0
+V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
@@ -67,7 +70,7 @@ data =
                chord_ref   = c, 		# Reference chord
                name        = ac_name,	# Aircraft name
                print       = true,		# Prints the results for the entire aircraft
-               print_components = true,	# Prints the results for each component
+            #    print_components = true,	# Prints the results for each component
               );
 
 ## Data collection
@@ -107,7 +110,7 @@ print_derivatives(dvs, comp)
 # seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
 
 # Spanwise distribution
-span_points = 50
+span_points = 10
 init        = leading_chopper(wing, span_points) 
 dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy, dz]) ; 
@@ -117,17 +120,16 @@ distance = 8
 num_stream_points = 200
 streams = plot_streams(fs, seed, horseshoes, Γs, distance, num_stream_points);
 
-## Plot
-horseshoe_coords = plot_panels(horseshoe_panels[:])
-
 ##
 using Plots
 gr(size = (200, 100), dpi = 300)
 
 ##
+horseshoe_coords = plot_panels(horseshoe_panels[:]);
+
 z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
-     camera = (60, 60),
+     camera = (80, 80),
     #  xlim = (-z_limit/2, z_limit/2),
      aspect_ratio = 1, 
      zlim = (-z_limit/2, z_limit/2),

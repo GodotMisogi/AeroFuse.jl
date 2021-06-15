@@ -69,10 +69,10 @@ Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` 
 function mesh_horseshoes(wing :: Wing, span_num, chord_num, spacings = "sine")
     if wing.left === wing.right
         # Need to consider sine distribution at symmetry, and cosine thereafter
-        left_panels  = mesh_horseshoes(wing.left, span_num[end:-1:1], chord_num, spacings, flip = true)
+        left_panels  = mesh_horseshoes(wing.left, reverse(span_num), chord_num, reverse(spacings), flip = true)
         right_panels = mesh_horseshoes(wing.right, span_num, chord_num, spacings)
     else
-        left_panels  = mesh_horseshoes(wing.left, span_num[end:-1:1], chord_num, flip = true)
+        left_panels  = mesh_horseshoes(wing.left, reverse(span_num), chord_num, flip = true)
         right_panels = mesh_horseshoes(wing.right, span_num, chord_num)
     end
 
@@ -99,10 +99,10 @@ Mesh the camber distribution of a `Wing` into panels of ``n_s`` spanwise divisio
 function mesh_cambers(wing :: Wing, span_num, chord_num, spacings = "sine")
     if wing.left === wing.right
         # Need to consider sine distribution at symmetry, and cosine thereafter
-        left_panels  = mesh_cambers(wing.left, span_num[end:-1:1], chord_num, spacings, flip = true)
+        left_panels  = mesh_cambers(wing.left, reverse(span_num), chord_num, reverse(spacings), flip = true)
         right_panels = mesh_cambers(wing.right, span_num, chord_num, spacings)
     else
-        left_panels  = mesh_cambers(wing.left, span_num[end:-1:1], chord_num, flip = true)
+        left_panels  = mesh_cambers(wing.left, reverse(span_num), chord_num, flip = true)
         right_panels = mesh_cambers(wing.right, span_num, chord_num)
     end
 
@@ -111,7 +111,7 @@ end
 
 vlmesh_wing(wing :: Union{HalfWing, Wing}, span_num, chord_num, spacings = "sine") = mesh_horseshoes(wing, span_num, chord_num, spacings), mesh_cambers(wing, span_num, chord_num, spacings)
 
-function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer; rotation = one(RotMatrix{3, Float64}), translation = zeros(3), spacings = "sine")
+function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer; rotation = one(RotMatrix{3, Float64}), translation = zeros(3), spacings = "cosine")
     horseshoes, cambers = vlmesh_wing(wing, span_num, chord_num, spacings) 
     horseshoe_panels    = [ transform(panel, rotation, translation)               for panel in horseshoes ]
     panel_normals       = [ panel_normal(transform(panel, rotation, translation)) for panel in cambers 	  ]
@@ -119,7 +119,7 @@ function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vect
     horseshoe_panels, panel_normals
 end
 
-panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; position = zeros(3), angle = 0., axis = [1., 0., 0.]) = paneller(comp, span_panels, chord_panels, rotation = AngleAxis{Float64}(angle, axis...), translation = position)
+panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; position = zeros(3), angle = 0., axis = [1., 0., 0.], spacing = ["sine"; fill("cosine", length(span_panels) - 1)]) = paneller(comp, span_panels, chord_panels, rotation = AngleAxis{Float64}(angle, axis...), translation = position, spacings = spacing)
 
 number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* wing.spans / span(wing))
 number_of_spanwise_panels(wing :: Wing, span_num :: Integer) = number_of_spanwise_panels(wing.right, ceil(Int, span_num / 2))

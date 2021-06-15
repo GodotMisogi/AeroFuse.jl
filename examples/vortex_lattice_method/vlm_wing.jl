@@ -30,11 +30,11 @@ solve_case(wing, fs;
            area_ref  = S,
            span_ref  = b,
            chord_ref = c,
-           span_num  = [10, 5], 
+           span_num  = [25, 3], 
            chord_num = 5,
            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
            x_tr      = [0.3, 0.3],
-           spacing   = "cosine"
+          #  spacing   = ["sine","Cosine"]
           );
 
 print_coefficients(nf_coeffs, ff_coeffs, "Wing")
@@ -49,7 +49,8 @@ solve_stability_case(wing, fs;
                      name       = "My Wing",
                      viscous    = true,
                      x_tr       = [0.3, 0.3],
-                     print      = false
+                     print      = false,
+                    #  spacing   = ["sine", "cosine"]
                     );
 
 #

@@ -21,7 +21,7 @@ function print_case(data, comp)
     print_case(nf, ff, derivs, comp)
 end
 
-function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), span_ref = span(wing), span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, name = "Wing", viscous = false, x_tr = 0.3, print = false)
+function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), span_ref = span(wing), span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, name = "Wing", viscous = false, x_tr = 0.3, print = false, spacing = ["sine"; fill("cosine", length(span_num) - 1)])
     # Reference values and scaling inputs
     S, b, c = area_ref, span_ref, chord_ref
     x, scale = scale_inputs(freestream, b, c)
@@ -38,7 +38,8 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
                           chord_num = chord_num,
                           span_num  = span_num,
                           viscous 	= viscous,
-                          x_tr 		= x_tr)
+                          x_tr 		= x_tr,
+                          spacing   = spacing)
 
         [ data[1]; data[2] ] # Concatenate nearfield and farfield coefficients for DiffResults value
     end
