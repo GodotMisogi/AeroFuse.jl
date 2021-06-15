@@ -72,8 +72,9 @@ abstract type AbstractVortexArray end
 A horseshoe type consisting of a bound leg of type Line represening a vortex line.
 """
 struct Horseshoe{T <: Real} <: AbstractVortexArray
-    bound_leg :: Line{T}
+    bound_leg         :: Line{T}
     collocation_point :: SVector{3,T}
+    chord             :: T
 end
 
 """
@@ -91,7 +92,7 @@ r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
 Return a `Horseshoe` bound leg corresponding to a `Panel3D`.
 """
 horseshoe_line(panel :: Panel3D, drift = SVector(0., 0., 0.)) = let (r1, r2) = bound_leg(panel); 
-    Horseshoe(Line(r1, r2), horseshoe_point(panel) .+ drift) end
+    Horseshoe(Line(r1, r2), horseshoe_point(panel) .+ drift, (norm ∘ average_chord)(panel)) end
 
 """
 Compute the midpoint of the bound leg of a `Horseshoe`.
@@ -108,4 +109,12 @@ bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
 
 Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
 """
-velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
+function velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat, finite_core = false) 
+    if finite_core
+        width = (norm ∘ bound_leg_vector)(horseshoe)
+        ε = max(horseshoe.chord, width) # Wrong core size? Consider options...
+        horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat, ε)
+    else
+        horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
+    end
+end
