@@ -70,12 +70,12 @@ end
 
 @testset "NACA-4 Wing Vortex Lattice Method" begin
     # Define wing
-    wing = Wing(foils     = Foil.(naca4((2,4,1,2)) for i ∈ 1:3),
-                chords    = [0.18, 0.16, 0.08],
-                twists    = [2., 0., -2.],
-                spans     = [0.5, 0.5],
-                dihedrals = [0., 11.3],
-                sweep_LEs = [1.14, 8.])
+    wing = Wing(foils     = Foil.(naca4((0,0,1,2)) for i ∈ 1:2),
+                chords    = [0.18, 0.16],
+                twists    = [0., 0.],
+                spans     = [0.5,],
+                dihedrals = [5.],
+                sweep_LEs = [1.14])
 
     # Define reference values
     ρ   = 1.225
@@ -89,14 +89,14 @@ end
     nf_coeffs, ff_coeffs, dv_coeffs = solve_stability_case(wing, uniform; rho_ref = ρ, r_ref = ref, span_num = 20, chord_num = 5)
 
     # Test values
-    nf_tests = [0.00094437, -0.00049066, 0.11137544, -0.001868206, -0.00440614, -9.807e-5, 0.0, 0.0, 0.0]
-    ff_tests = [0.00103027, -0.00053694, 0.11136510]
-    dv_tests = [ 0.0232338    3.17931e-5    0.00233895  -0.0108045     0.000566369  ;
-                 0.00307003  -0.0139215     0.157886     0.000211956  -0.0193726    ;
-                 1.56531794   0.000698079  -0.0340142    0.414198      0.00533197   ;
-                 0.00904046  -0.0529491     0.737322     0.00279386   -0.0872407    ;
-                -0.0323204   -0.00384898    0.0267506   -0.0132855    -0.00322571   ;
-                -0.00180434  -0.00281951    0.0306778   -0.000785897   0.00249871   ]
+    nf_tests = [0.001189, -0.000228, 0.152203, -0.000242, -0.003486, -8.1e-5, 0.0, 0.0, 0.0]
+    ff_tests = [0.00123,  -0.000271, 0.152198]
+    dv_tests = [ 0.068444 -0.000046 -0.000711  0.023607  0.000337; 
+                 0.010867 -0.007536  0.129968  0.021929 -0.012086; 
+                 4.402229 -0.012973 -0.070654  6.833903  0.001999; 
+                 0.031877 -0.013083  0.460035  0.091216 -0.039146; 
+                -0.112285 -0.004631  0.105695 -0.852395 -0.007696; 
+                -0.002218 -0.002115  0.008263 -0.003817  0.001079]
 
     # Nearfield coefficients test
     [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nf_coeffs, nf_tests) ]
@@ -106,4 +106,4 @@ end
 
     # Stability derivatives' coefficients test
     [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dv_coeffs, dv_tests) ]
-end
+end;
