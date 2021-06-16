@@ -4,6 +4,7 @@ using LinearAlgebra
 using Base.Iterators
 using StaticArrays
 using Statistics
+using TimerOutputs
 
 using ..AeroMDAO: AbstractPanel2D, Panel2D, WakePanel2D, Point2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, rotation, inverse_rotation, midpair_map, pressure_coefficient, wake_panel, wake_panels, panel_points, panel_vector
 

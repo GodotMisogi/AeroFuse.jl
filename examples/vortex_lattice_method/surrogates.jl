@@ -1,4 +1,4 @@
-## Example script for building surrogate models using VLM analysis, needs Surrogates and DataFrames installed
+## Example script for building surrogate models using VLM anlaysis
 using Surrogates
 using DataFrames
 using AeroMDAO
