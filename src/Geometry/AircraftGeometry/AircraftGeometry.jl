@@ -47,6 +47,6 @@ aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
 
 info(wing :: Union{Wing, HalfWing}) = [ span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing) ]
 
-export HalfWing, HalfWingSection, Wing, WingSection, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, max_tbyc_sweeps, print_info, leading_edge, leading_chopper, trailing_chopper, wing_chopper, wing_bounds, paneller, panel_wing, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing, mean_aerodynamic_center, wetted_area, number_of_spanwise_panels, spanwise_spacing
+export HalfWing, HalfWingSection, Wing, WingSection, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, max_tbyc_sweeps, print_info, leading_edge, trailing_edge, wing_bounds, leading_chopper, trailing_chopper, wing_chopper, paneller, panel_wing, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing, mean_aerodynamic_center, wetted_area, number_of_spanwise_panels, spanwise_spacing
 
 end

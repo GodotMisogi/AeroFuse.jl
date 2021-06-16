@@ -144,3 +144,5 @@ function wing_bounds(wing :: HalfWing, flip = false)
     leading, shifted_trailing
 end
 
+trailing_edge(wing :: HalfWing, flip = false) = wing_bounds(wing, flip)[2]
+

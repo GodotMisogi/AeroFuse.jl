@@ -65,4 +65,7 @@ function wing_bounds(wing :: Wing)
     leading, trailing
 end
 
+leading_edge(wing :: Wing) = [ leading_edge(wing.left, true); leading_edge(wing.right) ]
+trailing_edge(wing :: Wing) = [ trailing_edge(wing.left, true); trailing_edge(wing.right) ]
+
 mean_aerodynamic_center(wing :: Wing, factor = 0.25) = (mean_aerodynamic_center(wing.right, factor) .+ mean_aerodynamic_center(wing.left, factor)) ./ 2
