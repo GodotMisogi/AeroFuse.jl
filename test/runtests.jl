@@ -109,29 +109,29 @@ end
 @testset "Vortex Lattice Method - Vanilla Aircraft" begin
     ## Wing
     wing = Wing(foils = Foil.(fill(naca4((0,0,1,2)), 2)),
-    chords    = [1.0, 0.6],
-    twists    = [0.0, 0.0],
-    spans     = [5.0],
-    dihedrals = [11.39],
-    sweep_LEs = [0.]);
+                chords    = [1.0, 0.6],
+                twists    = [0.0, 0.0],
+                spans     = [5.0],
+                dihedrals = [11.39],
+                sweep_LEs = [0.]);
 
     # Horizontal tail
     htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
     htail = Wing(foils     = htail_foils,
-    chords    = [0.7, 0.42],
-    twists    = [0.0, 0.0],
-    spans     = [1.25],
-    dihedrals = [0.],
-    sweep_LEs = [6.39])
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.25],
+                 dihedrals = [0.],
+                 sweep_LEs = [6.39])
 
     # Vertical tail
     vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
     vtail = HalfWing(foils     = vtail_foils, 
-        chords    = [0.7, 0.42],
-        twists    = [0.0, 0.0],
-        spans     = [1.0],
-        dihedrals = [0.],
-        sweep_LEs = [7.97])
+                     chords    = [0.7, 0.42],
+                     twists    = [0.0, 0.0],
+                     spans     = [1.0],
+                     dihedrals = [0.],
+                     sweep_LEs = [7.97])
 
     ## Assembly
     wing_panels  = panel_wing(wing, 16, 10;
@@ -147,9 +147,9 @@ end
                               axis      = [1., 0., 0.],
                               spacing   = "cosine")
 
-    aircraft = Dict("Wing"              => wing_panels,
-                    "Horizontal Tail"   => htail_panels,
-                    "Vertical Tail"     => vtail_panels)
+    aircraft = Dict("Wing"            => wing_panels,
+                    "Horizontal Tail" => htail_panels,
+                    "Vertical Tail"   => vtail_panels)
 
     ## Reference quantities
     ac_name = "My Aircraft"
@@ -161,14 +161,13 @@ end
     fs      = Freestream(V, α, β, Ω)
 
     ## Stability case
-    dv_data = 
-    solve_stability_case(aircraft, fs;
-                rho_ref     = ρ,
-                r_ref       = ref,
-                area_ref    = S,
-                span_ref    = b,
-                chord_ref   = c,
-                name        = ac_name);
+    dv_data = solve_stability_case(aircraft, fs;
+                                   rho_ref   = ρ,
+                                   r_ref     = ref,
+                                   area_ref  = S,
+                                   span_ref  = b,
+                                   chord_ref = c,
+                                   name      = ac_name);
                 
     nfs, ffs, dvs = dv_data[ac_name]
 
