@@ -100,10 +100,91 @@ end
 
     # Nearfield coefficients test
     [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nf_coeffs, nf_tests) ]
-
     # Farfield coefficients test
     [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ff_coeffs, ff_tests) ]
-
     # Stability derivatives' coefficients test
     [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dv_coeffs, dv_tests) ]
+end
+
+@testset "Vortex Lattice Method - Vanilla Aircraft" begin
+    ## Wing
+    wing = Wing(foils = Foil.(fill(naca4((0,0,1,2)), 2)),
+    chords    = [1.0, 0.6],
+    twists    = [0.0, 0.0],
+    spans     = [5.0],
+    dihedrals = [11.39],
+    sweep_LEs = [0.]);
+
+    # Horizontal tail
+    htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
+    htail = Wing(foils     = htail_foils,
+    chords    = [0.7, 0.42],
+    twists    = [0.0, 0.0],
+    spans     = [1.25],
+    dihedrals = [0.],
+    sweep_LEs = [6.39])
+
+    # Vertical tail
+    vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
+    vtail = HalfWing(foils     = vtail_foils, 
+        chords    = [0.7, 0.42],
+        twists    = [0.0, 0.0],
+        spans     = [1.0],
+        dihedrals = [0.],
+        sweep_LEs = [7.97])
+
+    ## Assembly
+    wing_panels  = panel_wing(wing, 16, 10;
+                              spacing = "cosine")
+    htail_panels = panel_wing(htail, 6, 6;
+                              position = [4., 0, 0],
+                              angle    = deg2rad(-2.),
+                              axis     = [0., 1., 0.],
+                              spacing  = "cosine")
+    vtail_panels = panel_wing(vtail, 5, 6; 
+                              position  = [4., 0, 0],
+                              angle     = π/2, 
+                              axis      = [1., 0., 0.],
+                              spacing   = "cosine")
+
+    aircraft = Dict("Wing"              => wing_panels,
+                    "Horizontal Tail"   => htail_panels,
+                    "Vertical Tail"     => vtail_panels)
+
+    ## Reference quantities
+    ac_name = "My Aircraft"
+    S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
+    ρ       = 1.225
+    ref     = [0.25c, 0., 0.]
+    V, α, β = 1.0, 1.0, 1.0
+    Ω       = [0.0, 0.0, 0.0]
+    fs      = Freestream(V, α, β, Ω)
+
+    ## Stability case
+    dv_data = 
+    solve_stability_case(aircraft, fs;
+                rho_ref     = ρ,
+                r_ref       = ref,
+                area_ref    = S,
+                span_ref    = b,
+                chord_ref   = c,
+                name        = ac_name);
+                
+    nfs, ffs, dvs = dv_data[ac_name]
+
+    nf_tests = [0.000258, -0.006642, 0.074301, -0.003435, 0.075511, 0.001563, 0.0, 0.0, 0.0]
+    ff_tests = [0.000375, -0.006685, 0.074281]
+    dv_tests = [ 0.016795  0.003460  0.003761   0.093303 -0.000674;
+                -0.000863 -0.374410  0.403476   0.000630 -0.253848;
+                 5.749765  0.046649 -0.01346   15.571205  0.020396;
+                 0.022674 -0.196605  0.660392   0.099065 -0.039688;
+                -2.70367  -0.132928  0.070111 -37.372278 -0.064439;
+                 0.002034  0.087382  0.014991   0.005840  0.091088]  
+
+    # Nearfield coefficients test
+    [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
+    # Farfield coefficients test
+    [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
+    # Stability derivatives' coefficients test
+    [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
 end;

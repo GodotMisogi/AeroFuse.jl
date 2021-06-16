@@ -31,9 +31,13 @@ vtail = HalfWing(foils     = vtail_foils,
 print_info(vtail, "Vertical Tail")
 
 ## Assembly
-wing_panels  = panel_wing(wing, [20, 3], 10;
-                          spacing = "cosine"
+wing_panels  = panel_wing(wing,                 # Wing or HalfWing type
+                          [20, 3],              # Number of spanwise panels for half-wing 
+                          10;                   # Chordwise panels 
+                        #   spacing = "cosine"  # Spacing distribution: Default works well for symmetric
                          )
+println(size(wing_panels[1]))
+
 htail_panels = panel_wing(htail, [6], 6;
                           position	= [4., 0, 0],
                           angle 	= deg2rad(-2.),
@@ -51,13 +55,13 @@ aircraft = Dict("Wing" 			  	=> wing_panels,
                 "Horizontal Tail" 	=> htail_panels,
                 "Vertical Tail"   	=> vtail_panels)
 
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
+S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 
 ## Case
 ac_name = "My Aircraft"
 ρ       = 1.225
 ref     = [0.25c, 0., 0.]
-V, α, β = 1.0, 1.0, 1.0
+V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 

@@ -100,7 +100,7 @@ end
 vlmesh_wing(wing :: Union{HalfWing, Wing}, span_num, chord_num, spacings = ["cosine"]) = mesh_horseshoes(wing, span_num, chord_num, spacings), mesh_cambers(wing, span_num, chord_num, spacings)
 
 function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer; rotation = one(RotMatrix{3, Float64}), translation = zeros(3), spacings = ["cosine"])
-    horseshoes, cambers = vlmesh_wing(wing, span_num, chord_num, spacings) 
+    horseshoes, cambers = vlmesh_wing(wing, ifelse(typeof(span_num) <: Integer, [span_num], span_num), chord_num, spacings) 
     horseshoe_panels    = [ transform(panel, rotation, translation)               for panel in horseshoes ]
     panel_normals       = [ panel_normal(transform(panel, rotation, translation)) for panel in cambers 	  ]
 
