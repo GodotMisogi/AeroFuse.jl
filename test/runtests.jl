@@ -68,7 +68,7 @@ end
     @test wing_mac ≈ [0.42092866, 1.33432539, 0.0] atol = 1e-6
 end
 
-@testset "NACA-4 Wing Vortex Lattice Method" begin
+@testset "Vortex Lattice Method - NACA 0012 Rectangular Wing" begin
     # Define wing
     wing = Wing(foils     = Foil.(naca4((0,0,1,2)) for i ∈ 1:2),
                 chords    = [0.18, 0.16],

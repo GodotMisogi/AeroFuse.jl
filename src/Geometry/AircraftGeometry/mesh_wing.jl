@@ -107,7 +107,7 @@ function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vect
     horseshoe_panels, panel_normals
 end
 
-panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; position = zeros(3), angle = 0., axis = [1., 0., 0.], spacing = ["sine"; fill("cosine", length(span_panels) - 1)]) = paneller(comp, span_panels, chord_panels, rotation = AngleAxis{Float64}(angle, axis...), translation = position, spacings = spacing)
+panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; position = zeros(3), angle = 0., axis = [1., 0., 0.], spacing = spanwise_spacing(comp)) = paneller(comp, span_panels, chord_panels, rotation = AngleAxis{Float64}(angle, axis...), translation = position, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))
 
 number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* wing.spans / span(wing))
 number_of_spanwise_panels(wing :: Wing,     span_num :: Integer) = number_of_spanwise_panels(wing.right, ceil(Int, span_num / 2))

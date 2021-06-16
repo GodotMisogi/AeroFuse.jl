@@ -2,13 +2,12 @@
 using AeroMDAO
 
 ## Wing
-wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
 wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
             chords    = [1.0, 0.6, 0.2],
-            twists    = [0.0, 0.0, 0.0],
-            spans     = [5.0, 0.5],
-            dihedrals = [5., 5.],
-            sweep_LEs = [5., 5.]);
+            twists    = [2.0, 0.0, -2.0],
+            spans     = [4.0, 0.2],
+            dihedrals = [5., 30.],
+            sweep_LEs = [5., 30.]);
 print_info(wing, "Wing")
 
 # Horizontal tail
@@ -31,20 +30,21 @@ vtail = HalfWing(foils     = vtail_foils,
                  sweep_LEs = [7.97])
 print_info(vtail, "Vertical Tail")
 
-# Assembly
+## Assembly
 wing_panels  = panel_wing(wing, [20, 3], 10;
-                          spacing = "uniform")
+                          spacing = "cosine"
+                         )
 htail_panels = panel_wing(htail, [6], 6;
                           position	= [4., 0, 0],
                           angle 	= deg2rad(-2.),
                           axis 	  	= [0., 1., 0.],
-                          spacing = "uniform"
+                          spacing   = "uniform"
                          )
 vtail_panels = panel_wing(vtail, [6], 5; 
                           position 	= [4., 0, 0],
                           angle 	= π/2, 
                           axis 	 	= [1., 0., 0.],
-                          spacing = "uniform"
+                          spacing   = "uniform"
                          )
 
 aircraft = Dict("Wing" 			  	=> wing_panels,
@@ -53,11 +53,11 @@ aircraft = Dict("Wing" 			  	=> wing_panels,
 
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
 
-# Case
+## Case
 ac_name = "My Aircraft"
 ρ       = 1.225
 ref     = [0.25c, 0., 0.]
-V, α, β = 1.0, 1.0, 0.0
+V, α, β = 1.0, 1.0, 1.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
@@ -129,7 +129,7 @@ horseshoe_coords = plot_panels(horseshoe_panels[:]);
 
 z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
-     camera = (80, 80),
+     camera = (30, 60),
     #  xlim = (-z_limit/2, z_limit/2),
      aspect_ratio = 1, 
      zlim = (-z_limit/2, z_limit/2),
@@ -139,7 +139,7 @@ plot!.(horseshoe_coords, color = :gray, label = :none)
 plot!.(streams, color = :green, label = :none)
 plot!()
 
-## Exaggerated CF distribution for plot
+## Exaggerated CF distribution for plot, only works with GR and not Plotly
 
 # Forces
 wind_CFs = body_to_wind_axes.(CFs, fs.alpha, fs.beta)

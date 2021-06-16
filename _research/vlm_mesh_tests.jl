@@ -4,13 +4,12 @@ using Plots
 using DataFrames, StatsPlots
 
 ## Wing
-wing_foils = Foil.(fill(naca4((0,0,1,2)), 3))
-wing       = Wing(foils     = wing_foils,
-                  chords    = [1.0, 0.6, 0.2],
-                  twists    = [0.0, 0.0, 0.0],
-                  spans     = [5.0, 0.5],
-                  dihedrals = [5., 5.],
-                  sweep_LEs = [5., 5.]);
+wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+            chords    = [1.0, 0.6],
+            twists    = [0.0, 0.0],
+            spans     = [5.0],
+            dihedrals = [5.],
+            sweep_LEs = [5.]);
 print_info(wing, "Wing")
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 
@@ -31,12 +30,13 @@ panel_case(x, y) = solve_case(wing, fs;
                               span_num  = y, 
                               chord_num = x,
                               viscous   = false,
-                              x_tr      = [0.3, 0.3]
+                              x_tr      = [0.3, 0.3],
+                              spacing   = "uniform"
                              );
 
 ## Distributions
-xs = 10:30
-ys = fill(maximum(xs) * 4, length(xs))
+xs = 10:2:50
+ys = xs .* 2# fill(maximum(xs) * 4, length(xs))
 
 nf_data, ff_data = zeros(5)', zeros(5)'
 for (x, y) in zip(xs, ys)
