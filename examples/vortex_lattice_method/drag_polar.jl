@@ -5,34 +5,32 @@ using Plots
 
 ## Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-wing_right = HalfWing(wing_foils,
-                      [1.0, 0.6],
-                      [0.0, 0.0],
-                      [5.0],
-                      [0.],
-                      [2.29]);
-wing = Wing(wing_right, wing_right)
+wing       = Wing(foils     = wing_foils,
+                  chords    = [1.0, 0.6],
+                  twists    = [0.0, 0.0],
+                  spans     = [5.0],
+                  dihedrals = [11.3],
+                  sweep_LEs = [2.29]);
 print_info(wing, "Wing")
 
 # Horizontal tail
 htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-htail_right = HalfWing(htail_foils,
-                       [0.7, 0.42],
-                       [0.0, 0.0],
-                       [1.25],
-                       [0.],
-                       [6.39])
-htail = Wing(htail_right, htail_right)
+htail       = Wing(foils     = htail_foils,
+                   chords    = [0.7, 0.42],
+                   twists    = [0.0, 0.0],
+                   spans     = [1.25],
+                   dihedrals = [0.],
+                   sweep_LEs = [6.39])
 print_info(htail, "Horizontal Tail")
 
 # Vertical tail
 vtail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-vtail = HalfWing(vtail_foils, 
-                 [0.7, 0.42],
-                 [0.0, 0.0],
-                 [1.0],
-                 [0.],
-                 [7.97])
+vtail = HalfWing(foils     = vtail_foils, 
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.0],
+                 dihedrals = [0.],
+                 sweep_LEs = [7.97])
 print_info(vtail, "Vertical Tail")
 
 # Assembly
@@ -68,7 +66,7 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
                       );
     
     # Get data
-    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = data["Aircraft"]
+    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = data["Aircraft"]
 
     # Filter relevant data
     [ ff_coeffs; nf_coeffs[4:6] ]

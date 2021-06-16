@@ -12,7 +12,7 @@ Compute the 3-quarter point between two points in the x-z plane.
 three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
 
 collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
-bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2), quarter_point(p4, p3) ]
+bound_leg(p1, p2, p3, p4) = (quarter_point(p1, p2), quarter_point(p4, p3))
 
 """
     bound_leg(panel :: Panel3D)
@@ -40,22 +40,22 @@ end
 
 Line(r1 :: FieldVector{3,T}, r2 :: FieldVector{3,T}) where T <: Real = Line{T}(r1, r2)
 
-point1(line :: Line) = line.r1
-point2(line :: Line) = line.r2
-vector(line :: Line) = point2(line) - point1(line)
-center(line :: Line) = (point1(line) + point2(line)) / 2
+r1(line :: Line) = line.r1
+r2(line :: Line) = line.r2
+vector(line :: Line) = r2(line) - r1(line)
+center(line :: Line) = (r1(line) + r2(line)) / 2
 
-points(lines :: Vector{<: Line}) = [ point1.(lines); [(point2 ∘ last)(lines)] ]
+points(lines :: Vector{<: Line}) = [ r1.(lines); [(r2 ∘ last)(lines)] ]
 
-transform(line :: Line, rotation, translation) = let trans = Translation(translation) ∘ LinearMap(rotation); Line((trans ∘ point1)(line), (trans ∘ point2)(line)) end
+transform(line :: Line, rotation, translation) = let trans = Translation(translation) ∘ LinearMap(rotation); Line((trans ∘ r1)(line), (trans ∘ r2)(line)) end
 
-r1(r, line :: Line) = r - point1(line)
-r2(r, line :: Line) = r - point2(line)
+r1(r, line :: Line) = r - r1(line)
+r2(r, line :: Line) = r - r2(line)
 
-bound_leg_velocity(a, b, Γ) = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
+bound_leg_velocity(a, b, Γ)    = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
+trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × u / (norm(r) - dot(r, u))
 
-trailing_legs_velocities(a, b, Γ, u) = Γ/4π * (a × u / (norm(a) - dot(a, u)) / norm(a) - b × u / (norm(b) - dot(b, u)) / norm(b))
-
+trailing_legs_velocities(a, b, Γ, u) = trailing_leg_velocity(a, Γ, u) - trailing_leg_velocity(b, Γ, u)
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
 
 horseshoe_velocity(r, line :: Line, Γ, direction) = total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
@@ -72,7 +72,9 @@ abstract type AbstractVortexArray end
 A horseshoe type consisting of a bound leg of type Line represening a vortex line.
 """
 struct Horseshoe{T <: Real} <: AbstractVortexArray
-    bound_leg :: Line{T}
+    bound_leg         :: Line{T}
+    collocation_point :: SVector{3,T}
+    chord             :: T
 end
 
 """
@@ -81,6 +83,7 @@ end
 Getter for bound leg field of a `Horseshoe`.
 """
 bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
+collocation_point(horseshoe :: Horseshoe) = horseshoe.collocation_point
 
 r1(r, horseshoe :: Horseshoe) = r1(r, bound_leg(horseshoe))
 r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
@@ -88,7 +91,8 @@ r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
 """
 Return a `Horseshoe` bound leg corresponding to a `Panel3D`.
 """
-horseshoe_line(panel :: Panel3D) = (Horseshoe ∘ Line)(bound_leg(panel)...)
+horseshoe_line(panel :: Panel3D, drift = SVector(0., 0., 0.)) = let (r1, r2) = bound_leg(panel); 
+    Horseshoe(Line(r1, r2), horseshoe_point(panel) .+ drift, (norm ∘ average_chord)(panel)) end
 
 """
 Compute the midpoint of the bound leg of a `Horseshoe`.
@@ -105,4 +109,12 @@ bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
 
 Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
 """
-velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat) = horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
+function velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat, finite_core = false) 
+    if finite_core
+        width = (norm ∘ bound_leg_vector)(horseshoe)
+        ε = max(horseshoe.chord, width) # Wrong core size? Consider options...
+        horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat, ε)
+    else
+        horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
+    end
+end

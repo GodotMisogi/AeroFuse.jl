@@ -57,7 +57,7 @@ function projected_area(wing :: HalfWing)
     sum(@. wing.spans * mean_chords * cos(mean_twists))
 end
 
-section_macs(wing :: HalfWing) = mean_aerodynamic_chord.(wing.chords[1:end-1], fwddiv(wing.chords))
+section_macs(wing :: HalfWing) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], fwddiv(wing.chords))
 
 section_projected_areas(wing :: HalfWing) = wing.spans .* fwdsum(wing.chords) / 2
 
@@ -83,8 +83,8 @@ function mean_aerodynamic_center(wing :: HalfWing, factor = 0.25)
     y_LEs		= getindex.(wing_LE, 2)
 
     # Compute x-y locations of MACs
-    x_mac_LEs	= @. y_mac.(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
-    y_macs		= @. y_mac.(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
+    x_mac_LEs	= @views @. y_mac.(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
+    y_macs		= @views @. y_mac.(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
 
     mac_coords 	= @. SVector(x_mac_LEs + factor * macs, y_macs, 0.)
 
@@ -143,4 +143,6 @@ function wing_bounds(wing :: HalfWing, flip = false)
 
     leading, shifted_trailing
 end
+
+trailing_edge(wing :: HalfWing, flip = false) = wing_bounds(wing, flip)[2]
 

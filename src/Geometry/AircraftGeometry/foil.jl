@@ -119,7 +119,7 @@ Define a cosine-spaced airfoil with ``2n`` points using the Class Shape Transfor
 """
 function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l), coeff_LE = 0, n :: Integer = 40, N1 = 0.5, N2 = 1.)
 	# Cosine spacing for airfoil of unit chord length
-	xs = cosine_dist(0.5, 1, n)
+	xs = cosine_spacing(0.5, 1, n)
 
 	# λ-function for Bernstein polynomials
 	bernie(x, alphas, dz) = cst_coords(y -> bernstein_class(y, N1, N2), bernstein_basis, x, alphas, dz, coeff_LE)
@@ -137,7 +137,7 @@ end
 
 function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc), coeff_LE = 0, n :: Integer = 40, N1 = 0.5, N2 = 1.)
 	# Cosine spacing for airfoil of unit chord length
-	xs = cosine_dist(0.5, 1, n)
+	xs = cosine_spacing(0.5, 1, n)
 
 	# λ-function for Bernstein polynomials
 	bernie(x, alphas, dz) = cst_coords(y -> bernstein_class(y, N1, N2), bernstein_basis, x, alphas, dz, coeff_LE)
@@ -233,7 +233,7 @@ function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_e
 	t_by_c = (10 * digits[3] + digits[4]) / 100
 
 	# Cosine spacing
-	xs = cosine_dist(0.5, 1.0, n)
+	xs = cosine_spacing(0.5, 1.0, n)
 
 	# Thickness distribution
 	thickness = naca4_thickness.(Ref(t_by_c), xs, Ref(sharp_trailing_edge))

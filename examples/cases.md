@@ -182,7 +182,7 @@ A "viscous" analysis is also supported using traditional wetted-area methods bas
 
 It returns the nearfield and farfield coefficients, the non-dimensionalised force and moment coefficients over the panels, the panels used for the horseshoe elements, the camber panels, the horseshoe elements used for plotting streamlines, and the associated vortex strengths `Γs` corresponding to the solution of the system. The following [example script](vortex_lattice_method/vlm_wing.jl) is provided for reference.
 ```julia
-nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = 
+nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = 
     solve_case(wing, freestream; 
                rho_ref   = ρ, 
                r_ref     = r_ref,
@@ -227,8 +227,119 @@ You can pretty-print the stability derivatives with the following function, whos
 print_derivatives("Wing", dv_coeffs)
 ```
 
-**TODO**: Add description of differences between viscous cases in array output of `dv_coeffs`.
-
 ### Aircraft Analysis
+
+Aircraft analysis by definition of multiple lifting surfaces using the `HalfWing` or `Wing` types are also supported, but is slightly more complex due to the increases in user specifications. Particularly, you will have to mesh the different components by yourself by specifying the number of chordwise panels, spanwise panels and their associated spacings, the position, and the orientation in the angle-axis representation.
+
+```julia
+panel_wing(wing                    :: Union{HalfWing, Wing}, 
+           span_num,               :: Union{Integer, Vector{<: Integer}},
+           chord_num               :: Integer;
+           spacing  = "cosine"     :: Union{String, Vector{String}}
+           position	= [0., 0., 0.]
+           angle 	= 0.,          
+           axis     = [1., 0., 0.]
+          )
+```
+
+This method returns the horseshoe panels for the analysis, and the associated normal vectors based on the camber distribution of the wing. Consider a case in which you have a wing, horizontal tail, and vertical tail.
+
+```julia
+## Wing
+wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
+wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
+            chords    = [1.0, 0.6, 0.2],
+            twists    = [0.0, 0.0, 0.0],
+            spans     = [5.0, 0.5],
+            dihedrals = [5., 5.],
+            sweep_LEs = [5., 5.]);
+print_info(wing, "Wing")
+
+# Horizontal tail
+htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
+htail = Wing(foils     = htail_foils,
+             chords    = [0.7, 0.42],
+             twists    = [0.0, 0.0],
+             spans     = [1.25],
+             dihedrals = [0.],
+             sweep_LEs = [6.39])
+print_info(htail, "Horizontal Tail")
+
+# Vertical tail
+vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
+vtail = HalfWing(foils     = vtail_foils, 
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.0],
+                 dihedrals = [0.],
+                 sweep_LEs = [7.97])
+print_info(vtail, "Vertical Tail")
+
+# Assembly
+wing_panels  = panel_wing(wing, [20, 5], 10;
+                        #   spacing = "uniform"
+                          )
+htail_panels = panel_wing(htail, [6], 6;
+                          position	= [4., 0, 0],
+                          angle 	= deg2rad(-2.),
+                          axis 	  	= [0., 1., 0.],
+                        #   spacing = "uniform"
+                         )
+vtail_panels = panel_wing(vtail, [6], 5; 
+                          position 	= [4., 0, 0],
+                          angle 	= π/2, 
+                          axis 	 	= [1., 0., 0.],
+                        #   spacing = "uniform"
+                         )
+```
+
+To prepare the analyses, you will have to assemble this information into a dictionary, where the keys are the names of the components.
+
+```julia
+aircraft = Dict("Wing" 			  	=> wing_panels,
+                "Horizontal Tail" 	=> htail_panels,
+                "Vertical Tail"   	=> vtail_panels)
+```
+
+Very similarly to the wing-only case, there is an associated `solve_case()` method which takes a dictionary of the panels and normal vectors, and the reference data for computing the non-dimensional coefficients:
+
+```julia
+ac_name = "My Aircraft"
+ρ       = 1.225
+V, α, β = 1.0, 1.0, 0.0
+Ω       = [0.0, 0.0, 0.0]
+fs      = Freestream(V, α, β, Ω)
+
+S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
+ref     = [0.25c, 0., 0.]
+
+data = 
+    solve_case(aircraft, fs; 
+               rho_ref          = ρ, 		# Reference density
+               r_ref            = ref, 		# Reference point for moments
+               area_ref         = S, 		# Reference area
+               span_ref         = b, 		# Reference span
+               chord_ref        = c, 		# Reference chord
+               name             = ac_name,	# Aircraft name
+               print            = true,		# Prints the results for the entire aircraft
+               print_components = true,	    # Prints the results for each component
+              );
+```
+
+And similarly for obtaining the stability derivatives. A unique feature which is not easily obtained from other implementations (really? should check...) is the stability derivatives of each component:
+
+```julia
+dv_data = 
+    solve_stability_case(aircraft, fs;
+                         rho_ref     = ρ,
+                         r_ref       = ref,
+                         area_ref    = S,
+                         span_ref    = b,
+                         chord_ref   = c,
+                         name        = ac_name,
+                         print       = true,
+                         print_components = true,
+                        );
+```
 
 Documentation to be completed. For now, refer to these [analysis](vortex_lattice_method/vlm_aircraft.jl) and [stability analysis](vortex_lattice_method/stability_aircraft.jl) scripts with a full aircraft configuration. There's also an interesting test [surrogate model test script](vortex_lattice_method/surrogates.jl)!
