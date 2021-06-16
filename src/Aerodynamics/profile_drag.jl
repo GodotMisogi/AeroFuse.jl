@@ -15,26 +15,30 @@ cf_lam(Re_c, k_lam = 1.) = 1.328 / √(Re_c * k_lam)
 cf_turb(Re_c, M) = 0.455 / log10(Re_c)^2.58 / (1 + 0.144M^2)^0.65
 cf_schlichting(Re, Re_xtr, M) = max(cf_lam(Re), cf_turb(Re, M) - (Re_xtr / 320 - 39) / Re)
 
-function wetted_area_drag(wing :: HalfWing, x_tr, V, ρ, a_ref = 330., μ = 1.5e-5)
-	# Chord processing
-	chords      = wing.chords
-	mean_chords = fwdsum(chords) / 2
-	
+function wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
 	# Skin-friction coefficients
-	M 			= V / a_ref
 	Re_c 		= reynolds_number.(ρ, V, mean_chords, μ)
 	Re_xtr 		= reynolds_number.(ρ, V, mean_chords .* x_tr, μ)
 	cfs 		= cf_schlichting.(Re_c, Re_xtr, M)
-	
-	# Wetted areas
-	S_wets 		= @. mean_chords * wing.spans / cos(wing.dihedrals)
-
-	# Form factors
-	K_fs 		= form_factor(wing, M)
 
 	# Profile drag
 	Dp_by_q	 	= sum(@. cfs * S_wets * K_fs)
 end
+
+function wetted_area_drag(wing :: HalfWing, x_tr, V, ρ, a_ref = 330., μ = 1.5e-5)
+	# Chord processing
+	chords      = wing.chords
+	mean_chords = fwdsum(chords) / 2
+
+	# Wetted areas
+	S_wets = @. mean_chords * wing.spans / cos(wing.dihedrals)
+
+	# Form factors
+	M 	 = V / a_ref
+	K_fs = form_factor(wing, M)
+
+	wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
+end	
 
 profile_drag_coefficient(wing :: HalfWing, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
 profile_drag_coefficient(wing :: Wing, x_tr, V, rho_ref, a_ref, area_ref, μ) = profile_drag_coefficient(wing.left, x_tr, V, rho_ref, a_ref, area_ref, μ) + profile_drag_coefficient(wing.right, x_tr, V, rho_ref, a_ref, area_ref, μ)

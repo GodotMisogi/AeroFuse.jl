@@ -1,4 +1,4 @@
-function chop_sections(set1, set2, n :: Integer, spacing = "cosine"; flip = false) 
+function chop_sections(set1, set2, n :: Integer, spacing = "cosine"; flip = false)
 	if lowercase(spacing) == "uniform"
 		space = uniform_spacing(0., 1., n + 1)
 	elseif lowercase(spacing) == "sine"

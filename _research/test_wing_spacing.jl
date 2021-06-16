@@ -4,9 +4,11 @@ using AeroMDAO
 wing = Wing(foils     = Foil.(naca4((2,4,1,2)) for i ∈ 1:3),
             chords    = [0.18, 0.16, 0.08],
             twists    = [2., 0., -2.],
-            spans     = [0.5, 0.5],
-            dihedrals = [0., 11.3],
-            sweep_LEs = [1.14, 8.])
+            spans     = [0.4, 0.2],
+            dihedrals = [0., 60.],
+            sweep_LEs = [1.14, 30.])
+
+print_info(wing, "Wing")
 
 # Define reference values
 ρ   = 1.225
@@ -17,10 +19,9 @@ ref = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
 uniform = Freestream(10.0, 2.0, 2.0, Ω)
 
 # Evaluate stability case
-nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = solve_case(wing, uniform; rho_ref = ρ, r_ref = ref, span_num = 20, chord_num = 5, spacing = ["cosine", "uniform"])
+nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = solve_case(wing, uniform; rho_ref = ρ, r_ref = ref, span_num = 20, chord_num = 13)
 
-
-print_coefficients(nf_coeffs, ff_coeffs)
+print_coefficients(nf_coeffs, ff_coeffs, "Wing")
 
 ## Display
 horseshoe_coords = plot_panels(horseshoe_panels[:])
