@@ -91,6 +91,9 @@ A Freestream flow in spherical polar coordinates with magnitude ``V``, angle-of-
 """
 Freestream(V, α_deg, β_deg, Ω :: AbstractVector{T}) where T <: Real = Freestream{T}(V, α_deg, β_deg, Ω)
 
+# TODO: ForwardDiff testing
+# Freestream(V :: Real, α_deg, β_deg, Ω :: AbstractVector{<: Real}) = Freestream{Float64}(V, α_deg, β_deg, Ω)
+
 """
     Freestream(U, Ω)
 
