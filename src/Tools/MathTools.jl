@@ -33,7 +33,7 @@ columns(M) = tuple([ view(M, :, i) for i in 1:size(M, 2) ]...)
 # Sieg Heil!
 
 span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
-splitat(n, xs) = (xs[1:n,:], xs[n+1:end,:])  
+splitat(n, xs) = @views (xs[1:n,:], xs[n+1:end,:])  
 
 lisa(pred, iter) = span(!pred, iter)
 
@@ -81,27 +81,27 @@ tupvector(xs) = [ tuple(x...) for x in xs ]
 tuparray(xs)  = tuple.(eachcol(xs)...)
 vectarray(xs) = SVector.(eachcol(xs)...)
 
-extend_yz(coords) = [ first.(coords) (zeros ∘ length)(coords) last.(coords) ]
+extend_yz(coords) = @views [ coords[:,1] (zeros ∘ length)(coords) coords[:,2] ]
 
-reflect_mapper(f, xs) = [ f(xs[:,end:-1:1]) xs ]
+reflect_mapper(f, xs) = @views [ f(xs[:,end:-1:1]) xs ]
 
 ## Difference operations
 #===========================================================================#
 
 fwddiff_matrix(n) = [ I zeros(n) ] - [ zeros(n) I ]
 
-fwdsum(xs) 	 = @. xs[2:end] + xs[1:end-1]
-fwddiff(xs)  = @. xs[2:end] - xs[1:end-1]
-fwddiv(xs) 	 = @. xs[2:end] / xs[1:end-1]
-ord2diff(xs) = @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
+fwdsum(xs) 	 = @views @. xs[2:end] + xs[1:end-1]
+fwddiff(xs)  = @views @. xs[2:end] - xs[1:end-1]
+fwddiv(xs) 	 = @views @. xs[2:end] / xs[1:end-1]
+ord2diff(xs) = @views @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
 
-adj3(xs) = zip(xs[1:end-2], xs[2:end-1,:], xs[3:end])
+adj3(xs) = @views zip(xs[1:end-2], xs[2:end-1,:], xs[3:end])
 
 # Central differencing schema for pairs except at endpoints
 midpair_map(f :: H, xs) where {H} = 
-        [        f.(xs[1,:], xs[2,:])'       ;
-          f.(xs[1:end-2,:], xs[3:end,:]) / 2 ;
-             f.(xs[end-1,:], xs[end,:])'     ]
+    @views  [        f.(xs[1,:], xs[2,:])'        ;
+               f.(xs[1:end-2,:], xs[3:end,:]) / 2 ;
+                 f.(xs[end-1,:], xs[end,:])'      ]
 
 # stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
 # parts(xs) = let adj = stencil(xs, 1); adj[1,:], adj[end,:] end
@@ -121,28 +121,25 @@ midpair_map(f :: H, xs) where {H} =
 ## Spacing formulas
 #===========================================================================#
 
-function sine_dist(x_center, radius, n :: Integer = 40, factor = 1) 
-    xs = cosine_dist(x_center, diameter, 2n)
-    if factor == 1
-        xs[1:Int(n/2)]
+uniform_spacing(x1, x2, n) = range(x1, x2, length = n)
+linear_spacing(x_center, len, n :: Integer) = @. x_center + len * 0:1/(n-1):1
+cosine_spacing(x_center, diameter, n :: Integer = 40) = @. x_center + (diameter / 2) * cos(-π:π/(n-1):0)
+
+function sine_spacing(x1, x2, n :: Integer = 40)
+    d = x2 - x1
+    if n < 0
+       @. x2 - d * sin(π/2 * (1. - (1:1/(n+1):0)))[end:-1:1]
     else
-        xs[Int(n/2):end]
+       @. x1 + d * sin(π/2 * (0:1/(n-1):1))
     end
 end
-
-"""
-    cosine_dist(x_center, diameter, n :: Integer = 40) 
-
-Provide the projections to the x-axis for a circle with given center and diameter, and optionally the number of points.
-"""
-cosine_dist(x_center, diameter, n :: Integer = 40) = x_center .+ (diameter / 2) * cos.(range(-π, stop = 0, length = n))
 
 function cosine_interp(coords, n :: Integer = 40)
     xs, ys = first.(coords)[:], last.(coords)[:]
 
     d = maximum(xs) - minimum(xs)
     x_center = (maximum(xs) + minimum(xs)) / 2
-    x_circ = cosine_dist(x_center, d, n)
+    x_circ = cosine_spacing(x_center, d, n)
     
     itp_circ = LinearInterpolation(xs, ys)
     y_circ = itp_circ(x_circ)
@@ -187,6 +184,6 @@ weighted_vector(x1, x2, μ) = weighted.(x1, x2, μ)
 #             end))
 # end
 
-reshape_array(arr, inds, sizes) = [ reshape(arr[i1+1:i2], size...) for (i1, i2, size) in zip(inds[1:end-1], inds[2:end], sizes) ]
+reshape_array(arr, inds, sizes) = @views [ reshape(arr[i1+1:i2], size) for (i1, i2, size) in zip(inds[1:end-1], inds[2:end], sizes) ]
 
 end

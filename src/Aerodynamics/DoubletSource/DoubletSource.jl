@@ -5,7 +5,7 @@ using Base.Iterators
 using StaticArrays
 using Statistics
 
-using ..AeroMDAO: Panel, Panel2D, WakePanel2D, Point2D, collocation_point, point1, point2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, rotation, inverse_rotation, midpair_map, pressure_coefficient, wake_panel, wake_panels, panel_points, panel_vector
+using ..AeroMDAO: AbstractPanel2D, Panel2D, WakePanel2D, Point2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, rotation, inverse_rotation, midpair_map, pressure_coefficient, wake_panel, wake_panels, panel_points, panel_vector
 
 ## Doublet-source Dirichlet boundary condition
 #===========================================================================#
@@ -22,17 +22,17 @@ doublet_velocity(str, x, z, x1, x2) = SVector(str / (2π) * - (z / ((x - x1)^2 +
 ## Matrix helpers
 #===========================================================================#
 
-function doublet_influence(panel_j :: Panel, panel_i :: Panel)
+function doublet_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D)
     xp, yp = transform_panel(panel_j, panel_i)
-    doublet_potential(1., xp, yp, 0., panel_length(panel_j))
+    ifelse(panel_i == panel_j, 0.5, doublet_potential(1., xp, yp, 0., panel_length(panel_j)))
 end
 
-function source_influence(panel_j :: Panel, panel_i :: Panel)
+function source_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D)
     xp, yp = transform_panel(panel_j, panel_i)
     source_potential(1., xp, yp, 0., panel_length(panel_j))
 end
 
-boundary_condition(panel_j :: Panel, panel_i :: Panel, u) = -source_influence(panel_j, panel_i) * dot(u, panel_normal(panel_j))
+boundary_condition(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D, u) = -source_influence(panel_j, panel_i) * dot(u, panel_normal(panel_j))
 
 ## Aerodynamic coefficients
 #===========================================================================#
@@ -68,14 +68,14 @@ function solve_problem(panels :: Vector{<: Panel2D}, u, α, sources :: Bool, wak
     xs	 			= getindex.(panel_points(panels)[2:end-1], 1)
 
     # Blunt trailing edge tests
-    te_panel 		= Panel2D((point2 ∘ last)(panels), (point1 ∘ first)(panels))
+    te_panel 		= Panel2D((p2 ∘ last)(panels), (p1 ∘ first)(panels))
     r_te 			= panel_vector(te_panel)
     φ_TE  			= dot(u, r_te)
 
     # Solve for doublet strengths
     φs 				= solve_strengths(panels, u, α, r_te, sources; bound = wake_length)
     
-    # Evaluate inviscid edge velocitiess
+    # Evaluate inviscid edge velocities
     u_es, Δrs 		= tangential_velocities(panels, φs, u, sources)
     
     # Compute coefficients 
