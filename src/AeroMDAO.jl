@@ -13,7 +13,7 @@ using PrettyTables
 include("Tools/MathTools.jl")
 import .MathTools: tupvector, fwdsum, fwddiff, fwddiv, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
 
-export Point2D, Point3D, tupvector, tuparray, midpair_map, cosine_interp, sine_spacing, rotation, inverse_rotation, affine_2D, fwdsum, fwddiff, fwddiv, partition, weighted_vector, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
+export Point2D, Point3D, tupvector, tuparray, midpair_map, cosine_interp, sine_spacing, rotation, inverse_rotation, affine_2D, fwdsum, fwddiff, fwddiv, partition, weighted_vector, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing, structtolist
 
 
 ## Non-dimensionalization

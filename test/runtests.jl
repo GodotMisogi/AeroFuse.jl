@@ -186,7 +186,7 @@ end
     [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
     # Stability derivatives' coefficients test
     [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
-end;
+end
 
 @testset "Euler-Bernoulli Elastic Stiffness" begin
     # Deflection stiffness matrix
@@ -227,4 +227,4 @@ end
     M = J * [ x; zeros(2) ]
 
     @test M ≈ [-1000., 1000., 0., 0.] atol = 1e-6
-end
+end;

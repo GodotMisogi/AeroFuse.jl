@@ -37,8 +37,9 @@ chord_num = 1
                r_ref     = ref,
                span_num  = span_num, 
                chord_num = chord_num,
-               viscous   = true,
-               x_tr      = 0.3);
+            #    viscous   = true,
+            #    x_tr      = 0.3
+               );
                
 print_coefficients(nf_coeffs, ff_coeffs, "Wing")
 
@@ -51,13 +52,14 @@ moment(CM, q, S, b, c) = moment.(CM, q, S, [b, c, b])
 q           = dynamic_pressure(ρ, V)
 areas       = @. panel_area(horseshoe_panels)[:]
 half_forces = @. force(CFs[:], q, S) / 2
-M1s         = @. r1(bound_leg_center(horseshoes), horseshoes)[:] × half_forces
-M2s         = @. r2(bound_leg_center(horseshoes), horseshoes)[:] × half_forces 
+r1s         = @. r1(bound_leg_center(horseshoes), horseshoes)[:]
+r2s         = @. r2(bound_leg_center(horseshoes), horseshoes)[:]
+M1s         = @. r1s × half_forces
+M2s         = @. r2s × half_forces 
 
 weight_vector = SVector(0., 0., 1.)
 
 # Interspersing
-
 forces            = [ half_forces; [SVector(0.,0.,0.)] ] .+ [ [SVector(0.,0.,0.)]; half_forces ]
 
 n                 = ceil(Int, length(horseshoe_panels) / 2) + 1
@@ -114,6 +116,15 @@ state = DataFrame([ dx θx dy θy dz θz ], :auto)
 rename!(state, [:dx, :θx, :dy, :θy, :dz, :θz])
 
 ## Transfer displacements to aerodynamic mesh
+
+# Get leading and trailing edges
+le = leading_chopper(wing, Int(span_num / 2))
+te = trailing_chopper(wing, Int(span_num / 2))
+
+# Displace and rotate about quarter-chord point, where the beam is located, too sleepy to check correctness right now...
+ds = SVector.(dx, dy, dz) .+ SVector.(θx, θy, θz) .× ([r1s; [SVector(0.,0.,0.)]] .+ [[SVector(0.,0.,0.)]; r2s])
+
+# Note: A bijective mapping between the wing's geometric and coordinate representations needs to be defined, if it exists.
 
 ##
 data = DataFrame([ Fx dx Mx θx Fy dy My θy Fz dz Mz θz ], :auto)
