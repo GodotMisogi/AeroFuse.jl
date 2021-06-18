@@ -4,19 +4,26 @@
 
 Compute the coordinates of a `HalfWing` consisting of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
 """
-function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer, flip = false)
+function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
     leading_xyz  = leading_edge(wing, flip)
-    temp_foils 	 = @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num)
+    scaled_foils = reduce(hcat, @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num))
 
-    scaled_foils = ifelse(flip, reverse!(temp_foils), temp_foils)
-    twists  	 = ifelse(flip, reverse(wing.twists), wing.twists)
+    # Reverse direction if left side
+    if flip 
+        scaled_foils = reverse!(scaled_foils, dims = 2)
+        twisties     = (permutedims ∘ reverse ∘ twists)(wing)
+    else
+        twisties     = twists(wing)
+    end
 
-    foil_coords  = [ coords * RotY(-twist)' .+ section' for (coords, twist, section) ∈ zip(scaled_foils, twists, leading_xyz) ]
+    # Rotate and translate coordinates
+    foil_coords  = reduce(hcat, transform_coordinates.(foil, Ref(twist), Ref(section)) for (foil, twist, section) in zip(eachcol(scaled_foils), twisties, leading_xyz))
 
-    chop_coordinates(foil_coords, span_num)
+    # Chop up spanwise sections
+    permutedims(reduce(hcat, chop_coordinates(coords, span_num, spacings, flip) for coords in eachrow(foil_coords)))
 end
 
-move(xyz, twist, section) = xyz * RotY(-twist)' .+ section'
+transform_coordinates(xyz, twist, section) = RotY(twist) * xyz + section
 
 """
     camber_coordinates(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
@@ -24,16 +31,25 @@ move(xyz, twist, section) = xyz * RotY(-twist)' .+ section'
 Compute the coordinates of a `HalfWing` consisting of camber distributions of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
 """
 function camber_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
-    leading_xyz  = leading_edge(wing, flip)
+    # Get leading edge coordinates
+    leading_xyz  = permutedims(leading_edge(wing, flip))
 
-    scaled_foils = @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num)
+    # Scale foils
+    scaled_foils = reduce(hcat, @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num))
 
-    scaled_foils = ifelse(flip, reverse!(scaled_foils), scaled_foils)
-    twists 		 = ifelse(flip, reverse(wing.twists),   wing.twists)
+    # Reverse direction if left side
+    if flip 
+        scaled_foils = reverse!(scaled_foils, dims = 2)
+        twisties     = (permutedims ∘ reverse ∘ twists)(wing)
+    else
+        twisties     = twists(wing)
+    end
 
-    foil_coords  = [ move(coords, twist, section) for (coords, twist, section) ∈ zip(scaled_foils, twists, leading_xyz) ]
+    # Rotate and translate coordinates
+    foil_coords  = reduce(hcat, transform_coordinates.(foil, Ref(twist), Ref(section)) for (foil, twist, section) in zip(eachcol(scaled_foils), twisties, leading_xyz))
 
-    chop_coordinates(foil_coords, span_num, spacings, flip)
+    # Chop up spanwise sections
+    permutedims(reduce(hcat, chop_coordinates(coords, span_num, spacings, flip) for coords in eachrow(foil_coords)))
 end
 
 """
@@ -60,8 +76,8 @@ mesh_cambers(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Inte
 chop_leading_edge(obj :: HalfWing, span_num; flip = false)  = chop_coordinates(leading_edge(obj, flip), span_num)
 chop_trailing_edge(obj :: HalfWing, span_num; flip = false) = chop_coordinates(leading_edge(obj, flip), span_num)
 
-chop_leading_edge(obj :: Wing, span_num :: Integer)  = chop_spans(wing_bounds(obj)..., span_num)[1]
-chop_trailing_edge(obj :: Wing, span_num :: Integer) = chop_spans(wing_bounds(obj)..., span_num)[2]
+chop_leading_edge(obj :: Wing, span_num :: Integer)  = let (lead, trail) = wing_bounds(obj); chop_spans(lead, trail, span_num)[1] end
+chop_trailing_edge(obj :: Wing, span_num :: Integer) = let (lead, trail) = wing_bounds(obj); chop_spans(lead, trail, span_num)[2] end
 
 """
     mesh_horseshoes(wing :: Wing, n_s :: Integer, n_c :: Integer)
@@ -81,8 +97,8 @@ end
 Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for 3D analyses using doublet-source elements or equivalent formulations. TODO: Tip meshing.
 """
 function mesh_wing(wing :: Wing, span_num, chord_num)
-    left_panels  = mesh_wing(wing.left, reverse(span_num), chord_num, flip = true)
-    right_panels = mesh_wing(wing.right, span_num, chord_num)
+    left_panels  = mesh_wing(left(wing), reverse(span_num), chord_num, flip = true)
+    right_panels = mesh_wing(right(wing), span_num, chord_num)
 
     [ left_panels right_panels ] 
 end
@@ -93,8 +109,8 @@ end
 Mesh the camber distribution of a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for vortex lattice analyses.
 """
 function mesh_cambers(wing :: Wing, span_num, chord_num, spacings = ["cosine"])
-    left_panels  = mesh_cambers(wing.left, reverse(span_num), chord_num, reverse(spacings), flip = true)
-    right_panels = mesh_cambers(wing.right, span_num, chord_num, spacings)
+    left_panels  = mesh_cambers(left(wing), reverse(span_num), chord_num, reverse(spacings), flip = true)
+    right_panels = mesh_cambers(right(wing), span_num, chord_num, spacings)
 
     [ left_panels right_panels ] 
 end
@@ -131,7 +147,7 @@ coordinates(wing :: Union{HalfWing, Wing}) = permutedims([ wing_bounds(wing)[1] 
 
 function coordinates(wing :: HalfWing, span_num, chord_num; span_spacing = ["cosine"], rotation = one(RotMatrix{3, Float64}), translation = zeros(3), flip = false) 
     lead, trail = wing_bounds(wing, flip)
-    hcat(chop_wing(lead, trail, span_num, chord_num; span_spacing = span_spacing, flip = flip)...)
+    reduce(hcat, chop_wing(lead, trail, span_num, chord_num; span_spacing = span_spacing, flip = flip))
 end
 
-coordinates(wing :: Wing, span_num, chord_num; span_spacing = ["cosine"], rotation = one(RotMatrix{3, Float64}), translation = zeros(3)) = [ coordinates(wing.left, span_num, chord_num; span_spacing = span_spacing, rotation = rotation, translation = translation, flip = true) coordinates(wing.right, span_num, chord_num; span_spacing = span_spacing, rotation = rotation, translation = translation, flip = true) ]
+coordinates(wing :: Wing, span_num, chord_num; span_spacing = ["cosine"], rotation = one(RotMatrix{3, Float64}), translation = zeros(3)) = [ coordinates(left(wing), span_num, chord_num; span_spacing = span_spacing, rotation = rotation, translation = translation, flip = true)[:,1:end-1] coordinates(right(wing), span_num, chord_num; span_spacing = span_spacing, rotation = rotation, translation = translation) ]

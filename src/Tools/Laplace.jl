@@ -99,7 +99,8 @@ Freestream(V, α_deg, β_deg, Ω :: AbstractVector{T}) where T <: Real = Freestr
 
 A Freestream flow in Cartesian coordinates with vector ``U`` and quasi-steady rotation vector ``\\Omega``.
 """
-Freestream(U :: AbstractVector{T}, Ω :: AbstractVector{T}) where T <: Real = Freestream{T}(cartesian_to_freestream(U)..., Ω)
+Freestream(U :: AbstractVector{T}, Ω :: AbstractVector{T}) where T <: Real = 
+    let (V, α, β) = cartesian_to_freestream(U); Freestream{T}(V, α, β, Ω) end
 
 """
     freestream_to_cartesian(r, θ, φ)

@@ -125,16 +125,14 @@ te = chop_trailing_edge(wing, Int(span_num / 2))
 ds = SVector.(dx, dy, dz) .+ SVector.(θx, θy, θz) .× ([r1s; [SVector(0.,0.,0.)]] .+ [[SVector(0.,0.,0.)]; r2s])
 
 xyzs = coordinates(wing, Int(span_num / 2), chord_num)
-new_xyzs = permutedims(hcat((coords .+ ds for coords in eachrow(xyzs))...))
+new_xyzs = permutedims(reduce(hcat, coords[:] + ds for coords in eachrow(xyzs)))
 
-# Note: A bijective mapping between the wing's geometric and coordinate representations needs to be defined, if it exists.
+# A bijective mapping between the wing's geometric and coordinate representations needs to be defined, if it exists. 
+# Suspecting it doesn't due to different perturbations in the section spans at the leading and trailing edges.
 
 ## Testing
 xyzs   = coordinates(wing, Int(span_num / 2), 5)
-pans = [ let (i, j) = inds.I; Panel3D(xyzs[i,j], xyzs[i,j+1], xyzs[i+1], xyzs[i+1,j+1]) end for inds in CartesianIndices(size(xyzs) .- 1) ]
-
-
-# pans = [ (p1, p2, p3, p4) for ((p1, p2), (p3, p4)) in zip(spans, chords) ]
+pans   = make_panels(xyzs)
 
 ##
 data = DataFrame([ Fx dx Mx θx Fy dy My θy Fz dz Mz θz ], :auto)

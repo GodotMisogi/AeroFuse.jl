@@ -63,7 +63,7 @@ include("matrix_func.jl")
 
 export solve_problem
 
-function solve_problem(panels :: Vector{<: Panel2D}, u, α, sources :: Bool, wake_length)
+function solve_problem(panels, u, α, sources :: Bool, wake_length)
     speed 			= norm(u)
     xs	 			= getindex.(panel_points(panels)[2:end-1], 1)
 
@@ -87,7 +87,7 @@ function solve_problem(panels :: Vector{<: Panel2D}, u, α, sources :: Bool, wak
     cls, cms, cps, cl_wake
 end
 
-function solve_problem(panels :: Vector{<: Panel2D}, u, α, num_wake :: Integer, wake_length)
+function solve_problem(panels, u, α, num_wake :: Integer, wake_length)
     speed 			= norm(u)
     xs	 			= getindex.(panel_points(panels)[2:end-1], 1)
     wakes 			= wake_panels(panels, wake_length, num_wake)

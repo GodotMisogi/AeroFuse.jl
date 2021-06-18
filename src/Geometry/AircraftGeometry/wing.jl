@@ -18,10 +18,10 @@ left(wing :: Wing)      = wing.left
 right(wing :: Wing)     = wing.right
 foils(wing :: Wing)     = @views [ (foils ∘ left)(wing)[end:-1:2]	  ; (foils ∘ right)(wing)     ]
 chords(wing :: Wing)    = @views [ (chords ∘ left)(wing)[end:-1:2]	  ; (chords ∘ right)(wing)    ]
-twists(wing :: Wing)    = @views [ (twists ∘ left)(wing)[end:-1:2]	  ; (twists  ∘ right)(wing)   ]
+twists(wing :: Wing)    = @views [ (twists ∘ left)(wing)[end:-1:2]	  ; (twists ∘ right)(wing)   ]
 spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)	  ; (spans ∘ right)(wing)     ]
 dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dihedrals ∘ right)(wing) ]
-sweeps(wing :: Wing)    = @views [ (reverse ∘ sweeps ∘ left)(wing)    ; (sweeps  ∘ right)(wing)   ]
+sweeps(wing :: Wing)    = @views [ (reverse ∘ sweeps ∘ left)(wing)    ; (sweeps ∘ right)(wing)   ]
 
 # Symmetric wing
 Wing(; chords :: Vector{T}, twists :: Vector{T}, spans :: Vector{T}, dihedrals :: Vector{T}, sweep_LEs :: Vector{T}, foils :: Vector{Foil{T}} = fill(Foil(naca4((0,0,1,2))), length(chords))) where T <: Real = let w = HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, sweep_LEs = sweep_LEs); Wing(w, w) end
