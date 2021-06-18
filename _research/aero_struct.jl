@@ -56,16 +56,16 @@ r1s         = @. r1(bound_leg_center(horseshoes), horseshoes)[:]
 r2s         = @. r2(bound_leg_center(horseshoes), horseshoes)[:]
 M1s         = @. r1s × half_forces
 M2s         = @. r2s × half_forces 
-
+zero_vec    = SVector(0., 0., 0.)
 weight_vector = SVector(0., 0., 1.)
 
 # Interspersing
-forces            = [ half_forces; [SVector(0.,0.,0.)] ] .+ [ [SVector(0.,0.,0.)]; half_forces ]
+forces            = [ half_forces; [zero_vec] ] .+ [ [zero_vec]; half_forces ]
 
 n                 = ceil(Int, length(horseshoe_panels) / 2) + 1
 forces[n-1:n+1] .-= forces[n-1:n+1]   # Boundary condition, setting F = 0 at center of wing
 
-moments           = [         M1s; [SVector(0.,0.,0.)] ] .+ [ [SVector(0.,0.,0.)]; M2s ]
+moments           = [         M1s; [zero_vec] ] .+ [ [zero_vec]; M2s ]
 
 ## Assembly
 Fx = getindex.(forces, 1)
@@ -122,17 +122,12 @@ le = chop_leading_edge(wing, Int(span_num / 2))
 te = chop_trailing_edge(wing, Int(span_num / 2))
 
 # Displace and rotate about quarter-chord point, where the beam is located.
-ds = SVector.(dx, dy, dz) .+ SVector.(θx, θy, θz) .× ([r1s; [SVector(0.,0.,0.)]] .+ [[SVector(0.,0.,0.)]; r2s])
-
-xyzs = coordinates(wing, Int(span_num / 2), chord_num)
+ds       = SVector.(dx, dy, dz) .+ SVector.(θx, θy, θz) .× ([r1s; [zero_vec]] .+ [[zero_vec]; r2s])
+xyzs     = coordinates(wing, Int(span_num / 2), chord_num)
 new_xyzs = permutedims(reduce(hcat, coords[:] + ds for coords in eachrow(xyzs)))
 
 # A bijective mapping between the wing's geometric and coordinate representations needs to be defined, if it exists. 
 # Suspecting it doesn't due to different perturbations in the section spans at the leading and trailing edges.
-
-## Testing
-xyzs   = coordinates(wing, Int(span_num / 2), 5)
-pans   = make_panels(xyzs)
 
 ##
 data = DataFrame([ Fx dx Mx θx Fy dy My θy Fz dz Mz θz ], :auto)

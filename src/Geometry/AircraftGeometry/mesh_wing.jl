@@ -23,7 +23,7 @@ function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, c
     permutedims(reduce(hcat, chop_coordinates(coords, span_num, spacings, flip) for coords in eachrow(foil_coords)))
 end
 
-transform_coordinates(xyz, twist, section) = RotY(twist) * xyz + section
+transform_coordinates(xyz, twist, section) = RotY(-twist) * xyz + section
 
 """
     camber_coordinates(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
