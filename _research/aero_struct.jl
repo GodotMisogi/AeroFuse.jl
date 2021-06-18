@@ -4,7 +4,7 @@ using AeroMDAO
 using Base.Iterators
 using LinearAlgebra
 using StaticArrays
-using ForwardDiff
+# using ForwardDiff
 using DataFrames
 
 ## Define wing
@@ -118,13 +118,23 @@ rename!(state, [:dx, :θx, :dy, :θy, :dz, :θz])
 ## Transfer displacements to aerodynamic mesh
 
 # Get leading and trailing edges
-le = leading_chopper(wing, Int(span_num / 2))
-te = trailing_chopper(wing, Int(span_num / 2))
+le = chop_leading_edge(wing, Int(span_num / 2))
+te = chop_trailing_edge(wing, Int(span_num / 2))
 
-# Displace and rotate about quarter-chord point, where the beam is located, too sleepy to check correctness right now...
+# Displace and rotate about quarter-chord point, where the beam is located.
 ds = SVector.(dx, dy, dz) .+ SVector.(θx, θy, θz) .× ([r1s; [SVector(0.,0.,0.)]] .+ [[SVector(0.,0.,0.)]; r2s])
 
+xyzs = coordinates(wing, Int(span_num / 2), chord_num)
+new_xyzs = permutedims(hcat((coords .+ ds for coords in eachrow(xyzs))...))
+
 # Note: A bijective mapping between the wing's geometric and coordinate representations needs to be defined, if it exists.
+
+## Testing
+xyzs   = coordinates(wing, Int(span_num / 2), 5)
+pans = [ let (i, j) = inds.I; Panel3D(xyzs[i,j], xyzs[i,j+1], xyzs[i+1], xyzs[i+1,j+1]) end for inds in CartesianIndices(size(xyzs) .- 1) ]
+
+
+# pans = [ (p1, p2, p3, p4) for ((p1, p2), (p3, p4)) in zip(spans, chords) ]
 
 ##
 data = DataFrame([ Fx dx Mx θx Fy dy My θy Fz dz Mz θz ], :auto)

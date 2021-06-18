@@ -115,7 +115,7 @@ print_derivatives(dvs, comp)
 
 # Spanwise distribution
 span_points = 10
-init        = leading_chopper(wing, span_points) 
+init        = chop_leading_edge(wing, span_points) 
 dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy, dz]) ; 
                 init .+ Ref([dx, dy,-dz]) ];

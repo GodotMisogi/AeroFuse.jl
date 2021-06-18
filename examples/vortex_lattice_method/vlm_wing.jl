@@ -72,7 +72,7 @@ gr(size = (600, 400), dpi = 300)
 
 # Spanwise distribution
 span_points = 20
-init        = trailing_chopper(wing, span_points) 
+init        = chop_trailing_edge(wing, span_points) 
 dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy,  dz])  ; 
                 init .+ Ref([dx, dy, -dz]) ];

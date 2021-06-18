@@ -37,6 +37,8 @@ average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)
 Compute the area of a Panel3D.
 """
 panel_area(panel :: Panel3D) = (norm ∘ cross)(average_chord(panel), average_width(panel))
+	
+wetted_area(panels :: Matrix{<: Panel3D}) = sum(panel -> panel_area(panel), panels)
 
 """
     panel_coords(panel :: Panel3D)
