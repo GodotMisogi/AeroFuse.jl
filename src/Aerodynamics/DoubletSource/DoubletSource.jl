@@ -4,7 +4,6 @@ using LinearAlgebra
 using Base.Iterators
 using StaticArrays
 using Statistics
-using TimerOutputs
 
 using ..AeroMDAO: AbstractPanel2D, Panel2D, WakePanel2D, Point2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, rotation, inverse_rotation, midpair_map, pressure_coefficient, wake_panel, wake_panels, panel_points, panel_vector
 
@@ -64,7 +63,7 @@ include("matrix_func.jl")
 
 export solve_problem
 
-function solve_problem(panels :: Vector{<: Panel2D}, u, α, sources :: Bool, wake_length)
+function solve_problem(panels, u, α, sources :: Bool, wake_length)
     speed 			= norm(u)
     xs	 			= getindex.(panel_points(panels)[2:end-1], 1)
 
@@ -88,7 +87,7 @@ function solve_problem(panels :: Vector{<: Panel2D}, u, α, sources :: Bool, wak
     cls, cms, cps, cl_wake
 end
 
-function solve_problem(panels :: Vector{<: Panel2D}, u, α, num_wake :: Integer, wake_length)
+function solve_problem(panels, u, α, num_wake :: Integer, wake_length)
     speed 			= norm(u)
     xs	 			= getindex.(panel_points(panels)[2:end-1], 1)
     wakes 			= wake_panels(panels, wake_length, num_wake)

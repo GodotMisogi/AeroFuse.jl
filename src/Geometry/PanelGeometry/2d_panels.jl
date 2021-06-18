@@ -46,11 +46,11 @@ panel_tangent(panel :: AbstractPanel2D) = rotation(1., 0., -panel_angle(panel))
 panel_normal(panel :: AbstractPanel2D) = inverse_rotation(0., 1., panel_angle(panel))
 panel_location(panel :: AbstractPanel2D) = let angle = panel_angle(panel); ifelse((π/2 <= angle <= π) || (-π <= angle <= -π/2), "lower", "upper") end
 
-panel_points(panels :: Vector{<: AbstractPanel2D}) = [ p1.(panels); [(p2 ∘ last)(panels)] ]
+panel_points(panels) = [ p1.(panels); [(p2 ∘ last)(panels)] ]
 
 reverse_panel(panel :: AbstractPanel2D) = Panel2D(panel.p2, panel.p1)
 
-trailing_edge_panel(panels :: Vector{<: AbstractPanel2D}) = Panel2D((p2 ∘ last)(panels), (p1 ∘ first)(panels))
+trailing_edge_panel(panels) = Panel2D((p2 ∘ last)(panels), (p1 ∘ first)(panels))
 
 function wake_panel(panels, bound, α)
     firstx, firsty   = (p1 ∘ first)(panels)

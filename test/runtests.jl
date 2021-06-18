@@ -1,7 +1,7 @@
 using AeroMDAO
 using Test
 
-@testset "Kulfan CST Doublet-Source Panel Method" begin
+@testset "2D Panel Method - Doublet-Source Kulfan CST" begin
     # Define Kulfan CST coefficients
     alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
     alpha_l = [-0.2, -0.1, -0.1, -0.001]
@@ -21,7 +21,7 @@ using Test
     @test sum(cms) ≈ -0.26104277 atol = 1e-6
 end
 
-@testset "Airfoil Processing" begin
+@testset "Geometry - Airfoil Processing" begin
     # Import and read airfoil coordinates
     foilpath = joinpath((dirname ∘ dirname ∘ pathof)(AeroMDAO), "test/CRM.dat")
     coords   = read_foil(foilpath)
@@ -47,7 +47,7 @@ end
     @test sum(cms) ≈ -0.29766116 atol = 1e-6
 end
 
-@testset "Trapezoidal Wing Geometry" begin
+@testset "Geometry - Two-Section Trapezoidal Wing" begin
     # Define wing
     wing_right = HalfWing(chords    = [1.0, 0.6, 0.2],
                           twists    = [2.0, 0.0, -0.2],
