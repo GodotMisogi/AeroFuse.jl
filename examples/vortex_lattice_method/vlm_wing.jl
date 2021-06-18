@@ -34,7 +34,7 @@ solve_case(wing, fs;
            chord_num = 5,
            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
            x_tr      = [0.3, 0.3],
-           spacing   = "uniform"
+          #  spacing   = "uniform"
           );
 
 print_coefficients(nf_coeffs, ff_coeffs, "Wing")
@@ -132,7 +132,7 @@ hs_zs  = getindex.(hs_pts, 3)
 
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
-     camera = (25, 30),
+     camera = (60, 60),
      zlim = (-0.1, z_limit)
     )
 plot!.(horseshoe_coords, color = :gray, label = :none)
