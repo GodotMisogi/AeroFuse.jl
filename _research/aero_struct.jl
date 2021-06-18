@@ -7,17 +7,22 @@ using StaticArrays
 # using ForwardDiff
 using DataFrames
 
-## Define wing
-wing = WingSection(span = 4.0, 
-                   dihedral = 1.0, 
-                   sweep_LE = 15.0, 
-                   taper = 0.4, 
+## Define and mesh wing
+wing = WingSection(span       = 4.0, 
+                   dihedral   = 1.0, 
+                   sweep_LE   = 15.0, 
+                   taper      = 0.4, 
                    root_chord = 2.0, 
                    root_twist = 0.0, 
-                   tip_twist = 0.0)
-wing_mac  = mean_aerodynamic_center(wing)
-wing_plan = plot_wing(wing)
+                   tip_twist  = 0.0)
+wing_mac    = mean_aerodynamic_center(wing)
+wing_plan   = plot_wing(wing)
+name        = "Wing"
 print_info(wing)
+
+# Mesh
+panels, normals = panel_wing(wing, 5, 1);
+aircraft = Dict(name => (panels, normals));
 
 ## Define freestream variables and reference values
 ρ 		= 1.225
@@ -32,16 +37,14 @@ span_num  = 10
 chord_num = 1
 
 @time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = 
-    solve_case(wing, fs; 
+    solve_case(aircraft, fs; 
                rho_ref   = ρ, 
                r_ref     = ref,
-               span_num  = span_num, 
-               chord_num = chord_num,
-            #    viscous   = true,
-            #    x_tr      = 0.3
-               );
+               span_ref  = b,
+               area_ref  = S,
+               chord_ref = c)[name];
                
-print_coefficients(nf_coeffs, ff_coeffs, "Wing")
+print_coefficients(nf_coeffs, ff_coeffs, name)
 
 ## Needs to be moved to NonDimensional
 force(CF, q, S) = CF * q * S
@@ -117,14 +120,14 @@ rename!(state, [:dx, :θx, :dy, :θy, :dz, :θz])
 
 ## Transfer displacements to aerodynamic mesh
 
-# Get leading and trailing edges
-le = chop_leading_edge(wing, Int(span_num / 2))
-te = chop_trailing_edge(wing, Int(span_num / 2))
-
-# Displace and rotate about quarter-chord point, where the beam is located.
-ds       = SVector.(dx, dy, dz) .+ SVector.(θx, θy, θz) .× ([r1s; [zero_vec]] .+ [[zero_vec]; r2s])
-xyzs     = coordinates(wing, Int(span_num / 2), chord_num)
-new_xyzs = permutedims(reduce(hcat, coords[:] + ds for coords in eachrow(xyzs)))
+# Displace and rotate about quarter-chord point, where the beam is located. Needs many corrections...
+rs        = @. SVector(dx, dy, dz)
+θs        = @. SVector(θx, θy, θz)
+ds        = @. rs + θs × ([r1s; [zero_vec]] + [[zero_vec]; r2s])
+xyzs      = coordinates(wing, Int(span_num / 2), chord_num)
+new_xyzs  = permutedims(reduce(hcat, coords[:] + ds for coords in eachrow(xyzs)))
+new_pans  = make_panels(new_xyzs)
+new_norms = @. wing_normals[:] + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
 
 # A bijective mapping between the wing's geometric and coordinate representations needs to be defined, if it exists. 
 # Suspecting it doesn't due to different perturbations in the section spans at the leading and trailing edges.
