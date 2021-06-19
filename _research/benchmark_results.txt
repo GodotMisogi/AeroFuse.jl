@@ -1,0 +1,33 @@
+Benchmarking results
+
+
+Aircraft - (chordwise panels, spanwise panels) 
+Wing:            (20, 40)
+Horizontal Tail: (12, 24)
+Vertical Tail:   (10, 12)
+
+AeroMDAO Aircraft Functional -
+BenchmarkTools.Trial: 
+  memory estimate:  28.81 MiB
+  allocs estimate:  65337
+  --------------
+  minimum time:     190.091 ms (2.33% GC)
+  median time:      205.289 ms (0.00% GC)
+  mean time:        212.626 ms (1.63% GC)
+  maximum time:     288.238 ms (0.00% GC)
+  --------------
+  samples:          24
+  evals/sample:     1
+
+BYU FLOW Lab VortexLattice.jl - 
+BenchmarkTools.Trial: 
+  memory estimate:  32.47 MiB
+  allocs estimate:  147398
+  --------------
+  minimum time:     284.172 ms (0.00% GC)
+  median time:      302.427 ms (2.12% GC)
+  mean time:        310.128 ms (1.65% GC)
+  maximum time:     360.176 ms (3.18% GC)
+  --------------
+  samples:          17
+  evals/sample:     1

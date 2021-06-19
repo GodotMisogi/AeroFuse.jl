@@ -1,7 +1,7 @@
 using AeroMDAO
 using Test
 
-@testset "Kulfan CST Doublet-Source Panel Method" begin
+@testset "2D Panel Method - Doublet-Source Kulfan CST" begin
     # Define Kulfan CST coefficients
     alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
     alpha_l = [-0.2, -0.1, -0.1, -0.001]
@@ -9,7 +9,7 @@ using Test
 
     # Define airfoil
     airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, dzs, 0.0, 60);
-    
+
     # Define uniform flow
     uniform = Uniform2D(1., 5.)
 
@@ -21,7 +21,7 @@ using Test
     @test sum(cms) ≈ -0.26104277 atol = 1e-6
 end
 
-@testset "Airfoil Processing" begin
+@testset "Geometry - Airfoil Processing" begin
     # Import and read airfoil coordinates
     foilpath = joinpath((dirname ∘ dirname ∘ pathof)(AeroMDAO), "test/CRM.dat")
     coords   = read_foil(foilpath)
@@ -47,14 +47,14 @@ end
     @test sum(cms) ≈ -0.29766116 atol = 1e-6
 end
 
-@testset "Trapezoidal Wing Geometry" begin
+@testset "Geometry - Two-Section Trapezoidal Wing" begin
     # Define wing
     wing_right = HalfWing(chords    = [1.0, 0.6, 0.2],
                           twists    = [2.0, 0.0, -0.2],
                           spans     = [5.0, 0.5],
                           dihedrals = [5., 5.],
                           sweep_LEs = [5., 5.]);
-        
+
     # Get wing info
     b, S, c, AR = info(wing_right)
     λ           = taper_ratio(wing_right)
@@ -81,7 +81,7 @@ end
     ρ   = 1.225
     ref = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
     Ω   = [0.0, 0.0, 0.0]
-    
+
     # Define freestream condition
     uniform = Freestream(10.0, 2.0, 2.0, Ω)
 
@@ -91,11 +91,11 @@ end
     # Test values
     nf_tests = [0.001189, -0.000228, 0.152203, -0.000242, -0.003486, -8.1e-5, 0.0, 0.0, 0.0]
     ff_tests = [0.00123,  -0.000271, 0.152198]
-    dv_tests = [ 0.068444 -0.000046 -0.000711  0.023607  0.000337; 
-                 0.010867 -0.007536  0.129968  0.021929 -0.012086; 
-                 4.402229 -0.012973 -0.070654  6.833903  0.001999; 
-                 0.031877 -0.013083  0.460035  0.091216 -0.039146; 
-                -0.112285 -0.004631  0.105695 -0.852395 -0.007696; 
+    dv_tests = [ 0.068444 -0.000046 -0.000711  0.023607  0.000337;
+                 0.010867 -0.007536  0.129968  0.021929 -0.012086;
+                 4.402229 -0.012973 -0.070654  6.833903  0.001999;
+                 0.031877 -0.013083  0.460035  0.091216 -0.039146;
+                -0.112285 -0.004631  0.105695 -0.852395 -0.007696;
                 -0.002218 -0.002115  0.008263 -0.003817  0.001079]
 
     # Nearfield coefficients test
@@ -126,7 +126,7 @@ end
 
     # Vertical tail
     vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
-    vtail = HalfWing(foils     = vtail_foils, 
+    vtail = HalfWing(foils     = vtail_foils,
                      chords    = [0.7, 0.42],
                      twists    = [0.0, 0.0],
                      spans     = [1.0],
@@ -141,9 +141,9 @@ end
                               angle    = deg2rad(-2.),
                               axis     = [0., 1., 0.],
                               spacing  = "cosine")
-    vtail_panels = panel_wing(vtail, 5, 6; 
+    vtail_panels = panel_wing(vtail, 5, 6;
                               position  = [4., 0, 0],
-                              angle     = π/2, 
+                              angle     = π/2,
                               axis      = [1., 0., 0.],
                               spacing   = "cosine")
 
@@ -168,7 +168,7 @@ end
                                    span_ref  = b,
                                    chord_ref = c,
                                    name      = ac_name);
-                
+
     nfs, ffs, dvs = dv_data[ac_name]
 
     nf_tests = [0.000258, -0.006642, 0.074301, -0.003435, 0.075511, 0.001563, 0.0, 0.0, 0.0]
@@ -178,7 +178,7 @@ end
                  5.749765  0.046649 -0.01346   15.571205  0.020396;
                  0.022674 -0.196605  0.660392   0.099065 -0.039688;
                 -2.70367  -0.132928  0.070111 -37.372278 -0.064439;
-                 0.002034  0.087382  0.014991   0.005840  0.091088]  
+                 0.002034  0.087382  0.014991   0.005840  0.091088]
 
     # Nearfield coefficients test
     [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]

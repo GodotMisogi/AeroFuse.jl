@@ -14,12 +14,14 @@ end
 #     Wing{T}(left, right)
 # end
 
-foils(wing :: Wing)     = @views [ wing.left.foils[end:-1:2]	 ; wing.right.foils     ]
-chords(wing :: Wing)    = @views [ wing.left.chords[end:-1:2]	 ; wing.right.chords    ]
-twists(wing :: Wing)    = @views [ wing.left.twists[end:-1:2]	 ; wing.right.twists    ]
-spans(wing :: Wing)     = @views [ wing.left.spans[end:-1:1]	 ; wing.right.spans 	]
-dihedrals(wing :: Wing) = @views [ wing.left.dihedrals[end:-1:1] ; wing.right.dihedrals ]
-sweep_LEs(wing :: Wing) = @views [ wing.left.sweep_LEs[end:-1:2] ; wing.right.sweep_LEs ]
+left(wing :: Wing)      = wing.left
+right(wing :: Wing)     = wing.right
+foils(wing :: Wing)     = @views [ (foils ∘ left)(wing)[end:-1:2]	  ; (foils ∘ right)(wing)     ]
+chords(wing :: Wing)    = @views [ (chords ∘ left)(wing)[end:-1:2]	  ; (chords ∘ right)(wing)    ]
+twists(wing :: Wing)    = @views [ (twists ∘ left)(wing)[end:-1:2]	  ; (twists ∘ right)(wing)   ]
+spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)	  ; (spans ∘ right)(wing)     ]
+dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dihedrals ∘ right)(wing) ]
+sweeps(wing :: Wing)    = @views [ (reverse ∘ sweeps ∘ left)(wing)    ; (sweeps ∘ right)(wing)   ]
 
 # Symmetric wing
 Wing(; chords :: Vector{T}, twists :: Vector{T}, spans :: Vector{T}, dihedrals :: Vector{T}, sweep_LEs :: Vector{T}, foils :: Vector{Foil{T}} = fill(Foil(naca4((0,0,1,2))), length(chords))) where T <: Real = let w = HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, sweep_LEs = sweep_LEs); Wing(w, w) end
@@ -32,23 +34,23 @@ WingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 
     
 Compute the span of a `Wing`.
 """
-span(wing :: Wing) = span(wing.left) + span(wing.right)
+span(wing :: Wing) = (span ∘ left)(wing) + (span ∘ right)(wing)
 
-taper_ratio(wing :: Wing) = taper_ratio(wing.left), taper_ratio(wing.right)
+taper_ratio(wing :: Wing) = (taper_ratio ∘ left)(wing), (taper_ratio ∘ right)(wing)
 
 """
     projected_area(wing :: Wing)
     
 Compute the projected_area of a `Wing`.
 """
-projected_area(wing :: Wing) = projected_area(wing.left) + projected_area(wing.right)
+projected_area(wing :: Wing) = (projected_area ∘ left)(wing) + (projected_area ∘ right)(wing)
 
 """
     mean_aerodynamic_chord(wing :: Wing)
     
 Compute the mean aerodynamic chord of a `Wing`.
 """
-mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean_aerodynamic_chord(wing.right)) / 2
+mean_aerodynamic_chord(wing :: Wing) = ((mean_aerodynamic_chord ∘ left)(wing) + (mean_aerodynamic_chord ∘ right)(wing)) / 2
 
 """
     wing_bounds(wing :: Wing)
@@ -56,16 +58,16 @@ mean_aerodynamic_chord(wing :: Wing) = (mean_aerodynamic_chord(wing.left) + mean
 Return the leading and trailing edge coordinates of a `Wing`.
 """
 function wing_bounds(wing :: Wing)
-    left_lead, left_trail 	= wing_bounds(wing.left, true)
-    right_lead, right_trail = wing_bounds(wing.right)
+    left_lead, left_trail 	= wing_bounds(left(wing), true)
+    right_lead, right_trail = wing_bounds(right(wing))
 
-    leading  = [ left_lead ; right_lead  ]
-    trailing = [ left_trail; right_trail ]
+    leading  = @views [ left_lead[1:end-1] ; right_lead  ]
+    trailing = @views [ left_trail[1:end-1]; right_trail ]
 
     leading, trailing
 end
 
-leading_edge(wing :: Wing) = [ leading_edge(wing.left, true); leading_edge(wing.right) ]
-trailing_edge(wing :: Wing) = [ trailing_edge(wing.left, true); trailing_edge(wing.right) ]
+leading_edge(wing :: Wing)  = @views [ leading_edge(left(wing), true)[1:end-1] ; leading_edge(right(wing))  ]
+trailing_edge(wing :: Wing) = @views [ trailing_edge(left(wing), true)[1:end-1]; trailing_edge(right(wing)) ]
 
-mean_aerodynamic_center(wing :: Wing, factor = 0.25) = (mean_aerodynamic_center(wing.right, factor) .+ mean_aerodynamic_center(wing.left, factor)) ./ 2
+mean_aerodynamic_center(wing :: Wing, factor = 0.25) = (mean_aerodynamic_center(right(wing), factor) .+ mean_aerodynamic_center(left(wing), factor)) ./ 2

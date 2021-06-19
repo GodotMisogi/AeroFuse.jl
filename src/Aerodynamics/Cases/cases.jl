@@ -19,7 +19,6 @@ function print_info(wing :: Union{Wing, HalfWing}, head = ""; browser = false)
     end
 end
 
-
 VortexLattice.VLMState(fs :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, r_ref, rho_ref, area_ref, chord_ref, span_ref, name)
 
 """
@@ -85,9 +84,9 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
     
     # Flattening for VLM
     horseshoe_panels = first.(meshes)
-    normals      	 = last.(meshes)
-    horsies          = vcat(vec.(horseshoe_panels)...)
-    normies          = vcat(vec.(normals)...)
+    normals          = last.(meshes)
+    horsies          = reduce(vcat, vec.(horseshoe_panels))
+    normies          = reduce(vcat, vec.(normals))
 
     # Get required vortex lattice variables, i.e. horseshoes, collocation points and normals
     horseshoes = horseshoe_line.(horsies)
@@ -118,8 +117,8 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
     # Aircraft's non-dimensional forces and moments
     nf_coeffs = reduce((x, y) -> x .+ y, nf_comp_coeffs) # Sum nearfield coefficients
     ff_coeffs = reduce((x, y) -> x .+ y, ff_comp_coeffs) # Sum farfield coefficients
-    name_CFs  = vcat(vec.(CFs)...)						 # Collect surface force coefficients
-    name_CMs  = vcat(vec.(CMs)...)						 # Collect surface moment coefficients
+    name_CFs  = reduce(vcat, vec.(CFs))                  # Collect surface force coefficients
+    name_CMs  = reduce(vcat, vec.(CMs))                  # Collect surface moment coefficients
 
     # Printing
     if print_components; print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(components)) end

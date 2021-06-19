@@ -11,8 +11,7 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
 print_info(wing, "Wing")
 
 # Horizontal tail
-htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-htail = Wing(foils     = htail_foils,
+htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
              spans     = [1.25],
@@ -21,8 +20,7 @@ htail = Wing(foils     = htail_foils,
 print_info(htail, "Horizontal Tail")
 
 # Vertical tail
-vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
-vtail = HalfWing(foils     = vtail_foils, 
+vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
@@ -36,7 +34,6 @@ wing_panels  = panel_wing(wing,                 # Wing or HalfWing type
                           10;                   # Chordwise panels 
                         #   spacing = "cosine"  # Spacing distribution: Default works well for symmetric
                          )
-println(size(wing_panels[1]))
 
 htail_panels = panel_wing(htail, [6], 6;
                           position	= [4., 0, 0],
@@ -65,7 +62,7 @@ V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
-data = 
+@time data = 
     solve_case(aircraft, fs; 
                rho_ref     = ρ, 		# Reference density
                r_ref       = ref, 		# Reference point for moments
@@ -84,7 +81,7 @@ nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = dat
 print_coefficients(nf_coeffs, ff_coeffs, comp)
 
 ## Stability case
-dv_data = 
+@time dv_data = 
     solve_stability_case(aircraft, fs;
                          rho_ref     = ρ,
                          r_ref       = ref,
@@ -115,7 +112,7 @@ print_derivatives(dvs, comp)
 
 # Spanwise distribution
 span_points = 10
-init        = leading_chopper(wing, span_points) 
+init        = chop_leading_edge(wing, span_points) 
 dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy, dz]) ; 
                 init .+ Ref([dx, dy,-dz]) ];

@@ -27,8 +27,7 @@ end
 
 function wetted_area_drag(wing :: HalfWing, x_tr, V, ρ, a_ref = 330., μ = 1.5e-5)
 	# Chord processing
-	chords      = wing.chords
-	mean_chords = fwdsum(chords) / 2
+	mean_chords = (fwdsum ∘ chords)(wing) / 2
 
 	# Wetted areas
 	S_wets = @. mean_chords * wing.spans / cos(wing.dihedrals)
@@ -38,9 +37,9 @@ function wetted_area_drag(wing :: HalfWing, x_tr, V, ρ, a_ref = 330., μ = 1.5e
 	K_fs = form_factor(wing, M)
 
 	wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
-end	
+end
 
 profile_drag_coefficient(wing :: HalfWing, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
-profile_drag_coefficient(wing :: Wing, x_tr, V, rho_ref, a_ref, area_ref, μ) = profile_drag_coefficient(wing.left, x_tr, V, rho_ref, a_ref, area_ref, μ) + profile_drag_coefficient(wing.right, x_tr, V, rho_ref, a_ref, area_ref, μ)
+profile_drag_coefficient(wing :: Wing, x_tr, V, rho_ref, a_ref, area_ref, μ) = profile_drag_coefficient(left(wing), x_tr, V, rho_ref, a_ref, area_ref, μ) + profile_drag_coefficient(right(wing), x_tr, V, rho_ref, a_ref, area_ref, μ)
 
 ## Local-friction and local-dissipation method

@@ -1,4 +1,4 @@
-# Axis transformations
+## Axis transformations
 #==========================================================================================#
 
 """
@@ -7,6 +7,13 @@
 Convert coordinates into stability axes with angle ``\\alpha``.
 """
 body_to_stability_axes(coords, α :: T) where T <: Real = RotY{T}(α) * coords
+
+"""
+    body_to_stability_axes(coords, α)
+
+Convert coordinates into stability axes with angle ``\\alpha``.
+"""
+stability_to_body_axes(coords, α :: T) where T <: Real = RotY{T}(-α) * coords
                                             
 """
     body_to_wind_axes(coords, α, β)
@@ -16,18 +23,25 @@ Convert coordinates from body axes to wind axes with angles ``\\alpha,~ \\beta``
 body_to_wind_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(β, α) * coords
 
 """
+    body_to_wind_axes(coords, α, β)
+
+Convert coordinates from wind axes to body axes with angles ``\\alpha,~ \\beta``.
+"""
+wind_to_body_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(-α, -β) * coords
+
+## Line methods
+#==========================================================================================#
+
+"""
     body_to_wind_axes(line, freestream)
 
 Transform a Line from body to wind axes in a given `Freestream`.
 """
 body_to_wind_axes(line :: Line, α :: T, β :: T) where T <: Real = Line(body_to_wind_axes(line.r1, α, β), body_to_wind_axes(line.r2, α, β)) 
 
-"""
-    body_to_wind_axes(coords, α, β)
 
-Convert coordinates from wind axes to body axes with angles ``\\alpha,~ \\beta``.
-"""
-wind_to_body_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(-α, -β) * coords
+## Reflections and projections
+#==========================================================================================#
 
 """
     reflect_xz(vector)

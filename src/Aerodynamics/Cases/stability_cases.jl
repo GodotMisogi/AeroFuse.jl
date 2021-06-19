@@ -79,10 +79,10 @@ function solve_stability_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}},
                           name 		= name)
 
         # Creates array of nearfield and farfield coefficients for each component as a row vector.
-        coeffs = hcat((let comps = data[name]; [ comps[1]; comps[2] ] end for name in names)...)
+        coeffs = reduce(hcat, let comps = data[name]; [ comps[1]; comps[2] ] end for name in names)
     end
 
-    names 	= [ keys(aircraft)..., name ]
+    names 	= [ reduce(vcat, keys(aircraft)); name ]
     num_comps = length(names)
 
     y 		= zeros(12, num_comps)

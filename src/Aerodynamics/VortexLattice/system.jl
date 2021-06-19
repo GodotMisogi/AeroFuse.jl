@@ -98,9 +98,9 @@ end
 
 function VLMSystem(surfaces :: Vector{VLMSurface{T}}) where T <: Real
     # Flattening for system
-    horsies = vcat((vec ∘ horseshoes).(surfaces)...)
-    collies = vcat((vec ∘ collocation_points).(surfaces)...)
-    normies = vcat((vec ∘ normals).(surfaces)...)
+    horsies = reduce(vcat, (vec ∘ horseshoes).(surfaces))
+    collies = reduce(vcat, (vec ∘ collocation_points).(surfaces))
+    normies = reduce(vcat, (vec ∘ normals).(surfaces))
     VLMSystem{T}(horsies, collies, normies)
 end
 
