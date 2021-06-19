@@ -3,8 +3,8 @@ transform_coordinates(xyz, twist, section) = RotY(-twist) * xyz + section
 function chop_sections(scaled_foils, twisties, leading_xyz, span_num, spacings, flip = false)
     # Reverse direction if left side
     if flip
-        scaled_foils = reverse!(scaled_foils, dims = 2)
-        twisties     = (permutedims ∘ reverse!)(twisties)
+        scaled_foils = reverse(scaled_foils, dims = 2)
+        twisties     = (permutedims ∘ reverse)(twisties)
     end
 
     # Rotate and translate coordinates
