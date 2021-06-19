@@ -90,14 +90,6 @@ include("Aerodynamics/Cases/foil_cases.jl")
 
 export solve_case, solve_stability_case, streamlines, print_case, print_info
 
-## Structural analyses
-#==========================================================================================#
-
-include("Structures/Beams.jl")
-import .Beams: Material, Beam, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iy_coeffs, Iz_coeffs, tube_stiffness_matrix, deflection_stiffness_matrix, torsional_stiffness_matrix
-
-export Material, Beam, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iy_coeffs, Iz_coeffs, tube_stiffness_matrix, deflection_stiffness_matrix, torsional_stiffness_matrix
-
 ## Post-processing
 #==========================================================================================#
 
