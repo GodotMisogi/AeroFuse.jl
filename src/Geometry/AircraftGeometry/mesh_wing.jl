@@ -1,19 +1,10 @@
+transform_coordinates(xyz, twist, section) = RotY(-twist) * xyz + section
 
-"""
-    surface_coordinates(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
-
-Compute the coordinates of a `HalfWing` consisting of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
-"""
-function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
-    leading_xyz  = leading_edge(wing, flip)
-    scaled_foils = reduce(hcat, @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num))
-
+function chop_sections(scaled_foils, twisties, leading_xyz, span_num, spacings, flip = false)
     # Reverse direction if left side
     if flip 
         scaled_foils = reverse!(scaled_foils, dims = 2)
-        twisties     = (permutedims ∘ reverse ∘ twists)(wing)
-    else
-        twisties     = twists(wing)
+        twisties     = (permutedims ∘ reverse!)(twisties)
     end
 
     # Rotate and translate coordinates
@@ -23,7 +14,16 @@ function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, c
     permutedims(reduce(hcat, chop_coordinates(coords, span_num, spacings, flip) for coords in eachrow(foil_coords)))
 end
 
-transform_coordinates(xyz, twist, section) = RotY(-twist) * xyz + section
+"""
+    surface_coordinates(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
+
+Compute the coordinates of a `HalfWing` consisting of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+"""
+function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
+    leading_xyz  = leading_edge(wing, flip)
+    scaled_foils = reduce(hcat, @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num))
+    chop_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip)
+end
 
 """
     camber_coordinates(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
@@ -31,25 +31,9 @@ transform_coordinates(xyz, twist, section) = RotY(-twist) * xyz + section
 Compute the coordinates of a `HalfWing` consisting of camber distributions of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
 """
 function camber_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
-    # Get leading edge coordinates
-    leading_xyz  = permutedims(leading_edge(wing, flip))
-
-    # Scale foils
+    leading_xyz  = leading_edge(wing, flip)
     scaled_foils = reduce(hcat, @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num))
-
-    # Reverse direction if left side
-    if flip 
-        scaled_foils = reverse!(scaled_foils, dims = 2)
-        twisties     = (permutedims ∘ reverse ∘ twists)(wing)
-    else
-        twisties     = twists(wing)
-    end
-
-    # Rotate and translate coordinates
-    foil_coords  = reduce(hcat, transform_coordinates.(foil, Ref(twist), Ref(section)) for (foil, twist, section) in zip(eachcol(scaled_foils), twisties, leading_xyz))
-
-    # Chop up spanwise sections
-    permutedims(reduce(hcat, chop_coordinates(coords, span_num, spacings, flip) for coords in eachrow(foil_coords)))
+    chop_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip)
 end
 
 """
@@ -85,8 +69,8 @@ chop_trailing_edge(obj :: Wing, span_num :: Integer) = let (lead, trail) = wing_
 Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
 """
 function mesh_horseshoes(wing :: Wing, span_num, chord_num, spacings = ["cosine"])
-    left_panels  = mesh_horseshoes(wing.left, reverse(span_num), chord_num, reverse(spacings), flip = true)
-    right_panels = mesh_horseshoes(wing.right, span_num, chord_num, spacings)
+    left_panels  = mesh_horseshoes(left(wing), reverse(span_num), chord_num, reverse(spacings), flip = true)
+    right_panels = mesh_horseshoes(right(wing), span_num, chord_num, spacings)
 
     [ left_panels right_panels ] 
 end
@@ -127,27 +111,27 @@ end
 
 panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; position = zeros(3), angle = 0., axis = [1., 0., 0.], spacing = spanwise_spacing(comp)) = paneller(comp, span_panels, chord_panels, rotation = AngleAxis{Float64}(angle, axis...), translation = position, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))
 
-number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* wing.spans / span(wing))
-number_of_spanwise_panels(wing :: Wing,     span_num :: Integer) = number_of_spanwise_panels(wing.right, ceil(Int, span_num / 2))
+number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* spans(wing) / span(wing))
+number_of_spanwise_panels(wing :: Wing,     span_num :: Integer) = number_of_spanwise_panels(right(wing), ceil(Int, span_num / 2))
 
 function number_of_spanwise_panels(wing :: HalfWing, span_num :: Vector{<: Integer}) 
-    @assert length(wing.spans) > 1 "Provide an integer number of spanwise panels for 1 wing section."
+    @assert (length ∘ spans)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
     span_num
 end
 
 function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer}) 
-    @assert length(wing.right.spans) > 1 "Provide an integer number of spanwise panels for 1 wing section."
+    @assert (length ∘ spans ∘ right)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
     ceil.(Int, span_num ./ 2)
 end
 
-spanwise_spacing(wing :: HalfWing) = [ "sine"; fill("cosine", length(wing.spans)       - 1) ]
-spanwise_spacing(wing :: Wing)     = [ "sine"; fill("cosine", length(wing.right.spans) - 1) ]
+spanwise_spacing(wing :: HalfWing) = [ "sine"; fill("cosine", (length ∘ spans)(wing)         - 1) ]
+spanwise_spacing(wing :: Wing)     = [ "sine"; fill("cosine", (length ∘ spans ∘ right)(wing) - 1) ]
 
-coordinates(wing :: Union{HalfWing, Wing}) = permutedims([ wing_bounds(wing)[1] wing_bounds(wing)[2] ])
+coordinates(wing :: Union{HalfWing, Wing}) = let (lead, trail) = wing_bounds(wing); permutedims([ lead trail ]) end
 
-function coordinates(wing :: HalfWing, span_num, chord_num; span_spacing = ["cosine"], rotation = one(RotMatrix{3, Float64}), translation = zeros(3), flip = false) 
+function coordinates(wing :: HalfWing, span_num, chord_num; span_spacing = ["cosine"], flip = false) 
     lead, trail = wing_bounds(wing, flip)
     reduce(hcat, chop_wing(lead, trail, span_num, chord_num; span_spacing = span_spacing, flip = flip))
 end
 
-coordinates(wing :: Wing, span_num, chord_num; span_spacing = ["cosine"], rotation = one(RotMatrix{3, Float64}), translation = zeros(3)) = [ coordinates(left(wing), span_num, chord_num; span_spacing = span_spacing, rotation = rotation, translation = translation, flip = true)[:,1:end-1] coordinates(right(wing), span_num, chord_num; span_spacing = span_spacing, rotation = rotation, translation = translation) ]
+coordinates(wing :: Wing, span_num, chord_num; span_spacing = ["cosine"], rotation = one(RotMatrix{3, Float64}), translation = zeros(3)) = [ coordinates(left(wing), span_num, chord_num; span_spacing = span_spacing, flip = true)[:,1:end-1] coordinates(right(wing), span_num, chord_num; span_spacing = span_spacing) ]

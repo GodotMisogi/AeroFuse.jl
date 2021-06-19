@@ -17,7 +17,7 @@ AeroMDAO currently provides basic geometric tools for airfoil processing, and pa
 ## Installation
 
 ```julia
-julia> using Pkg; Pkg.add("https://github.com/GodotMisogi/AeroMDAO")
+julia> using Pkg; Pkg.add("AeroMDAO")
 julia> Pkg.test("AeroMDAO")
 julia> using AeroMDAO
 ```
