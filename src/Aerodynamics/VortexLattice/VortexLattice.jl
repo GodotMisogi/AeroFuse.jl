@@ -15,21 +15,21 @@ import ..AeroMDAO: Panel3D, panel_area, panel_coords, midpoint, panel_normal, tr
 include("horseshoes.jl")
 include("finite_core.jl")
 
-export Horseshoe, horseshoe_line, horseshoe_point, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, make_horseshoes
+# export Horseshoe, horseshoe_line, horseshoe_point, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, make_horseshoes
 
 ## Reference frames
 #==========================================================================================#
 
 include("reference_frames.jl")
 
-export body_to_stability_axes, stability_to_body_axes, body_to_wind_axes, wind_to_body_axes, reflect_xz
+# export body_to_stability_axes, stability_to_body_axes, body_to_wind_axes, wind_to_body_axes, reflect_xz
 
 ## Influence matrix and solution of system
 #==========================================================================================#
 
 include("influences.jl")
 
-export solve_system
+# export solve_system
 
 """
     make_horseshoes(horseshoe_panels)
@@ -55,16 +55,16 @@ end
 
 include("nearfield.jl")
 
-export nearfield_dynamics, nearfield_drag
+# export nearfield_dynamics, nearfield_drag
 
 include("farfield.jl")
 
-export farfield_dynamics
+# export farfield_dynamics
 
 ## Post-processing
 #==========================================================================================#
 
-export case_dynamics, evaluate_coefficients
+# export case_dynamics, evaluate_coefficients
 
 """
     case_dynamics(Γ_comp, hs_comp, Γs, horseshoes, U, α, β, Ω, ρ, r_ref)
@@ -110,11 +110,11 @@ end
 # Streamlines
 include("streamlines.jl")
 
-export streamlines
+# export streamlines
 
 # EXPERIMENTAL: SYSTEM
 include("system.jl")
 
-export VLMState, VLMSystem, compute_influence_matrix!, compute_boundary_condition!, compute_collocation_points!, compute_horseshoes!, compute_normals!, solve_system!, compute_nearfield_forces!, compute_farfield_forces!, solve_case!, set_horseshoe_panels!, set_camber_panels!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_force_coefficients, surface_moment_coefficients, total_force_coefficients, farfield_force_coefficients
+# export VLMState, VLMSystem, compute_influence_matrix!, compute_boundary_condition!, compute_collocation_points!, compute_horseshoes!, compute_normals!, solve_system!, compute_nearfield_forces!, compute_farfield_forces!, solve_case!, set_horseshoe_panels!, set_camber_panels!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_force_coefficients, surface_moment_coefficients, total_force_coefficients, farfield_force_coefficients
 
 end

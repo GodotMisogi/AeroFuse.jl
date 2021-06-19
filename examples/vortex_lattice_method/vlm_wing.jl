@@ -1,5 +1,4 @@
 ## Wing analysis case
-using Revise
 using AeroMDAO
 
 ## Wing section setup
@@ -23,29 +22,29 @@ V, α, β = 1.0, 5.0, 0.0
 fs      = Freestream(V, α, β, Ω)
 
 ## Evaluate case
-@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = 
-solve_case(wing, fs; 
-           rho_ref   = ρ, 
+@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs =
+solve_case(wing, fs;
+           rho_ref   = ρ,
            r_ref     = ref,
            area_ref  = S,
            span_ref  = b,
            chord_ref = c,
-           span_num  = [25, 8], 
+           span_num  = [25, 8],
            chord_num = 5,
            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
            x_tr      = [0.3, 0.3],
-           spacing   = "uniform"
+          #  spacing   = "uniform"
           );
 
 print_coefficients(nf_coeffs, ff_coeffs, "Wing")
 
 ## Evaluate case with stability derivatives
-@time nf, ff, dvs = 
-solve_stability_case(wing, fs; 
-                     rho_ref    = ρ, 
+@time nf, ff, dvs =
+solve_stability_case(wing, fs;
+                     rho_ref    = ρ,
                      r_ref      = ref,
-                     span_num   = [25, 8], 
-                     chord_num  = 6, 
+                     span_num   = [25, 8],
+                     chord_num  = 6,
                      name       = "My Wing",
                      viscous    = true,
                      x_tr       = [0.3, 0.3],
@@ -72,9 +71,9 @@ gr(size = (600, 400), dpi = 300)
 
 # Spanwise distribution
 span_points = 20
-init        = trailing_chopper(wing, span_points) 
+init        = chop_trailing_edge(wing, span_points)
 dx, dy, dz  = 0, 0, 1e-3
-seed        = [ init .+ Ref([dx, dy,  dz])  ; 
+seed        = [ init .+ Ref([dx, dy,  dz])  ;
                 init .+ Ref([dx, dy, -dz]) ];
 
 distance = 5
@@ -93,7 +92,7 @@ zs = getindex.(colpoints, 3);
 
 z_limit = 5
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
-     aspect_ratio = 1, 
+     aspect_ratio = 1,
      camera = (30, 60),
      zlim = (-0.1, z_limit),
      size = (800, 600))
@@ -116,7 +115,7 @@ CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * fs.V * c)
 
 plot_CD = plot(ys[1,:], span_CDis, label = :none, ylabel = "CDi")
 plot_CY = plot(ys[1,:], span_CYs, label = :none, ylabel = "CY")
-plot_CL = begin 
+plot_CL = begin
             plot(ys[1,:], span_CLs, label = :none, xlabel = "y", ylabel = "CL")
             plot!(ys[1,:], CL_loadings, label = "Normalized", xlabel = "y")
           end
@@ -132,7 +131,7 @@ hs_zs  = getindex.(hs_pts, 3)
 
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
-     camera = (25, 30),
+     camera = (60, 60),
      zlim = (-0.1, z_limit)
     )
 plot!.(horseshoe_coords, color = :gray, label = :none)

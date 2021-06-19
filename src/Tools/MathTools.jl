@@ -25,12 +25,10 @@ z(p :: Point3D) = p.z
 
 # Copying NumPy's linspace function
 linspace(min, max, step) = min:(max - min)/step:max
-columns(M) = tuple([ view(M, :, i) for i in 1:size(M, 2) ]...)
+columns(M) = tuple((view(M, :, i) for i in 1:size(M, 2))...)
 
 ## Haskell Master Race
 #===========================================================================#
-
-# Sieg Heil!
 
 span(pred, iter) = (takewhile(pred, iter), dropwhile(pred, iter))
 splitat(n, xs) = @views (xs[1:n,:], xs[n+1:end,:])  
@@ -38,7 +36,6 @@ splitat(n, xs) = @views (xs[1:n,:], xs[n+1:end,:])
 lisa(pred, iter) = span(!pred, iter)
 
 Base.Iterators.partition(pred, xs, f, g) = f.(filter(pred, xs)), g.(filter(!pred, xs))
-
 Base.Iterators.partition(pred, xs, f = identity) = partition(pred, xs, f, f)
 
 ## Renaming math operations
@@ -81,7 +78,7 @@ tupvector(xs) = [ tuple(x...) for x in xs ]
 tuparray(xs)  = tuple.(eachcol(xs)...)
 vectarray(xs) = SVector.(eachcol(xs)...)
 
-extend_yz(coords) = @views [ coords[:,1] (zeros ∘ length)(coords) coords[:,2] ]
+extend_yz(coords) = @views @. SVector(getindex(coords, 1), 0, getindex(coords, 2))
 
 reflect_mapper(f, xs) = @views [ f(xs[:,end:-1:1]) xs ]
 
@@ -150,14 +147,15 @@ end
 ## Iterator methods
 #===========================================================================#
 
+# Need to improve this; the for loop seems really unnecessary
 function accumap(f, n, xs)
     data = [ xs ]
     for i = 1:n
         ys = map(f, xs)
-        data = [ data..., ys ]
+        data = [ reduce(vcat, data); ys ]
         xs = ys
     end
-    return hcat(data...)
+    return reduce(hcat, data)
 end
 
 ## Helper functions

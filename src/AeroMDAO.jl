@@ -13,35 +13,35 @@ using PrettyTables
 include("Tools/MathTools.jl")
 import .MathTools: tupvector, fwdsum, fwddiff, fwddiv, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
 
-export Point2D, Point3D, tupvector, tuparray, midpair_map, cosine_interp, sine_spacing, rotation, inverse_rotation, affine_2D, fwdsum, fwddiff, fwddiv, partition, weighted_vector, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
+export Point2D, Point3D, tupvector, tuparray, midpair_map, cosine_interp, sine_spacing, rotation, inverse_rotation, affine_2D, fwdsum, fwddiff, fwddiv, partition, weighted_vector, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing, structtolist, vectarray
 
 
 ## Non-dimensionalization
 #==========================================================================================#
 
 include("Tools/NonDimensional.jl")
-using .NonDimensional
+import .NonDimensional: dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_coefficients, reynolds_number, print_derivatives, force, moment
 
-export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_coefficients, reynolds_number, print_derivatives
+export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_coefficients, reynolds_number, print_derivatives, force, moment
 
 ## Panels
 #===========================================================================#
 
 include("Geometry/PanelGeometry/PanelGeometry.jl")
-using .PanelGeometry
+import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, p1, p2, p3, p4, zero, collocation_point, panel_length, transform_panel, transform_panel_points, panel_angle, panel_tangent, panel_normal, panel_location, panel_area, panel_coords, transform, midpoint, panel_points, wake_panel, wake_panels, reverse_panel, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, panel_vector, panel_dist, average_chord, average_width, wetted_area
 
-export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, Point2D, collocation_point, p1, p2, p3, p4, transform, panel_normal, midpoint, panel_location, panel_tangent, panel_points, panel_dist, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width
+export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, Point2D, collocation_point, p1, p2, p3, p4, transform, panel_normal, midpoint, panel_location, panel_tangent, panel_points, panel_dist, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area
 
 
 ## Wing geometry
 #==========================================================================================#
 
 include("Geometry/AircraftGeometry/AircraftGeometry.jl")
-using .AircraftGeometry
+import .AircraftGeometry: Aircraft, Foil, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foil_camthick, camthick_foil, camber_thickness, cosine_foil, camthick_to_CST, coords_to_CST, max_thickness_to_chord_ratio_location, Fuselage, projected_area, length, cosine_spacing, HalfWing, HalfWingSection, Wing, WingSection, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing, max_tbyc_sweeps, mean_aerodynamic_center, panel_wing, wetted_area, number_of_spanwise_panels, spanwise_spacing, coordinates, camber_coordinates, surface_coordinates,foils, chords, twists, spans, dihedrals, sweeps, left, right
 
 export Aircraft, Foil, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foil_camthick, camthick_foil, camber_thickness, cosine_foil, camthick_to_CST, coords_to_CST, max_thickness_to_chord_ratio_location, # 2D setups
 Fuselage, projected_area, length, cosine_spacing, # Fuselage
-HalfWing, HalfWingSection, Wing, WingSection, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, print_info, leading_edge, trailing_edge, leading_chopper, trailing_chopper, wing_chopper, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing, max_tbyc_sweeps, mean_aerodynamic_center, panel_wing, wetted_area, number_of_spanwise_panels, spanwise_spacing
+HalfWing, HalfWingSection, Wing, WingSection, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing, max_tbyc_sweeps, mean_aerodynamic_center, panel_wing, wetted_area, number_of_spanwise_panels, spanwise_spacing, coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, left, right
 
 ## Laplace
 #==========================================================================================#
@@ -71,10 +71,10 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-using .VortexLattice
+import .VortexLattice: Horseshoe, streamlines, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, horseshoe_line, horseshoe_point, make_horseshoes, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, case_dynamics, VLMState, VLMSystem, compute_influence_matrix!, compute_boundary_condition!, compute_collocation_points!, compute_horseshoes!, solve_system!, compute_farfield_forces!, solve_case!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_force_coefficients, surface_moment_coefficients, farfield_force_coefficients
 
-export Horseshoe, streamlines, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, horseshoe_line, horseshoe_point, make_horseshoes, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes,  # Pure
-VLMState, VLMSystem, compute_influence_matrix!, compute_boundary_condition!, compute_collocation_points!, compute_horseshoes!, compute_normals!, solve_system!, compute_nearfield_forces!, compute_farfield_forces!, solve_case!, set_horseshoe_panels!, set_camber_panels!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_force_coefficients, surface_moment_coefficients, total_force_coefficients, farfield_force_coefficients # Impure
+export Horseshoe, streamlines, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, horseshoe_line, horseshoe_point, make_horseshoes, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, case_dynamics,  # Pure
+VLMState, VLMSystem, compute_influence_matrix!, compute_boundary_condition!, compute_collocation_points!, compute_horseshoes!, solve_system!, compute_farfield_forces!, solve_case!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_force_coefficients, surface_moment_coefficients, farfield_force_coefficients # Impure
 
 ## Profile drag estimation
 
@@ -88,7 +88,7 @@ include("Aerodynamics/Cases/cases.jl")
 include("Aerodynamics/Cases/stability_cases.jl")
 include("Aerodynamics/Cases/foil_cases.jl")
 
-export solve_case, solve_stability_case, streamlines, print_case
+export solve_case, solve_stability_case, streamlines, print_case, print_info
 
 ## Post-processing
 #==========================================================================================#

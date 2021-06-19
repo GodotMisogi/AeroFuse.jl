@@ -33,9 +33,17 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 end
         
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
-HalfWing(; chords :: Vector{T}, twists :: Vector{T}, spans :: Vector{T}, dihedrals :: Vector{T}, sweep_LEs :: Vector{T}, foils :: Vector{Foil{T}} = fill(Foil(naca4((0,0,1,2))), length(chords))) where T <: Real = HalfWing(foils, chords, twists, spans, dihedrals, sweep_LEs)
+HalfWing(; chords :: Vector{T}, twists :: Vector{T}, spans :: Vector{T}, dihedrals :: Vector{T}, sweep_LEs :: Vector{T}, foils :: Vector{Foil{T}} = fill(Foil(naca4((0,0,1,2)), "NACA 0012"), length(chords))) where T <: Real = HalfWing(foils, chords, twists, spans, dihedrals, sweep_LEs)
 
-HalfWingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2))) = HalfWing([ Foil(root_foil), Foil(tip_foil) ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [sweep_LE])
+HalfWingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2))) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [sweep_LE])
+
+# Getters
+foils(wing     :: HalfWing) = wing.foils
+chords(wing    :: HalfWing) = wing.chords
+twists(wing    :: HalfWing) = wing.twists
+spans(wing     :: HalfWing) = wing.spans
+dihedrals(wing :: HalfWing) = wing.dihedrals
+sweeps(wing    :: HalfWing) = wing.sweeps
 
 """
     span(half_wing :: HalfWing)
