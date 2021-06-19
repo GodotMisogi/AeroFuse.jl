@@ -2,7 +2,7 @@ transform_coordinates(xyz, twist, section) = RotY(-twist) * xyz + section
 
 function chop_sections(scaled_foils, twisties, leading_xyz, span_num, spacings, flip = false)
     # Reverse direction if left side
-    if flip 
+    if flip
         scaled_foils = reverse!(scaled_foils, dims = 2)
         twisties     = (permutedims ∘ reverse!)(twisties)
     end
@@ -72,7 +72,7 @@ function mesh_horseshoes(wing :: Wing, span_num, chord_num, spacings = ["cosine"
     left_panels  = mesh_horseshoes(left(wing), reverse(span_num), chord_num, reverse(spacings), flip = true)
     right_panels = mesh_horseshoes(right(wing), span_num, chord_num, spacings)
 
-    [ left_panels right_panels ] 
+    [ left_panels right_panels ]
 end
 
 """
@@ -84,7 +84,7 @@ function mesh_wing(wing :: Wing, span_num, chord_num)
     left_panels  = mesh_wing(left(wing), reverse(span_num), chord_num, flip = true)
     right_panels = mesh_wing(right(wing), span_num, chord_num)
 
-    [ left_panels right_panels ] 
+    [ left_panels right_panels ]
 end
 
 """
@@ -96,13 +96,13 @@ function mesh_cambers(wing :: Wing, span_num, chord_num, spacings = ["cosine"])
     left_panels  = mesh_cambers(left(wing), reverse(span_num), chord_num, reverse(spacings), flip = true)
     right_panels = mesh_cambers(right(wing), span_num, chord_num, spacings)
 
-    [ left_panels right_panels ] 
+    [ left_panels right_panels ]
 end
 
 vlmesh_wing(wing :: Union{HalfWing, Wing}, span_num, chord_num, spacings = ["cosine"]) = mesh_horseshoes(wing, span_num, chord_num, spacings), mesh_cambers(wing, span_num, chord_num, spacings)
 
 function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer; rotation = one(RotMatrix{3, Float64}), translation = zeros(3), spacings = ["cosine"])
-    horseshoes, cambers = vlmesh_wing(wing, ifelse(typeof(span_num) <: Integer, [span_num], span_num), chord_num, spacings) 
+    horseshoes, cambers = vlmesh_wing(wing, ifelse(typeof(span_num) <: Integer, [span_num], span_num), chord_num, spacings)
     horseshoe_panels    = [ transform(panel, rotation, translation)               for panel in horseshoes ]
     panel_normals       = [ panel_normal(transform(panel, rotation, translation)) for panel in cambers 	  ]
 
@@ -114,12 +114,12 @@ panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<
 number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* spans(wing) / span(wing))
 number_of_spanwise_panels(wing :: Wing,     span_num :: Integer) = number_of_spanwise_panels(right(wing), ceil(Int, span_num / 2))
 
-function number_of_spanwise_panels(wing :: HalfWing, span_num :: Vector{<: Integer}) 
+function number_of_spanwise_panels(wing :: HalfWing, span_num :: Vector{<: Integer})
     @assert (length ∘ spans)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
     span_num
 end
 
-function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer}) 
+function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer})
     @assert (length ∘ spans ∘ right)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
     ceil.(Int, span_num ./ 2)
 end
@@ -129,7 +129,7 @@ spanwise_spacing(wing :: Wing)     = [ "sine"; fill("cosine", (length ∘ spans 
 
 coordinates(wing :: Union{HalfWing, Wing}) = let (lead, trail) = wing_bounds(wing); permutedims([ lead trail ]) end
 
-function coordinates(wing :: HalfWing, span_num, chord_num; span_spacing = ["cosine"], flip = false) 
+function coordinates(wing :: HalfWing, span_num, chord_num; span_spacing = ["cosine"], flip = false)
     lead, trail = wing_bounds(wing, flip)
     reduce(hcat, chop_wing(lead, trail, span_num, chord_num; span_spacing = span_spacing, flip = flip))
 end

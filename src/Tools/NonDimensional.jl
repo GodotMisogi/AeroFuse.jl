@@ -60,30 +60,6 @@ function aerodynamic_coefficients(force, moment, Ω, V, S, b, c, ρ)
       rate_coefficient(Ω, V, b, c) 			 ]
 end
 
-
-function print_coefficients(CL, CDi, CY, Cl, Cm, Cn, p̄, q̄, r̄)
-    # println("Lift Coefficient")
-    println("CL: $CL")
-    # println("Drag Coefficient")
-    println("CDi: $CDi")
-    # println("Side Force Coefficient")
-    println("CY: $CY")
-    # println("Lift-to-Drag Ratio")
-    println("L/D: $(CL ./ CDi)")
-    # println("Rolling Moment Coefficient")
-    println("Cl: $Cl")
-    # println("Pitching Moment Coefficient")
-    println("Cm: $Cm")
-    # println("Yawing Moment Coefficient")
-    println("Cn: $Cn")
-    # println("Rolling Rate Coefficient")
-    println("p̄: $p̄")
-    # println("Pitching Rate Coefficient")
-    println("q̄: $q̄")
-    # println("Yawing Rate Coefficient")
-    println("r̄: $r̄")
-end
-
 function print_coefficients(nf_coeffs, ff_coeffs, name = ""; browser = false)
     coeffs = [ ifelse(length(nf_coeffs) == 11, ["CD", "CDp"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn", "p̄", "q̄", "r̄" ] ]
     data = [ coeffs nf_coeffs [ ff_coeffs; fill("—", 6) ] ]
@@ -110,5 +86,9 @@ end
 
 reynolds_number(ρ, V, c, μ) = ρ * V * c / μ
 reynolds_number(V, c, ν) = V * c / ν
+
+force(CF, q, S) = CF * q * S
+moment(CM, q, S, c) = CM * q * S * c
+moment(CM, q, S, b, c) = moment.(CM, q, S, [b, c, b])
 
 end

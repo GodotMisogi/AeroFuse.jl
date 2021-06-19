@@ -8,12 +8,12 @@ using StaticArrays
 using DataFrames
 
 ## Define and mesh wing
-wing = WingSection(span       = 4.0, 
-                   dihedral   = 1.0, 
-                   sweep_LE   = 15.0, 
-                   taper      = 0.4, 
-                   root_chord = 2.0, 
-                   root_twist = 0.0, 
+wing = WingSection(span       = 4.0,
+                   dihedral   = 1.0,
+                   sweep_LE   = 15.0,
+                   taper      = 0.4,
+                   root_chord = 2.0,
+                   root_twist = 0.0,
                    tip_twist  = 0.0)
 wing_mac    = mean_aerodynamic_center(wing)
 wing_plan   = plot_wing(wing)
@@ -36,20 +36,15 @@ S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 span_num  = 10
 chord_num = 1
 
-@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = 
-    solve_case(aircraft, fs; 
-               rho_ref   = ρ, 
+@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs =
+    solve_case(aircraft, fs;
+               rho_ref   = ρ,
                r_ref     = ref,
                span_ref  = b,
                area_ref  = S,
                chord_ref = c)[name];
-               
-print_coefficients(nf_coeffs, ff_coeffs, name)
 
-## Needs to be moved to NonDimensional
-force(CF, q, S) = CF * q * S
-moment(CM, q, S, c) = CM * q * S * c
-moment(CM, q, S, b, c) = moment.(CM, q, S, [b, c, b])
+print_coefficients(nf_coeffs, ff_coeffs, name)
 
 ## Processing for structures
 q           = dynamic_pressure(ρ, V)
@@ -58,7 +53,7 @@ half_forces = @. force(CFs[:], q, S) / 2
 r1s         = @. r1(bound_leg_center(horseshoes), horseshoes)[:]
 r2s         = @. r2(bound_leg_center(horseshoes), horseshoes)[:]
 M1s         = @. r1s × half_forces
-M2s         = @. r2s × half_forces 
+M2s         = @. r2s × half_forces
 zero_vec    = SVector(0., 0., 0.)
 weight_vector = SVector(0., 0., 1.)
 
@@ -80,7 +75,7 @@ Mz = getindex.(moments, 3)
 
 py = (collect ∘ Iterators.flatten ∘ zip)(Fy, My)
 pz = (collect ∘ Iterators.flatten ∘ zip)(Fz, Mz)
-px = [ Fx[:]; Mx[:] ] 
+px = [ Fx[:]; Mx[:] ]
 
 ps = [ py; pz; px ]
 
@@ -127,9 +122,9 @@ ds        = @. rs + θs × ([r1s; [zero_vec]] + [[zero_vec]; r2s])
 xyzs      = coordinates(wing, Int(span_num / 2), chord_num)
 new_xyzs  = permutedims(reduce(hcat, coords[:] + ds for coords in eachrow(xyzs)))
 new_pans  = make_panels(new_xyzs)
-new_norms = @. wing_normals[:] + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
+new_norms = @. normals[:] + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
 
-# A bijective mapping between the wing's geometric and coordinate representations needs to be defined, if it exists. 
+# A bijective mapping between the wing's geometric and coordinate representations needs to be defined, if it exists.
 # Suspecting it doesn't due to different perturbations in the section spans at the leading and trailing edges.
 
 ##
