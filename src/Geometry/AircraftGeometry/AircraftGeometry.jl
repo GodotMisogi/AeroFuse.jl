@@ -38,9 +38,9 @@ mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + tape
 y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / 3(1 + λ)
 quarter_chord(chord) = 0.25 * chord
 
-include("mesh_tools.jl")
 include("halfwing.jl")
 include("wing.jl")
+include("mesh_tools.jl")
 include("mesh_wing.jl")
 
 aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))

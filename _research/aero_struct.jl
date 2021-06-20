@@ -9,7 +9,7 @@ using DataFrames
 
 ## Define and mesh wing
 wing = WingSection(span       = 4.0,
-                   dihedral   = 1.0,
+                   dihedral   = 0.0,
                    sweep_LE   = 15.0,
                    taper      = 0.4,
                    root_chord = 2.0,
@@ -47,6 +47,8 @@ chord_num = 1
 print_coefficients(nf_coeffs, ff_coeffs, name)
 
 ## Processing for structures
+adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
+
 q           = dynamic_pressure(ρ, V)
 areas       = @. panel_area(horseshoe_panels)[:]
 half_forces = @. force(CFs[:], q, S) / 2
@@ -58,12 +60,12 @@ zero_vec    = SVector(0., 0., 0.)
 weight_vector = SVector(0., 0., 1.)
 
 # Interspersing
-forces            = [ half_forces; [zero_vec] ] .+ [ [zero_vec]; half_forces ]
+forces            = adjacent_joiner(half_forces, half_forces)
 
 n                 = ceil(Int, length(horseshoe_panels) / 2) + 1
 forces[n-1:n+1] .-= forces[n-1:n+1]   # Boundary condition, setting F = 0 at center of wing
 
-moments           = [         M1s; [zero_vec] ] .+ [ [zero_vec]; M2s ]
+moments           = adjacent_joiner(M1s, M2s)
 
 ## Assembly
 Fx = getindex.(forces, 1)
@@ -118,7 +120,7 @@ rename!(state, [:dx, :θx, :dy, :θy, :dz, :θz])
 # Displace and rotate about quarter-chord point, where the beam is located. Needs many corrections...
 rs        = @. SVector(dx, dy, dz)
 θs        = @. SVector(θx, θy, θz)
-ds        = @. rs + θs × ([r1s; [zero_vec]] + [[zero_vec]; r2s])
+ds        = rs .+ θs .× adjacent_joiner(r1s, r2s)
 xyzs      = coordinates(wing, Int(span_num / 2), chord_num)
 new_xyzs  = permutedims(reduce(hcat, coords[:] + ds for coords in eachrow(xyzs)))
 new_pans  = make_panels(new_xyzs)
@@ -133,8 +135,11 @@ rename!(data, [:Fx, :dx, :Mx, :θx, :Fy, :dy, :My, :θy, :Fz, :dz, :Mz, :θz])
 
 ## Plotting
 using Plots
-unicodeplots()
-spy(K)
+# unicodeplots()
+# spy(K)
 
-# plotly(dpi = 300)
-# plot(wing_plan, aspect_ratio = 1, zlims = (-0.1, 1.0))
+plotly(dpi = 300)
+plot(aspect_ratio = 1)
+plot!.(plot_panels(new_pans[:]), label = "new")
+plot!.(plot_panels(horseshoe_panels[:]), label = "old")
+plot!()  

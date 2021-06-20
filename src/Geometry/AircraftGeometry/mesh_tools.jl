@@ -12,13 +12,29 @@ end
 
 chop_coordinates(coords, n, spacings = "cosine", flip = false) = @views [ reduce(vcat, chop_sections.(coords[1:end-1], coords[2:end], n, spacings; flip = flip)); [ coords[end] ] ]
 
-chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) ∈ zip(lead, trail) ]
+chop_spans(xyzs, div, spacing = "cosine", flip = false) = permutedims(reduce(hcat, chop_coordinates(xyz, div, spacing, flip) for xyz in eachrow(xyzs)))
 
-chop_chords(coords, n) = @views [ [ weighted_vector(chord[1,:], chord[2,:], μ) for μ ∈ cosine_spacing(0.5, 1., n + 1) ] for chord ∈ coords ]
+# chop_spans(xyzs, divs :: Vector{<: Integer}, spacing = "cosine", flip = false) = permutedims(reduce(hcat, chop_coordinates(xyz, div, spacing, flip) for (div, xyz) in zip(divs, eachrow(xyzs))))
 
-chop_spans(lead, trail, div, spacing = "cosine", flip = false) = chop_coordinates(lead, div, spacing, flip), chop_coordinates(trail, div, spacing, flip)
+chop_chords(xyzs, div, spacing = "cosine") = reduce(hcat, chop_coordinates(xyz, div, spacing) for xyz in eachcol(xyzs))
 
-chop_wing(lead, trail, span_num, chord_num; span_spacing = "cosine", flip = false) = let (lead, trail) = chop_spans(lead, trail, span_num, span_spacing, flip); chop_chords(chord_sections(lead, trail), chord_num) end
+chop_wing(xyzs, span_num, chord_num; span_spacing = "cosine", chord_spacing = "cosine", flip = false) = chop_chords(chop_spans(xyzs, span_num, span_spacing, flip), chord_num, chord_spacing)
+
+transform_coordinates(xyz, twist, section) = RotY(-twist) * xyz + section
+
+function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_num, spacings, flip = false)
+    # Reverse direction if left side
+    if flip
+        scaled_foils = reverse(scaled_foils, dims = 2)
+        twisties     = (permutedims ∘ reverse)(twisties)
+    end
+
+    # Rotate and translate coordinates
+    foil_coords  = reduce(hcat, transform_coordinates.(foil, Ref(twist), Ref(section)) for (foil, twist, section) in zip(eachcol(scaled_foils), twisties, leading_xyz))
+
+    # Chop up spanwise sections
+    chop_spans(foil_coords, span_num, spacings, flip)
+end
 
 """
     make_panels(xyzs)
