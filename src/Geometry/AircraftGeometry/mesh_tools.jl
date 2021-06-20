@@ -10,11 +10,9 @@ function chop_sections(set1, set2, n :: Integer, spacing = "cosine"; flip = fals
     @views [ weighted_vector.(set1, set2, μ) for μ ∈ space ][1:end-1]
 end
 
-chop_coordinates(coords, n, spacings = "cosine", flip = false) = @views [ reduce(vcat, chop_sections.(coords[1:end-1], coords[2:end], n, spacings; flip = flip)); [ coords[end] ] ]
+chop_coordinates(coords, n, spacing = "cosine", flip = false) = @views [ reduce(vcat, chop_sections.(coords[1:end-1], coords[2:end], n, spacing; flip = flip)); [ coords[end] ] ]
 
 chop_spans(xyzs, div, spacing = "cosine", flip = false) = permutedims(reduce(hcat, chop_coordinates(xyz, div, spacing, flip) for xyz in eachrow(xyzs)))
-
-# chop_spans(xyzs, divs :: Vector{<: Integer}, spacing = "cosine", flip = false) = permutedims(reduce(hcat, chop_coordinates(xyz, div, spacing, flip) for (div, xyz) in zip(divs, eachrow(xyzs))))
 
 chop_chords(xyzs, div, spacing = "cosine") = reduce(hcat, chop_coordinates(xyz, div, spacing) for xyz in eachcol(xyzs))
 

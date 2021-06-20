@@ -1,8 +1,18 @@
+## Coordinates
+#==========================================================================================#
+
 wing_bounds(lead, trail) = permutedims([ lead trail ]) 
+
+chop_leading_edge(obj  :: HalfWing, span_num; flip = false) = chop_coordinates(leading_edge(obj, flip),  span_num)
+chop_trailing_edge(obj :: HalfWing, span_num; flip = false) = chop_coordinates(trailing_edge(obj, flip), span_num)
+
+chop_leading_edge(obj :: Wing, span_num :: Integer)  = chop_coordinates([ leading_edge(left(obj), true)[1:end-1]; leading_edge(right(obj)) ], span_num)
+chop_trailing_edge(obj :: Wing, span_num :: Integer) = chop_coordinates([ trailing_edge(left(obj), true)[1:end-1]; trailing_edge(right(obj)) ], span_num)
+
 coordinates(wing :: HalfWing, flip = false) = let (lead, trail) = wing_bounds(wing, flip); wing_bounds(lead, trail) end
 coordinates(wing :: Wing) = let (lead, trail) = wing_bounds(wing); wing_bounds(lead, trail) end
 
-coordinates(wing :: Union{HalfWing, Wing}, span_num, chord_num; span_spacing = ["uniform"], chord_spacing = ["uniform"], flip = false) = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
+coordinates(wing :: Union{HalfWing, Wing}, span_num, chord_num; span_spacing = ["cosine"], chord_spacing = ["cosine"]) = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
 
 """
     chord_coordinates(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
@@ -33,6 +43,16 @@ function camber_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, ch
     chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip)
 end
 
+function chord_coordinates(wing :: Wing, span_num, chord_num; spacings = ["cosine"])
+    left_coord  = chord_coordinates(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
+    right_coord = chord_coordinates(right(wing), span_num, chord_num; spacings = spacings)
+
+    [ left_coord[:,1:end-1] right_coord ]
+end
+
+## Panelling
+#==========================================================================================#
+
 """
     mesh_horseshoes(wing :: HalfWing, n_s :: Integer, n_c :: Integer; flip = false)
 
@@ -54,11 +74,6 @@ Mesh the camber distribution of a `HalfWing` into panels of ``n_s`` spanwise div
 """
 mesh_cambers(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false) = make_panels(camber_coordinates(wing, span_num, chord_num; spacings = spacings, flip = flip))
 
-chop_leading_edge(obj :: HalfWing, span_num; flip = false)  = chop_coordinates(leading_edge(obj, flip), span_num)
-chop_trailing_edge(obj :: HalfWing, span_num; flip = false) = chop_coordinates(trailing_edge(obj, flip), span_num)
-
-chop_leading_edge(obj :: Wing, span_num :: Integer)  = chop_coordinates([ leading_edge(obj.left, true)[1:end-1]; leading_edge(obj.right) ], span_num)
-chop_trailing_edge(obj :: Wing, span_num :: Integer) = chop_coordinates([ trailing_edge(obj.left, true)[1:end-1]; trailing_edge(obj.right) ], span_num)
 
 """
     mesh_horseshoes(wing :: Wing, n_s :: Integer, n_c :: Integer)
@@ -79,7 +94,7 @@ Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` 
 """
 function mesh_wing(wing :: Wing, span_num, chord_num; spacings = ["cosine"])
     left_panels  = mesh_wing(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
-    right_panels = mesh_wing(right(wing), span_num, chord_num)
+    right_panels = mesh_wing(right(wing), span_num, chord_num; spacings = spacings)
 
     [ left_panels right_panels ]
 end

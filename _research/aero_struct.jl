@@ -121,7 +121,7 @@ rename!(state, [:dx, :θx, :dy, :θy, :dz, :θz])
 rs        = @. SVector(dx, dy, dz)
 θs        = @. SVector(θx, θy, θz)
 ds        = rs .+ θs .× adjacent_joiner(r1s, r2s)
-xyzs      = coordinates(wing, Int(span_num / 2), chord_num)
+xyzs      = chord_coordinates(wing, [Int(span_num / 2)], chord_num; spacings = ["cosine"])
 new_xyzs  = permutedims(reduce(hcat, coords[:] + ds for coords in eachrow(xyzs)))
 new_pans  = make_panels(new_xyzs)
 new_norms = @. normals[:] + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
