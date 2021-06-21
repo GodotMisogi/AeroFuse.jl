@@ -3,13 +3,13 @@
 
 wing_bounds(lead, trail) = permutedims([ lead trail ]) 
 
-chop_leading_edge(obj  :: HalfWing, span_num; flip = false) = chop_coordinates(leading_edge(obj, flip),  span_num)
-chop_trailing_edge(obj :: HalfWing, span_num; flip = false) = chop_coordinates(trailing_edge(obj, flip), span_num)
+chop_leading_edge(obj  :: HalfWing, span_num; y_flip = false) = chop_coordinates(leading_edge(obj, y_flip),  span_num)
+chop_trailing_edge(obj :: HalfWing, span_num; y_flip = false) = chop_coordinates(trailing_edge(obj, y_flip), span_num)
 
 chop_leading_edge(obj :: Wing, span_num :: Integer)  = chop_coordinates([ leading_edge(left(obj), true)[1:end-1]; leading_edge(right(obj)) ], span_num)
 chop_trailing_edge(obj :: Wing, span_num :: Integer) = chop_coordinates([ trailing_edge(left(obj), true)[1:end-1]; trailing_edge(right(obj)) ], span_num)
 
-coordinates(wing :: HalfWing, flip = false) = let (lead, trail) = wing_bounds(wing, flip); wing_bounds(lead, trail) end
+coordinates(wing :: HalfWing, y_flip = false) = let (lead, trail) = wing_bounds(wing, y_flip); wing_bounds(lead, trail) end
 coordinates(wing :: Wing) = let (lead, trail) = wing_bounds(wing); wing_bounds(lead, trail) end
 
 coordinates(wing :: Union{HalfWing, Wing}, span_num, chord_num; span_spacing = ["cosine"], chord_spacing = ["cosine"]) = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)

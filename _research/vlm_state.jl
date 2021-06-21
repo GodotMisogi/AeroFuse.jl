@@ -2,7 +2,7 @@
 using Revise
 using AeroMDAO
 using BenchmarkTools
-# using ForwardDiff
+using ForwardDiff
 using StaticArrays
 
 ## Wing
@@ -33,22 +33,22 @@ vtail = HalfWing(foils     = vtail_foils,
                  sweep_LEs = [7.97]);
 
 ## Assembly
-wing_panels  = panel_wing(wing,  [20], 10);
-htail_panels = panel_wing(htail, [12], 12;
-                          position = [4., 0, 0],
-                          angle    = deg2rad(-2.),
-                          axis 	   = [0., 1., 0.]
-                         )
-vtail_panels = panel_wing(vtail, [12], 10; 
-                          position = [4., 0, 0],
-                          angle    = π/2, 
-                          axis 	   = [1., 0., 0.]
-                         )
+wing_panels, wing_normals   = panel_wing(wing,  20, 10);
+htail_panels, htail_normals = panel_wing(htail, 12, 12;
+                                          position = [4., 0, 0],
+                                          angle    = deg2rad(-2.),
+                                          axis     = [0., 1., 0.]
+                                         )
+vtail_panels, vtail_normals = panel_wing(vtail, 12, 10; 
+                                         position = [4., 0, 0],
+                                         angle    = π/2, 
+                                         axis     = [1., 0., 0.]
+                                        )
 
 aircraft = Dict(
-                "Wing" 			  	=> wing_panels,
-                "Horizontal Tail" 	=> htail_panels,
-                "Vertical Tail"   	=> vtail_panels
+                "Wing" 			  	=> (wing_panels, wing_normals),
+                "Horizontal Tail" 	=> (htail_panels, htail_normals),
+                "Vertical Tail"   	=> (vtail_panels, vtail_normals),
                 );
 
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
@@ -99,7 +99,7 @@ end;
 
 ##
 surf_names = (collect ∘ keys)(surfs)
-comp = surf_names[2]
+comp = surf_names[1]
 nf_coeffs, ff_coeffs, surf = surfs[comp];
 print_coefficients(nf_coeffs, ff_coeffs, comp)
 print_coefficients(nf_t, ff_t, state.name)

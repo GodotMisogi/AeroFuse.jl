@@ -15,7 +15,6 @@ VLMState(U :: T, α, β, Ω = zeros(3); rho_ref = 1.225, r_ref = zeros(3), area_
 
 mutable struct VLMSurface{T <: Real}
     horseshoes         :: Matrix{Horseshoe{T}}
-    collocation_points :: Matrix{SVector{3,T}}
     normals            :: Matrix{SVector{3,T}}
     surface_forces     :: Matrix{SVector{3,T}}
     surface_moments    :: Matrix{SVector{3,T}}
@@ -27,7 +26,6 @@ end
 
 function VLMSurface(panels :: Matrix{Panel3D{T}}, normals :: Matrix{SVector{3,T}}) where T <: Real
     horseshoes         = horseshoe_line.(panels)
-    collocation_points = horseshoe_point.(panels)
     
     m = size(panels)
 
@@ -39,12 +37,15 @@ function VLMSurface(panels :: Matrix{Panel3D{T}}, normals :: Matrix{SVector{3,T}
     wake_vectors    = Vector{SVector{3,T}}(undef, m[1])
     farfield_forces = MVector{3,T}(0., 0., 0.)
 
-    VLMSurface{T}(horseshoes, collocation_points, normals, surface_forces, surface_moments, Γs, wake_vectors, wake_AIC, farfield_forces)
+    VLMSurface{T}(horseshoes, normals, surface_forces, surface_moments, Γs, wake_vectors, wake_AIC, farfield_forces)
 end
 
 horseshoes(surf :: VLMSurface) = surf.horseshoes
-collocation_points(surf :: VLMSurface) = surf.collocation_points
+collocation_points(surf :: VLMSurface) = collocation_point.(horseshoes(surf))
 normals(surf :: VLMSurface) = surf.normals
+surface_forces(surf :: VLMSurface) = surf.surface_forces
+surface_moments(surf :: VLMSurface) = surf.surface_moments
+circulations(surf :: VLMSurface) = surf.circulations
 
 function compute_wake_properties!(surface :: VLMSurface, α, β)
     # Reference velocity for broadcasting
@@ -66,7 +67,6 @@ end
 
 mutable struct VLMSystem{T <: Real}
     horseshoes         :: Vector{Horseshoe{T}}
-    collocation_points :: Vector{SVector{3,T}}
     normals            :: Vector{SVector{3,T}}
     AIC                :: Matrix{T}
     RHS                :: Vector{T}
@@ -74,19 +74,19 @@ mutable struct VLMSystem{T <: Real}
 end
 
 horseshoes(system :: VLMSystem) = system.horseshoes
-collocation_points(system :: VLMSystem) = system.collocation_points
+collocation_points(system :: VLMSystem) = collocation_point.(horseshoes(system))
 normals(system :: VLMSystem) = system.normals
 AIC(system :: VLMSystem) = system.AIC
 RHS(system :: VLMSystem) = system.RHS
 circulations(system :: VLMSystem) = system.circulations
 
 # Initialization
-function VLMSystem{T}(horseshoes :: Vector{Horseshoe{T}}, collocation_points :: Vector{SVector{3,T}}, normals :: Vector{SVector{3,T}}) where T <: Real
+function VLMSystem{T}(horseshoes :: Vector{Horseshoe{T}}, normals :: Vector{SVector{3,T}}) where T <: Real
     m   = length(horseshoes)
     AIC = Matrix{T}(undef, m, m)
     RHS = Vector{T}(undef, m)
     Γs  = Vector{T}(undef, m)
-    VLMSystem{T}(horseshoes, collocation_points, normals, AIC, RHS, Γs)
+    VLMSystem{T}(horseshoes, normals, AIC, RHS, Γs)
 end
 
 function VLMSystem(surface :: VLMSurface{T}) where T <: Real
@@ -99,9 +99,8 @@ end
 function VLMSystem(surfaces :: Vector{VLMSurface{T}}) where T <: Real
     # Flattening for system
     horsies = reduce(vcat, (vec ∘ horseshoes).(surfaces))
-    collies = reduce(vcat, (vec ∘ collocation_points).(surfaces))
     normies = reduce(vcat, (vec ∘ normals).(surfaces))
-    VLMSystem{T}(horsies, collies, normies)
+    VLMSystem{T}(horsies, normies)
 end
 
 compute_horseshoes!(system :: VLMSystem, horseshoe_panels) = 
@@ -111,30 +110,30 @@ compute_collocation_points!(system :: VLMSystem, horseshoe_panels) =
     system.collocation_points = horseshoe_point.(horseshoe_panels)
 
 compute_influence_matrix!(system :: VLMSystem, V) = 
-    system.AIC = influence_matrix(system.horseshoes, system.collocation_points, system.normals, -normalize(V))
+    system.AIC = influence_matrix(horseshoes(system), collocation_points(system), normals(system), -normalize(V))
 
 compute_boundary_condition!(system :: VLMSystem, V, Ω) = 
-    system.RHS = boundary_condition(map(r -> V + Ω × r, system.collocation_points), system.normals)
+    system.RHS = boundary_condition(map(r -> V + Ω × r, collocation_points(system)), normals(system))
 
 generate_system!(system :: VLMSystem, V, Ω) =
-    matrix_assembly!(system.AIC, system.RHS, system.horseshoes, system.collocation_points, system.normals, V, Ω)
+    matrix_assembly!(AIC(system), RHS(system), horseshoes(system), collocation_points(system), normals(system), V, Ω)
 
 solve_system!(system :: VLMSystem) = 
-    system.circulations = system.AIC \ system.RHS
+    system.circulations = AIC(system) \ RHS(system)
 
 solve_residual!(system :: VLMSystem, R, x) =
-    R .= system.AIC * x - system.RHS
+    R .= AIC(system) * x - RHS(system)
 
 ## Dynamics evaluations
 compute_surface_forces!(surf :: VLMSurface, system :: VLMSystem, U, Ω, ρ) = 
-    surf.surface_forces = nearfield_forces(surf.circulations, surf.horseshoes, system.circulations, system.horseshoes, U, Ω, ρ)
+    surf.surface_forces = nearfield_forces(circulations(surf), horseshoes(surf), circulations(system), horseshoes(system), U, Ω, ρ)
 
 compute_surface_moments!(surf :: VLMSurface, r_ref) =
-    surf.surface_moments = moments(surf.horseshoes, surf.surface_forces, r_ref)
+    surf.surface_moments = moments(horseshoes(surf), surface_forces(surf), r_ref)
     
 function compute_farfield_forces!(surface :: VLMSurface, U, α, β, ρ);
     # Set up wake AIC and evaluate doublet normal derivatives
-    Δφs = vec(sum(surface.circulations, dims = 1))
+    Δφs = vec(sum(circulations(surface), dims = 1))
     compute_wake_properties!(surface, α, β)
     ∂φ_∂n = surface.wake_AIC * Δφs
 

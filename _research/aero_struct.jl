@@ -6,6 +6,7 @@ using LinearAlgebra
 using StaticArrays
 # using ForwardDiff
 using DataFrames
+using NLsolve
 
 ## Define and mesh wing
 wing = WingSection(span       = 4.0,
@@ -36,15 +37,26 @@ S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 span_num  = 10
 chord_num = 1
 
-@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs =
-    solve_case(aircraft, fs;
-               rho_ref   = ρ,
-               r_ref     = ref,
-               span_ref  = b,
-               area_ref  = S,
-               chord_ref = c)[name];
+# Set up state
+begin
+    state = VLMState(fs, 
+                     rho_ref   = ρ,
+                     r_ref     = SVector(ref...),
+                     area_ref  = S, 
+                     chord_ref = c, 
+                     span_ref  = b);
 
-print_coefficients(nf_coeffs, ff_coeffs, name)
+    system, surfs, nf_t, ff_t = solve_case!(aircraft, state);
+    print_coefficients(nf_t, ff_t, state.name)
+end
+
+## Evaluate residual
+solve_aerodynamics!(R, x) = solve_residual!(system, R, x)
+
+Γ_0 = rand(span_num * chord_num)
+res = nlsolve(solve_aerodynamics!, Γ_0, 
+              show_trace = true,
+              autodiff   = :forward) # Works correctly, unsurprisingly
 
 ## Processing for structures
 adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
@@ -57,7 +69,7 @@ r2s         = @. r2(bound_leg_center(horseshoes), horseshoes)[:]
 M1s         = @. r1s × half_forces
 M2s         = @. r2s × half_forces
 zero_vec    = SVector(0., 0., 0.)
-weight_vector = SVector(0., 0., 1.)
+weight_vec  = SVector(0., 0., 1.)
 
 # Interspersing
 forces            = adjacent_joiner(half_forces, half_forces)
@@ -122,7 +134,7 @@ rs        = @. SVector(dx, dy, dz)
 θs        = @. SVector(θx, θy, θz)
 ds        = rs .+ θs .× adjacent_joiner(r1s, r2s)
 xyzs      = chord_coordinates(wing, [Int(span_num / 2)], chord_num; spacings = ["cosine"])
-new_xyzs  = permutedims(reduce(hcat, coords[:] + ds for coords in eachrow(xyzs)))
+new_xyzs  = xyzs + permutedims([ ds ds ])
 new_pans  = make_panels(new_xyzs)
 new_norms = @. normals[:] + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
 
@@ -140,6 +152,6 @@ using Plots
 
 plotly(dpi = 300)
 plot(aspect_ratio = 1)
-plot!.(plot_panels(new_pans[:]), label = "new")
-plot!.(plot_panels(horseshoe_panels[:]), label = "old")
+plot!.(plot_panels(new_pans[:]), color = :black, label = "new")
+plot!.(plot_panels(horseshoe_panels[:]), color = :grey, label = "old")
 plot!()  
