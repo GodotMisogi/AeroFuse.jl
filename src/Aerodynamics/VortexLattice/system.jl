@@ -25,7 +25,7 @@ mutable struct VLMSurface{T <: Real}
 end
 
 function VLMSurface(panels :: Matrix{Panel3D{T}}, normals :: Matrix{SVector{3,T}}) where T <: Real
-    horseshoes         = horseshoe_line.(panels)
+    horseshoes      = horseshoe_line.(panels)
     
     m = size(panels)
 
@@ -91,9 +91,8 @@ end
 
 function VLMSystem(surface :: VLMSurface{T}) where T <: Real
     horsies = horseshoes.(surface)[:]
-    collies = collocation_points.(surface)[:]
     normies = normals.(surface)[:]
-    VLMSystem{T}(horsies, collies, normies)
+    VLMSystem{T}(horsies, normies)
 end
 
 function VLMSystem(surfaces :: Vector{VLMSurface{T}}) where T <: Real
@@ -106,9 +105,6 @@ end
 compute_horseshoes!(system :: VLMSystem, horseshoe_panels) = 
     system.horseshoes = horseshoe_line.(horseshoe_panels)
 
-compute_collocation_points!(system :: VLMSystem, horseshoe_panels) = 
-    system.collocation_points = horseshoe_point.(horseshoe_panels)
-
 compute_influence_matrix!(system :: VLMSystem, V) = 
     system.AIC = influence_matrix(horseshoes(system), collocation_points(system), normals(system), -normalize(V))
 
@@ -120,9 +116,6 @@ generate_system!(system :: VLMSystem, V, Ω) =
 
 solve_system!(system :: VLMSystem) = 
     system.circulations = AIC(system) \ RHS(system)
-
-solve_residual!(system :: VLMSystem, R, x) =
-    R .= AIC(system) * x - RHS(system)
 
 ## Dynamics evaluations
 compute_surface_forces!(surf :: VLMSurface, system :: VLMSystem, U, Ω, ρ) = 
@@ -158,9 +151,9 @@ function solve_case!(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{S
     system = VLMSystem(surfs)
 
     # Assemble and solve matrix system
-    # compute_influence_matrix!(system, V)
-    # compute_boundary_condition!(system, V, state.omega)
-    generate_system!(system, V, state.omega) # Pre-allocated version
+    compute_influence_matrix!(system, V)
+    compute_boundary_condition!(system, V, state.omega)
+    # generate_system!(system, V, state.omega) # Pre-allocated version
     solve_system!(system)
 
     # Allocate surface circulations
@@ -174,16 +167,19 @@ function solve_case!(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{S
     compute_surface_moments!.(surfs, Ref(state.r_ref))
     compute_farfield_forces!.(surfs, state.U, state.alpha, state.beta, state.rho_ref)
 
-    nf_coeffs = aerodynamic_coefficients.(surfs, Ref(state))
-    ff_coeffs = farfield_force_coefficients.(surfs, Ref(state))
+    nf_coeffs = reduce(hcat, nearfield_coefficients.(surfs, Ref(state)))
+    ff_coeffs = reduce(hcat, farfield_coefficients.(surfs, Ref(state)))
     
-    total_nf_coeffs = sum(nf_coeffs)
-    total_ff_coeffs = sum(ff_coeffs)
+    all_nf_coeffs = [ sum(nf_coeffs, dims = 2) nf_coeffs ]
+    all_ff_coeffs = [ sum(ff_coeffs, dims = 2) ff_coeffs ]
 
-    # Generate dictionary
-    results = Dict((collect ∘ keys)(aircraft) .=> zip(nf_coeffs, ff_coeffs, surfs))
+    # Generate dictionaries
+    names = (collect ∘ keys)(aircraft) 
+    all_names = [ "Aircraft"; names ]
+    results = Dict(names .=> surfs)
+    coeffs = Dict(all_names .=> zip(eachcol(all_nf_coeffs), eachcol(all_ff_coeffs)))
 
-    system, results, total_nf_coeffs, total_ff_coeffs
+    system, results, coeffs
 end
 
 ## Pure methods
@@ -193,11 +189,11 @@ surface_force_coefficients(surf :: VLMSurface, U, ρ, S) =
 surface_moment_coefficients(surf :: VLMSurface, U, ρ, S, b, c) = 
     moment_coefficient.(surf.surface_moments, dynamic_pressure(ρ, U), S, b, c)
 
-function aerodynamic_coefficients(surf :: VLMSurface, U, α, β, Ω, ρ, S, b, c) 
+function nearfield_coefficients(surf :: VLMSurface, U, α, β, Ω, ρ, S, b, c) 
     CF_body = (sum ∘ surface_force_coefficients)(surf, U, ρ, S)
     CM_body = (sum ∘ surface_moment_coefficients)(surf, U, ρ, S, b, c)
     CF_wind = body_to_wind_axes(CF_body, α, β) # Consider axes specification in state
-    CM_wind = body_to_stability_axes(stability_flip(CM_body), α)
+    CM_wind = body_to_wind_axes(stability_flip(CM_body), α, β)
     CR      = rate_coefficient(Ω, U, b, c)
 
     [ CF_wind; CM_wind; CR ]
@@ -205,7 +201,28 @@ end
 
 surface_force_coefficients(surf :: VLMSurface, state :: VLMState) = surface_force_coefficients(surf, state.U, state.rho_ref, state.area_ref)
 surface_moment_coefficients(surf :: VLMSurface, state :: VLMState) = surface_moment_coefficients(surf, state.U, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
-aerodynamic_coefficients(surf :: VLMSurface, state :: VLMState) = aerodynamic_coefficients(surf, state.U, state.alpha, state.beta, state.omega, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
+nearfield_coefficients(surf :: VLMSurface, state :: VLMState) = nearfield_coefficients(surf, state.U, state.alpha, state.beta, state.omega, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
 
-farfield_force_coefficients(surf :: VLMSurface, V, ρ, S) = force_coefficient(surf.farfield_forces, dynamic_pressure(ρ, V), S)
-farfield_force_coefficients(surf :: VLMSurface, state :: VLMState) = farfield_force_coefficients(surf, state.U, state.rho_ref, state.area_ref)
+farfield_coefficients(surf :: VLMSurface, V, ρ, S) = force_coefficient(surf.farfield_forces, dynamic_pressure(ρ, V), S)
+farfield_coefficients(surf :: VLMSurface, state :: VLMState) = farfield_coefficients(surf, state.U, state.rho_ref, state.area_ref)
+
+## Residual setup
+#=============================================#
+
+solve_residual!(system :: VLMSystem, R, x) =
+    R .= AIC(system) * x - RHS(system)
+
+function solve_residual(system :: VLMSystem, state :: VLMState, xs, Γs)
+    # Generate panels for VLM analysis
+    panels = make_panels(xs)            # Make panels from coordinates
+    horses = horseshoe_line.(panels)    # Make horseshoes
+    pts    = collocation_point.(horses) # Get collocation_points
+    V      = freestream_to_cartesian(-state.U, state.alpha, state.beta)
+    
+    # Set up system
+    AIC    = influence_matrix(horses[:], pts[:], normals(system), V)
+    RHS    = boundary_condition(map(r -> V + state.omega × r, pts[:]), normals(system)[:])
+
+    # Evaluate residual
+    AIC * Γs - RHS
+end 

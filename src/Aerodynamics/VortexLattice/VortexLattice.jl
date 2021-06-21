@@ -7,7 +7,7 @@ using Rotations
 ## Panel geometry and math tools
 #==========================================================================================#
 
-import ..AeroMDAO: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width, dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient, weighted_vector, reshape_array, cartesian_to_freestream, freestream_to_cartesian
+import ..AeroMDAO: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width, make_panels, dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient, weighted_vector, reshape_array, cartesian_to_freestream, freestream_to_cartesian
 
 ## Horseshoe setup
 #==========================================================================================#
