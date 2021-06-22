@@ -13,6 +13,15 @@ end
 
 VLMState(U :: T, α, β, Ω = zeros(3); rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") where T <: Real = VLMState{T}(U, α, β, Ω, r_ref, rho_ref, area_ref, chord_ref, span_ref, name)
 
+struct StabilityFrame{T <: Real}
+    alpha :: T
+end
+
+struct WindFrame{T <: Real}
+    alpha :: T
+    beta  :: T
+end
+
 mutable struct VLMSurface{T <: Real}
     horseshoes         :: Matrix{Horseshoe{T}}
     normals            :: Matrix{SVector{3,T}}
@@ -40,12 +49,13 @@ function VLMSurface(panels :: Matrix{Panel3D{T}}, normals :: Matrix{SVector{3,T}
     VLMSurface{T}(horseshoes, normals, surface_forces, surface_moments, Γs, wake_vectors, wake_AIC, farfield_forces)
 end
 
-horseshoes(surf :: VLMSurface) = surf.horseshoes
-collocation_points(surf :: VLMSurface) = collocation_point.(horseshoes(surf))
-normals(surf :: VLMSurface) = surf.normals
-surface_forces(surf :: VLMSurface) = surf.surface_forces
+horseshoes(surf :: VLMSurface)      = surf.horseshoes
+normals(surf :: VLMSurface)         = surf.normals
+surface_forces(surf :: VLMSurface)  = surf.surface_forces
 surface_moments(surf :: VLMSurface) = surf.surface_moments
-circulations(surf :: VLMSurface) = surf.circulations
+circulations(surf :: VLMSurface)    = surf.circulations
+
+collocation_points(surf :: VLMSurface) = collocation_point.(horseshoes(surf))
 
 function compute_wake_properties!(surface :: VLMSurface, α, β)
     # Reference velocity for broadcasting
@@ -73,12 +83,13 @@ mutable struct VLMSystem{T <: Real}
     circulations       :: Vector{T}
 end
 
-horseshoes(system :: VLMSystem) = system.horseshoes
-collocation_points(system :: VLMSystem) = collocation_point.(horseshoes(system))
-normals(system :: VLMSystem) = system.normals
-AIC(system :: VLMSystem) = system.AIC
-RHS(system :: VLMSystem) = system.RHS
+horseshoes(system :: VLMSystem)   = system.horseshoes
+normals(system :: VLMSystem)      = system.normals
+AIC(system :: VLMSystem)          = system.AIC
+RHS(system :: VLMSystem)          = system.RHS
 circulations(system :: VLMSystem) = system.circulations
+
+collocation_points(system :: VLMSystem) = collocation_point.(horseshoes(system))
 
 # Initialization
 function VLMSystem{T}(horseshoes :: Vector{Horseshoe{T}}, normals :: Vector{SVector{3,T}}) where T <: Real
@@ -199,12 +210,13 @@ function nearfield_coefficients(surf :: VLMSurface, U, α, β, Ω, ρ, S, b, c)
     [ CF_wind; CM_wind; CR ]
 end
 
-surface_force_coefficients(surf :: VLMSurface, state :: VLMState) = surface_force_coefficients(surf, state.U, state.rho_ref, state.area_ref)
+farfield_coefficients(surf :: VLMSurface, V, ρ, S) = force_coefficient(surf.farfield_forces, dynamic_pressure(ρ, V), S)
+
+# State versions
+surface_force_coefficients(surf :: VLMSurface, state :: VLMState)  = surface_force_coefficients(surf, state.U, state.rho_ref, state.area_ref)
 surface_moment_coefficients(surf :: VLMSurface, state :: VLMState) = surface_moment_coefficients(surf, state.U, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
 nearfield_coefficients(surf :: VLMSurface, state :: VLMState) = nearfield_coefficients(surf, state.U, state.alpha, state.beta, state.omega, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
-
-farfield_coefficients(surf :: VLMSurface, V, ρ, S) = force_coefficient(surf.farfield_forces, dynamic_pressure(ρ, V), S)
-farfield_coefficients(surf :: VLMSurface, state :: VLMState) = farfield_coefficients(surf, state.U, state.rho_ref, state.area_ref)
+farfield_coefficients(surf :: VLMSurface, state :: VLMState)  = farfield_coefficients(surf, state.U, state.rho_ref, state.area_ref)
 
 ## Residual setup
 #=============================================#
@@ -212,9 +224,9 @@ farfield_coefficients(surf :: VLMSurface, state :: VLMState) = farfield_coeffici
 solve_residual!(system :: VLMSystem, R, x) =
     R .= AIC(system) * x - RHS(system)
 
-function solve_residual(system :: VLMSystem, state :: VLMState, xs, Γs)
+function solve_residual(system :: VLMSystem, state :: VLMState, xs, δs, Γs)
     # Generate panels for VLM analysis
-    panels = make_panels(xs)            # Make panels from coordinates
+    panels = make_panels(xs .+ δs)      # Make panels from coordinates
     horses = horseshoe_line.(panels)    # Make horseshoes
     pts    = collocation_point.(horses) # Get collocation_points
     V      = freestream_to_cartesian(-state.U, state.alpha, state.beta)
