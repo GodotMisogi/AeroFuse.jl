@@ -22,7 +22,7 @@ V, α, β = 1.0, 5.0, 0.0
 fs      = Freestream(V, α, β, Ω)
 
 ## Evaluate case
-@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs =
+@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horses, Γs =
 solve_case(wing, fs;
            rho_ref   = ρ,
            r_ref     = ref,
@@ -78,7 +78,7 @@ seed        = [ init .+ Ref([dx, dy,  dz])  ;
 
 distance = 5
 num_stream_points = 100
-streams = plot_streams(fs, seed, horseshoes, Γs, distance, num_stream_points);
+streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 
 ## Display
 horseshoe_coords = plot_panels(horseshoe_panels[:])
@@ -124,7 +124,7 @@ plot(plot_CD, plot_CY, plot_CL, layout = (3,1))
 ## Lift distribution
 
 # Exaggerated CF distribution for plot
-hs_pts = bound_leg_center.(horseshoes)
+hs_pts = bound_leg_center.(horses)
 hs_xs  = getindex.(hs_pts, 1)
 hs_ys  = getindex.(hs_pts, 2)
 hs_zs  = getindex.(hs_pts, 3)
