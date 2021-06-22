@@ -134,9 +134,9 @@ function wtf(aircraft, fs)
                          span_ref  = b, 
                          name      = ac_name);
 
-        system, surfs, nf_t, ff_t = AeroMDAO.VortexLattice.solve_case!(aircraft, state);
+        system, surfs, coeffs = AeroMDAO.VortexLattice.solve_case!(aircraft, state);
 
-        nf_t
+        nf_t = coeffs[state.name][1]
     end
 
     jac = ForwardDiff.jacobian(get_derivatives, [fs.alpha, fs.beta, fs.omega... ])

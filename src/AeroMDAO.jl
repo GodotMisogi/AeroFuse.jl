@@ -13,7 +13,7 @@ using PrettyTables
 include("Tools/MathTools.jl")
 import .MathTools: tupvector, fwdsum, fwddiff, fwddiv, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
 
-export Point2D, Point3D, tupvector, tuparray, midpair_map, cosine_interp, sine_spacing, rotation, inverse_rotation, affine_2D, fwdsum, fwddiff, fwddiv, partition, weighted_vector, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing, structtolist, vectarray
+export tupvector, fwdsum, fwddiff, fwddiv, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
 
 
 ## Non-dimensionalization
@@ -71,10 +71,10 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, streamlines, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, horseshoe_line, horseshoe_point, make_horseshoes, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, case_dynamics, VLMState, VLMSystem, compute_influence_matrix!, compute_boundary_condition!, compute_horseshoes!, solve_system!, solve_residual, solve_residual!, compute_farfield_forces!, solve_case!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_forces, surface_moments, surface_force_coefficients, surface_moment_coefficients, nearfield_coefficients, farfield_coefficients
+import .VortexLattice: Horseshoe, streamlines, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, horseshoe_line, horseshoe_point, make_horseshoes, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, case_dynamics, VLMState, VLMSystem, VLMSurface, compute_influence_matrix!, compute_boundary_condition!, compute_horseshoes!, solve_system!, solve_residual, solve_residual!, compute_farfield_forces!, solve_case!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_forces, surface_moments, surface_force_coefficients, surface_moment_coefficients, nearfield_coefficients, farfield_coefficients
 
 export Horseshoe, streamlines, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, horseshoe_line, horseshoe_point, make_horseshoes, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, case_dynamics,  # Pure
-VLMState, VLMSystem, compute_influence_matrix!, compute_boundary_condition!, compute_horseshoes!, solve_system!, solve_residual, solve_residual!, compute_farfield_forces!, solve_case!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_forces, surface_moments, surface_force_coefficients, surface_moment_coefficients, nearfield_coefficients, farfield_coefficients # Impure
+VLMState, VLMSystem, VLMSurface, compute_influence_matrix!, compute_boundary_condition!, compute_horseshoes!, solve_system!, solve_residual, solve_residual!, compute_farfield_forces!, solve_case!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_forces, surface_moments, surface_force_coefficients, surface_moment_coefficients, nearfield_coefficients, farfield_coefficients # Impure
 
 ## Profile drag estimation
 
