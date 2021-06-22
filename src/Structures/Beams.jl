@@ -127,7 +127,4 @@ function tube_stiffness_matrix(Es :: Vector{T}, Gs :: Vector{T}, As :: Vector{T}
     K   = blockdiag(Iys, Izs, As, Js)
 end
 
-solve_beam_residual!(R, K, u, f) = 
-    R .= K * u - f
-
 end

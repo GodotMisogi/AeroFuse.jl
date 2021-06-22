@@ -179,7 +179,7 @@ function solve_case!(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{S
     compute_farfield_forces!.(surfs, state.U, state.alpha, state.beta, state.rho_ref)
 
     nf_coeffs = reduce(hcat, nearfield_coefficients.(surfs, Ref(state)))
-    ff_coeffs = reduce(hcat, farfield_coefficients.(surfs, Ref(state)))
+    ff_coeffs = reduce(hcat,  farfield_coefficients.(surfs, Ref(state)))
     
     all_nf_coeffs = [ sum(nf_coeffs, dims = 2) nf_coeffs ]
     all_ff_coeffs = [ sum(ff_coeffs, dims = 2) ff_coeffs ]
@@ -221,12 +221,25 @@ farfield_coefficients(surf :: VLMSurface, state :: VLMState)  = farfield_coeffic
 ## Residual setup
 #=============================================#
 
-solve_residual!(system :: VLMSystem, R, x) =
-    R .= AIC(system) * x - RHS(system)
+evaluate_residual!(R, Γ, system :: VLMSystem) =
+    R .= AIC(system) * Γ - RHS(system)
 
-function solve_residual(system :: VLMSystem, state :: VLMState, xs, δs, Γs)
+function build_system(aircraft)
+    # Build surfaces and systems
+    vals     = values(aircraft)
+    horsies  = getindex.(vals, 1)
+    normies  = getindex.(vals, 2)
+
+    # Build surfaces and systems
+    surfs  = @. VLMSurface(horsies, normies)
+    system = VLMSystem(surfs)
+
+    system, surfs
+end
+
+function solve_residual(xyzs, Γs, system :: VLMSystem, state :: VLMState)
     # Generate panels for VLM analysis
-    panels = make_panels(xs .+ δs)      # Make panels from coordinates
+    panels = make_panels(xyzs)          # Make panels from coordinates
     horses = horseshoe_line.(panels)    # Make horseshoes
     pts    = collocation_point.(horses) # Get collocation_points
     V      = freestream_to_cartesian(-state.U, state.alpha, state.beta)
