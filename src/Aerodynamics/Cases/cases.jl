@@ -19,7 +19,7 @@ function print_info(wing :: Union{Wing, HalfWing}, head = ""; browser = false)
     end
 end
 
-VortexLattice.VLMState(fs :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, r_ref, rho_ref, area_ref, chord_ref, span_ref, name)
+VortexLattice.VLMState(fs :: Freestream{<: Real}; r_ref = zeros(3), rho_ref = 1.225, area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, r_ref = r_ref, rho_ref = rho_ref, area_ref = area_ref, chord_ref = chord_ref, span_ref = span_ref, name = name)
 
 """
     solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, freestream :: Freestream, r_ref, ρ = 1.225; symmetry = false)

@@ -11,127 +11,168 @@ using BenchmarkTools
 ## Aerodynamic variables
 
 # Define wing
-wing = WingSection(root_foil  = naca4((4,4,1,2)),
-                   span       = 1.3,
-                   dihedral   = 0.0,
-                   sweep_LE   = 15.0,
-                   taper      = 1.0,
-                   root_chord = 0.314,
-                   root_twist = 0.0,
-                   tip_twist  = 0.0)
-wing_mac    = mean_aerodynamic_center(wing)
-wing_plan   = plot_wing(wing)
-name        = "Wing"
-print_info(wing)
+# wing = WingSection(root_foil  = naca4((4,4,1,2)),
+#                    span       = 1.3,
+#                    dihedral   = 0.0,
+#                    sweep_LE   = 0.0,
+#                    taper      = 1.0,
+#                    root_chord = 0.314,
+#                    root_twist = 0.0,
+#                    tip_twist  = 0.0)
+# wing_mac    = mean_aerodynamic_center(wing)
+# wing_plan   = plot_wing(wing)
+# name        = "Wing"
+# print_info(wing)
 
 # Mesh
-span_num        = 20
-chord_num       = 13
-panels, normies = panel_wing(wing, span_num, chord_num);
-aircraft        = Dict(name => (panels, normies));
+# span_num        = 10
+# chord_num       = 5
+# panels, normies = panel_wing(wing, span_num, chord_num);
+# aircraft        = Dict(name => (panels, normies));
+
+# Define wing
+wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+            chords    = [1.0, 0.6],
+            twists    = [2.0, 2.0],
+            spans     = [5.0],
+            dihedrals = [11.3],
+            sweep_LEs = [2.29]);
+
+# Horizontal tail 
+htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+             chords    = [0.7, 0.42],
+             twists    = [0.0, 0.0],
+             spans     = [1.25],
+             dihedrals = [0.],
+             sweep_LEs = [6.39])
+
+# Vertical tail
+vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)), 
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.0],
+                 dihedrals = [0.],
+                 sweep_LEs = [7.97]);
+
+## Meshing and assembly
+wing_panels,  wing_normals  = panel_wing(wing,  20, 13;)
+htail_panels, htail_normals = panel_wing(htail, 12, 12;
+                                         position = [4., 0, 0],
+                                         angle    = deg2rad(-2.),
+                                         axis     = [0., 1., 0.]
+                                        )
+vtail_panels, vtail_normals = panel_wing(vtail, 12, 10; 
+                                         position = [4., 0, 0],
+                                         angle    = π/2, 
+                                         axis     = [1., 0., 0.]
+                                        )
+
+aircraft = Dict(
+                "Wing"            => (wing_panels,  wing_normals),
+                "Horizontal Tail" => (htail_panels, htail_normals),
+                "Vertical Tail"   => (vtail_panels, vtail_normals),
+               );
 
 ## Define VLMState and VLMSystem
 
+# Set up system
+system, surfs = build_system(aircraft); # NEED TO THINK ABOUT WHETHER TO RETURN DICTIONARY OF SURFACES
+
 # Set up state
-V, α, β = 20., 0., 0.
-state = VLMState(Freestream(V, α, β, [0.0, 0.0, 0.0]), 
+wing_mac = mean_aerodynamic_center(wing);
+
+# Consider initialisation?
+state = VLMState(0., 0., 0., [0., 0., 0.], 
                  rho_ref   = 1.225,
-                 r_ref     = SVector(wing_mac[1], 0., 0.),
+                 r_ref     = [ wing_mac[1], 0, 0 ],
                  area_ref  = projected_area(wing), 
                  chord_ref = mean_aerodynamic_chord(wing), 
                  span_ref  = span(wing));
-
-# Build system
-system, surfs = build_system(aircraft);
-
-## Weight variables
-weight      = 15 * 9.81
-load_factor = 1.5;
 
 ## Residual setup
 #==========================================================================================#
 
 load_factor_residual(L, W, n) = L - n * W
 
-function freestream_case!(system :: VLMSystem, state :: VLMState, surfs, weight, load_factor)
-    V = freestream_to_cartesian(-state.U, state.alpha, state.beta)
+function load_factor_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
+    # Evaluate aerodynamics
+    solve_case!(system, surfs, state)
 
-    generate_system!(system, V, state.omega) # Pre-allocated version for efficiency
-    solve_system!(system)
-    update_circulations!(circulations(system), surfs)
-
-    # Compute lift
-    compute_surface_forces!.(surfs, Ref(system), Ref(V), Ref(state.omega), state.rho_ref)
+    # # Compute lift
     lift = body_to_wind_axes(sum(sum ∘ surface_forces, surfs), state.alpha, state.beta)[3]
 
-    # Weight residual
+    # # Weight residual
     load_factor_residual(lift, weight, load_factor)
 end
 
 ## Angle of attack residual
 #==========================================================================================#
 
-function solve_alpha_residual!(R, x, system :: VLMSystem, state :: VLMState, surfs, weight, load_factor)
+function solve_alpha_residual!(R, x, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
     state.alpha = x[1]
-    R .= freestream_case!(system, state, surfs, weight, load_factor)
+    R .= load_factor_case!(system, surfs, state, weight, load_factor)
 end
 
 ## Test case - Fixed speed
-state.U = V
-x       = [ state.alpha ]
+weight        = 15 * 9.81
+load_factor   = 1.0
+state.U       = 20.
+state.rho_ref = 0.98
+x             = [ state.alpha ]
 
 # Nonlinear solution
-solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, state, values(surfs), weight, load_factor)
+solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, surfs, state, weight, load_factor)
 @time res_alpha = 
     nlsolve(solve_alpha_residual!, x,
             method   = :newton,
+            show_trace = true,
             # autodiff = :forward, # NOT WORKING
-            # show_trace = true
+            # extended_trace = true
            )
 
 ## Check numbers
-state.alpha          = res_alpha.zero[1]
-system, surfs        = solve_case!(aircraft, state)
-coeffs               = aerodynamic_coefficients(surfs, state)
-L                    = force(coeffs["Wing"][2][1:3], dynamic_pressure(state.rho_ref, state.U), state.area_ref)[3]
-n_calc               = L / weight
+state.alpha = res_alpha.zero[1]
+lift        = sum(sum ∘ surface_forces, values(surfs))[3]
+load_fac    = lift / weight
 
-println("Load factor: $n_calc")
-println("Weight: $weight, N")
-println("Lift: $L, N")
-println("Speed: $(state.U), m/s")
-println("Angle of attack: $(rad2deg(res_alpha.zero[1]))ᵒ")
+println("Load factor: $load_fac")
+println("Weight: $weight N")
+println("Lift: $lift N")
+println("Speed: $(state.U) m/s")
+println("Angle of attack: $(rad2deg(state.alpha))ᵒ")
 
 ## Speed residual
 #==========================================================================================#
 
-function solve_speed_residual!(R, x, system :: VLMSystem, state :: VLMState, surfs, weight, load_factor)
+function solve_speed_residual!(R, x, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
     state.U = x[1]
-    R .= freestream_case!(system, state, surfs, weight, load_factor)
+    R .= load_factor_case!(system, surfs, state, weight, load_factor)
 end
 
 # Test case - Fixed angle of attack
-state.alpha = deg2rad(3.)
-x           = [ state.U ]
+weight        = 12 * 9.81
+load_factor   = 1.5
+state.alpha   = deg2rad(3.)
+state.rho_ref = 1.1
+x             = [ state.U ]
 
 # Nonlinear solution
-solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, state, values(surfs), weight, load_factor)
+solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, surfs, state, weight, load_factor)
 @time res_speed = 
     nlsolve(solve_speed_residual!, x,
             method   = :newton,
+            show_trace = true,
             # autodiff = :forward, # NOT WORKING
-            # show_trace = true,
+            # extended_trace = true
            )
 
 ## Check numbers
-state.U              = res_speed.zero[1]
-system, surfs        = solve_case!(aircraft, state)
-coeffs               = aerodynamic_coefficients(surfs, state)
-L                    = force(coeffs["Wing"][2][1:3], dynamic_pressure(state.rho_ref, state.U), state.area_ref)[3]
-n_calc               = L / weight
+state.U  = res_speed.zero[1]
+lift     = sum(sum ∘ surface_forces, values(surfs))[3]
+load_fac = lift / weight
 
-println("Load factor: $n_calc")
-println("Weight: $weight, N")
-println("Lift: $L, N")
-println("Speed: $(res_speed.zero[1]), m/s")
+println("Load factor: $load_fac")
+println("Weight: $weight N")
+println("Lift: $lift N")
+println("Speed: $(state.U) m/s")
 println("Angle of attack: $(rad2deg(state.alpha))ᵒ")
