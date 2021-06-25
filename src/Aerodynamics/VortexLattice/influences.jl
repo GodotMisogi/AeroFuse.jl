@@ -26,10 +26,10 @@ boundary_condition(velocities, normals) = dot.(velocities, normals)
 ## Pre-allocated versions
 #====================================================#
 
-function matrix_assembly!(AIC, RHS, horseshoes :: Vector{<: Horseshoe}, collocation_points, normals, V, Ω)
+function matrix_assembly!(AIC, RHS, horseshoes :: Vector{<: Horseshoe}, collocation_points, normals, V, Ω, finite_core = false)
     for i ∈ 1:length(collocation_points)
         for j ∈ 1:length(horseshoes) 
-            AIC[i,j] = dot(total_horseshoe_velocity(r1(collocation_points[i], horseshoes[j]), r2(collocation_points[i], horseshoes[j]), 1., -normalize(V)), normals[i])
+            AIC[i,j] = dot(velocity(collocation_points[i], horseshoes[j], 1., -normalize(V), finite_core), normals[i])
         end
         RHS[i] = dot(V + Ω × collocation_points[i], normals[i])
     end
