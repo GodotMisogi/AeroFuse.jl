@@ -77,7 +77,7 @@ fs      = Freestream(V, α, β, Ω)
 ## Data collection
 comp_names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
 comp  = comp_names[1]			   # Pick your component
-nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
+nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horses, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
 print_coefficients(nf_coeffs, ff_coeffs, comp)
 
 ## Stability case
@@ -119,7 +119,7 @@ seed        = [ init .+ Ref([dx, dy, dz]) ;
 
 distance = 8
 num_stream_points = 200
-streams = plot_streams(fs, seed, horseshoes, Γs, distance, num_stream_points);
+streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 
 ##
 using Plots
@@ -148,7 +148,7 @@ CDis     = @. getindex(wind_CFs, 1)
 CYs	     = @. getindex(wind_CFs, 2)
 CLs      = @. getindex(wind_CFs, 3)
 
-hs_pts = bound_leg_center.(horseshoes)
+hs_pts = bound_leg_center.(horses)
 hs_xs  = getindex.(hs_pts, 1)
 hs_ys  = getindex.(hs_pts, 2)
 hs_zs  = getindex.(hs_pts, 3)
