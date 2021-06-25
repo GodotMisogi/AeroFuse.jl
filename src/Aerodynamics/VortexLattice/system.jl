@@ -11,7 +11,7 @@ mutable struct VLMState{T <: Real}
 	name 		:: String
 end
 
-VLMState(U :: T, α, β, Ω = zeros(3); rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") where T <: Real = VLMState{T}(U, α, β, Ω, r_ref, rho_ref, area_ref, chord_ref, span_ref, name)
+VLMState(U :: T, α, β, Ω :: FieldVector{3,T} = zeros(3); rho_ref = 1.225, r_ref :: FieldVector{3,T} = zeros(3), area_ref = 1., chord_ref = 1., span_ref = 1., name = "Aircraft") where T <: Real = VLMState{T}(U, α, β, Ω, r_ref, rho_ref, area_ref, chord_ref, span_ref, name)
 
 struct StabilityFrame{T <: Real}
     alpha :: T
@@ -113,6 +113,19 @@ function VLMSystem(surfaces :: Vector{VLMSurface{T}}) where T <: Real
     VLMSystem{T}(horsies, normies)
 end
 
+function build_system(aircraft)
+    # Build surfaces and systems
+    vals     = values(aircraft)
+    horsies  = getindex.(vals, 1)
+    normies  = getindex.(vals, 2)
+
+    # Build surfaces and systems
+    surfs  = @. VLMSurface(horsies, normies)
+    system = VLMSystem(surfs)
+
+    system, surfs
+end
+
 compute_horseshoes!(system :: VLMSystem, horseshoe_panels) = 
     system.horseshoes = horseshoe_line.(horseshoe_panels)
 
@@ -127,6 +140,18 @@ generate_system!(system :: VLMSystem, V, Ω) =
 
 solve_system!(system :: VLMSystem) = 
     system.circulations = AIC(system) \ RHS(system)
+
+function update_circulations!(Γ, surfs) 
+    # Get sizes and indices for reshaping (UGLY AF)
+    sizes = @. (size ∘ horseshoes)(surfs)
+    inds  = [ 0; cumsum(prod.(sizes)) ]
+    Γs    = reshape_array(Γ, inds, sizes)
+
+    # Allocate surface circulations
+    for (surf, Γ_vec) in zip(surfs, Γs)
+        surf.circulations = Γ_vec
+    end
+end
 
 ## Dynamics evaluations
 compute_surface_forces!(surf :: VLMSurface, system :: VLMSystem, U, Ω, ρ) = 
@@ -150,47 +175,28 @@ end
 ## Evaluate system
 function solve_case!(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
     # Collect surface data and freestream
-    V        = freestream_to_cartesian(-state.U, state.alpha, state.beta)
-    vals     = values(aircraft)
-    horsies  = getindex.(vals, 1)
-    normies  = getindex.(vals, 2)
-    sizes    = size.(horsies)
-    inds 	 = [ 0; cumsum(prod.(sizes)) ]
+    V = freestream_to_cartesian(-state.U, state.alpha, state.beta)
 
     # Build surfaces and systems
-    surfs  = @. VLMSurface(horsies, normies)
-    system = VLMSystem(surfs)
+    system, surfs = build_system(aircraft)
 
     # Assemble and solve matrix system
-    compute_influence_matrix!(system, V)
-    compute_boundary_condition!(system, V, state.omega)
-    # generate_system!(system, V, state.omega) # Pre-allocated version
+    # compute_influence_matrix!(system, V)
+    # compute_boundary_condition!(system, V, state.omega)
+    generate_system!(system, V, state.omega) # Pre-allocated version for efficiency
     solve_system!(system)
-
-    # Allocate surface circulations
-    Γs = reshape_array(system.circulations, inds, sizes)
-    for (surf, Γ_vec) in zip(surfs, Γs)
-        surf.circulations = Γ_vec
-    end
+    update_circulations!(circulations(system), surfs)
 
     # Evaluate forces
     compute_surface_forces!.(surfs, Ref(system), Ref(V), Ref(state.omega), state.rho_ref)
     compute_surface_moments!.(surfs, Ref(state.r_ref))
     compute_farfield_forces!.(surfs, state.U, state.alpha, state.beta, state.rho_ref)
 
-    nf_coeffs = reduce(hcat, nearfield_coefficients.(surfs, Ref(state)))
-    ff_coeffs = reduce(hcat,  farfield_coefficients.(surfs, Ref(state)))
-    
-    all_nf_coeffs = [ sum(nf_coeffs, dims = 2) nf_coeffs ]
-    all_ff_coeffs = [ sum(ff_coeffs, dims = 2) ff_coeffs ]
-
     # Generate dictionaries
-    names = (collect ∘ keys)(aircraft) 
-    all_names = [ "Aircraft"; names ]
+    names   = (collect ∘ keys)(aircraft) 
     results = Dict(names .=> surfs)
-    coeffs = Dict(all_names .=> zip(eachcol(all_nf_coeffs), eachcol(all_ff_coeffs)))
 
-    system, results, coeffs
+    system, results
 end
 
 ## Pure methods
@@ -212,6 +218,26 @@ end
 
 farfield_coefficients(surf :: VLMSurface, V, ρ, S) = force_coefficient(surf.farfield_forces, dynamic_pressure(ρ, V), S)
 
+aerodynamic_coefficients(surf :: VLMSurface, state :: VLMState) = nearfield_coefficients(surf, state), farfield_coefficients(surf, state)
+
+function aerodynamic_coefficients(surfs :: Vector{<: VLMSurface}, state :: VLMState) 
+    coeffs    = aerodynamic_coefficients.(surfs, Ref(state))
+    nf_coeffs = reduce(hcat, first.(coeffs))
+    ff_coeffs = reduce(hcat, last.(coeffs))
+    
+    
+    all_nf_coeffs = [ sum(nf_coeffs, dims = 2) nf_coeffs ]
+    all_ff_coeffs = [ sum(ff_coeffs, dims = 2) ff_coeffs ]
+    
+    all_nf_coeffs, all_ff_coeffs
+end
+
+function aerodynamic_coefficients(surfs :: Dict{String, VLMSurface{T}}, state :: VLMState) where T <: Real 
+    nf, ff    = aerodynamic_coefficients((collect ∘ values)(surfs), state)
+    all_names = [ "Aircraft"; (collect ∘ keys)(surfs) ]
+    Dict( all_names .=> zip(eachcol(nf), eachcol(ff)) )
+end
+
 # State versions
 surface_force_coefficients(surf :: VLMSurface, state :: VLMState)  = surface_force_coefficients(surf, state.U, state.rho_ref, state.area_ref)
 surface_moment_coefficients(surf :: VLMSurface, state :: VLMState) = surface_moment_coefficients(surf, state.U, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
@@ -224,18 +250,6 @@ farfield_coefficients(surf :: VLMSurface, state :: VLMState)  = farfield_coeffic
 evaluate_residual!(R, Γ, system :: VLMSystem) =
     R .= AIC(system) * Γ - RHS(system)
 
-function build_system(aircraft)
-    # Build surfaces and systems
-    vals     = values(aircraft)
-    horsies  = getindex.(vals, 1)
-    normies  = getindex.(vals, 2)
-
-    # Build surfaces and systems
-    surfs  = @. VLMSurface(horsies, normies)
-    system = VLMSystem(surfs)
-
-    system, surfs
-end
 
 function solve_residual(xyzs, Γs, system :: VLMSystem, state :: VLMState)
     # Generate panels for VLM analysis

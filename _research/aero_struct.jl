@@ -21,33 +21,20 @@ aerodynamic_forces(surfs) = reduce(vcat, (vec ∘ surface_forces).(surfs))
 
 points(horses) = @. r1(bound_leg_center(horses), horses)[:], r2(bound_leg_center(horses), horses)[:]
 
-lift_force(surfs) = sum(sum ∘ surface_forces, surfs) 
+total_force(surfs) = sum(sum ∘ surface_forces, surfs) 
 
-function solve_aerodynamic_residual!(R, Γ, system :: VLMSystem, state :: VLMState)
-    V = freestream_to_cartesian(-state.U, state.alpha, state.beta)
+function solve_aerodynamic_residual!(R, Γ, aero_system :: VLMSystem, aero_state :: VLMState, aero_surfs)
+    V = freestream_to_cartesian(-aero_state.U, aero_state.alpha, aero_state.beta)
 
     # Assemble matrix system
-    compute_influence_matrix!(system, V)
-    compute_boundary_condition!(system, V, state.omega)
+    generate_system!(aero_system, V, aero_state.omega) # Pre-allocated version for efficiency
+
+    # Update circulations
+    aero_system.circulations = Γ
+    update_circulations!(circulations(aero_system), aero_surfs)
 
     # Evaluate residual
-    evaluate_residual!(R, Γ, system)
-
-    R
-end
-
-function update_circulations!(Γ, surfs :: Vector{<: VLMSurface}) 
-    # Get sizes and indices for reshaping (UGLY AF)
-    sizes = @. (size ∘ horseshoes)(surfs)
-    inds  = [ 0; cumsum(prod.(sizes)) ]
-    Γs    = reshape_array(Γ, inds, sizes)
-
-    # Allocate surface circulations
-    for (surf, Γ_vec) in zip(surfs, Γs)
-        surf.circulations = Γ_vec
-    end
-
-    surfs
+    R = evaluate_residual!(R, Γ, aero_system)
 end
 
 function compute_loads(forces, r1s, r2s)
@@ -61,8 +48,8 @@ function compute_loads(forces, r1s, r2s)
     moments = adjacent_joiner(M1s, M2s)
 
     # Boundary condition, setting F = 0 at center of wing
-    n = ceil(Int, length(horses) / 2) + 1
-    forces[n-1:n+1] .-= forces[n-1:n+1];
+    # n = ceil(Int, length(horses) / 2) + 1
+    # forces[n-1:n+1] .-= forces[n-1:n+1];
 
     # Assembly
     Fx = getindex.(forces, 1)
@@ -120,7 +107,8 @@ function transfer_displacements!(system, xyzs, normals, ds, θs)
     new_xyzs   = xyzs + Δxyzs
     new_pans   = make_panels(new_xyzs)
     new_horses = horseshoe_line.(new_pans) 
-    new_norms  = @. normals[:] + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
+    new_norms  = panel_normal.(new_pans)
+    # new_norms  = @. normals[:] + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
 
     # Set new system variables
     system.horseshoes = new_horses[:]
@@ -132,18 +120,17 @@ end
 ## Weights and fuel loads
 #==========================================================================================#
 
-evaluate_weight_residual(L, W, n) = L - n * W
+load_factor_residual(L, W, n) = L - n * W
 
 ## Coupled residual system
 #==========================================================================================#
 
-function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: VLMState, surfs, xyzs, normals, K, W, load_factor)
-    n = (prod ∘ size)(horseshoes(system))   # Get panel size
+function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: VLMState, aero_surfs, xyzs, normals, stiffness_matrix, weight, load_factor)
+    n = (prod ∘ size)(horseshoes(aero_system))   # Get panel size
 
     # Unpack aerodynamic and structural variables
     Γ = @view x[1:n] 
     δ = @view x[n+1:end-1]
-    α = @view x[end]
 
     # Get residual vector views
     R_A = @view R[1:n]
@@ -151,25 +138,30 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: V
     R_W = @view R[end]
     
     # Compute and transfer displacements
-    r1s, r2s = (points ∘ horseshoes)(system)
+    r1s, r2s = (points ∘ horseshoes)(aero_system)
     ds, θs = compute_displacements(δ, r1s, r2s)
-    transfer_displacements!(system, xyzs, normals, ds, θs)
+    transfer_displacements!(aero_system, xyzs, normals, ds, θs)
 
     # Aerodynamic residuals
-    aero_state.alpha = α[1]
-    solve_aerodynamic_residual!(R_A, Γ, aero_system, aero_state)
-    update_circulations!(Γ, surfs)
+    aero_state.alpha = x[end]
+    solve_aerodynamic_residual!(R_A, Γ, aero_system, aero_state, aero_surfs)
+
+
+    # println("Angle of attack: $(aero_state.alpha)")
+    # display(Γ)
     
     # Compute forces
-    forces = aerodynamic_forces(surfs)
+    V = freestream_to_cartesian(-aero_state.U, aero_state.alpha, aero_state.beta)
+    compute_surface_forces!.(aero_surfs, Ref(aero_system), Ref(V), Ref(aero_state.omega), aero_state.rho_ref)
+    forces = aerodynamic_forces(aero_surfs)
     F      = compute_loads(forces, r1s, r2s)
-    L      = lift_force(surfs)[3]
+    L      = total_force(aero_surfs)[3]
 
     # Structural residuals
-    solve_beam_residual!(R_S, K, δ, F)
+    solve_beam_residual!(R_S, stiffness_matrix, δ, F)
 
     # Weight residual
-    R_W = evaluate_weight_residual(L, W, load_factor)
+    R_W = load_factor_residual(L, weight, load_factor)
 
     R
 end
@@ -180,11 +172,12 @@ end
 ## Aerodynamic variables
 
 # Define wing
-wing = WingSection(span       = 4.0,
+wing = WingSection(root_foil  = naca4((0,0,1,2)),
+                   span       = 1.3,
                    dihedral   = 0.0,
                    sweep_LE   = 15.0,
-                   taper      = 0.4,
-                   root_chord = 2.0,
+                   taper      = 1.0,
+                   root_chord = 0.314,
                    root_twist = 0.0,
                    tip_twist  = 0.0)
 wing_mac    = mean_aerodynamic_center(wing)
@@ -195,24 +188,28 @@ print_info(wing)
 # Mesh
 span_num        = 5
 chord_num       = 1
-xyzs            = chord_coordinates(wing, [span_num], chord_num; spacings = ["cosine"])
-panels, normals = panel_wing(wing, span_num, chord_num);
-aircraft        = Dict(name => (panels, normals));
+xyzs            = chord_coordinates(wing, [span_num], chord_num; spacings = "cosine")
+panels, normies = panel_wing(wing, span_num, chord_num; spacing = "cosine");
+aircraft        = Dict(name => (panels, normies));
 
-## Define VLMSystem
+## Define VLMState and VLMSystem
 
 # Set up state
-state = VLMState(Freestream(1.0, 1.0, 0.0, [0.0, 0.0, 0.0]), 
+V, α, β = 20., 1., 0.
+aero_state = VLMState(Freestream(V, α, β, [0.0, 0.0, 0.0]), 
                  rho_ref   = 1.225,
                  r_ref     = SVector(wing_mac[1], 0., 0.),
                  area_ref  = projected_area(wing), 
                  chord_ref = mean_aerodynamic_chord(wing), 
                  span_ref  = span(wing));
 
+
 # Build system
-system, surfs = build_system(aircraft);
-horses  = horseshoes(system)
-normies = system.normals 
+aero_system, surfs, coeffs = solve_case!(aircraft, aero_state);
+aero_surfs = (collect ∘ values)(surfs)
+horses  = horseshoes(aero_system)
+normies = normals(aero_system)
+Γ_0     = circulations(aero_system)
 
 ## Weight variables
 
@@ -220,8 +217,8 @@ normies = system.normals
 # W_y = fill(W / length(CFs) + 1, length(CFs) + 1)
 # W   = (collect ∘ Iterators.flatten ∘ zip)(W_y, zeros(length(My)))
 # F_W = [ zeros(length(py)); W; zeros(length(px)) ]
-weight      = 10.
-load_factor = 2
+weight      = 15. * 9.81
+load_factor = 1.0
 
 ## Structural variables
 
@@ -239,21 +236,26 @@ x  = [ fill(E, n) fill(G, n) fill(A, n) fill(Iy, n) fill(Iz, n) fill(J, n) Ls ]
 # Stiffness matrix setup
 K = tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
 
-## Coupled system evaluation
-vec_size = (prod ∘ size ∘ horseshoes)(system) + (n + 1) * 6 + 1
-
-R   = zeros(vec_size)
-x   = rand(vec_size)
-eva = solve_coupled_residual!(R, x, system, state, surfs, xyzs, normies, K, weight, load_factor)
-
 ## Coupled system solution
-solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, system, state, surfs, xyzs, normies, K, weight, load_factor)
+solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_state, aero_surfs, xyzs, normies, K, weight, load_factor)
 
-res = nlsolve(solve_aerostructural_residual!, x,
-            #   method   = :newton,
+x0   = [ Γ_0; zeros((n + 1) * 6); aero_state.alpha ]
+res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
+              method   = :newton,
             #   autodiff = :forward,
               show_trace = true,
               )
+
+## Check numbers
+aero_state.alpha = res_aerostruct.zero[end]
+aero_system, surfs, coeffs = solve_case!(aircraft, aero_state)
+L = force(coeffs["Wing"][2][1:3], dynamic_pressure(aero_state.rho_ref, aero_state.U), aero_state.area_ref)[3]
+n_calc = L / weight
+
+println("Weight: $weight, N")
+println("Lift: $L, N")
+println("Load factor: $n_calc")
+println("Angle of attack: $(rad2deg(res_aerostruct.zero[end]))ᵒ")
 
 ##
 # df = DataFrame([ dx θx dy θy dz θz ], :auto)

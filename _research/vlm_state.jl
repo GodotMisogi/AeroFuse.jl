@@ -48,12 +48,13 @@ aircraft = Dict(
                 "Vertical Tail"   	=> (vtail_panels, vtail_normals),
                );
 
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+wing_mac = mean_aerodynamic_center(wing)
 
 ## Case
 ac_name = "My Aircraft"
 ρ       = 1.225
-ref     = [0.25c, 0., 0.]
+ref     = [ wing_mac[1], 0., 0.]
 V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω);
@@ -86,23 +87,26 @@ println("Impure -")
     # Set up state
     state = VLMState(fs, 
                      rho_ref   = ρ,
-                     r_ref     = SVector(ref...),
+                     r_ref     = SVector(wing_mac[1], 0., 0.),
                      area_ref  = S, 
                      chord_ref = c, 
                      span_ref  = b);
 
     # Solve system
-    system, surfs, coeffs = solve_case!(aircraft, state);
+    system, surfs = solve_case!(aircraft, state);
 end;
 
-## Get only coefficients
+## Get coefficients
+coeffs     = aerodynamic_coefficients(surfs, state)
+
+## Print coefficients for component of your choice
 wing_names = (collect ∘ keys)(coeffs)
-comp       = wing_names[2]
+comp       = wing_names[1]
 nf_t, ff_t = coeffs[comp]
 
 print_coefficients(nf_t, ff_t, comp)
 
-## Get variables of your choice
+## Get component of your choice and its properties
 surf_names = (collect ∘ keys)(surfs)
 comp       = surf_names[1]
 surf       = surfs[comp]
