@@ -45,15 +45,15 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
     end
 
     # Set up Jacobian system and evaluate
-    y = ifelse(viscous, zeros(16), zeros(12))
+    y = ifelse(viscous, zeros(13), zeros(9))
     result = DiffResults.JacobianResult(y, x)
     result = ForwardDiff.jacobian!(result, stab, x)
     vars   = DiffResults.value(result)
     derivs = DiffResults.jacobian(result)
 
     # Gather results
-    nf 	= ifelse(viscous, vars[1:11], vars[1:9]) 	  	# Nearfield coefficients
-    ff 	= ifelse(viscous, vars[12:end], vars[10:end]) 	# Farfield coefficients
+    nf 	= ifelse(viscous, vars[1:8], vars[1:6]) 	  	# Nearfield coefficients
+    ff 	= ifelse(viscous, vars[9:end], vars[7:end]) 	# Farfield coefficients
     dvs = ifelse(viscous, derivs[[1,4:8...],:], derivs[1:6,:])	# Nearfield stability derivatives, uses total drag for viscous cases just in case of generalisations
 
     # Print if needed
@@ -82,10 +82,10 @@ function solve_stability_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}},
         coeffs = reduce(hcat, let comps = data[name]; [ comps[1]; comps[2] ] end for name in names)
     end
 
-    names 	= [ reduce(vcat, keys(aircraft)); name ]
+    names 	  = [ reduce(vcat, keys(aircraft)); name ]
     num_comps = length(names)
 
-    y 		= zeros(12, num_comps)
+    y 		= zeros(9, num_comps)
     result 	= DiffResults.JacobianResult(y, x)
     result 	= ForwardDiff.jacobian!(result, stab, x)
 
@@ -93,9 +93,9 @@ function solve_stability_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}},
     derivs 	= DiffResults.jacobian(result)
 
     # Dictionary assembly
-    ranges  = (1:num_comps) .* 12                     # Painful hacking
+    ranges  = (1:num_comps) .* 9                     # Painful hacking
     bounds  = zip([ 1; ranges[1:end-1] .+ 1], ranges) # Painful hacking
-    data 	= Dict(name => (vars[1:9, i], vars[10:end, i], derivs[first(inds):last(inds)-6,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds)) 
+    data 	= Dict(name => (vars[1:6, i], vars[7:end, i], derivs[first(inds):last(inds)-3,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds)) 
     
     # Printing
     if print;            print_case(data, name)       end

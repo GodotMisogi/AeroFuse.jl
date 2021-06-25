@@ -56,13 +56,12 @@ function aerodynamic_coefficients(force, moment, Ω, V, S, b, c, ρ)
     q = dynamic_pressure(ρ, V)
 
     [ force_coefficient(force, q, S) 		 ;
-      moment_coefficient(moment, q, S, b, c) ;
-      rate_coefficient(Ω, V, b, c) 			 ]
+      moment_coefficient(moment, q, S, b, c) ]
 end
 
 function print_coefficients(nf_coeffs, ff_coeffs, name = ""; browser = false)
-    coeffs = [ ifelse(length(nf_coeffs) == 11, ["CD", "CDp"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn", "p̄", "q̄", "r̄" ] ]
-    data = [ coeffs nf_coeffs [ ff_coeffs; fill("—", 6) ] ]
+    coeffs = [ ifelse(length(nf_coeffs) == 8, ["CD", "CDp"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn" ] ]
+    data = [ coeffs nf_coeffs [ ff_coeffs; fill("—", 3) ] ]
     head = [ name, "Nearfield", "Farfield" ]
     h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true)
     if browser
