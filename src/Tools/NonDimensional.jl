@@ -3,7 +3,7 @@ module NonDimensional
 using LinearAlgebra: norm
 using PrettyTables
 
-export dynamic_pressure, force_coefficient, moment_coefficient, moment_coefficients, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_coefficients, reynolds_number, print_derivatives
+# export dynamic_pressure, force_coefficient, moment_coefficient, moment_coefficients, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_coefficients, reynolds_number, print_derivatives
 
 """
     dynamic_pressure(ρ, V)
@@ -52,7 +52,7 @@ rate_coefficient(Ω, V, b, c) = rate_coefficient.(Ω, V, [b, c, b])
 
 Compute the relevant aerodynamic coefficients given a net force, moment and angular rates ``\\Omega`` with reference speed ``V``, area ``S``, span ``b``, chord ``c``, and density ``\\rho``.
 """
-function aerodynamic_coefficients(force, moment, Ω, V, S, b, c, ρ)
+function aerodynamic_coefficients(force, moment, V, S, b, c, ρ)
     q = dynamic_pressure(ρ, V)
 
     [ force_coefficient(force, q, S) 		 ;

@@ -97,7 +97,7 @@ function evaluate_coefficients(forces, moments, trefftz_force, U, α, β, Ω, ρ
     trans_moment = body_to_wind_axes(stability_flip(moment), α, β)
 
     # Compute coefficients
-    nearfield_coeffs = aerodynamic_coefficients(trans_force, trans_moment, Ω, V, S, b, c, ρ)
+    nearfield_coeffs = aerodynamic_coefficients(trans_force, trans_moment, V, S, b, c, ρ)
     farfield_coeffs	 = force_coefficient(trefftz_force, q, S)
 
     # Non-dimensional panel coefficients
