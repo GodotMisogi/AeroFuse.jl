@@ -8,28 +8,6 @@ using BenchmarkTools
 ## System setup
 #==========================================================================================#
 
-## Aerodynamic variables
-
-# Define wing
-# wing = WingSection(root_foil  = naca4((4,4,1,2)),
-#                    span       = 1.3,
-#                    dihedral   = 0.0,
-#                    sweep_LE   = 0.0,
-#                    taper      = 1.0,
-#                    root_chord = 0.314,
-#                    root_twist = 0.0,
-#                    tip_twist  = 0.0)
-# wing_mac    = mean_aerodynamic_center(wing)
-# wing_plan   = plot_wing(wing)
-# name        = "Wing"
-# print_info(wing)
-
-# Mesh
-# span_num        = 10
-# chord_num       = 5
-# panels, normies = panel_wing(wing, span_num, chord_num);
-# aircraft        = Dict(name => (panels, normies));
-
 # Define wing
 wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
             chords    = [1.0, 0.6],
@@ -98,10 +76,10 @@ function load_factor_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, 
     # Evaluate aerodynamics
     solve_case!(system, surfs, state)
 
-    # # Compute lift
+    # Compute lift
     lift = body_to_wind_axes(sum(sum ∘ surface_forces, surfs), state.alpha, state.beta)[3]
 
-    # # Weight residual
+    # Weight residual
     load_factor_residual(lift, weight, load_factor)
 end
 
@@ -115,8 +93,8 @@ end
 
 ## Test case - Fixed speed
 weight        = 15 * 9.81
-load_factor   = 1.0
-state.U       = 20.
+load_factor   = 1.2
+state.U       = 25.
 state.rho_ref = 0.98
 x             = [ state.alpha ]
 
@@ -124,14 +102,13 @@ x             = [ state.alpha ]
 solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, surfs, state, weight, load_factor)
 @time res_alpha = 
     nlsolve(solve_alpha_residual!, x,
-            method   = :newton,
+            method     = :newton,
             show_trace = true,
             # autodiff = :forward, # NOT WORKING
             # extended_trace = true
            )
 
 ## Check numbers
-state.alpha = res_alpha.zero[1]
 lift        = sum(sum ∘ surface_forces, values(surfs))[3]
 load_fac    = lift / weight
 
@@ -160,14 +137,13 @@ x             = [ state.U ]
 solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, surfs, state, weight, load_factor)
 @time res_speed = 
     nlsolve(solve_speed_residual!, x,
-            method   = :newton,
+            method     = :newton,
             show_trace = true,
             # autodiff = :forward, # NOT WORKING
             # extended_trace = true
            )
 
 ## Check numbers
-state.U  = res_speed.zero[1]
 lift     = sum(sum ∘ surface_forces, values(surfs))[3]
 load_fac = lift / weight
 
