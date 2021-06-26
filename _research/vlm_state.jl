@@ -73,7 +73,7 @@ rate_coeffs = rate_coefficient(state)
 coeffs      = aerodynamic_coefficients(surfs, state)
 
 ## Print coefficients for all surfaces
-print_coefficients(surfs, state)
+print_coefficients(surfs, state);
 
 ## Print coefficients for component of your choice
 wing_names = (collect ∘ keys)(coeffs)

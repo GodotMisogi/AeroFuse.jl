@@ -88,7 +88,7 @@ include("Aerodynamics/Cases/cases.jl")
 include("Aerodynamics/Cases/stability_cases.jl")
 include("Aerodynamics/Cases/foil_cases.jl")
 
-export solve_case, solve_stability_case, streamlines, print_case, print_info
+export solve_case, solve_stability_case, streamlines, print_case, print_info, print_coefficients, print_derivatives
 
 ## Structural analyses
 #==========================================================================================#
