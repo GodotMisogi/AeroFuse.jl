@@ -20,9 +20,9 @@ export tupvector, fwdsum, fwddiff, fwddiv, weighted_vector, vectarray, slope, sp
 #==========================================================================================#
 
 include("Tools/NonDimensional.jl")
-import .NonDimensional: dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_coefficients, reynolds_number, print_derivatives, force, moment
+import .NonDimensional: dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, reynolds_number, force, moment
 
-export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, print_coefficients, reynolds_number, print_derivatives, force, moment
+export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, reynolds_number, force, moment
 
 ## Panels
 #===========================================================================#

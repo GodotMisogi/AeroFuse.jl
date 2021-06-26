@@ -19,8 +19,6 @@ function print_info(wing :: Union{Wing, HalfWing}, head = ""; browser = false)
     end
 end
 
-VortexLattice.VLMState(fs :: Freestream{<: Real}; r_ref = zeros(3), rho_ref = 1.225, area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, r_ref = r_ref, rho_ref = rho_ref, area_ref = area_ref, chord_ref = chord_ref, span_ref = span_ref, name = name)
-
 """
     solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, freestream :: Freestream, r_ref, ρ = 1.225; symmetry = false)
 
@@ -136,4 +134,41 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
     Dict(names .=> data)
 end
 
+## Method extensions from submodules
+#==========================================================================================#
+
 streamlines(freestream :: Freestream, points, horseshoes, Γs, length, num_steps :: Integer) = VortexLattice.streamlines.(points, Ref(velocity(freestream)), Ref(freestream.omega), Ref(horseshoes), Ref(Γs), Ref(length), Ref(num_steps))
+
+VortexLattice.VLMState(fs :: Freestream{<: Real}; r_ref = zeros(3), rho_ref = 1.225, area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, r_ref = r_ref, rho_ref = rho_ref, area_ref = area_ref, chord_ref = chord_ref, span_ref = span_ref, name = name)
+
+## Printing
+#==========================================================================================#
+
+function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: AbstractVector{T}, name = ""; browser = false) where T <: Real
+    coeffs = [ ifelse(length(nf_coeffs) == 8, ["CD", "CDp"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn" ] ]
+    data = [ coeffs nf_coeffs [ ff_coeffs; fill("—", 3) ] ]
+    head = [ name, "Nearfield", "Farfield" ]
+    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true)
+    if browser
+        pretty_table(String, data, head, alignment = [:c, :c, :c], tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(font_weight = "bold")), formatters = ft_round(8))
+    else
+        pretty_table(data, head, alignment = [:c, :c, :c], tf = tf_compact, highlighters = h1, vlines = :none, formatters = ft_round(8))
+    end
+end
+
+function print_derivatives(derivs, name = ""; browser = false)
+    coeffs = ["∂CD", "∂CY", "∂CL", "∂Cl", "∂Cm", "∂Cn"]
+    nf_vars = [ "$name" "" "Nearfield" "Stability" "Derivatives" "" ; "" "∂α, 1/rad" "∂β, 1/rad" "∂p̄" "∂q̄" "∂r̄" ]
+    nf_rows = [ coeffs derivs ]
+
+    if browser
+        pretty_table(String, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
+    else
+        pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true), vlines = :none, formatters = ft_round(8))
+    end
+end
+
+function print_coefficients(surfs :: Dict{String, VLMSurface{T}}, state :: VLMState{T}) where T <: Real
+    coeffs = aerodynamic_coefficients(surfs, state)
+    print_coefficients.(first.(values(coeffs)), last.(values(coeffs)),  (collect ∘ keys)(coeffs))
+end
