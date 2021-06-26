@@ -17,6 +17,8 @@ rate_coefficient(state :: VLMState) = rate_coefficient(state.omega, state.U, sta
 update_velocity!(state :: VLMState) = 
     state.V = freestream_to_cartesian(-state.U, state.alpha, state.beta)
 
+name(state :: VLMState) = state.name
+
 struct StabilityFrame{T <: Real}
     alpha :: T
 end
@@ -35,9 +37,10 @@ mutable struct VLMSurface{T <: Real}
     wake_vectors    :: Vector{SVector{3,T}}
     wake_AIC        :: Matrix{T}
     farfield_forces :: SVector{3,T}
+    name            :: String
 end
 
-function VLMSurface(panels :: Matrix{Panel3D{T}}, normals :: Matrix{SVector{3,T}}) where T <: Real
+function VLMSurface(panels :: Matrix{Panel3D{T}}, normals :: Matrix{SVector{3,T}}, name = "Wing") where T <: Real
     # Initialize
     m               = size(panels)
     wake_AIC        = Matrix{T}(undef, m)
@@ -47,7 +50,7 @@ function VLMSurface(panels :: Matrix{Panel3D{T}}, normals :: Matrix{SVector{3,T}
     wake_vectors    = Vector{SVector{3,T}}(undef, m[1])
     farfield_forces = SVector{3,T}(0., 0., 0.)
 
-    VLMSurface{T}(horseshoe_line.(panels), normals, surface_forces, surface_moments, Γs, wake_vectors, wake_AIC, farfield_forces)
+    VLMSurface{T}(horseshoe_line.(panels), normals, surface_forces, surface_moments, Γs, wake_vectors, wake_AIC, farfield_forces, name)
 end
 
 horseshoes(surf :: VLMSurface)      = surf.horseshoes
@@ -55,6 +58,7 @@ normals(surf :: VLMSurface)         = surf.normals
 surface_forces(surf :: VLMSurface)  = surf.surface_forces
 surface_moments(surf :: VLMSurface) = surf.surface_moments
 circulations(surf :: VLMSurface)    = surf.circulations
+name(surf :: VLMSurface)            = surf.name
 
 collocation_points(surf :: VLMSurface) = collocation_point.(horseshoes(surf))
 
@@ -107,7 +111,7 @@ function VLMSystem(surface :: VLMSurface{T}) where T <: Real
     VLMSystem{T}(horsies, normies)
 end
 
-function VLMSystem(surfaces :: Vector{VLMSurface{T}}) where T <: Real
+function VLMSystem(surfaces :: AbstractVector{VLMSurface{T}}) where T <: Real
     # Flattening for system
     horsies = reduce(vcat, (vec ∘ horseshoes).(surfaces))
     normies = reduce(vcat, (vec ∘ normals).(surfaces))
@@ -116,13 +120,14 @@ end
 
 function build_system(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}) where T <: Real
     # Get panels and normals
+    names  = keys(aircraft)
     vals   = values(aircraft)
 
     # Build surfaces and systems
-    surfs  = @. VLMSurface(getindex.(vals, 1), getindex.(vals, 2))
+    surfs  = @. VLMSurface(getindex.(vals, 1), getindex.(vals, 2), names)
     system = VLMSystem(surfs)
 
-    system, surfs
+    system, surfs  # NEED TO THINK ABOUT WHETHER TO RETURN DICTIONARY OF SURFACES
 end
 
 compute_horseshoes!(system :: VLMSystem, horseshoe_panels) = 
@@ -187,20 +192,7 @@ function solve_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state 
     compute_surface_moments!.(surfs, Ref(state.r_ref))
     compute_farfield_forces!.(surfs, state.U, state.alpha, state.beta, state.rho_ref)
 
-    nothing
-end
-
-function solve_case!(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
-    # Build surfaces and systems
-    system, surfs = build_system(aircraft)
-
-    # Solve case
-    solve_case!(system, surfs, state)
-
-    # Generate dictionaries
-    results = Dict(keys(aircraft) .=> surfs)
-
-    system, results
+    system, surfs, state
 end
 
 ## Pure methods
@@ -223,21 +215,15 @@ farfield_coefficients(surf :: VLMSurface, V, ρ, S) = force_coefficient(surf.far
 
 aerodynamic_coefficients(surf :: VLMSurface, state :: VLMState) = nearfield_coefficients(surf, state), farfield_coefficients(surf, state)
 
-function aerodynamic_coefficients(surfs :: Vector{<: VLMSurface}, state :: VLMState) 
+function aerodynamic_coefficients(surfs, state :: VLMState) 
     coeffs    = aerodynamic_coefficients.(surfs, Ref(state))
     nf_coeffs = reduce(hcat, first.(coeffs))
     ff_coeffs = reduce(hcat, last.(coeffs))
     
-    all_nf_coeffs = [ sum(nf_coeffs, dims = 2) nf_coeffs ]
-    all_ff_coeffs = [ sum(ff_coeffs, dims = 2) ff_coeffs ]
+    nf = [ sum(nf_coeffs, dims = 2) nf_coeffs ]
+    ff = [ sum(ff_coeffs, dims = 2) ff_coeffs ]
     
-    all_nf_coeffs, all_ff_coeffs
-end
-
-function aerodynamic_coefficients(surfs :: Dict{String, VLMSurface{T}}, state :: VLMState) where T <: Real 
-    nf, ff    = aerodynamic_coefficients((collect ∘ values)(surfs), state)
-    all_names = [ state.name; (collect ∘ keys)(surfs) ]
-    Dict( all_names .=> zip(eachcol(nf), eachcol(ff)) )
+    OrderedDict( [ name(state); name.(surfs) ] .=> zip(eachcol(nf), eachcol(ff)) )
 end
 
 # State versions

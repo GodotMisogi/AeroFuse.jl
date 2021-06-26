@@ -3,9 +3,10 @@ using Revise
 using AeroMDAO
 using NLsolve
 using StaticArrays
+using DataFrames
 using BenchmarkTools
 
-## System setup
+## Lifting surfaces setup
 #==========================================================================================#
 
 # Define wing
@@ -45,27 +46,45 @@ vtail_panels, vtail_normals = panel_wing(vtail, 12, 10;
                                          axis     = [1., 0., 0.]
                                         )
 
+# Aircraft assembly
 aircraft = Dict(
                 "Wing"            => (wing_panels,  wing_normals),
                 "Horizontal Tail" => (htail_panels, htail_normals),
                 "Vertical Tail"   => (vtail_panels, vtail_normals),
                );
 
-## Define VLMState and VLMSystem
-
-# Set up system
-system, surfs = build_system(aircraft); # NEED TO THINK ABOUT WHETHER TO RETURN DICTIONARY OF SURFACES
+## System setup
+#==========================================================================================#
 
 # Set up state
 wing_mac = mean_aerodynamic_center(wing);
-
-# Consider initialisation?
-state = VLMState(0., 0., 0., [0., 0., 0.], 
+state = VLMState(1., 0., 0., [0., 0., 0.], 
                  rho_ref   = 1.225,
                  r_ref     = [ wing_mac[1], 0, 0 ],
                  area_ref  = projected_area(wing), 
                  chord_ref = mean_aerodynamic_chord(wing), 
                  span_ref  = span(wing));
+
+# Set up system
+system, surfs = solve_case(aircraft, state);
+
+## Angle of attack sweep
+#==========================================================================================#
+
+function alpha_sweep!(α, system :: VLMSystem, surfs, state :: VLMState)
+    state.alpha = α
+    solve_case!(system, (collect ∘ values)(surfs), state)
+    nf, ff = aerodynamic_coefficients(surfs, state)[state.name]
+
+    [ ff; nf[4:end] ]
+end
+
+##
+αs = deg2rad.(-5:5)
+@time results = alpha_sweep!.(αs, Ref(system), Ref(surfs), Ref(state))
+#
+data = DataFrame([ (α, CD, CY, CL, Cl, Cm, Cn) for (α, (CD, CY, CL, Cl, Cm, Cn)) in zip(rad2deg.(αs), results) ][:])
+rename!(data, [:α, :CD, :CY, :CL, :Cl, :Cm, :Cn])
 
 ## Residual setup
 #==========================================================================================#
@@ -99,7 +118,7 @@ state.rho_ref = 0.98
 x             = [ state.alpha ]
 
 # Nonlinear solution
-solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, surfs, state, weight, load_factor)
+solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, (collect ∘ values)(surfs), state, weight, load_factor)
 @time res_alpha = 
     nlsolve(solve_alpha_residual!, x,
             method     = :newton,
@@ -134,7 +153,7 @@ state.rho_ref = 1.1
 x             = [ state.U ]
 
 # Nonlinear solution
-solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, surfs, state, weight, load_factor)
+solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, (collect ∘ values)(surfs), state, weight, load_factor)
 @time res_speed = 
     nlsolve(solve_speed_residual!, x,
             method     = :newton,

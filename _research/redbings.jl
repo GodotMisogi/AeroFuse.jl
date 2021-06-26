@@ -67,14 +67,14 @@ aircraft = Dict(
                 );
 
 ## System-state evaluation
-state = VLMState(Freestream(20., 5., 0., [0., 0., 0.]), 
+state = VLMState(Freestream(20., 1., 0., [0., 0., 0.]), 
                  rho_ref   = 1.225,
                  r_ref     = [ wing_mac[1], 0, 0 ],
                  area_ref  = projected_area(wing), 
                  chord_ref = mean_aerodynamic_chord(wing), 
                  span_ref  = span(wing))
 
-system, surfs = solve_case!(aircraft, state);
+system, surfs = solve_case(aircraft, state);
 
 ## Printing coefficients
 print_coefficients(surfs, state);

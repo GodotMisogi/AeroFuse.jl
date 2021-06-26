@@ -3,6 +3,7 @@ module VortexLattice
 using LinearAlgebra
 using StaticArrays
 using Rotations
+using OrderedCollections
 
 ## Panel geometry and math tools
 #==========================================================================================#

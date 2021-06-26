@@ -1,9 +1,10 @@
 ## Aircraft analysis case
 using Revise
 using AeroMDAO
-using BenchmarkTools
 using ForwardDiff
-using StaticArrays
+
+## Lifting surfaces setup
+#==========================================================================================#
 
 ## Wing
 wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
@@ -50,22 +51,25 @@ aircraft = Dict(
 
 
 ## Case
-ac_name = "My Aircraft"
+ac_name  = "My Aircraft"
 S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 wing_mac = mean_aerodynamic_center(wing);
+ρ        = 1.225
+x_w      = [ wing_mac[1], 0., 0 ]
+fs       = Freestream(1.0, 1.0, 0.0, [0.0, 0.0, 0.0])
 
 @time begin
     # Set up state
-    state = VLMState(Freestream(1.0, 1.0, 0.0,  [0.0, 0.0, 0.0]);
-                     r_ref     = [ wing_mac[1], 0., 0 ],  
-                     rho_ref   = 1.225,
+    state = VLMState(fs;
+                     r_ref     = x_w,  
+                     rho_ref   = ρ,
                      area_ref  = S, 
                      chord_ref = c, 
                      span_ref  = b,
                      name      = ac_name);
 
     # Solve system
-    system, surfs = solve_case!(aircraft, state)
+    system, surfs = solve_case(aircraft, state)
 end;
 
 ## Get coefficients
@@ -76,16 +80,12 @@ coeffs      = aerodynamic_coefficients(surfs, state)
 print_coefficients(surfs, state);
 
 ## Print coefficients for component of your choice
-wing_names = (collect ∘ keys)(coeffs)
-comp       = wing_names[1]
-nf_t, ff_t = coeffs[comp]
-
-print_coefficients(nf_t, ff_t, comp)
+print_coefficients(surfs[1], state)
 
 ## Get component of your choice and its properties
-surf_names = (collect ∘ keys)(surfs)
-comp       = surf_names[1]
-surf       = surfs[comp]
+surf   = surfs[1]
+
+println(name(surf))
 
 Γs     = circulations(surf)
 horses = horseshoes(surf)
@@ -97,9 +97,9 @@ Ms     = surface_moments(surf)
 CFs = surface_force_coefficients(surf, state)
 CMs = surface_moment_coefficients(surf, state)
 nf  = nearfield_coefficients(surf, state)
-ff  = farfield_coefficients(surf, state)
+ff  = farfield_coefficients(surf, state);
 
-print_coefficients(nf, ff, comp)
+print_coefficients(nf, ff, name(surf))
 
 ## VLMState Derivatives
 function vlm_state_derivatives(fs)
@@ -116,13 +116,13 @@ function vlm_state_derivatives(fs)
     end
 
     V, α, β, Ω = fs.V, fs.alpha, fs.beta, fs.omega
-    jac = ForwardDiff.jacobian(get_derivatives, [ V, α, β, Ω... ])
+    jac = ForwardDiff.jacobian(get_derivatives, [ V; α; β; Ω ])
 end
 
 dvs = vlm_state_derivatives(fs)
 
 ## VLMSystem Derivatives
-function vlm_system_derivatives(system, surfs, fs)
+function vlm_system_derivatives(system, surfs, fs, r_ref)
     # Closure
     function get_derivatives(x :: AbstractVector{<: Real})
         state = VLMState(x[1], x[2], x[3], x[4:6],
@@ -133,13 +133,13 @@ function vlm_system_derivatives(system, surfs, fs)
                          span_ref = b,
                          name = ac_name);
 
-        compute_influence_matrix!(system, state.V)
+        generate_system!(system, state.V, state.omega)
 
         AIC(system)
     end
 
-    V, α, β, Ω, r_ref = fs.V, fs.alpha, fs.beta, fs.omega, [0.25, 0., 0. ]
-    jac = ForwardDiff.jacobian(get_derivatives, [ V, α, β, Ω..., r_ref... ])
+    V, α, β, Ω = fs.V, fs.alpha, fs.beta, fs.omega
+    jac = ForwardDiff.jacobian(get_derivatives, [ V; α; β; Ω; r_ref ])
 end
 
-dvs = vlm_system_derivatives(system, (collect ∘ values)(surfs), fs)
+dvs = vlm_system_derivatives(system, (collect ∘ values)(surfs), fs, x_w)

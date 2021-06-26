@@ -22,7 +22,7 @@ V, α, β = 1.0, 5.0, 0.0
 fs      = Freestream(V, α, β, Ω)
 
 ## Evaluate case
-@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horses, Γs =
+@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs =
 solve_case(wing, fs;
            rho_ref   = ρ,
            r_ref     = ref,

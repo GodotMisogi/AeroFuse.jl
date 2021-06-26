@@ -66,7 +66,7 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
                       );
     
     # Get data
-    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horses, Γs = data["Aircraft"]
+    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs = data["Aircraft"]
 
     # Filter relevant data
     [ ff_coeffs; nf_coeffs[4:6] ]

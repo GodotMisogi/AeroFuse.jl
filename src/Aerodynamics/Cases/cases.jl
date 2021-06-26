@@ -103,9 +103,12 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
 
     # Compute forces and moments
     results = case_dynamics.(Γs_arr, horseshoes_arr, Ref(Γs), Ref(horseshoes), Ref(U), α, β, Ref(Ω), rho_ref, Ref(r_ref))
+    forces  = getindex.(results, 1)
+    moments = getindex.(results, 2) 
+    trefftz = getindex.(results, 3)
 
     # Components' non-dimensional forces and moments
-    data = [ evaluate_coefficients(dyn..., U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref) for dyn in results ]
+    data = evaluate_coefficients.(forces, moments, trefftz, Ref(U), α, β, Ref(Ω), rho_ref, area_ref, chord_ref, span_ref)
 
     nf_comp_coeffs = getindex.(data, 1)
     ff_comp_coeffs = getindex.(data, 2)
@@ -132,6 +135,17 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
                 comp_data ]	# Component data
 
     Dict(names .=> data)
+end
+
+# Mutating version
+function solve_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
+    # Build surfaces and systems
+    system, surfs = build_system(aircraft)
+
+    # Solve case
+    solve_case!(system, surfs, state)
+
+    system, surfs
 end
 
 ## Method extensions from submodules
@@ -168,7 +182,12 @@ function print_derivatives(derivs, name = ""; browser = false)
     end
 end
 
-function print_coefficients(surfs :: Dict{String, VLMSurface{T}}, state :: VLMState{T}) where T <: Real
+function print_coefficients(surfs, state :: VLMState{T}) where T <: Real
     coeffs = aerodynamic_coefficients(surfs, state)
-    print_coefficients.(first.(values(coeffs)), last.(values(coeffs)),  (collect ∘ keys)(coeffs))
+    print_coefficients.(first.(values(coeffs)), last.(values(coeffs)), (collect ∘ keys)(coeffs))
+end
+
+function print_coefficients(surf :: VLMSurface{T}, state :: VLMState{T}) where T <: Real
+    nf, ff = aerodynamic_coefficients(surf, state)
+    print_coefficients(nf, ff, name(surf))
 end

@@ -166,7 +166,7 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_surfs :: V
     # Weight residual
     R_W .= load_factor_residual(L, weight, load_factor)
 
-    R .= [R_A; R_S; R_W]
+    R
 end
 
 ## Case
@@ -185,7 +185,7 @@ wing = WingSection(root_foil  = naca4((0,0,1,2)),
                    tip_twist  = 0.0)
 wing_mac    = mean_aerodynamic_center(wing)
 wing_plan   = plot_wing(wing)
-name        = "Wing"
+wing_name   = "Wing"
 print_info(wing)
 
 # Mesh
@@ -193,12 +193,15 @@ span_num        = 5
 chord_num       = 1
 xyzs            = chord_coordinates(wing, [span_num], chord_num; spacings = "cosine")
 panels, normies = panel_wing(wing, span_num, chord_num; spacing = "cosine");
-aircraft        = Dict(name => (panels, normies));
+aircraft        = Dict(wing_name => (panels, normies));
 
 
-## Define VLMState and VLMSystem
+## Define variables
+#==========================================================================================#
 
-# Set up state
+# Aerodynamic variables
+
+# Set up aerodynamic state
 aero_state = VLMState(0., 0., 0., [0.0, 0.0, 0.0], 
                       rho_ref   = 1.225,
                       r_ref     = [ wing_mac[1], 0., 0. ],
@@ -208,21 +211,18 @@ aero_state = VLMState(0., 0., 0., [0.0, 0.0, 0.0],
 
 
 # Test case - Fixed speed
-weight             = 15 * 9.81
-load_factor        = 1.0
 aero_state.U       = 20.
 aero_state.alpha   = deg2rad(1.)
 aero_state.rho_ref = 0.98
 
 # Build system with initial guess
-aero_system, aero_surfs = build_system(aircraft);
-solve_case!(aero_system, aero_surfs, aero_state)
+aero_system, aero_surfs = solve_case(aircraft, aero_state)
 
 horses  = horseshoes(aero_system)
 normies = normals(aero_system)
 Γ_0     = circulations(aero_system)
 coeffs  = aerodynamic_coefficients(aero_surfs, aero_state)
-# print_coefficients.(eachcol(coeffs[1]), eachcol(coeffs[2]));
+print_coefficients(aero_surfs["Wing"], aero_state);
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -230,6 +230,8 @@ coeffs  = aerodynamic_coefficients(aero_surfs, aero_state)
 # W_y = fill(W / length(CFs) + 1, length(CFs) + 1)
 # W   = (collect ∘ Iterators.flatten ∘ zip)(W_y, zeros(length(My)))
 # F_W = [ zeros(length(py)); W; zeros(length(px)) ]
+weight      = 15 * 9.81
+load_factor = 1.0;
 
 ## Structural variables
 
@@ -246,7 +248,7 @@ x  = [ fill(E, n) fill(G, n) fill(A, n) fill(Iy, n) fill(Iz, n) fill(J, n) Ls ]
 
 # Stiffness matrix setup
 K        = tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
-forces   = aerodynamic_forces(aero_surfs)
+forces   = aerodynamic_forces(values(aero_surfs))
 r1s, r2s = (points ∘ horseshoes)(aero_system)
 F        = compute_loads(forces, r1s, r2s)
 Δx       = K \ F
@@ -254,9 +256,9 @@ F        = compute_loads(forces, r1s, r2s)
 ## Aerostructural residual
 #==========================================================================================#
 
-solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_surfs, aero_state, xyzs, normies, K, weight, load_factor)
+solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, (collect ∘ values)(aero_surfs), aero_state, xyzs, normies, K, weight, load_factor)
 
-x0   = [ Γ_0; zeros((n + 1) * 6); aero_state.alpha ]
+x0   = [ Γ_0; Δx; aero_state.alpha ]
 res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
@@ -264,15 +266,14 @@ res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                         )
 
 ## Check numbers
-aero_state.alpha = res_aerostruct.zero[end]
-lift             = total_force(aero_surfs)[3]
+lift             = total_force(values(aero_surfs))[3]
 load_fac         = lift / weight
 
 println("Load factor: $load_fac")
 println("Weight: $weight N")
 println("Lift: $lift N")
-println("Speed: $(state.U) m/s")
-println("Angle of attack: $(rad2deg(state.alpha))ᵒ")
+println("Speed: $(aero_state.U) m/s")
+println("Angle of attack: $(rad2deg(aero_state.alpha))ᵒ")
 
 ##
 # df = DataFrame([ dx θx dy θy dz θz ], :auto)
