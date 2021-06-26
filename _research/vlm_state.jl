@@ -48,46 +48,17 @@ aircraft = Dict(
                 "Vertical Tail"   	=> (vtail_panels, vtail_normals),
                );
 
-S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
-wing_mac = mean_aerodynamic_center(wing);
 
 ## Case
 ac_name = "My Aircraft"
-ρ       = 1.225
-ref     = [ wing_mac[1], 0., 0.]
-V, α, β = 1.0, 1.0, 0.0
-Ω       = [0.0, 0.0, 0.0]
-fs      = Freestream(V, α, β, Ω);
+S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+wing_mac = mean_aerodynamic_center(wing);
 
-## Pure
-println("Pure -")
-@time begin
-    data = 
-    solve_case(aircraft, fs; 
-               rho_ref     = ρ, 		# Reference density
-               r_ref       = ref, 		# Reference point for moments
-               area_ref    = S, 		# Reference area
-               span_ref    = b, 		# Reference span
-               chord_ref   = c, 		# Reference chord
-               name        = ac_name,	# Aircraft name
-            #    print       = true,		# Prints the results for the entire aircraft
-            #    print_components = true,	# Prints the results for each component
-              );
-end
-
-## Data collection
-comp_names = (collect ∘ keys)(data)
-comp = comp_names[1]
-nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs = data[comp];
-print_coefficients(nf_coeffs, ff_coeffs, comp)
-
-## Impure
-println("Impure -")
 @time begin
     # Set up state
-    state = VLMState(fs.V, fs.alpha, fs.beta, fs.omega; 
+    state = VLMState(Freestream(1.0, 1.0, 0.0,  [0.0, 0.0, 0.0]);
                      r_ref     = [ wing_mac[1], 0., 0 ],  
-                     rho_ref   = ρ,
+                     rho_ref   = 1.225,
                      area_ref  = S, 
                      chord_ref = c, 
                      span_ref  = b,
@@ -95,11 +66,14 @@ println("Impure -")
 
     # Solve system
     system, surfs = solve_case!(aircraft, state)
-end
+end;
 
 ## Get coefficients
 rate_coeffs = rate_coefficient(state)
 coeffs      = aerodynamic_coefficients(surfs, state)
+
+## Print coefficients for all surfaces
+print_coefficients(surfs, state)
 
 ## Print coefficients for component of your choice
 wing_names = (collect ∘ keys)(coeffs)
