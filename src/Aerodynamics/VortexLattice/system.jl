@@ -195,6 +195,26 @@ function solve_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state 
     system, surfs, state
 end
 
+function solve_aerodynamic_residual!(R, Γ, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState)
+    # Update state velocity
+    update_velocity!(state)
+
+    # Assemble matrix system
+    generate_system!(system, state.V, state.omega) # Pre-allocated version for efficiency
+
+    # Update circulations
+    system.circulations = Γ
+    update_circulations!(circulations(system), surfs)
+
+    # Compute forces
+    compute_surface_forces!.(surfs, Ref(system), Ref(state.V), Ref(state.omega), state.rho_ref)
+    compute_surface_moments!.(surfs, Ref(state.r_ref))
+    compute_farfield_forces!.(surfs, state.U, state.alpha, state.beta, state.rho_ref)
+
+    # Evaluate residual
+    R = evaluate_residual!(R, Γ, system)
+end
+
 ## Pure methods
 surface_force_coefficients(surf :: VLMSurface, U, ρ, S) = 
     force_coefficient.(surf.surface_forces,  dynamic_pressure(ρ, U), S)

@@ -1,3 +1,4 @@
+## Euler-Bernoulli beam tests
 using AeroMDAO
 
 ## Deflection stiffness matrix
@@ -32,3 +33,51 @@ b = [-1000, 1000]  # R2, R2
 x = A \ b
 
 M = J * [ x; zeros(2) ]
+
+## Type tests
+#==========================================================================================#
+
+# Material - Steel: https://www.steelconstruction.info/Steel_material_properties
+E     = 21e12  # Elastic modulus, N/m²
+G     = 81e9   # Shear modulus, N/m²
+σ_max = 275e6  # Yield stress, N/m²
+ρ     = 8050.  # Density, kg/m³
+ν     = 0.3    # Poisson's ratio
+steel = Material(E, G, σ_max, ρ)
+
+# Tube
+L    = 1.   # Length, m
+R    = 0.1  # Outer radius, m
+t    = 0.01 # Thickness, m
+tube = Tube(steel, L, R, t)
+
+Rs = radii(tube)
+A  = area(tube)
+Iy = moment_of_inertia(tube)
+Iz = moment_of_inertia(tube)
+J  = polar_moment_of_inertia(tube)
+
+## Stiffness matrix construction
+n  = 10
+x  = [ fill(E, n) fill(G, n) fill(A, n) fill(Iy, n) fill(Iz, n) fill(J, n) fill(L, n) ]
+
+K1 = tube_stiffness_matrix(x)
+K2 = tube_stiffness_matrix(steel, fill(tube, n))
+
+## Plotting sparse matrices
+using Plots
+unicodeplots()
+
+##
+spy(K)
+
+##
+spy(K2)
+
+## Differentiation tests
+#==========================================================================================#
+
+using ForwardDiff
+using ReverseDiff
+
+ForwardDiff.jacobian(tube_stiffness_matrix, x)
