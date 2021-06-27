@@ -2,8 +2,6 @@
 using Revise
 using AeroMDAO
 using NLsolve
-using StaticArrays
-using BenchmarkTools
 
 ## System setup
 #==========================================================================================#
@@ -122,8 +120,8 @@ solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, surfs, state, 
            )
 
 ## Check numbers
-lift        = sum(sum ∘ surface_forces, values(surfs))[3]
-load_fac    = lift / weight
+lift     = sum(sum ∘ surface_forces, values(surfs))[3]
+load_fac = lift / weight
 
 println("Load factor: $load_fac")
 println("Weight: $weight N")
@@ -165,7 +163,6 @@ println("Weight: $weight N")
 println("Lift: $lift N")
 println("Speed: $(state.U) m/s")
 println("Angle of attack: $(rad2deg(state.alpha))ᵒ")
-
 
 ## Plotting
 #==========================================================================================#

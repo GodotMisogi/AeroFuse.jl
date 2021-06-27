@@ -2,9 +2,7 @@
 using Revise
 using AeroMDAO
 using NLsolve
-using StaticArrays
 using DataFrames
-using BenchmarkTools
 
 ## Lifting surfaces setup
 #==========================================================================================#
@@ -128,8 +126,8 @@ solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, (collect ∘ v
            )
 
 ## Check numbers
-lift        = sum(sum ∘ surface_forces, values(surfs))[3]
-load_fac    = lift / weight
+lift     = sum(sum ∘ surface_forces, values(surfs))[3]
+load_fac = lift / weight
 
 println("Load factor: $load_fac")
 println("Weight: $weight N")
