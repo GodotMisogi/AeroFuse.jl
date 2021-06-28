@@ -178,7 +178,7 @@ solve_case(wing                   :: Union{Wing, HalfWing},
 
 The method uses the planform of the wing to compute the horseshoe elements, and the camber distribution to compute the normal vectors for the analyses. The user can specify the distribution of spanwise panels as a vector depending on the number of sections, and the relevant reference values. If geometric ones are not provided, i.e. the reference span, chord, and area, then the function will automatically calculate them using the properties of the wing as shown previously.
 
-A "viscous" analysis is also supported using traditional wetted-area methods based on the equivalent skin-friction drag formulation of Schlichting, which have limited applicability (α = β = 0). The transition locations over each section can be specified as a vector of the normalized local average chord lengths of each section, or alternatively as a number for fixing it at approximately the same local average location over all sections.
+A "viscous" analysis is also supported using traditional wetted-area methods based on the equivalent skin-friction drag formulation of Schlichting, which have limited applicability due to their reliance on empirical form factors. The transition locations over each section can be specified as a vector of fractions of the normalized local average chord lengths of each section, or alternatively as a number for fixing it at approximately the same local average fraction over all sections.
 
 It returns the nearfield and farfield coefficients, the non-dimensionalised force and moment coefficients over the panels, the panels used for the horseshoe elements, the camber panels, the horseshoe elements used for plotting streamlines, and the associated vortex strengths `Γs` corresponding to the solution of the system. The following [example script](vortex_lattice_method/vlm_wing.jl) is provided for reference.
 ```julia
@@ -195,10 +195,10 @@ nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs =
                x_tr      = [0.3, 0.3]);
 ```
 
-You can pretty-print the aerodynamic coefficients with the following function, whose first argument provides the name of the wing:
+You can pretty-print the aerodynamic coefficients with the following function, whose last optional argument provides the name of the wing:
 
 ```julia
-print_coefficients("My Wing", nf_coeffs, ff_coeffs)
+print_coefficients(nf_coeffs, ff_coeffs, "My Wing")
 ```
 
 If the viscous option is enabled, this function also prints the pressure, induced, and total drags separately.
@@ -221,10 +221,10 @@ nf_coeffs, ff_coeffs, dv_coeffs =
                          x_tr      = [0.3, 0.3]);
 ```
 
-You can pretty-print the stability derivatives with the following function, whose first argument again provides the name of the wing:
+You can pretty-print the stability derivatives with the following function, whose last argument again optioanlly provides the name of the wing:
 
 ```julia
-print_derivatives("Wing", dv_coeffs)
+print_derivatives(dv_coeffs, "Wing")
 ```
 
 ### Aircraft Analysis
@@ -296,9 +296,9 @@ vtail_panels = panel_wing(vtail, [6], 5;
 To prepare the analyses, you will have to assemble this information into a dictionary, where the keys are the names of the components.
 
 ```julia
-aircraft = Dict("Wing" 			  	=> wing_panels,
-                "Horizontal Tail" 	=> htail_panels,
-                "Vertical Tail"   	=> vtail_panels)
+aircraft = Dict("Wing"            => wing_panels,
+                "Horizontal Tail" => htail_panels,
+                "Vertical Tail"   => vtail_panels)
 ```
 
 Very similarly to the wing-only case, there is an associated `solve_case()` method which takes a dictionary of the panels and normal vectors, and the reference data for computing the non-dimensional coefficients:

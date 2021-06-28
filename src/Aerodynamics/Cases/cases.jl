@@ -134,7 +134,7 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
     data  	= [ name_data ;	# Aircraft data
                 comp_data ]	# Component data
 
-    Dict(names .=> data)
+    OrderedDict(names .=> data)
 end
 
 # Mutating version

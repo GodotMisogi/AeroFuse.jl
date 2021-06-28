@@ -33,8 +33,8 @@ function compute_loads(forces, r1s, r2s)
     moments = adjacent_joiner(M1s, M2s)
 
     # Boundary condition, setting F = 0 at center of wing
-    # n = ceil(Int, length(horses) / 2) + 1
-    # forces[n-1:n+1] .-= forces[n-1:n+1];
+    n = ceil(Int, length(horses) / 2) + 1
+    forces[n-1:n+1] .-= forces[n-1:n+1];
 
     # Assembly
     Fx = getindex.(forces, 1)
@@ -132,14 +132,16 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_surfs :: V
     # Aerodynamic residuals
     aero_state.alpha = x[end]
     solve_aerodynamic_residual!(R_A, Γ, aero_system, aero_surfs, aero_state)
-
-    # println("Angle of attack: $(aero_state.alpha)")
-    # display(Γ)
     
     # Compute forces
     forces = aerodynamic_forces(aero_surfs)
-    F      = compute_loads(forces, r1s, r2s)
-    L      = total_force(aero_surfs)[3]
+
+    # The forces need to be transformed into the principal axes of the finite-elements...
+    # Also need to consider boundary conditions...
+    F = compute_loads(forces, r1s, r2s)
+
+    # Compute lift for load factor residual
+    L = total_force(aero_surfs)[3]
 
     # Structural residuals
     solve_beam_residual!(R_S, stiffness_matrix, δ, F)
@@ -195,6 +197,7 @@ print_coefficients(aero_surfs[1], aero_state);
 
 horses  = horseshoes(aero_system)
 Γ_0     = circulations(aero_system)
+normies = normals(aero_system)
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -212,7 +215,7 @@ E     = 70e9  # Elastic modulus, N/m²
 G     = 30e9  # Shear modulus, N/m²
 σ_max = 200e6 # Yield stress with factor of safety 2.5, N/m²
 ρ     = 3e3   # Density, kg/m³
-ν     = 0.3   # Poisson's ratio
+ν     = 0.3   # Poisson's ratio (UNUSED FOR NOW)
 R     = 1e-1  # Outer radius, m
 t     = 1e-3  # Thickness, m
 
@@ -239,6 +242,7 @@ x0   = [ Γ_0; Δx; aero_state.alpha ]
 res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
+                         extended_trace = true,
                         #  autodiff   = :forward,
                         )
 
@@ -273,7 +277,6 @@ plot!(wing_plan, color = :blue, label = :none)
 plot!()
 
 hs_pts  = bound_leg_center.(horses)
-normies = normals(aero_system)
 
 quiver!(getindex.(hs_pts, 1)[:], getindex.(hs_pts, 2)[:], getindex.(hs_pts, 3)[:], quiver=(getindex.(normies, 1)[:], getindex.(normies, 2)[:], getindex.(normies, 3)[:]), color = :orange)
 

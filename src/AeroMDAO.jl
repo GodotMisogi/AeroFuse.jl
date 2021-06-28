@@ -1,11 +1,13 @@
 module AeroMDAO
 
-#----------------------IMPORTS--------------------------------#
+## Libraries
+#==========================================================================================#
+
 using LinearAlgebra
 using StaticArrays
 using CoordinateTransformations, Rotations
 using ForwardDiff, DiffResults
-using PrettyTables
+using PrettyTables, OrderedCollections
 
 ## Math tools
 #==========================================================================================#
