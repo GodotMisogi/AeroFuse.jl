@@ -118,9 +118,9 @@ println("AeroMDAO Aircraft Stateful -")
                               spacing  = "cosine"
                              )
 
-    aircraft = Dict("Wing" 			  	=> wing_panels,
-                    "Horizontal Tail" 	=> htail_panels,
-                    "Vertical Tail"   	=> vtail_panels)
+    aircraft = Dict("Wing"            => wing_panels,
+                    "Horizontal Tail" => htail_panels,
+                    "Vertical Tail"   => vtail_panels)
     
     ρ       = 1.225
     x_ref   = [0.5, 0., 0.]
@@ -138,7 +138,7 @@ println("AeroMDAO Aircraft Stateful -")
                      span_ref  = b);
 
     # Solve system
-    system, surfs = solve_case!(aircraft, state)
+    system, surfs = solve_case(aircraft, state)
     coeffs = aerodynamic_coefficients(surfs, state)
     nf, ff = coeffs["Aircraft"]
 
@@ -206,10 +206,10 @@ println("BYU FLOW Lab VortexLattice.jl - ")
     Vinf = 1.0
     ref = Reference(Sref, cref, bref, rref, Vinf)
 
-    alpha = 5.0*pi/180
+    alph = 5.0*pi/180
     beta = 0.0
     Omega = [0.0; 0.0; 0.0]
-    fs = VortexLattice.Freestream(Vinf, alpha, beta, Omega)
+    fs = VortexLattice.Freestream(Vinf, alph, beta, Omega)
 
     symmetric = [false, false, false]
 
@@ -220,14 +220,14 @@ println("BYU FLOW Lab VortexLattice.jl - ")
     # generate surface panels for horizontal tail
     hgrid, htail = wing_to_surface_panels(xle_h, yle_h, zle_h, chord_h, theta_h, phi_h, ns_h, nc_h;
         mirror=mirror_h, fc=fc_h, spacing_s=spacing_s_h, spacing_c=spacing_c_h)
-    translate!(hgrid, [4.0, 0.0, 0.0])
-    translate!(htail, [4.0, 0.0, 0.0])
+    VortexLattice.translate!(hgrid, [4.0, 0.0, 0.0]) # Plots also exports translate! -_-
+    VortexLattice.translate!(htail, [4.0, 0.0, 0.0]) # Plots also exports translate! -_-
 
     # generate surface panels for vertical tail
     vgrid, vtail = wing_to_surface_panels(xle_v, yle_v, zle_v, chord_v, theta_v, phi_v, ns_v, nc_v;
         mirror=mirror_v, fc=fc_v, spacing_s=spacing_s_v, spacing_c=spacing_c_v)
-    translate!(vgrid, [4.0, 0.0, 0.0])
-    translate!(vtail, [4.0, 0.0, 0.0])
+    VortexLattice.translate!(vgrid, [4.0, 0.0, 0.0]) # Plots also exports translate! -_-
+    VortexLattice.translate!(vtail, [4.0, 0.0, 0.0]) # Plots also exports translate! -_-
 
     # display(size.([ wing, htail, vtail ])) # Checking sizes
 

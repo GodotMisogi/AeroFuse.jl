@@ -5,18 +5,7 @@ Wing:            (20, 40)
 Horizontal Tail: (12, 24)
 Vertical Tail:   (10, 12)
 
-AeroMDAO Aircraft Stateful -
-BenchmarkTools.Trial: 
-  memory estimate:  29.23 MiB
-  allocs estimate:  67406
-  --------------
-  minimum time:     183.062 ms (0.00% GC)
-  median time:      192.054 ms (2.07% GC)
-  mean time:        197.398 ms (1.66% GC)
-  maximum time:     253.728 ms (2.25% GC)
-  --------------
-  samples:          26
-  evals/sample:     1
+1. Laptop i7-7700HQ, 1.9 GHz?:
 
 AeroMDAO Aircraft Functional -
 BenchmarkTools.Trial: 
@@ -55,4 +44,47 @@ BenchmarkTools.Trial:
   maximum time:     307.036 ms (2.56% GC)
   --------------
   samples:          18
+  evals/sample:     1
+
+
+
+2. Desktop i7-8700, 3.2 GHz:
+
+AeroMDAO Aircraft Functional -
+BenchmarkTools.Trial: 
+  memory estimate:  29.23 MiB
+  allocs estimate:  66553
+  --------------
+  minimum time:     142.115 ms (0.00% GC)
+  median time:      145.739 ms (0.00% GC)
+  mean time:        148.391 ms (1.85% GC)
+  maximum time:     161.067 ms (7.28% GC)
+  --------------
+  samples:          34
+  evals/sample:     1
+
+AeroMDAO Aircraft Stateful -
+BenchmarkTools.Trial: 
+  memory estimate:  29.23 MiB
+  allocs estimate:  67455
+  --------------
+  minimum time:     143.469 ms (0.00% GC)
+  median time:      148.195 ms (0.00% GC)
+  mean time:        149.281 ms (1.84% GC)
+  maximum time:     162.487 ms (6.00% GC)
+  --------------
+  samples:          34
+  evals/sample:     1
+
+BYU FLOW Lab VortexLattice.jl - 
+BenchmarkTools.Trial: 
+  memory estimate:  32.47 MiB
+  allocs estimate:  147444
+  --------------
+  minimum time:     218.026 ms (0.00% GC)
+  median time:      227.592 ms (0.00% GC)
+  mean time:        232.875 ms (1.97% GC)
+  maximum time:     288.597 ms (9.00% GC)
+  --------------
+  samples:          22
   evals/sample:     1
