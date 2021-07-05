@@ -84,7 +84,7 @@ load_factor_residual(L, W, n) = L - n * W
 
 function load_factor_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
     # Evaluate aerodynamics
-    solve_case!(system, surfs, state)
+    evaluate_case!(system, surfs, state)
 
     # Compute lift
     lift = body_to_wind_axes(sum(sum ∘ surface_forces, surfs), state.alpha, state.beta)[3]
@@ -105,7 +105,7 @@ end
 system, surfs = build_system(aircraft)
 weight        = 15 * 9.81
 load_factor   = 1.0
-state.U       = 25.
+state.speed       = 25.
 state.rho_ref = 0.98
 x             = [ state.alpha ]
 
@@ -126,14 +126,14 @@ load_fac = lift / weight
 println("Load factor: $load_fac")
 println("Weight: $weight N")
 println("Lift: $lift N")
-println("Speed: $(state.U) m/s")
+println("Speed: $(state.speed) m/s")
 println("Angle of attack: $(rad2deg(state.alpha))ᵒ")
 
 ## Speed residual
 #==========================================================================================#
 
 function solve_speed_residual!(R, x, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
-    state.U = x[1]
+    state.speed = x[1]
     R .= load_factor_case!(system, surfs, state, weight, load_factor)
 end
 
@@ -142,7 +142,7 @@ weight        = 15 * 9.81
 load_factor   = 1.5
 state.alpha   = deg2rad(3.)
 state.rho_ref = 1.1
-x             = [ state.U ]
+x             = [ state.speed ]
 
 # Nonlinear solution
 solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, surfs, state, weight, load_factor)
@@ -161,7 +161,7 @@ load_fac = lift / weight
 println("Load factor: $load_fac")
 println("Weight: $weight N")
 println("Lift: $lift N")
-println("Speed: $(state.U) m/s")
+println("Speed: $(state.speed) m/s")
 println("Angle of attack: $(rad2deg(state.alpha))ᵒ")
 
 ## Plotting

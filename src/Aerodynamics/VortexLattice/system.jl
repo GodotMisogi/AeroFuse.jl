@@ -1,8 +1,8 @@
 mutable struct VLMState{T <: Real}
-	U         :: T
+	speed     :: T
     alpha     :: T
     beta      :: T
-    V         :: SVector{3,T}
+    velocity  :: SVector{3,T}
     omega     :: SVector{3,T}
 	r_ref 	  :: SVector{3,T}
 	rho_ref   :: T
@@ -13,9 +13,9 @@ mutable struct VLMState{T <: Real}
     VLMState(U, α, β, Ω :: AbstractVector{T} = zeros(3); r_ref = zeros(3), rho_ref = 1.225, area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") where T <: Real = new{T}(U, α, β, freestream_to_cartesian(-U, α, β), SVector(Ω...), SVector(r_ref...), rho_ref, area_ref, chord_ref, span_ref, name)
 end
 
-rate_coefficient(state :: VLMState) = rate_coefficient(state.omega, state.U, state.span_ref, state.chord_ref)
+rate_coefficient(state :: VLMState) = rate_coefficient(state.omega, state.speed, state.span_ref, state.chord_ref)
 update_velocity!(state :: VLMState) = 
-    state.V = freestream_to_cartesian(-state.U, state.alpha, state.beta)
+    state.velocity = freestream_to_cartesian(-state.speed, state.alpha, state.beta)
 
 name(state :: VLMState) = state.name
 
@@ -176,21 +176,21 @@ function compute_farfield_forces!(surface :: VLMSurface, U, α, β, ρ);
     surface.farfield_forces = trefftz_compute(Δφs, Δs, ∂φ_∂n, θs, U, ρ) 
 end
 
-function solve_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState)
+function evaluate_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState)
     # Update state velocity
     update_velocity!(state)
     
     # Assemble and solve matrix system
-    # compute_influence_matrix!(system, state.V)
-    # compute_boundary_condition!(system, state.V, state.omega)
-    generate_system!(system, state.V, state.omega) # Pre-allocated version for efficiency
+    # compute_influence_matrix!(system, state.velocity)
+    # compute_boundary_condition!(system, state.velocity, state.omega)
+    generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
     solve_system!(system)
     update_circulations!(circulations(system), surfs)
 
     # Evaluate forces
-    compute_surface_forces!.(surfs, Ref(system), Ref(state.V), Ref(state.omega), state.rho_ref)
+    compute_surface_forces!.(surfs, Ref(system), Ref(state.velocity), Ref(state.omega), state.rho_ref)
     compute_surface_moments!.(surfs, Ref(state.r_ref))
-    compute_farfield_forces!.(surfs, state.U, state.alpha, state.beta, state.rho_ref)
+    compute_farfield_forces!.(surfs, state.speed, state.alpha, state.beta, state.rho_ref)
 
     system, surfs, state
 end
@@ -200,16 +200,16 @@ function solve_aerodynamic_residual!(R, Γ, system :: VLMSystem, surfs :: Vector
     update_velocity!(state)
 
     # Assemble matrix system
-    generate_system!(system, state.V, state.omega) # Pre-allocated version for efficiency
+    generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
 
     # Update circulations
     system.circulations = Γ
     update_circulations!(circulations(system), surfs)
 
     # Compute forces
-    compute_surface_forces!.(surfs, Ref(system), Ref(state.V), Ref(state.omega), state.rho_ref)
+    compute_surface_forces!.(surfs, Ref(system), Ref(state.velocity), Ref(state.omega), state.rho_ref)
     compute_surface_moments!.(surfs, Ref(state.r_ref))
-    compute_farfield_forces!.(surfs, state.U, state.alpha, state.beta, state.rho_ref)
+    compute_farfield_forces!.(surfs, state.speed, state.alpha, state.beta, state.rho_ref)
 
     # Evaluate residual
     R = evaluate_residual!(R, Γ, system)
@@ -247,16 +247,93 @@ function aerodynamic_coefficients(surfs, state :: VLMState)
 end
 
 # State versions
-surface_force_coefficients(surf :: VLMSurface, state :: VLMState)  = surface_force_coefficients(surf, state.U, state.rho_ref, state.area_ref)
+surface_force_coefficients(surf :: VLMSurface, state :: VLMState)  = surface_force_coefficients(surf, state.speed, state.rho_ref, state.area_ref)
 
-surface_moment_coefficients(surf :: VLMSurface, state :: VLMState) = surface_moment_coefficients(surf, state.U, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
+surface_moment_coefficients(surf :: VLMSurface, state :: VLMState) = surface_moment_coefficients(surf, state.speed, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
 
-nearfield_coefficients(surf :: VLMSurface, state :: VLMState) = nearfield_coefficients(surf, state.U, state.alpha, state.beta, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
+nearfield_coefficients(surf :: VLMSurface, state :: VLMState) = nearfield_coefficients(surf, state.speed, state.alpha, state.beta, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
 
-farfield_coefficients(surf :: VLMSurface, state :: VLMState)  = farfield_coefficients(surf, state.U, state.rho_ref, state.area_ref)
+farfield_coefficients(surf :: VLMSurface, state :: VLMState)  = farfield_coefficients(surf, state.speed, state.rho_ref, state.area_ref)
 
 ## Residual setup
 #=============================================#
 
 evaluate_residual!(R, Γ, system :: VLMSystem) =
     R .= AIC(system) * Γ - RHS(system)
+
+
+
+"""
+    solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, freestream :: Freestream, r_ref, ρ = 1.225; symmetry = false)
+
+Evaluate a vortex lattice case given an array of `Panel3D`s with associated normal vectors (not necessarily the same as the panels' normals), a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments.
+"""
+function evaluate_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref, r_ref)
+    # Make horseshoes and collocation points
+    horseshoes = horseshoe_line.(horseshoe_panels)
+
+    # Solve system
+    Γs = reshape(solve_system(horseshoes[:], normals[:], U, Ω), size(horseshoe_panels))
+
+    # Compute forces and moments
+    surface_forces, surface_moments, trefftz_force = case_dynamics(Γs, horseshoes, U, α, β, Ω, rho_ref, r_ref)
+
+    # Compute aerodynamic coefficients
+    nearfield_coeffs, farfield_coeffs, CFs, CMs = evaluate_coefficients(surface_forces, surface_moments, trefftz_force, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref)
+
+    nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs
+end
+
+function evaluate_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref, name) where T <: Real
+    # Get panels
+    meshes = values(components)
+    
+    # Flattening for VLM
+    horseshoe_panels = first.(meshes)
+    normals          = last.(meshes)
+    horsies          = reduce(vcat, vec.(horseshoe_panels))
+    normies          = reduce(vcat, vec.(normals))
+
+    # Get required vortex lattice variables, i.e. horseshoes, collocation points and normals
+    horseshoes = horseshoe_line.(horsies)
+    horseshoes_arr = [ horseshoe_line.(horses) for horses in horseshoe_panels ]
+
+    # Solve system
+    Γs = solve_system(horseshoes, normies, U, Ω)
+
+    # Reshaping
+    panel_sizes = size.(horseshoe_panels)
+    panel_inds 	= [ 0; cumsum(prod.(panel_sizes)) ]
+    Γs_arr 		= reshape_array(Γs, panel_inds, panel_sizes)
+
+    # Compute forces and moments
+    results = case_dynamics.(Γs_arr, horseshoes_arr, Ref(Γs), Ref(horseshoes), Ref(U), α, β, Ref(Ω), rho_ref, Ref(r_ref))
+    forces  = getindex.(results, 1)
+    moments = getindex.(results, 2) 
+    trefftz = getindex.(results, 3)
+
+    # Components' non-dimensional forces and moments
+    data = evaluate_coefficients.(forces, moments, trefftz, Ref(U), α, β, Ref(Ω), rho_ref, area_ref, chord_ref, span_ref)
+
+    nf_comp_coeffs = getindex.(data, 1)
+    ff_comp_coeffs = getindex.(data, 2)
+    CFs            = getindex.(data, 3)
+    CMs            = getindex.(data, 4)
+
+    # Aircraft's non-dimensional forces and moments
+    nf_coeffs = reduce((x, y) -> x .+ y, nf_comp_coeffs) # Sum nearfield coefficients
+    ff_coeffs = reduce((x, y) -> x .+ y, ff_comp_coeffs) # Sum farfield coefficients
+    name_CFs  = reduce(vcat, vec.(CFs))                  # Collect surface force coefficients
+    name_CMs  = reduce(vcat, vec.(CMs))                  # Collect surface moment coefficients
+
+    # Dictionary assembly
+    name_data = (nf_coeffs, ff_coeffs, name_CFs, name_CMs, horsies, normies, horseshoes, Γs)
+    comp_data = tuple.(nf_comp_coeffs, ff_comp_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes_arr, Γs_arr)
+
+    names 	= [ name						 ; # Aircraft name
+                (collect ∘ keys)(components) ] # Component names
+    data  	= [ name_data ;	# Aircraft data
+                comp_data ]	# Component data
+
+    OrderedDict(names .=> data)
+end

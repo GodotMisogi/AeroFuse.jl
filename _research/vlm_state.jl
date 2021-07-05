@@ -112,7 +112,7 @@ function vlm_state_derivatives(fs)
                          span_ref = b,
                          name = ac_name);
 
-        freestream_to_cartesian(-state.U, state.alpha, state.beta)
+        freestream_to_cartesian(-state.speed, state.alpha, state.beta)
     end
 
     V, α, β, Ω = fs.V, fs.alpha, fs.beta, fs.omega

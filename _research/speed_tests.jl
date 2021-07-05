@@ -15,35 +15,35 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
 
 # Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
-                chords    = [0.7, 0.42],
-                twists    = [0.0, 0.0],
-                spans     = [1.25],
-                dihedrals = [0.],
-                sweep_LEs = [6.39])
+             chords    = [0.7, 0.42],
+             twists    = [0.0, 0.0],
+             spans     = [1.25],
+             dihedrals = [0.],
+             sweep_LEs = [6.39])
 
 # Vertical tail
 vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
-                    chords    = [0.7, 0.42],
-                    twists    = [0.0, 0.0],
-                    spans     = [1.0],
-                    dihedrals = [0.],
-                    sweep_LEs = [7.97])
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.0],
+                 dihedrals = [0.],
+                 sweep_LEs = [7.97])
 
 wing_panels  = panel_wing(wing, 20, 10, spacing = "cosine")
 
 htail_panels = panel_wing(htail, 6, 6;
-                            position = [4., 0, 0],
-                            angle    = deg2rad(0.),
-                            axis 	   = [0., 1., 0.],
-                            spacing  = "cosine"
-                            )
+                          position = [4., 0, 0],
+                          angle    = deg2rad(0.),
+                          axis 	   = [0., 1., 0.],
+                          spacing  = "cosine"
+                         )
 
 vtail_panels = panel_wing(vtail, 6, 5; 
-                            position = [4., 0, 0],
-                            angle    = π/2, 
-                            axis 	   = [1., 0., 0.],
-                            spacing  = "cosine"
-                            )
+                          position = [4., 0, 0],
+                          angle    = π/2, 
+                          axis 	   = [1., 0., 0.],
+                          spacing  = "cosine"
+                         )
 
 aircraft = Dict("Wing"            => wing_panels,
                 "Horizontal Tail" => htail_panels,
@@ -60,13 +60,13 @@ S, b, c = 9.0, 10.0, 0.9
 # Stateful
 function alpha_sweep!(α, system :: VLMSystem, surfs, state :: VLMState)
     state.alpha = α
-    solve_case!(system, (collect ∘ values)(surfs), state)
+    evaluate_case!(system, (collect ∘ values)(surfs), state)
     aerodynamic_coefficients(surfs, state)
 end
 
 # Stateful
 println("AeroMDAO Aircraft Stateful -")
-@time begin
+@benchmark begin
     # Set up state
     state = VLMState(1., 0., 0., zeros(3); 
                      r_ref     = x_ref,  
@@ -84,7 +84,7 @@ end
 
 ## "Functional"
 println("AeroMDAO Aircraft Functional -")
-@time begin
+@benchmark begin
     # Build vector of Freestreams
     fses = Freestream.(1.0, αs, 0., Ref(zeros(3)))
 

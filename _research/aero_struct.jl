@@ -91,8 +91,9 @@ function transfer_displacements!(system :: VLMSystem, xyzs, normals, ds, θs)
     new_xyzs   = xyzs + Δxyzs
     new_pans   = make_panels(new_xyzs)
     new_horses = horseshoe_line.(new_pans) 
-    new_norms  = panel_normal.(new_pans)
-    # new_norms  = @. normals[:] + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
+    # new_norms  = panel_normal.(new_pans)
+    new_norms  = normals[:] 
+    # + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
 
     # Set new system variables
     system.horseshoes = new_horses[:]
@@ -110,7 +111,7 @@ load_factor_residual!(R, L, W, n) = R .= load_factor_residual(L, W, n)
 ## Coupled residual system
 #==========================================================================================#
 
-function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_surfs :: Vector{<: VLMSurface}, aero_state :: VLMState, xyzs, normals, stiffness_matrix, weight, load_factor)
+function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_surfs :: Vector{<: VLMSurface}, aero_state :: VLMState, xyzs, stiffness_matrix, weight, load_factor)
     n = (prod ∘ size)(horseshoes(aero_system))   # Get panel size
 
     # Unpack aerodynamic and structural variables
@@ -127,6 +128,15 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_surfs :: V
     ds, θs   = compute_displacements(δ, r1s, r2s)
 
     # The displacements needs to be transformed into the coordinate frame before transferring...
+    
+    # Panel local coordinate system
+    horsies = horseshoes(aero_system)
+    bounds  = bound_leg_vector.(hosies)
+    normals = panel_normal.(horsies)
+    streams = @. bounds × normals
+    locals  = SMatrix.()
+
+    # Compute displacements
     transfer_displacements!(aero_system, xyzs, normals, ds, θs)
 
     # Aerodynamic residuals
@@ -187,7 +197,7 @@ aero_state = VLMState(0., 0., 0., [0.0, 0.0, 0.0],
                       span_ref  = span(wing));
 
 # Test case - Fixed speed
-aero_state.U       = 20.
+aero_state.speed       = 20.
 aero_state.alpha   = deg2rad(1.)
 aero_state.rho_ref = 0.98
 
@@ -236,7 +246,7 @@ F        = compute_loads(forces, r1s, r2s)
 ## Aerostructural residual
 #==========================================================================================#
 
-solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, (collect ∘ values)(aero_surfs), aero_state, xyzs, normies, K, weight, load_factor)
+solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, (collect ∘ values)(aero_surfs), aero_state, xyzs, K, weight, load_factor)
 
 x0   = [ Γ_0; Δx; aero_state.alpha ]
 res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
@@ -253,7 +263,7 @@ load_fac = lift / weight
 println("Load factor: $load_fac")
 println("Weight: $weight N")
 println("Lift: $lift N")
-println("Speed: $(aero_state.U) m/s")
+println("Speed: $(aero_state.speed) m/s")
 println("Angle of attack: $(rad2deg(aero_state.alpha))ᵒ")
 
 ## Generate DataFrames
