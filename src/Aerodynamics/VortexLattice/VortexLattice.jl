@@ -48,14 +48,15 @@ end
 ## Force evaluations
 #==========================================================================================#
 
+# Nearfield forces
 include("nearfield.jl")
 
+# Farfield forces
 include("farfield.jl")
 
 
 ## Post-processing
 #==========================================================================================#
-
 
 """
     case_dynamics(Γ_comp, hs_comp, Γs, horseshoes, U, α, β, Ω, ρ, r_ref)
@@ -101,7 +102,9 @@ end
 # Streamlines
 include("streamlines.jl")
 
-#
+# System setups
+#==========================================================================================#
+
 include("system.jl")
 
 end

@@ -93,13 +93,13 @@ function solve_stability_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}},
     derivs 	= DiffResults.jacobian(result)
 
     # Dictionary assembly
-    ranges  = (1:num_comps) .* 9                     # Painful hacking
+    ranges  = (1:num_comps) .* 9                      # Painful hacking
     bounds  = zip([ 1; ranges[1:end-1] .+ 1], ranges) # Painful hacking
     data 	= OrderedDict(name => (vars[1:6, i], vars[7:end, i], derivs[first(inds):last(inds)-3,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds)) 
     
     # Printing
-    if print;            print_case(data, name)       end
-    if print_components; print_case.(Ref(data), names)end
+    if print;            print_case(data, name)        end
+    if print_components; print_case.(Ref(data), names) end
 
     data
 end

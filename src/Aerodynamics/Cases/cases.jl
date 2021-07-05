@@ -37,7 +37,7 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho
     normals = panel_normal.(camber_panels)
 
     # Compute forces and moments
-    nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs = evaluate_case(horseshoe_panels, normals, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref, r_ref)
+    nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs = evaluate_case(horseshoe_panels, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
     
     # Viscous drag evaluation
     if viscous
@@ -75,6 +75,10 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
 
     dict
 end
+
+# solve_case(horseshoe_panels :: Array{<: Panel3D}, normals, state :: VLMState) = solve_case(horseshoe_panels, normals, state.speed, state.alpha, state.beta, state.omega, rho_ref = state.rho_ref, r_ref = state.r_ref, area_ref = state.area_ref, chord_ref = state.chord_ref, span_ref = state.span_ref)
+
+# solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) = evaluate_case(components, state.speed, state.alpha, state.beta, state.omega, rho_ref = state.rho_ref, r_ref = state.r_ref, area_ref = state.area_ref, chord_ref = state.chord_ref, span_ref = state.span_ref, name)
 
 # Mutating version
 function solve_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
