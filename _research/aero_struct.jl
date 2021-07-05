@@ -131,13 +131,11 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_surfs :: V
     
     # Panel local coordinate system
     horsies = horseshoes(aero_system)
-    bounds  = bound_leg_vector.(hosies)
-    normals = panel_normal.(horsies)
-    streams = @. bounds × normals
-    locals  = SMatrix.()
+    bounds  = bound_leg_vector.(horsies)
+    normies = Ref(aero_state.velocity) .× bounds
 
     # Compute displacements
-    transfer_displacements!(aero_system, xyzs, normals, ds, θs)
+    transfer_displacements!(aero_system, xyzs, normies, ds, θs)
 
     # Aerodynamic residuals
     aero_state.alpha = x[end]
@@ -148,7 +146,13 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_surfs :: V
 
     # The forces need to be transformed into the principal axes of the finite-elements...
     # Also need to consider boundary conditions...
-    F = compute_loads(forces, r1s, r2s)
+
+    # Direction cosine transformations
+    streams = @. bounds × normies
+    glob    = reduce(hcat, fill([[1 0 0], [0 1 0], [0 0 1]], 3))
+    dircos  = [ dot.(reduce(hcat, fill([c', n', s'], 3)), glob)  for (c, n, s) in zip(bounds, normies, streams) ]
+    F_S     = dircos .* forces
+    F       = compute_loads(F_S, r1s, r2s)
 
     # Compute lift for load factor residual
     L = total_force(aero_surfs)[3]
@@ -232,13 +236,19 @@ t     = 1e-3  # Thickness, m
 Ls    = @. (norm ∘ bound_leg_vector)(horses) # Length, m
 
 aluminum = Material(E, G, σ_max, ρ)
-tubes = Tube.(Ref(aluminum), Ls, R, t)
+tubes    = Tube.(Ref(aluminum), Ls, R, t)
 
 ## Stiffness matrix setup
 K        = tube_stiffness_matrix(aluminum, tubes)
 forces   = aerodynamic_forces(aero_surfs)
 r1s, r2s = (points ∘ horseshoes)(aero_system)
-F        = compute_loads(forces, r1s, r2s)
+
+# Direction cosine matrix transformation
+streams  = @. bounds × normies
+glob     = reduce(hcat, fill([[1 0 0], [0 1 0], [0 0 1]], 3))
+dircos   = [ dot.(reduce(hcat, fill([c', n', s'], 3)), glob)  for (c, n, s) in zip(bounds, normies, streams) ]
+F_S      = dircos .* forces
+F        = compute_loads(F_S, r1s, r2s)
 
 # Generate initial guess from structural-only analysis
 Δx       = K \ F
@@ -252,7 +262,7 @@ x0   = [ Γ_0; Δx; aero_state.alpha ]
 res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
-                         extended_trace = true,
+                        #  extended_trace = true,
                         #  autodiff   = :forward,
                         )
 
