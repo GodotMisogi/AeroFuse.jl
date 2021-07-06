@@ -201,7 +201,7 @@ aero_state = VLMState(0., 0., 0., [0.0, 0.0, 0.0],
                       span_ref  = span(wing));
 
 # Test case - Fixed speed
-aero_state.speed       = 20.
+aero_state.speed   = 20.
 aero_state.alpha   = deg2rad(1.)
 aero_state.rho_ref = 0.98
 
