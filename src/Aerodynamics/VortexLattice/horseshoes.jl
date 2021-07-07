@@ -12,7 +12,7 @@ Compute the 3-quarter point between two points in the x-z plane.
 three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
 
 collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
-bound_leg(p1, p2, p3, p4) = (quarter_point(p1, p2), quarter_point(p4, p3))
+bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2), quarter_point(p4, p3) ]
 
 """
     bound_leg(panel :: Panel3D)

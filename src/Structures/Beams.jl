@@ -1,6 +1,7 @@
 module Beams
 
 using SparseArrays
+using StaticArrays
 
 abstract type AbstractBeam end
 
@@ -68,21 +69,21 @@ end
 J_coeffs(A, B, L) = A * B / L .* [ 1 -1; -1  1 ]
 
 Iyy_coeffs(E, I, L) = let k0 = 12, k1 = 6L, k2 = 2L^2;
-    E * I / L^3 .* [  k0 -k1 -k0 -k1 ;
-                     -k1 2k2  k1  k2 ;
-                     -k0  k1  k0  k1 ;
-                     -k1  k2  k1 2k2 ] end
+    E * I / L^3 .* @SMatrix [  k0 -k1 -k0 -k1 ;
+                              -k1 2k2  k1  k2 ;
+                              -k0  k1  k0  k1 ;
+                              -k1  k2  k1 2k2 ] end
 
 Izz_coeffs(E, I, L) = let k0 = 12, k1 = 6L, k2 = 2L^2;
-    E * I / L^3 .* [  k0  k1 -k0  k1 ;
-                      k1 2k2 -k1  k2 ;
-                     -k0 -k1  k0 -k1 ;
-                      k1  k2 -k1 2k2 ] end
+    E * I / L^3 .* @SMatrix [  k0  k1 -k0  k1 ;
+                               k1 2k2 -k1  k2 ;
+                              -k0 -k1  k0 -k1 ;
+                               k1  k2 -k1 2k2 ] end
 
 ## Composite deflection stiffness matrix of adjacent beam elements
 function deflection_stiffness_matrix(Es, Is, Ls, direction = :z)
     n = length(Es)
-    mat = zeros(2(n+1), 2(n+1))
+    mat = @MMatrix zeros(2(n+1), 2(n+1))
     block_size = CartesianIndices((4,4))
 
     for (c_ind, E, I, L) in zip(CartesianIndex.(0:2:2(n-1), 0:2:2(n-1)), Es, Is, Ls)
@@ -96,7 +97,7 @@ end
 ## Composite torsional stiffness matrix for adjacent beam elements
 function torsional_stiffness_matrix(Es, Is, Ls)
     n = length(Es)
-    mat = zeros(n+1, n+1)
+    mat = @MMatrix zeros(n+1, n+1)
     block_size = CartesianIndices((2,2))
 
     for (c_ind, E, I, L) in zip(CartesianIndex.(0:n-1, 0:n-1), Es, Is, Ls)
@@ -123,12 +124,14 @@ function tube_stiffness_matrix(Es :: AbstractVector{T}, Gs :: AbstractVector{T},
     K   = blockdiag(Iys, Izs, As, Js)
 end
 
+tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J :: Real, L :: Real, num :: Integer) = tube_stiffness_matrix(fill(E, num), fill(G, num), fill(A, num), fill(Iy, num), fill(Iz, num), fill(J, num), fill(L / num, num))
+
 function tube_stiffness_matrix(x :: AbstractMatrix{<: Real}) 
     @assert size(x)[2] == 7 "Input must have 7 columns."
     @views tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
 end
 
-function tube_stiffness_matrix(mat :: Material, tubes :: Vector{<: Tube})
+function tube_stiffness_matrix(mat :: Material, tubes :: Vector{<: Tube}, num :: Vector{<: Integer})
     n    = length(tubes)
     As   = area.(tubes)
     Js   = polar_moment_of_inertia.(tubes)
@@ -140,7 +143,7 @@ function tube_stiffness_matrix(mat :: Material, tubes :: Vector{<: Tube})
     E = fill(elastic_modulus(mat), n)
     G = fill(shear_modulus(mat), n)
 
-    tube_stiffness_matrix(E, G, As, Iyys, Izzs, Js, Ls)
+    blockdiag(tube_stiffness_matrix.(E, G, As, Iyys, Izzs, Js, Ls, num)...)
 end
 
 end

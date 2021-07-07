@@ -22,6 +22,21 @@ points(horses) = @. r1(bound_leg_center(horses), horses)[:], r2(bound_leg_center
 
 total_force(surfs) = sum(sum ∘ surface_forces, surfs) 
 
+function assemble_fem_dynamics(pt_forces, pt_moments)
+    Fx = getindex.(pt_forces,  1)
+    Fy = getindex.(pt_forces,  2)
+    Fz = getindex.(pt_forces,  3)
+    Mx = getindex.(pt_moments, 1)
+    My = getindex.(pt_moments, 2)
+    Mz = getindex.(pt_moments, 3)
+
+    py = (collect ∘ Iterators.flatten ∘ zip)(Fy, My)
+    pz = (collect ∘ Iterators.flatten ∘ zip)(Fz, Mz)
+    px = [ Fx[:]; Mx[:] ]
+
+    F  = [ py; pz; px ]
+end
+
 function compute_loads(forces, r1s, r2s)
     # Aerodynamic forces
     half_forces = @. forces / 2
@@ -36,19 +51,7 @@ function compute_loads(forces, r1s, r2s)
     n = ceil(Int, length(horses) / 2) + 1
     forces[n-1:n+1] .-= forces[n-1:n+1];
 
-    # Assembly
-    Fx = getindex.(forces, 1)
-    Fy = getindex.(forces, 2)
-    Fz = getindex.(forces, 3)
-    Mx = getindex.(moments, 1)
-    My = getindex.(moments, 2)
-    Mz = getindex.(moments, 3)
-
-    py = (collect ∘ Iterators.flatten ∘ zip)(Fy, My)
-    pz = (collect ∘ Iterators.flatten ∘ zip)(Fz, Mz)
-    px = [ Fx[:]; Mx[:] ]
-
-    [ py; pz; px ]
+    assemble_fem_dynamics(forces, moments)
 end
 
 ## Structural analysis

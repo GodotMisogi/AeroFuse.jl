@@ -65,8 +65,7 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
     # Printing if needed
     if print_components
         vals = [ dict[key][1:2] for key in keys(dict) ]
-        nf_comp_coeffs = getindex.(vals, 1)
-        ff_comp_coeffs = getindex.(vals, 2)
+        nf_comp_coeffs, ff_comp_coeffs = getindex.(vals, 1), getindex.(vals, 2)
         print_coefficients.(nf_comp_coeffs, ff_comp_coeffs)
     elseif print
         nf_coeffs, ff_coeffs = dict[name][1:2] 
@@ -75,6 +74,8 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
 
     dict
 end
+
+## State cases
 
 # solve_case(horseshoe_panels :: Array{<: Panel3D}, normals, state :: VLMState) = solve_case(horseshoe_panels, normals, state.speed, state.alpha, state.beta, state.omega, rho_ref = state.rho_ref, r_ref = state.r_ref, area_ref = state.area_ref, chord_ref = state.chord_ref, span_ref = state.span_ref)
 
