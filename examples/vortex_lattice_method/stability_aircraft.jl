@@ -3,7 +3,7 @@ using AeroMDAO
 using LinearAlgebra # For norm()
 
 # Lifting surfaces
-wing  = WingSection(span       = 4.0,
+wing  = WingSection(span       = 8.0,
                     dihedral   = 5.0,
                     sweep_LE   = 15.0,
                     taper      = 0.4,
@@ -19,7 +19,7 @@ wing_plan = plot_wing(wing;
 
 print_info(wing, "Wing")
 
-htail = WingSection(span       = 1.0,
+htail = WingSection(span       = 2.0,
                     dihedral   = 0.0,
                     sweep_LE   = 15.0,
                     taper      = 0.6,

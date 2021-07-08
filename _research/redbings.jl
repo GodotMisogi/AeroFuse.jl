@@ -9,7 +9,7 @@ using NLsolve
 # Define lifting surfaces
 wing = WingSection(root_foil  = naca4((2,4,1,2)),
                    tip_foil   = naca4((2,4,1,2)),
-                   span       = 1.3,
+                   span       = 2.6,
                    taper      = 1.0,
                    root_chord = 0.314)
 wing_name = "Wing"
@@ -17,7 +17,7 @@ wing_mac = mean_aerodynamic_center(wing)
 
 htail = WingSection(root_foil  = naca4((0,0,1,2)),
                     tip_foil   = naca4((0,0,1,2)),
-                    span       = 0.435,
+                    span       = 0.87,
                     taper      = 1.0,
                     root_chord = 0.215)
 htail_name = "Horizontal Tail"

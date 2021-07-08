@@ -109,7 +109,7 @@ function torsional_stiffness_matrix(Es, Is, Ls)
 end
 
 ## Full stiffness matrix for one element
-tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J :: Real, L :: Real) = blockdiag((sparse ∘ Iy_coeffs)(E, Iy, L), (sparse ∘ Iz_coeffs)(E, Iz, L), (sparse ∘ J_coeffs)(E, A, L), (sparse ∘ J_coeffs)(G, J, L))
+tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J :: Real, L :: Real) = blockdiag((sparse ∘ Iyy_coeffs)(E, Iy, L), (sparse ∘ Izz_coeffs)(E, Iz, L), (sparse ∘ J_coeffs)(E, A, L), (sparse ∘ J_coeffs)(G, J, L))
 
 ## Composite stiffness matrix for adjacent tube finite elements
 function tube_stiffness_matrix(Es :: AbstractVector{T}, Gs :: AbstractVector{T}, As :: AbstractVector{T}, Iys :: AbstractVector{T}, Izs :: AbstractVector{T}, Js :: AbstractVector{T}, Ls :: AbstractVector{T}) where T <: Real
@@ -131,7 +131,7 @@ function tube_stiffness_matrix(x :: AbstractMatrix{<: Real})
     @views tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
 end
 
-function tube_stiffness_matrix(mat :: Material, tubes :: Vector{<: Tube}, num :: Vector{<: Integer})
+function tube_stiffness_matrix(mat :: Material, tubes :: Vector{<: Tube})
     n    = length(tubes)
     As   = area.(tubes)
     Js   = polar_moment_of_inertia.(tubes)
@@ -143,7 +143,7 @@ function tube_stiffness_matrix(mat :: Material, tubes :: Vector{<: Tube}, num ::
     E = fill(elastic_modulus(mat), n)
     G = fill(shear_modulus(mat), n)
 
-    blockdiag(tube_stiffness_matrix.(E, G, As, Iyys, Izzs, Js, Ls, num)...)
+    tube_stiffness_matrix(E, G, As, Iyys, Izzs, Js, Ls)
 end
 
 end
