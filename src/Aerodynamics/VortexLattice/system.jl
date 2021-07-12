@@ -146,11 +146,12 @@ generate_system!(system :: VLMSystem, V, Ω) =
 solve_system!(system :: VLMSystem) = 
     system.circulations = AIC(system) \ RHS(system)
 
-function update_circulations!(Γ, surfs) 
+function update_circulations!(system) 
     # Get sizes and indices for reshaping (UGLY AF)
+    surfs = surfaces(system)
     sizes = @. (size ∘ horseshoes)(surfs)
     inds  = [ 0; cumsum(prod.(sizes)) ]
-    Γs    = reshape_array(Γ, inds, sizes)
+    Γs    = reshape_array(circulations(system), inds, sizes)
 
     # Allocate surface circulations
     for (surf, Γ_vec) in zip(surfs, Γs)
@@ -189,7 +190,7 @@ function evaluate_case!(system :: VLMSystem, state :: VLMState)
     compute_boundary_condition!(system, state.velocity, state.omega)
     # generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
     solve_system!(system)
-    update_circulations!(circulations(system), surfs)
+    update_circulations!(system)
 
     # Evaluate forces
     compute_surface_forces!.(surfs, Ref(system), Ref(state.velocity), Ref(state.omega), state.rho_ref)
