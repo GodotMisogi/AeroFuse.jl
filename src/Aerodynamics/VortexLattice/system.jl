@@ -57,6 +57,7 @@ horseshoes(surf :: VLMSurface)      = surf.horseshoes
 normals(surf :: VLMSurface)         = surf.normals
 surface_forces(surf :: VLMSurface)  = surf.surface_forces
 surface_moments(surf :: VLMSurface) = surf.surface_moments
+farfield_forces(surf :: VLMSurface) = surf.farfield_forces
 circulations(surf :: VLMSurface)    = surf.circulations
 name(surf :: VLMSurface)            = surf.name
 
@@ -81,28 +82,28 @@ function compute_wake_properties!(surface :: VLMSurface, α, β)
 end
 
 mutable struct VLMSystem{T <: Real}
-    horseshoes   :: Vector{Horseshoe{T}}
-    normals      :: Vector{SVector{3,T}}
+    surfaces     :: Vector{VLMSurface{T}}
     AIC          :: Matrix{T}
     RHS          :: Vector{T}
     circulations :: Vector{T}
 end
 
-horseshoes(system :: VLMSystem)   = system.horseshoes
-normals(system :: VLMSystem)      = system.normals
+surfaces(system :: VLMSystem)     = system.surfaces
 AIC(system :: VLMSystem)          = system.AIC
 RHS(system :: VLMSystem)          = system.RHS
 circulations(system :: VLMSystem) = system.circulations
+horseshoes(system :: VLMSystem)   = reduce(vcat, (vec ∘ horseshoes).(surfaces(system)))
+normals(system :: VLMSystem)      = reduce(vcat, (vec ∘ normals).(surfaces(system)))
 
 collocation_points(system :: VLMSystem) = collocation_point.(horseshoes(system))
 
 # Initialization
-function VLMSystem{T}(horseshoes :: Vector{Horseshoe{T}}, normals :: Vector{SVector{3,T}}) where T <: Real
-    m   = length(horseshoes)
+function VLMSystem(surfaces :: AbstractVector{VLMSurface{T}}) where T <: Real
+    m   = sum(length ∘ horseshoes, surfaces)
     AIC = Matrix{T}(undef, m, m)
     RHS = Vector{T}(undef, m)
     Γs  = Vector{T}(undef, m)
-    VLMSystem{T}(horseshoes, normals, AIC, RHS, Γs)
+    VLMSystem{T}(surfaces, AIC, RHS, Γs)
 end
 
 function VLMSystem(surface :: VLMSurface{T}) where T <: Real
@@ -111,12 +112,12 @@ function VLMSystem(surface :: VLMSurface{T}) where T <: Real
     VLMSystem{T}(horsies, normies)
 end
 
-function VLMSystem(surfaces :: AbstractVector{VLMSurface{T}}) where T <: Real
-    # Flattening for system
-    horsies = reduce(vcat, (vec ∘ horseshoes).(surfaces))
-    normies = reduce(vcat, (vec ∘ normals).(surfaces))
-    VLMSystem{T}(horsies, normies)
-end
+# function VLMSystem(surfaces :: AbstractVector{VLMSurface{T}}) where T <: Real
+#     # Flattening for system
+#     horsies = reduce(vcat, (vec ∘ horseshoes).(surfaces))
+#     normies = reduce(vcat, (vec ∘ normals).(surfaces))
+#     VLMSystem{T}(horsies, normies)
+# end
 
 function build_system(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}) where T <: Real
     # Get panels and normals
@@ -127,7 +128,7 @@ function build_system(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
     surfs  = @. VLMSurface(getindex.(vals, 1), getindex.(vals, 2), names)
     system = VLMSystem(surfs)
 
-    system, surfs  # NEED TO THINK ABOUT WHETHER TO RETURN DICTIONARY OF SURFACES
+    system # NEED TO THINK ABOUT WHETHER TO RETURN DICTIONARY OF SURFACES
 end
 
 compute_horseshoes!(system :: VLMSystem, horseshoe_panels) = 
@@ -176,14 +177,17 @@ function compute_farfield_forces!(surface :: VLMSurface, U, α, β, ρ);
     surface.farfield_forces = trefftz_compute(Δφs, Δs, ∂φ_∂n, θs, U, ρ) 
 end
 
-function evaluate_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState)
+function evaluate_case!(system :: VLMSystem, state :: VLMState)
     # Update state velocity
     update_velocity!(state)
+
+    # Get surfaces
+    surfs = surfaces(system)
     
     # Assemble and solve matrix system
-    # compute_influence_matrix!(system, state.velocity)
-    # compute_boundary_condition!(system, state.velocity, state.omega)
-    generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
+    compute_influence_matrix!(system, state.velocity)
+    compute_boundary_condition!(system, state.velocity, state.omega)
+    # generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
     solve_system!(system)
     update_circulations!(circulations(system), surfs)
 
@@ -192,7 +196,7 @@ function evaluate_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, sta
     compute_surface_moments!.(surfs, Ref(state.r_ref))
     compute_farfield_forces!.(surfs, state.speed, state.alpha, state.beta, state.rho_ref)
 
-    system, surfs, state
+    system, state
 end
 
 function solve_aerodynamic_residual!(R, Γ, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState)
@@ -217,7 +221,7 @@ end
 
 ## Pure methods
 surface_force_coefficients(surf :: VLMSurface, U, ρ, S) = 
-    force_coefficient.(surf.surface_forces,  dynamic_pressure(ρ, U), S)
+    force_coefficient.(surf.surface_forces, dynamic_pressure(ρ, U), S)
 
 surface_moment_coefficients(surf :: VLMSurface, U, ρ, S, b, c) = 
     moment_coefficient.(surf.surface_moments, dynamic_pressure(ρ, U), S, b, c)
@@ -260,8 +264,6 @@ farfield_coefficients(surf :: VLMSurface, state :: VLMState)  = farfield_coeffic
 
 evaluate_residual!(R, Γ, system :: VLMSystem) =
     R .= AIC(system) * Γ - RHS(system)
-
-
 
 """
     solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)

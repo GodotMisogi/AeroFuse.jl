@@ -33,12 +33,12 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 
 ## Meshing and assembly
 wing_panels,  wing_normals  = panel_wing(wing,  20, 13;)
-htail_panels, htail_normals = panel_wing(htail, 12, 12;
+htail_panels, htail_normals = panel_wing(htail, 6, 6;
                                          position = [4., 0, 0],
                                          angle    = deg2rad(-2.),
                                          axis     = [0., 1., 0.]
                                         )
-vtail_panels, vtail_normals = panel_wing(vtail, 12, 10; 
+vtail_panels, vtail_normals = panel_wing(vtail, 6, 5; 
                                          position = [4., 0, 0],
                                          angle    = π/2, 
                                          axis     = [1., 0., 0.]
@@ -64,22 +64,22 @@ state = VLMState(1., 0., 0., [0., 0., 0.],
                  span_ref  = span(wing));
 
 # Set up system
-system, surfs = solve_case(aircraft, state);
+system = solve_case(aircraft, state);
 
 ## Angle of attack sweep
 #==========================================================================================#
 
-function alpha_sweep!(α, system :: VLMSystem, surfs, state :: VLMState)
+function alpha_sweep!(α, system, state)
     state.alpha = α
-    evaluate_case!(system, (collect ∘ values)(surfs), state)
-    nf, ff = aerodynamic_coefficients(surfs, state)[state.name]
+    evaluate_case!(system, state)
+    nf, ff = aerodynamic_coefficients(surfaces(system), state)[state.name]
 
     [ ff; nf[4:end] ]
 end
 
 ##
 αs = deg2rad.(-5:5)
-@time results = alpha_sweep!.(αs, Ref(system), Ref(surfs), Ref(state))
+@time results = alpha_sweep!.(αs, Ref(system), Ref(state))
 #
 data = DataFrame([ (α, CD, CY, CL, Cl, Cm, Cn) for (α, (CD, CY, CL, Cl, Cm, Cn)) in zip(rad2deg.(αs), results) ][:])
 rename!(data, [:α, :CD, :CY, :CL, :Cl, :Cm, :Cn])
@@ -89,12 +89,12 @@ rename!(data, [:α, :CD, :CY, :CL, :Cl, :Cm, :Cn])
 
 load_factor_residual(L, W, n) = L - n * W
 
-function load_factor_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
+function load_factor_case!(system, state, weight, load_factor)
     # Evaluate aerodynamics
-    evaluate_case!(system, surfs, state)
+    evaluate_case!(system, state)
 
     # Compute lift
-    lift = body_to_wind_axes(sum(sum ∘ surface_forces, surfs), state.alpha, state.beta)[3]
+    lift = body_to_wind_axes(sum(sum ∘ surface_forces, surfaces(system)), state.alpha, state.beta)[3]
 
     # Weight residual
     load_factor_residual(lift, weight, load_factor)
@@ -103,20 +103,20 @@ end
 ## Angle of attack residual
 #==========================================================================================#
 
-function solve_alpha_residual!(R, x, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
+function solve_alpha_residual!(R, x, system, state, weight, load_factor)
     state.alpha = x[1]
-    R .= load_factor_case!(system, surfs, state, weight, load_factor)
+    R .= load_factor_case!(system, state, weight, load_factor)
 end
 
 ## Test case - Fixed speed
 weight        = 15 * 9.81
 load_factor   = 1.2
-state.speed       = 25.
+state.speed   = 25.
 state.rho_ref = 0.98
 x             = [ state.alpha ]
 
 # Nonlinear solution
-solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, (collect ∘ values)(surfs), state, weight, load_factor)
+solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, state, weight, load_factor)
 @time res_alpha = 
     nlsolve(solve_alpha_residual!, x,
             method     = :newton,
@@ -126,7 +126,7 @@ solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, (collect ∘ v
            )
 
 ## Check numbers
-lift     = sum(sum ∘ surface_forces, values(surfs))[3]
+lift     = sum(sum ∘ surface_forces, surfaces(system))[3]
 load_fac = lift / weight
 
 println("Load factor: $load_fac")
@@ -138,9 +138,9 @@ println("Angle of attack: $(rad2deg(state.alpha))ᵒ")
 ## Speed residual
 #==========================================================================================#
 
-function solve_speed_residual!(R, x, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
+function solve_speed_residual!(R, x, system, state, weight, load_factor)
     state.speed = x[1]
-    R .= load_factor_case!(system, surfs, state, weight, load_factor)
+    R .= load_factor_case!(system, state, weight, load_factor)
 end
 
 # Test case - Fixed angle of attack
@@ -151,7 +151,7 @@ state.rho_ref = 1.1
 x             = [ state.speed ]
 
 # Nonlinear solution
-solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, (collect ∘ values)(surfs), state, weight, load_factor)
+solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, state, weight, load_factor)
 @time res_speed = 
     nlsolve(solve_speed_residual!, x,
             method     = :newton,
@@ -161,7 +161,7 @@ solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, (collect ∘ v
            )
 
 ## Check numbers
-lift     = sum(sum ∘ surface_forces, values(surfs))[3]
+lift     = sum(sum ∘ surface_forces, surfaces(system))[3]
 load_fac = lift / weight
 
 println("Load factor: $load_fac")

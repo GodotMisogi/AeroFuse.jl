@@ -84,12 +84,12 @@ end
 # Mutating version
 function solve_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
     # Build surfaces and systems
-    system, surfs = build_system(aircraft)
+    system = build_system(aircraft)
 
     # Solve case for given state
-    evaluate_case!(system, surfs, state)
+    evaluate_case!(system, state)
 
-    system, surfs
+    system
 end
 
 ## Method extensions from submodules

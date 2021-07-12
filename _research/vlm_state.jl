@@ -69,10 +69,11 @@ fs       = Freestream(1.0, 1.0, 0.0, [0.0, 0.0, 0.0])
                      name      = ac_name);
 
     # Solve system
-    system, surfs = solve_case(aircraft, state)
+    system = solve_case(aircraft, state)
 end;
 
-## Get coefficients
+## Get surfaces and coefficients
+surfs       = surfaces(system)
 rate_coeffs = rate_coefficient(state)
 coeffs      = aerodynamic_coefficients(surfs, state)
 
