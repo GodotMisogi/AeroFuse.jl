@@ -72,22 +72,22 @@ state = VLMState(Freestream(20., 1., 0., [0., 0., 0.]),
                  chord_ref = mean_aerodynamic_chord(wing), 
                  span_ref  = span(wing))
 
-system, surfs = solve_case(aircraft, state);
+system = solve_case(aircraft, state);
 
 ## Printing coefficients
-print_coefficients(surfs, state);
+print_coefficients(surfaces(system), state);
 
 ## Residual setup
 #==========================================================================================#
 
 load_factor_residual(L, W, n) = L - n * W
 
-function load_factor_case!(system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
+function load_factor_case!(system, state, weight, load_factor)
     # Evaluate aerodynamics
-    evaluate_case!(system, surfs, state)
+    evaluate_case!(system, state)
 
     # Compute lift
-    lift = body_to_wind_axes(sum(sum ∘ surface_forces, surfs), state.alpha, state.beta)[3]
+    lift = body_to_wind_axes(sum(sum ∘ surface_forces, surfaces(system)), state.alpha, state.beta)[3]
 
     # Weight residual
     load_factor_residual(lift, weight, load_factor)
@@ -96,21 +96,21 @@ end
 ## Angle of attack residual
 #==========================================================================================#
 
-function solve_alpha_residual!(R, x, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
+function solve_alpha_residual!(R, x, system, state, weight, load_factor)
     state.alpha = x[1]
-    R .= load_factor_case!(system, surfs, state, weight, load_factor)
+    R .= load_factor_case!(system, state, weight, load_factor)
 end
 
 ## Test case - Fixed speed
-system, surfs = build_system(aircraft)
+system        = build_system(aircraft)
 weight        = 15 * 9.81
 load_factor   = 1.0
-state.speed       = 25.
+state.speed   = 25.
 state.rho_ref = 0.98
 x             = [ state.alpha ]
 
 # Nonlinear solution
-solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, surfs, state, weight, load_factor)
+solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, state, weight, load_factor)
 @time res_alpha = 
     nlsolve(solve_alpha_residual!, x,
             method     = :newton,
@@ -120,7 +120,7 @@ solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, surfs, state, 
            )
 
 ## Check numbers
-lift     = sum(sum ∘ surface_forces, values(surfs))[3]
+lift     = sum(sum ∘ surface_forces, surfaces(system))[3]
 load_fac = lift / weight
 
 println("Load factor: $load_fac")
@@ -132,9 +132,9 @@ println("Angle of attack: $(rad2deg(state.alpha))ᵒ")
 ## Speed residual
 #==========================================================================================#
 
-function solve_speed_residual!(R, x, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState, weight, load_factor)
+function solve_speed_residual!(R, x, system, state, weight, load_factor)
     state.speed = x[1]
-    R .= load_factor_case!(system, surfs, state, weight, load_factor)
+    R .= load_factor_case!(system, state, weight, load_factor)
 end
 
 # Test case - Fixed angle of attack
@@ -145,7 +145,7 @@ state.rho_ref = 1.1
 x             = [ state.speed ]
 
 # Nonlinear solution
-solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, surfs, state, weight, load_factor)
+solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, state, weight, load_factor)
 @time res_speed = 
     nlsolve(solve_speed_residual!, x,
             method     = :newton,
@@ -155,7 +155,7 @@ solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, surfs, state, 
            )
 
 ## Check numbers
-lift     = sum(sum ∘ surface_forces, values(surfs))[3]
+lift     = sum(sum ∘ surface_forces, surfaces(system))[3]
 load_fac = lift / weight
 
 println("Load factor: $load_fac")
@@ -175,7 +175,9 @@ end
 pans = plot_aircraft(aircraft)
 
 using Plots
+pyplot(dpi = 300)
 
-plot(aspect_ratio = 1, zlim = (-span(wing) / 2, span(wing) / 2))
+b = span(wing)
+plot(xlim = (-b/2, b/2), zlim = (-b/2, b/2))
 plot!.(pans, color = :black, label = :none)
 plot!()
