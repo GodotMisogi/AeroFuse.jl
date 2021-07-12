@@ -35,28 +35,26 @@ end
 # Parameters
 n    = 4
 wing = Wing(foils     = fill(Foil(naca4((2,4,1,2))), n),
-            chords    = fill(0.3, n),
+            chords    = fill(0.314, n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),
             dihedrals = fill(0.0, n-1),
             sweep_LEs = fill(10., n-1))
 
-wing = WingSection(root_foil  = naca4((2,4,1,2)),
-                   tip_foil   = naca4((2,4,1,2)),
-                   span       = 2.6,
-                   root_chord = 0.314,
-                   taper      = 0.8,
-                   root_twist = 0.0,
-                   tip_twist  = 0.0,
-                   dihedral   = 5.0,
-                   sweep_LE   = 10.)
+# wing = WingSection(root_foil  = naca4((2,4,1,2)),
+#                    tip_foil   = naca4((2,4,1,2)),
+#                    span       = 2.6,
+#                    root_chord = 0.314,
+#                    taper      = 0.8,
+#                    dihedral   = 5.0,
+#                    sweep_LE   = 10.)
 
 # Meshing and assembly
 wing_mac = mean_aerodynamic_center(wing);
 b, S, c  = info(wing)[1:end-1]
-V, α, ρ  = 30., 4., 1.225
+V, α, ρ  = 29., 5., 1.225
 
-span_num  = 10
+span_num  = 12
 chord_num = 6
 
 # Test case
@@ -71,8 +69,6 @@ x0           = [(chords ∘ right)(wing); α]
 
 x0           = [mean_aerodynamic_chord(wing);
                 taper_ratio(right(wing));
-                dihedrals(right(wing));
-                sweeps(right(wing));
                 α]
 
 weight       = 15 * 9.81
@@ -100,8 +96,8 @@ make_wing(x) = WingSection(root_foil  = naca4((2,4,1,2)),
                            span       = span(wing),
                            root_chord = x[1],
                            taper      = x[2],
-                           dihedral   = rad2deg(x[3]),
-                           sweep_LE   = rad2deg(x[4]))
+                           sweep_LE   = rad2deg((sweeps ∘ right)(wing)[1]),
+                           dihedral   = rad2deg((dihedrals ∘ right)(wing)[1]))
 
 evaluate_CDi(x) = evaluate_CDi(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
 cons!(cs, x) = cs .= evaluate_cons(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
@@ -197,6 +193,7 @@ make_surface(wing) = make_surface(wing, span_num, chord_num)
 
 function obj_func!(x)
     surf = (make_surface ∘ make_wing)(x[1:end-1])
+    state.area_ref = projected_area(wing)
     run_case!(surf, x[end], system, state)
     evaluate_induced_drag(system)
 end
@@ -204,13 +201,14 @@ end
 function cons_func!(R, x)
     wing = make_wing(x[1:end-1])
     surf = make_surface(wing)
+    state.area_ref = projected_area(wing)
     run_case!(surf, x[end], system, state)
     R .= evaluate_constraints(wing, system)
 end
 
 ## Optim variables
 optimize_chords = TwiceDifferentiable(obj_func!, x0)
-cons_lift_area  = TwiceDifferentiableConstraints(cons_func!, l_bound, u_bound, lc, uc)
+cons_lift_area  = TwiceDifferentiableConstraints(cons_func!, l_bound, u_bound, lc, uc);
 
 ## Evaluate case
 res_chord = optimize(optimize_chords,          # Objective functions
