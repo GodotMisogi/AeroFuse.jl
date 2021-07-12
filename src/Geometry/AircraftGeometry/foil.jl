@@ -8,9 +8,10 @@ Airfoil structure consisting of foil coordinates as an array of points. Should b
 """
 struct Foil{T <: Real}
     coords :: Vector{SVector{2,T}}
-    name :: String
-    Foil(coords :: Vector{SVector{2,T}}, name = "Unnamed") where T <: Real = new{T}(coords, name)
+    name   :: String
 end
+
+Foil(coords :: AbstractVector{SVector{2,T}}, name = "Unnamed") where T <: Real = Foil{T}(coords, name)
 
 """
     scale_foil(foil :: Foil, chord)
