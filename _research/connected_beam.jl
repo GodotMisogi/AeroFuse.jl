@@ -2,6 +2,7 @@ using Revise
 using AeroMDAO
 using LinearAlgebra
 using StaticArrays
+using DataFrames
 
 ## Aerodynamic setup
 #==========================================================================================#
@@ -21,8 +22,8 @@ wing_name   = "Wing"
 print_info(wing, wing_name)
 
 # Mesh
-span_num        = 5
-chord_num       = 2
+span_num        = 10
+chord_num       = 1
 # xyzs            = chop_wing(coordinates(wing), [span_num], chord_num)
 panels, normies = panel_wing(wing, span_num, chord_num, spacing = "cosine");
 aircraft        = Dict(wing_name => (panels, normies));
@@ -125,7 +126,7 @@ tubes    = Tube.(Ref(aluminum), Ls, R, t)
 # Assemble RHS
 function assemble_fem_dynamics(pt_forces, pt_moments)
     Fx = getindex.(pt_forces,  1)
-    Fy = getindex.(pt_forces,  2)
+    Fy = getindex.(pt_forces,  2) 
     Fz = getindex.(pt_forces,  3)
     Mx = getindex.(pt_moments, 1)
     My = getindex.(pt_moments, 2)
@@ -148,9 +149,8 @@ xs = K \ F
 ## Displacement transfer scheme
 #==========================================================================================#
 
-function compute_displacements(Δs, r1s, r2s)
+function compute_displacements(Δs, n)
     # Assembly
-    n  = length(r1s) + 1    # Number of finite element points
     n1 = 2n                 # dim(Fy + My)
     n2 = n1 + 2n            # dim(Fz + Mz)
     n3 = n2 +  n            # dim(Fx)
@@ -166,16 +166,20 @@ function compute_displacements(Δs, r1s, r2s)
     dx, θx, dy, θy, dz, θz
 end
 
-dx, θx, dy, θy, dz, θz = compute_displacements(xs, r1s, r2s)
+dx, θx, dy, θy, dz, θz = compute_displacements(xs, length(horsies) + 1)
 
 ds = SVector.(dx, dy, dz)
 θs = SVector.(θx, θy, θz)
+
+## Generate DataFrames
+df = DataFrame([ dx θx dy θy dz θz ], :auto)
+rename!(df, [:dx, :θx, :dy, :θy, :dz, :θz])
 
 ## Plotting
 #==========================================================================================#
 
 using Plots
-gr(dpi = 300)
+pyplot(dpi = 300)
 
 n_pts = 20
 circle3D(r, n) = [ (r*cos(θ), r*sin(θ), 0) for θ in 0:2π/n:2π ];
@@ -186,24 +190,40 @@ left_pts = reduce(vcat, [ [ [ circ_pt .+ pt[1], circ_pt .+ pt[2] ] for circ_pt i
 
 mid_pts = midpoint.(wing_pans)
 
-plot(aspect_ratio = 1, camera = (60, 75))
-plot!.(plot_panels(panels[:]), color = :black, label = :none)
-plot!.(left_pts, color = :green, label = :none)
-plot!(wing_plan, color = :blue, label = :none)
-plot!()
-
-CFs = surface_force_coefficients(aero_surfs[1], aero_state)
+CFs = force_coefficient.(reduce(vcat, F_S), dynamic_pressure(aero_state.rho_ref, aero_state.speed), aero_state.area_ref) 
+# surface_force_coefficients(aero_surfs[1], aero_state)
 Cxs = @. getindex(CFs, 1)
 Cys = @. getindex(CFs, 2)
 Czs = @. getindex(CFs, 3)
 
-hs_pts = bound_leg_center.(horseshoes(aero_system))
+hs_pts = points(bound_leg.(horsies))
 hs_xs  = getindex.(hs_pts, 1)
 hs_ys  = getindex.(hs_pts, 2)
 hs_zs  = getindex.(hs_pts, 3)
 
+# Plot
+b = aero_state.span_ref
+plot(camera = (90, 90), 
+     xlim = (-b/2, b/2),
+    #  ylim = (-b/2, b/2), 
+     zlim = (-b/2, b/2)
+    )
+
+# Panels
+plot!.(plot_panels(panels[:]), color = :black, label = :none)
+
+# Planform
+plot!(wing_plan, color = :blue, label = :none)
+
+# Beams
+plot!(reduce(vcat, left_pts), color = :green, label = "Beams")
+
+# Forces
 quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(Cxs[:], Cys[:], Czs[:]) .* 50)
 
+# Axis system
 quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(n_cs, 1)[:], getindex.(n_cs, 2)[:], getindex.(n_cs, 3)[:]), color = :orange)
 quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ns, 1)[:], getindex.(ns, 2)[:], getindex.(ns, 3)[:]), color = :red)
 quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ss, 1)[:], getindex.(ss, 2)[:], getindex.(ss, 3)[:]), color = :brown)
+
+plot!()

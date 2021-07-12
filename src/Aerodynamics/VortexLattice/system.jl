@@ -264,9 +264,9 @@ evaluate_residual!(R, Γ, system :: VLMSystem) =
 
 
 """
-    solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, freestream :: Freestream, r_ref, ρ = 1.225; symmetry = false)
+    solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
 
-Evaluate a vortex lattice case given an array of `Panel3D`s with associated normal vectors (not necessarily the same as the panels' normals), a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments.
+Evaluate a vortex lattice case given an array of `Panel3D`s with associated normal vectors (not necessarily the same as the panels' normals), freestream speed `U`, angles of attack `α` and sideslip `β`,  reference density ``\\rho``, reference point ``r_\\text{ref}`` for moments, and reference values for area, chord, and span lengths.
 """
 function evaluate_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
     # Make horseshoes and collocation points
@@ -284,8 +284,9 @@ function evaluate_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β
     nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs
 end
 
-function evaluate_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref, name) where T <: Real
-    # Get panels
+function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref, name) 
+    # Get dictionary keys and values
+    comp_names = (collect ∘ keys)(components)
     meshes = values(components)
     
     # Flattening for VLM
@@ -330,10 +331,10 @@ function evaluate_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matr
     name_data = (nf_coeffs, ff_coeffs, name_CFs, name_CMs, horsies, normies, horseshoes, Γs)
     comp_data = tuple.(nf_comp_coeffs, ff_comp_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes_arr, Γs_arr)
 
-    names 	= [ name						 ; # Aircraft name
-                (collect ∘ keys)(components) ] # Component names
-    data  	= [ name_data ;	# Aircraft data
-                comp_data ]	# Component data
+    names 	= [ name	   ; # Aircraft name
+                comp_names ] # Component names
+    data  	= [ name_data  ;	# Aircraft data
+                comp_data  ]	# Component data
 
     OrderedDict(names .=> data)
 end

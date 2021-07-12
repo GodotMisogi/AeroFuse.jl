@@ -112,7 +112,7 @@ end
 tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J :: Real, L :: Real) = blockdiag((sparse ∘ Iyy_coeffs)(E, Iy, L), (sparse ∘ Izz_coeffs)(E, Iz, L), (sparse ∘ J_coeffs)(E, A, L), (sparse ∘ J_coeffs)(G, J, L))
 
 ## Composite stiffness matrix for adjacent tube finite elements
-function tube_stiffness_matrix(Es :: AbstractVector{T}, Gs :: AbstractVector{T}, As :: AbstractVector{T}, Iys :: AbstractVector{T}, Izs :: AbstractVector{T}, Js :: AbstractVector{T}, Ls :: AbstractVector{T}) where T <: Real
+function tube_stiffness_matrix(Es :: AbstractVector, Gs :: AbstractVector, As :: AbstractVector, Iys :: AbstractVector, Izs :: AbstractVector, Js :: AbstractVector, Ls :: AbstractVector)
     # Check if sizes match
     @assert length(Es) == (length ∘ zip)(Gs, Iys, Izs, Js, Ls) "Lengths of coefficients must be the same as the dimension."
 
@@ -126,7 +126,7 @@ end
 
 tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J :: Real, L :: Real, num :: Integer) = tube_stiffness_matrix(fill(E, num), fill(G, num), fill(A, num), fill(Iy, num), fill(Iz, num), fill(J, num), fill(L / num, num))
 
-function tube_stiffness_matrix(x :: AbstractMatrix{<: Real}) 
+function tube_stiffness_matrix(x :: AbstractMatrix) 
     @assert size(x)[2] == 7 "Input must have 7 columns."
     @views tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
 end
