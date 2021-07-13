@@ -42,7 +42,8 @@ aero_state.alpha   = deg2rad(1.)
 aero_state.rho_ref = 0.98
 
 # Build system with initial guess from aerodynamic-only analysis
-aero_system, aero_surfs = solve_case(aircraft, aero_state)
+aero_system = solve_case(aircraft, aero_state)
+aero_surfs  = surfaces(aero_system)
 print_coefficients(aero_surfs[1], aero_state);
 
 ## Load transfer scheme
