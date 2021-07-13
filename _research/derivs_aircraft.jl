@@ -7,12 +7,28 @@ using StaticArrays
 
 ## Wing tests
 struct HalfWingTest{T <: Real}
+	foils 	  :: Vector{Foil{T}}
     chords    :: Vector{T}
     twists    :: Vector{T}
     spans     :: Vector{T}
     dihedrals :: Vector{T}
     sweeps    :: Vector{T} 
-    HalfWingTest(chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
+    HalfWingTest(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
+end
+
+mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
+section_macs(wing :: HalfWingTest) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], fwddiv(wing.chords))
+section_projected_areas(wing :: HalfWingTest) = wing.spans .* fwdsum(wing.chords) / 2
+
+"""
+    mean_aerodynamic_chord(half_wing :: HalfWing)
+    
+Compute the mean aerodynamic chord of a `HalfWing`.
+"""
+function mean_aerodynamic_chord(wing :: HalfWingTest)
+    areas = section_projected_areas(wing)
+    macs  = section_macs(wing)
+    sum(macs .* areas) / sum(areas)
 end
 
 cs  = [1.0, 0.6]
@@ -22,8 +38,10 @@ dis = [11.3]
 sws = [2.29]
 
 wing = HalfWingTest(cs, ts, sps, dis, sws)
-winger(x, n) = HalfWingTest(x[1:n], x[n+1:2n], x[2n+1:3n-1], x[3n:4n-2], x[])
-ForwardDiff.gradient(mean_aerodynamic_center ∘ winger, xs)
+
+xs = [cs; ts; sps; dis; sws]
+winger(x, n) = mean_aerodynamic_chord(HalfWingTest(x[1:n], x[n+1:2n], x[2n+1:3n-1], x[3n:4n-2], x[4n-1:end]))
+ForwardDiff.gradient(x -> winger(x, length(cs)), xs)
 
 ## Old tests
 TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip) = WingSection(span       = b,
