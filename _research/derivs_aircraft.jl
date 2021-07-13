@@ -5,7 +5,27 @@ using BenchmarkTools
 using ForwardDiff
 using StaticArrays
 
-## Wing
+## Wing tests
+struct HalfWingTest{T <: Real}
+    chords    :: Vector{T}
+    twists    :: Vector{T}
+    spans     :: Vector{T}
+    dihedrals :: Vector{T}
+    sweeps    :: Vector{T} 
+    HalfWingTest(chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
+end
+
+cs  = [1.0, 0.6]
+ts  = [2.0, 2.0]
+sps = [5.0]
+dis = [11.3]
+sws = [2.29]
+
+wing = HalfWingTest(cs, ts, sps, dis, sws)
+winger(x, n) = HalfWingTest(x[1:n], x[n+1:2n], x[2n+1:3n-1], x[3n:4n-2], x[])
+ForwardDiff.gradient(mean_aerodynamic_center ∘ winger, xs)
+
+## Old tests
 TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip) = WingSection(span       = b,
 																 dihedral 	= δ,
 																 sweep_LE   = Λ,
@@ -15,13 +35,13 @@ TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip) = WingSection(span      
 																 tip_twist  = τ_tip)
 
 xs = [4.0, 0.0, 15.0, 0.4, 2.0, 0.0, -2.0]
-wing  = TrapezoidalWing(xs...)
-wing_mac 	= mean_aerodynamic_center(wing)
+wing  	 = TrapezoidalWing(xs...)
+wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
 ## Differentiation tests
-winger(x) = let wing = TrapezoidalWing(x...); Wing(wing, wing) end
-ForwardDiff.jacobian(mean_aerodynamic_center ∘ winger, xs)
+winger(x) = TrapezoidalWing(x...)
+ForwardDiff.gradient(mean_aerodynamic_center ∘ winger, xs)
 
 ## VLM
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
