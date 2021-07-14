@@ -2,11 +2,12 @@
 using Revise
 using AeroMDAO
 using ForwardDiff
+using LinearAlgebra
 
 ## Lifting surfaces setup
 #==========================================================================================#
 
-## Wing
+# Wing
 wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
             chords    = [1.0, 0.6],
             twists    = [2.0, 2.0],
@@ -123,9 +124,9 @@ end
 dvs = vlm_state_derivatives(fs)
 
 ## VLMSystem Derivatives
-function vlm_system_derivatives(system, surfs, fs, r_ref)
+function vlm_system_derivatives(system, surf, fs, r_ref)
     # Closure
-    function get_derivatives(x :: AbstractVector{<: Real})
+    function get_derivatives(x)
         state = VLMState(x[1], x[2], x[3], x[4:6],
                          r_ref = x[7:end],
                          rho_ref = ρ,
@@ -134,13 +135,16 @@ function vlm_system_derivatives(system, surfs, fs, r_ref)
                          span_ref = b,
                          name = ac_name);
 
-        generate_system!(system, state.V, state.omega)
+        Γs = AeroMDAO.VortexLattice.solve_system(horseshoes(system), normals(system), normalize(state.velocity), state.omega)
+        forces, moments, trefftz_force = AeroMDAO.VortexLattice.case_dynamics(circulations(surf), horseshoes(surf), Γs, horseshoes(system), state.velocity, state.alpha, state.beta, state.omega, state.rho_ref, state.r_ref)
 
-        AIC(system)
+        # nearfield_coeffs, farfield_coeffs, CFs, CMs = AeroMDAO.VortexLattice.evaluate_coefficients(forces, moments, trefftz_force, state.speed, state.alpha, state.beta, state.omega, state.rho_ref, state.area_ref, state.chord_ref, state.span_ref)
+
+        [forces[:]; moments[:]; trefftz_force ]
     end
 
     V, α, β, Ω = fs.V, fs.alpha, fs.beta, fs.omega
     jac = ForwardDiff.jacobian(get_derivatives, [ V; α; β; Ω; r_ref ])
 end
 
-dvs = vlm_system_derivatives(system, (collect ∘ values)(surfs), fs, x_w)
+dvs = vlm_system_derivatives(system, surf, fs, x_w)

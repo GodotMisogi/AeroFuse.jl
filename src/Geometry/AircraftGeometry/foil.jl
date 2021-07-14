@@ -12,6 +12,7 @@ struct Foil{T <: Real}
 end
 
 Foil(coords :: AbstractVector{SVector{2,T}}, name = "Unnamed") where T <: Real = Foil{T}(coords, name)
+Foil(coords :: AbstractMatrix{T}, name = "Unnamed") where T <: Real = Foil{T}(SVector.(coords[:,1], coords[:,2]), name)
 
 """
     scale_foil(foil :: Foil, chord)
@@ -254,3 +255,5 @@ function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_e
                 
     @views SVector.(coords[:,1], coords[:,2])
 end
+
+naca4(a, b, c, d, n = 40; sharp_trailing_edge = false) = naca4((a,b,c,d), n; sharp_trailing_edge = sharp_trailing_edge)

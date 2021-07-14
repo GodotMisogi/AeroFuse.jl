@@ -14,7 +14,7 @@ wing = WingSection(root_foil  = naca4((0,0,1,2)),
                    sweep_LE   = 20.0,
                    taper      = 0.5,
                    root_chord = 1.98,
-                   root_twist = 0.0,
+                   root_twist = 2.0,
                    tip_twist  = 0.0)
 wing_mac    = mean_aerodynamic_center(wing)
 wing_plan   = plot_wing(wing)
@@ -102,7 +102,7 @@ Ls    = (norm ∘ bound_leg_vector).(horsies)
 
 left_forces   = @view pt_forces[1:middle_index(pt_forces)-1]
 left_moments  = @view pt_moments[1:middle_index(pt_moments)-1]
-right_forces  = @views [ zero_vec;  pt_forces[middle_index(pt_forces)+1:end] ]
+right_forces  = @views [ zero_vec; pt_forces[middle_index(pt_forces)+1:end] ]
 right_moments = @views [ zero_vec; pt_moments[middle_index(pt_moments)+1:end] ]
 
 F_S = map(x -> [ x[1] * vec for vec in x[2] ], zip(dircos, [left_forces,  right_forces ]))

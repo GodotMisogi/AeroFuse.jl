@@ -135,7 +135,7 @@ compute_horseshoes!(system :: VLMSystem, horseshoe_panels) =
     system.horseshoes = horseshoe_line.(horseshoe_panels)
 
 compute_influence_matrix!(system, V) = 
-    system.AIC = influence_matrix(horseshoes(system), collocation_points(system), normals(system), -normalize(V))
+    system.AIC .= influence_matrix(horseshoes(system), collocation_points(system), normals(system), -normalize(V))
 
 compute_boundary_condition!(system :: VLMSystem, V, Ω) = 
     system.RHS = boundary_condition(map(r -> V + Ω × r, collocation_points(system)), normals(system))
@@ -209,7 +209,7 @@ function solve_aerodynamic_residual!(R, Γ, system :: VLMSystem, surfs :: Vector
 
     # Update circulations
     system.circulations = Γ
-    update_circulations!(circulations(system), surfs)
+    update_circulations!(system)
 
     # Compute forces
     compute_surface_forces!.(surfs, Ref(system), Ref(state.velocity), Ref(state.omega), state.rho_ref)

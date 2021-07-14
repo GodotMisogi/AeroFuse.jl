@@ -15,13 +15,15 @@ struct HalfWing{T <: Real} <: Aircraft
     spans     :: Vector{T}
     dihedrals :: Vector{T}
     sweeps    :: Vector{T} 
-    function HalfWing(foils :: Vector{Foil{T}}, chords, twists, spans, dihedrals, sweeps) where T <: Real
+    function HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real
         # Error handling
         check_wing(foils, chords, twists, spans, dihedrals, sweeps)
         # Convert angles to radians, with adjusting twists to leading edge, and generate HalfWing
         new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
     end
 end
+
+HalfWing(foils :: AbstractVector{<: Foil}, chords :: AbstractVector{<: Real}, twists :: AbstractVector{<: Real}, spans :: AbstractVector{<: Real}, dihedrals :: AbstractVector{<: Real}, sweeps :: AbstractVector{<: Real}) = HalfWing(foils, chords, twists, spans, dihedrals, sweeps)
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     # Check if number of sections match up with number of edges

@@ -1,22 +1,40 @@
 using Revise
-using Rotations
 using AeroMDAO
 using BenchmarkTools
-using ForwardDiff
+using ForwardDiff, ReverseDiff
 using StaticArrays
+using LinearAlgebra
+
+## Foil tests 
+struct FoilTest{T <: Real}
+	foils :: Vector{Foil{T}}
+end
+
+arc_length(foil :: Foil) = let c = foil.coords; norm(c[2:end] .- c[1:end-1]) end
+
+arc_length(fs :: FoilTest) = sum(arc_length, fs.foils)
+
+foiler(x) = arc_length(FoilTest(fill(Foil(x, "NACA 0012"), 5)))
+
+x_coords = let coords = naca4(0,0,1,2); [ getindex.(coords, 1) getindex.(coords, 2) ] end
+airfoils = FoilTest(fill(Foil(x_coords, "NACA 0012"), 5))
+
+foiler(x_coords)
+ReverseDiff.gradient(foiler, x_coords)
+
+# Great success!
 
 ## Wing tests
 struct HalfWingTest{T <: Real}
-	foils 	  :: Vector{Foil{T}}
     chords    :: Vector{T}
     twists    :: Vector{T}
     spans     :: Vector{T}
     dihedrals :: Vector{T}
     sweeps    :: Vector{T} 
-    HalfWingTest(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
+    HalfWingTest(chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
 end
 
-mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
+AeroMDAO.AircraftGeometry.mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
 section_macs(wing :: HalfWingTest) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], fwddiv(wing.chords))
 section_projected_areas(wing :: HalfWingTest) = wing.spans .* fwdsum(wing.chords) / 2
 
@@ -25,41 +43,59 @@ section_projected_areas(wing :: HalfWingTest) = wing.spans .* fwdsum(wing.chords
     
 Compute the mean aerodynamic chord of a `HalfWing`.
 """
-function mean_aerodynamic_chord(wing :: HalfWingTest)
+function AeroMDAO.AircraftGeometry.mean_aerodynamic_chord(wing :: HalfWingTest)
     areas = section_projected_areas(wing)
     macs  = section_macs(wing)
     sum(macs .* areas) / sum(areas)
 end
 
-cs  = [1.0, 0.6]
-ts  = [2.0, 2.0]
-sps = [5.0]
-dis = [11.3]
-sws = [2.29]
+wingy(x, n) = HalfWingTest(x[1:n], x[n+1:2n], x[2n+1:3n-1], x[3n:4n-2], x[4n-1:end])
+winger(x, n) = mean_aerodynamic_chord(wingy(x,n))
 
-wing = HalfWingTest(cs, ts, sps, dis, sws)
+cs  = [1.0, 0.6, 0.3]
+ts  = [2.0, 2.0, 0.0]
+sps = [5.0, 1.0]
+dis = [11.3, 60.]
+sws = [2.29, 30.]
+
+# winger(x, n) = mean_aerodynamic_chord(HalfWing(chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], sweep_LEs = x[4n-1:end]))
 
 xs = [cs; ts; sps; dis; sws]
-winger(x, n) = mean_aerodynamic_chord(HalfWingTest(x[1:n], x[n+1:2n], x[2n+1:3n-1], x[3n:4n-2], x[4n-1:end]))
+wing = winger(xs, length(cs)) 
+
 ForwardDiff.gradient(x -> winger(x, length(cs)), xs)
 
-## Old tests
-TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip) = WingSection(span       = b,
-																 dihedral 	= δ,
-																 sweep_LE   = Λ,
-																 taper      = λ,
-																 root_chord = c_root,
-																 root_twist = τ_root,
-																 tip_twist  = τ_tip)
+# Great success!
 
-xs = [4.0, 0.0, 15.0, 0.4, 2.0, 0.0, -2.0]
-wing  	 = TrapezoidalWing(xs...)
-wing_mac = mean_aerodynamic_center(wing)
-print_info(wing, "Wing")
+## Composed wing-foil
+struct FoilerWing{T <: Real}
+    foils  :: Vector{Foil{T}}
+    chords :: Vector{T}
+    FoilerWing(fs :: AbstractVector{Foil{<: Real}}, cs :: AbstractVector{T}) where T <: Real = new{T}(fs, cs)
+end
 
-## Differentiation tests
-winger(x) = TrapezoidalWing(x...)
-ForwardDiff.gradient(mean_aerodynamic_center ∘ winger, xs)
+FoilerWing(fs :: AbstractArray{Foil{<: Real}}, cs :: AbstractArray{<: Real}) = FoilerWing(fs, cs)
+
+arc_length(fw :: FoilerWing) = sum(arc_length, fw.foils)
+
+# Test
+foiler_wing(x1, x2) = arc_length(FoilerWing(fill(Foil(x1), length(x2)), x2))
+
+foilwing = foiler_wing(x_coords, cs)
+
+diff_foiler_wing(x) = foiler_wing(reshape(x[1:end-length(cs)], size(x_coords)), x[end-length(cs):end])
+diff_foiler_wing([ x_coords[:]; cs ])
+∂f∂x(x, y) = ForwardDiff.gradient(x -> foiler_wing(x, y), x)
+∂f∂y(x, y) = ForwardDiff.gradient(y -> foiler_wing(x, y), y)
+ForwardDiff.gradient(diff_foiler_wing, [ x_coords[:]; cs])
+∂f∂x(x_coords, cs)
+∂f∂y(x_coords, cs)
+
+# Great success!
+
+## Wing
+winglord(x, n) = Wing(chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], sweep_LEs = x[4n-1:end])
+
 
 ## VLM
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
@@ -79,7 +115,7 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
 end
 
 function vlmer(x)
-	wing 		= winger(x)
+	wing 		= winger(x, length(cs))
 	wing_pos    = [0., 0., 0.]
 	ρ 			= 1.225
 	ref     	= zeros(3)
