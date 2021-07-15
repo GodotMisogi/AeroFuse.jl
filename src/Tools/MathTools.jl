@@ -78,7 +78,7 @@ tupvector(xs) = [ tuple(x...) for x in xs ]
 tuparray(xs)  = tuple.(eachcol(xs)...)
 vectarray(xs) = SVector.(eachcol(xs)...)
 
-extend_yz(coords) = @views @. SVector(getindex(coords, 1), 0, getindex(coords, 2))
+extend_yz(coords) = @views [ coords[:,1] zeros(length(coords[:,1])) coords[:,2] ]
 
 reflect_mapper(f, xs) = @views [ f(xs[:,end:-1:1]) xs ]
 
@@ -92,7 +92,7 @@ fwddiff(xs)  = @views @. xs[2:end] - xs[1:end-1]
 fwddiv(xs) 	 = @views @. xs[2:end] / xs[1:end-1]
 ord2diff(xs) = @views @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
 
-adj3(xs) = @views zip(xs[1:end-2], xs[2:end-1,:], xs[3:end])
+adj3(xs) = @views zip(xs[1:end-2,:], xs[2:end-1,:], xs[3:end,:])
 
 # Central differencing schema for pairs except at endpoints
 midpair_map(f :: H, xs) where {H} = 
@@ -132,7 +132,8 @@ function sine_spacing(x1, x2, n :: Integer = 40)
 end
 
 function cosine_interp(coords, n :: Integer = 40)
-    xs, ys = first.(coords)[:], last.(coords)[:]
+    xs = coords[:,1]
+    ys = coords[:,2]
 
     d = maximum(xs) - minimum(xs)
     x_center = (maximum(xs) + minimum(xs)) / 2
@@ -141,7 +142,7 @@ function cosine_interp(coords, n :: Integer = 40)
     itp_circ = LinearInterpolation(xs, ys)
     y_circ = itp_circ(x_circ)
 
-    SVector.(x_circ, y_circ)
+    [ x_circ y_circ ]
 end
 
 ## Iterator methods

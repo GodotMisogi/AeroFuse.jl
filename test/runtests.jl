@@ -21,31 +21,31 @@ using Test
     @test sum(cms) ≈ -0.26104277 atol = 1e-6
 end
 
-@testset "Geometry - Airfoil Processing" begin
-    # Import and read airfoil coordinates
-    foilpath = joinpath((dirname ∘ dirname ∘ pathof)(AeroMDAO), "test/CRM.dat")
-    coords   = read_foil(foilpath)
+# @testset "Geometry - Airfoil Processing" begin
+#     # Import and read airfoil coordinates
+#     foilpath = joinpath((dirname ∘ dirname ∘ pathof)(AeroMDAO), "test/CRM.dat")
+#     coords   = read_foil(foilpath)
 
-    # Cosine spacing
-    cos_foil = cosine_foil(coords, 51)
+#     # Cosine spacing
+#     cos_foil = cosine_foil(coords, 51)
 
-    # Split airfoil
-    up, low  = split_foil(cos_foil)
+#     # Split airfoil
+#     up, low  = split_foil(cos_foil)
 
-    # Convert coordinates to Kulfan CST variables
-    num_dv   = 4
-    alpha_u, alpha_l = coords_to_CST(up, num_dv), coords_to_CST(low, num_dv)
+#     # Convert coordinates to Kulfan CST variables
+#     num_dv   = 4
+#     alpha_u, alpha_l = coords_to_CST(up, num_dv), coords_to_CST(low, num_dv)
 
-    # Generate same airfoil using Kulfan CST parametrisation
-    cst_foil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), 0.0)
+#     # Generate same airfoil using Kulfan CST parametrisation
+#     cst_foil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), 0.0)
 
-    uniform  = Uniform2D(1., 5.)
-    cl, cls, cms, cps, panels = solve_case(cst_foil, uniform; num_panels = 80)
+#     uniform  = Uniform2D(1., 5.)
+#     cl, cls, cms, cps, panels = solve_case(cst_foil, uniform; num_panels = 80)
 
-    @test cl       ≈  0.85736965 atol = 1e-6
-    @test sum(cls) ≈  0.85976886 atol = 1e-6
-    @test sum(cms) ≈ -0.29766116 atol = 1e-6
-end
+#     @test cl       ≈  0.85736965 atol = 1e-6
+#     @test sum(cls) ≈  0.85976886 atol = 1e-6
+#     @test sum(cms) ≈ -0.29766116 atol = 1e-6
+# end
 
 @testset "Geometry - Two-Section Trapezoidal Wing" begin
     # Define wing
