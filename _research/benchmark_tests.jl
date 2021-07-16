@@ -138,8 +138,8 @@ println("AeroMDAO Aircraft Stateful -")
                      span_ref  = b);
 
     # Solve system
-    system, surfs = solve_case(aircraft, state)
-    coeffs = aerodynamic_coefficients(surfs, state)
+    system = solve_case(aircraft, state)
+    coeffs = aerodynamic_coefficients(surfaces(system), state)
     nf, ff = coeffs["Aircraft"]
 
     nf[1:3], nf[4:6], ff[1]

@@ -18,17 +18,17 @@ chop_chords(xyzs, div, spacing = "cosine") = reduce(hcat, chop_coordinates(xyz, 
 
 chop_wing(xyzs, span_num, chord_num; span_spacing = "cosine", chord_spacing = "cosine", flip = false) = chop_chords(chop_spans(xyzs, span_num, span_spacing, flip), chord_num, chord_spacing)
 
-transform_coordinates(xyz, twist, section) = RotY(-twist) * xyz + section
+transform_coordinates(xyz, twist, section) = eachrow(xyz * RotY(-twist)) .+ Ref(section)
 
 function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_num, spacings, flip = false)
     # Reverse direction if left side
     if flip
-        scaled_foils = reverse(scaled_foils, dims = 2)
-        twisties     = (permutedims ∘ reverse)(twisties)
+        scaled_foils = reverse(scaled_foils)
+        twisties     = reverse(twisties)
     end
 
     # Rotate and translate coordinates
-    foil_coords  = reduce(hcat, transform_coordinates.(foil, Ref(twist), Ref(section)) for (foil, twist, section) in zip(eachcol(scaled_foils), twisties, leading_xyz))
+    foil_coords = reduce(hcat, transform_coordinates.(scaled_foils, twisties, leading_xyz))
 
     # Chop up spanwise sections
     chop_spans(foil_coords, span_num, spacings, flip)

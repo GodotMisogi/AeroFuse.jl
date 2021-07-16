@@ -62,14 +62,14 @@ function alpha_sweep!(α, system, state)
     state.alpha = α
     evaluate_case!(system, state)
     surfs = surfaces(system)
-    # aerodynamic_coefficients(surfs, state) 
-    surface_force_coefficients.(surfs, Ref(state))
-    # surface_moment_coefficients.(surfs, Ref(state)), horseshoes.(surfs), normals.(surfs), circulations.(surfs)
+    aerodynamic_coefficients(surfs, state),
+    surface_force_coefficients.(surfs, Ref(state)),
+    surface_moment_coefficients.(surfs, Ref(state)), horseshoes.(surfs), normals.(surfs), circulations.(surfs)
 end
 
 # Stateful
 println("AeroMDAO Aircraft Stateful -")
-@time begin
+@benchmark begin
     # Set up state
     state = VLMState(1., 0., 0., zeros(3); 
                      r_ref     = x_ref,  
@@ -83,11 +83,11 @@ println("AeroMDAO Aircraft Stateful -")
     
     # Evaluate sweep
     coeffs = alpha_sweep!.(deg2rad.(αs), Ref(system), Ref(state))
-end;
+end
 
 ## "Functional"
 println("AeroMDAO Aircraft Functional -")
-@time begin
+@benchmark begin
     # Build vector of Freestreams
     fses = Freestream.(1.0, αs, 0., Ref(zeros(3)))
 
@@ -98,4 +98,4 @@ println("AeroMDAO Aircraft Functional -")
                        area_ref  = S,
                        span_ref  = b,
                        chord_ref = c)
-end;
+end

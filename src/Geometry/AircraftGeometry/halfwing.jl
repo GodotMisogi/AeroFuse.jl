@@ -23,7 +23,7 @@ struct HalfWing{T <: Real} <: Aircraft
     end
 end
 
-HalfWing(foils :: AbstractVector{<: Foil}, chords :: AbstractVector{<: Real}, twists :: AbstractVector{<: Real}, spans :: AbstractVector{<: Real}, dihedrals :: AbstractVector{<: Real}, sweeps :: AbstractVector{<: Real}) = HalfWing(foils, chords, twists, spans, dihedrals, sweeps)
+# HalfWing(foils :: AbstractVector{<: Foil}, chords :: AbstractVector{<: Real}, twists :: AbstractVector{<: Real}, spans :: AbstractVector{<: Real}, dihedrals :: AbstractVector{<: Real}, sweeps :: AbstractVector{<: Real}) = HalfWing(foils, chords, twists, spans, dihedrals, sweeps)
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     # Check if number of sections match up with number of edges

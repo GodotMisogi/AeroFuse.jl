@@ -1,51 +1,42 @@
 using AeroMDAO
 using Test
 
-@testset "2D Panel Method - Doublet-Source Kulfan CST" begin
-    # Define Kulfan CST coefficients
-    alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
-    alpha_l = [-0.2, -0.1, -0.1, -0.001]
-    dzs     = (0., 0.)
+@testset "Airfoil Processing and Doublet-Source Panel Method" begin
+    # Import and read airfoil coordinates
+    coo_foil  = naca4(2,4,1,2)
 
-    # Define airfoil
-    airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, dzs, 0.0, 60);
+    # Cosine spacing
+    cos_foil = cosine_foil(coo_foil, 61)
 
-    # Define uniform flow
-    uniform = Uniform2D(1., 5.)
+    # Split airfoil
+    up, low  = split_foil(cos_foil)
 
-    # Evaluate case
-    cl, cls, cms, cps, panels = solve_case(airfoil, uniform; num_panels = 80)
+    # Convert coordinates to Kulfan CST variables
+    num_dv   = 4
+    alpha_u = coords_to_CST(up, num_dv)
+    alpha_l = coords_to_CST(low, num_dv)
 
-    @test cl       ≈  0.84188988 atol = 1e-6
-    @test sum(cls) ≈  0.84073703 atol = 1e-6
-    @test sum(cms) ≈ -0.26104277 atol = 1e-6
+    # Generate same airfoil using Kulfan CST parametrisation
+    cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), 0.0)
+
+    # Test coefficients
+    uniform  = Uniform2D(1., 5.)
+
+    cl_coo, cls_coo, cms_coo = solve_case(Foil(coo_foil), uniform; num_panels = 80)[1:3]
+    @test cl_coo       ≈  0.83220516 atol = 1e-6
+    @test sum(cls_coo) ≈  0.83291636 atol = 1e-6
+    @test sum(cms_coo) ≈ -0.25899389 atol = 1e-6
+
+    cl_cos, cls_cos, cms_cos = solve_case(Foil(cos_foil), uniform; num_panels = 80)[1:3]
+    @test cl_cos       ≈  0.83178821 atol = 1e-6
+    @test sum(cls_cos) ≈  0.83269773 atol = 1e-6
+    @test sum(cms_cos) ≈ -0.25889408 atol = 1e-6
+
+    cl_cst, cls_cst, cms_cst = solve_case(Foil(cst_foil), uniform; num_panels = 80)[1:3]
+    @test cl_cst       ≈  0.83381613 atol = 1e-6
+    @test sum(cls_cst) ≈  0.83408259 atol = 1e-6
+    @test sum(cms_cst) ≈ -0.25986701 atol = 1e-6
 end
-
-# @testset "Geometry - Airfoil Processing" begin
-#     # Import and read airfoil coordinates
-#     foilpath = joinpath((dirname ∘ dirname ∘ pathof)(AeroMDAO), "test/CRM.dat")
-#     coords   = read_foil(foilpath)
-
-#     # Cosine spacing
-#     cos_foil = cosine_foil(coords, 51)
-
-#     # Split airfoil
-#     up, low  = split_foil(cos_foil)
-
-#     # Convert coordinates to Kulfan CST variables
-#     num_dv   = 4
-#     alpha_u, alpha_l = coords_to_CST(up, num_dv), coords_to_CST(low, num_dv)
-
-#     # Generate same airfoil using Kulfan CST parametrisation
-#     cst_foil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), 0.0)
-
-#     uniform  = Uniform2D(1., 5.)
-#     cl, cls, cms, cps, panels = solve_case(cst_foil, uniform; num_panels = 80)
-
-#     @test cl       ≈  0.85736965 atol = 1e-6
-#     @test sum(cls) ≈  0.85976886 atol = 1e-6
-#     @test sum(cms) ≈ -0.29766116 atol = 1e-6
-# end
 
 @testset "Geometry - Two-Section Trapezoidal Wing" begin
     # Define wing

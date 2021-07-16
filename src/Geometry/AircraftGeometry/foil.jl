@@ -7,38 +7,40 @@
 Airfoil structure consisting of foil coordinates as an array of points. Should be in Selig format for compatibility with other AeroMDAO tools.
 """
 struct Foil{T <: Real}
-    coords :: Matrix{T}
+    coordinates :: Matrix{T}
     name   :: String
 end
+
+coordinates(foil :: Foil) = foil.coordinates
 
 Foil(coords :: AbstractVector{SVector{2,T}}, name = "Unnamed") where T <: Real = Foil{T}([ getindex.(coords, 1) getindex.(coords, 2) ], name)
 Foil(coords :: AbstractMatrix{T}, name = "Unnamed") where T <: Real = Foil{T}(coords, name)
 
-arc_length(foil :: Foil) = let c = foil.coords; norm(c[2:end,:] .- c[1:end-1,:]) end
+arc_length(foil :: Foil) = let c = coordinates(foil); norm(c[2:end,:] .- c[1:end-1,:]) end
 
 """
     scale_foil(foil :: Foil, chord)
 
 Scale the coordinates of a Foil, usually to some chord length.
 """
-scale_foil(foil :: Foil, chord) = chord * foil.coords
+scale_foil(foil :: Foil, chord) = chord .* coordinates(foil)
 
 """
     cosine_foil(foil :: Foil, num :: Integer)
 
 Return a Foil with cosine spacing for a given number of points. 
 """
-cosine_foil(foil :: Foil, num :: Integer) = cosine_foil(foil.coords, num)
+cosine_foil(foil :: Foil, num :: Integer) = cosine_foil(coordinates(foil), num)
 
 """
     camber_thickness(foil :: Foil, num :: Integer)
 
 Compute the camber-thickness distribution of a Foil with cosine spacing..
 """
-camber_thickness(foil :: Foil, num :: Integer) = foil_camthick(cosine_foil(foil.coords), num + 1)
+camber_thickness(foil :: Foil, num :: Integer) = foil_camthick(cosine_foil(coordinates(foil)), num + 1)
 
 function max_thickness_to_chord_ratio_location(coords)
-    xs, thiccs = getindex.(coords, 1), getindex.(coords, 3)
+    xs, thiccs = coords[:,1], coords[:,3]
     max_thick_arg = argmax(thiccs)
     xs[max_thick_arg], thiccs[max_thick_arg]
 end
@@ -53,25 +55,21 @@ Read a '.dat' file consisting of 2D coordinates, for an airfoil as an array of `
 """
 function read_foil(path :: String; header = true)
     coords = readdlm(path, skipstart = header ? 1 : 0)
-    @views @SMatrix [ coords[:,1] coords[:,2] ]
+    # @views @SMatrix [ coords[:,1] coords[:,2] ]
 end
 
 function split_foil(coords)
     # display(coords)
     for (i, ((xp, yp), (x, y), (xn, yn))) ∈ (enumerate ∘ adj3 ∘ collect ∘ eachrow)(coords)
         if x < xp && x < xn
-            if slope(x, y, xp, yp) >= slope(x, y, xn, yn)
-                return splitat(i, coords)
-            else
-                return splitat(i, coords[end:-1:1,:])
-            end
+            return ifelse(slope(x, y, xp, yp) >= slope(x, y, xn, yn), splitat(i, coords), splitat(i, coords[end:-1:1,:]))
         end
     end
     (coords, [])
 end
 
 function paneller(foil :: Foil, num_panels :: Integer) 
-    coords = cosine_foil(foil.coords, Int(ceil(num_panels / 2)))
+    coords = cosine_foil(coordinates(foil), Int(ceil(num_panels / 2)))
     vecs   = SVector.(coords[:,1], coords[:,2])
     @views Panel2D.(vecs[2:end,:], vecs[1:end-1,:])[end:-1:1]
 end
@@ -152,7 +150,7 @@ function coords_to_CST(coords, num_dvs)
     xs 		 = coords[:,1]
     S_matrix = reduce(hcat, @. bernstein_class(xs, 0.5, 1.0) * bernstein_basis(xs, num_dvs - 1, i) for i in 0:num_dvs - 1)
 
-    alphas 	 = S_matrix \ last.(coords)
+    alphas 	 = S_matrix \ coords[:,2]
     
     return alphas
 end
@@ -260,4 +258,4 @@ function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_e
                 x_lower y_lower             ]
 end
 
-naca4(a, b, c, d, n = 40; sharp_trailing_edge = false) = naca4((a,b,c,d), n; sharp_trailing_edge = sharp_trailing_edge)
+naca4(a, b, c, d, n = 40; sharp_trailing_edge = true) = naca4((a,b,c,d), n; sharp_trailing_edge = sharp_trailing_edge)

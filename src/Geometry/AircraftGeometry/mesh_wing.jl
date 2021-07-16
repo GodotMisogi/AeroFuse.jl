@@ -28,7 +28,7 @@ Compute the surface coordinates of a `HalfWing` consisting of `Foil`s and releva
 """
 function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
     leading_xyz  = leading_edge(wing, flip)
-    scaled_foils = reduce(hcat, @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num))
+    scaled_foils = @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num)
     chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip)
 end
 
@@ -39,7 +39,7 @@ Compute the camber coordinates of a `HalfWing` consisting of camber distribution
 """
 function camber_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
     leading_xyz  = leading_edge(wing, flip)
-    scaled_foils = reduce(hcat, @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num))
+    scaled_foils = @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num)
     chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip)
 end
 

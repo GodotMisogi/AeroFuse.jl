@@ -6,10 +6,10 @@ end
 function plot_wing(wing :: Union{HalfWing, Wing}, rotation, translation)
     affine = Translation(translation) ∘ LinearMap(rotation)
     leading, trailing = wing_bounds(wing)
-    wing_coords = [ leading; trailing[end:-1:1]; [ first(leading) ] ]
-    # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coords ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
+    wing_coords = [ leading; trailing[end:-1:1,:]; leading[1,:] ]
+    # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coordinates ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
 
-    [ tuple(affine(coords)...) for coords in wing_coords ]
+    [ tuple(affine(coords)...) for coords in wing_coords ][:]
 end
 
 plot_wing(wing :: Union{HalfWing, Wing}; angle = 0., axis = [1., 0., 0.], position = zeros(3)) = plot_wing(wing, AngleAxis{Float64}(angle, axis...), position)

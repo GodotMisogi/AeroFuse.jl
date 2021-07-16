@@ -186,7 +186,7 @@ vtail_1 = HalfWingSection(root_foil  = naca4((0,0,1,2)),
                           span       = 0.4,
                           taper      = 0.731,
                           root_chord = 0.260,
-                          sweep_LE   = 15)
+                          sweep_LE   = 15.)
 vtail_2  = vtail_1 
 aircraft = Dict("Wing"    => panel_wing(wing, span_num, chord_num),
                 "HTail"   => panel_wing(htail, 6, 6;

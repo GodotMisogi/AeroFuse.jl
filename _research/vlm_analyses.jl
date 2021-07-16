@@ -121,7 +121,7 @@ solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, state, weight,
     nlsolve(solve_alpha_residual!, x,
             method     = :newton,
             show_trace = true,
-            # autodiff = :forward, # NOT WORKING
+            autodiff = :forward, # NOT WORKING
             # extended_trace = true
            )
 
