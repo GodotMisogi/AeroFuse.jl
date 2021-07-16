@@ -282,7 +282,7 @@ function evaluate_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β
     surface_forces, surface_moments, trefftz_force = case_dynamics(Γs, horseshoes, U, α, β, Ω, rho_ref, r_ref)
 
     # Compute aerodynamic coefficients
-    nearfield_coeffs, farfield_coeffs, CFs, CMs = evaluate_coefficients(surface_forces, surface_moments, trefftz_force, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref)
+    nearfield_coeffs, farfield_coeffs, CFs, CMs = evaluate_coefficients(surface_forces, surface_moments, trefftz_force, U, α, β, rho_ref, area_ref, chord_ref, span_ref)
 
     nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs
 end
@@ -317,7 +317,7 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     trefftz = getindex.(results, 3)
 
     # Components' non-dimensional forces and moments
-    data = evaluate_coefficients.(forces, moments, trefftz, Ref(U), α, β, Ref(Ω), rho_ref, area_ref, chord_ref, span_ref)
+    data = evaluate_coefficients.(forces, moments, trefftz, Ref(U), α, β, rho_ref, area_ref, chord_ref, span_ref)
 
     nf_comp_coeffs = getindex.(data, 1)
     ff_comp_coeffs = getindex.(data, 2)
@@ -331,8 +331,8 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     name_CMs  = reduce(vcat, vec.(CMs))                  # Collect surface moment coefficients
 
     # Dictionary assembly
-    name_data = (nf_coeffs, ff_coeffs, name_CFs, name_CMs, horsies, normies, horseshoes, Γs)
-    comp_data = tuple.(nf_comp_coeffs, ff_comp_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes_arr, Γs_arr)
+    name_data = (nf_coeffs, ff_coeffs, name_CFs, name_CMs, horseshoes, Γs)
+    comp_data = tuple.(nf_comp_coeffs, ff_comp_coeffs, CFs, CMs, horseshoes_arr, Γs_arr)
 
     names 	= [ name	   ; # Aircraft name
                 comp_names ] # Component names
