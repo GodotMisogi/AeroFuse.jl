@@ -55,12 +55,12 @@ aircraft = Dict("Wing"             => (wing_panels,  wing_normals),
 
 ## Case
 ac_name = "My Aircraft"
+S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 1.225
 ref     = [0.25c, 0., 0.]
 V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 
 @time data = 
     solve_case(aircraft, fs; 

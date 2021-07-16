@@ -15,7 +15,8 @@ function run_case(wing, V, α, ρ, span_num, chord_num)
     coeffs  = solve_case(wing, uniform, 
                          rho_ref = ρ,
                          span_num = span_num,
-                         chord_num = chord_num)[2]
+                         chord_num = chord_num,
+                         viscous = true)[2]
 end
 
 # Objective function
@@ -25,7 +26,7 @@ evaluate_CDi(wing, V, α, ρ, span_num, chord_num) = run_case(wing, V, α, ρ, s
 function evaluate_cons(wing, V, α, ρ, span_num, chord_num)
     area = projected_area(wing)
     ff   = run_case(wing, V, α, ρ, span_num, chord_num)
-    lift = dynamic_pressure(ρ, V) * S * ff[3]
+    lift = dynamic_pressure(ρ, V) * S * ff[5]
     CDi  = ff[1]
 
     lift, area, CDi
@@ -39,12 +40,12 @@ V, α, ρ  = 29., 5., 1.225
 
 # Design variables
 n    = 4
-wing = Wing(foils     = fill(Foil(naca4((2,4,1,2))), n),
+wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
             chords    = fill(0.314, n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),
-            dihedrals = fill(10., n-1),
-            sweep_LEs = fill(10., n-1))
+            dihedrals = fill(0., n-1),
+            sweep_LEs = fill(0., n-1))
 
 x0 = [(chords ∘ right)(wing); α]
 
@@ -56,31 +57,31 @@ make_wing(x) = Wing(chords    = x,
                     sweep_LEs = rad2deg.(sweeps(right(wing))))
 
 
-wing = WingSection(root_foil  = naca4((2,4,1,2)),
-                   tip_foil   = naca4((2,4,1,2)),
-                   span       = 2.6,
-                   root_chord = 0.314,
-                   taper      = 0.8,
-                   dihedral   = 5.0,
-                   sweep_LE   = 10.)
+# wing = WingSection(root_foil  = naca4((2,4,1,2)),
+#                    tip_foil   = naca4((2,4,1,2)),
+#                    span       = 2.6,
+#                    root_chord = 0.314,
+#                    taper      = 0.8,
+#                    dihedral   = 5.0,
+#                    sweep_LE   = 10.)
 
-x0 = [ mean_aerodynamic_chord(wing); taper_ratio(right(wing)); α ]
+# x0 = [ mean_aerodynamic_chord(wing); taper_ratio(right(wing)); α ]
 
-make_wing(x) = WingSection(root_foil  = naca4((2,4,1,2)),
-                           tip_foil   = naca4((2,4,1,2)),
-                           span       = span(wing),
-                           root_chord = x[1],
-                           taper      = x[2],
-                           dihedral   = rad2deg((dihedrals ∘ right)(wing)[1]),
-                           sweep_LE   = rad2deg((sweeps ∘ right)(wing)[1]))
+# make_wing(x) = WingSection(root_foil  = naca4((2,4,1,2)),
+#                            tip_foil   = naca4((2,4,1,2)),
+#                            span       = span(wing),
+#                            root_chord = x[1],
+#                            taper      = x[2],
+#                            dihedral   = rad2deg((dihedrals ∘ right)(wing)[1]),
+#                            sweep_LE   = rad2deg((sweeps ∘ right)(wing)[1]))
 
 
 # Meshing and assembly
 wing_mac = mean_aerodynamic_center(wing);
 b, S, c  = info(wing)[1:end-1]
 
-span_num  = 12
-chord_num = 6
+span_num  = 10
+chord_num = 1
 
 # Test
 test_CDi = @time evaluate_CDi(wing, V, α, ρ, span_num, chord_num)

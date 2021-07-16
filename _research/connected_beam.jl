@@ -8,12 +8,12 @@ using DataFrames
 #==========================================================================================#
 
 # Define wing
-wing = WingSection(root_foil  = naca4((0,0,1,2)),
-                   span       = 10.0,
+wing = WingSection(root_foil  = naca4(0,0,1,2),
+                   span       = 3.11,
                    dihedral   = 5.0,
                    sweep_LE   = 20.0,
                    taper      = 0.5,
-                   root_chord = 1.98,
+                   root_chord = 0.3,
                    root_twist = 2.0,
                    tip_twist  = 0.0)
 wing_mac    = mean_aerodynamic_center(wing)
@@ -22,7 +22,7 @@ wing_name   = "Wing"
 print_info(wing, wing_name)
 
 # Mesh
-span_num        = 10
+span_num        = 6
 chord_num       = 1
 # xyzs            = chop_wing(coordinates(wing), [span_num], chord_num)
 panels, normies = panel_wing(wing, span_num, chord_num, spacing = "cosine");
@@ -117,8 +117,8 @@ G     = 30e9  # Shear modulus, N/m²
 σ_max = 200e6 # Yield stress with factor of safety 2.5, N/m²
 ρ     = 3e3   # Density, kg/m³
 ν     = 0.3   # Poisson's ratio (UNUSED FOR NOW)
-R     = 1e-2  # Outer radius, m
-t     = 1e-3  # Thickness, m
+R     = 3e-2  # Outer radius, m
+t     = 1e-2  # Thickness, m
 
 # Create material and tubes
 aluminum = Material(E, G, σ_max, ρ)
@@ -183,7 +183,7 @@ using Plots
 pyplot(dpi = 300)
 
 n_pts = 20
-circle3D(r, n) = [ (r*cos(θ), r*sin(θ), 0) for θ in 0:2π/n:2π ];
+circle3D(r, n) = [ (r*cos(θ), 0, r*sin(θ)) for θ in 0:2π/n:2π ];
 circ     = circle3D(R, n_pts) 
 
 beam_pts = (tupvector ∘ bound_leg).(panels[:])
@@ -217,7 +217,7 @@ plot!.(plot_panels(panels[:]), color = :black, label = :none)
 plot!(wing_plan, color = :blue, label = :none)
 
 # Beams
-plot!(reduce(vcat, left_pts), color = :green, label = "Beams")
+plot!.(reduce(vcat, left_pts), color = :green, label = "Beams")
 
 # Forces
 quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(Cxs[:], Cys[:], Czs[:]) .* 50)

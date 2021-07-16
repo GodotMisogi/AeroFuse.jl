@@ -18,7 +18,7 @@ chop_chords(xyzs, div, spacing = "cosine") = reduce(hcat, chop_coordinates(xyz, 
 
 chop_wing(xyzs, span_num, chord_num; span_spacing = "cosine", chord_spacing = "cosine", flip = false) = chop_chords(chop_spans(xyzs, span_num, span_spacing, flip), chord_num, chord_spacing)
 
-transform_coordinates(xyz, twist, section) = eachrow(xyz * RotY(-twist)) .+ Ref(section)
+transform_coordinates(xyz, twist, section) = eachrow(xyz * RotY(-twist)') .+ Ref(section)
 
 function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_num, spacings, flip = false)
     # Reverse direction if left side
