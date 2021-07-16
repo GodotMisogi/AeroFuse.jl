@@ -7,36 +7,40 @@
 Airfoil structure consisting of foil coordinates as an array of points. Should be in Selig format for compatibility with other AeroMDAO tools.
 """
 struct Foil{T <: Real}
-    coords :: Vector{SVector{2,T}}
+    coordinates :: Matrix{T}
     name   :: String
 end
 
-Foil(coords :: AbstractVector{SVector{2,T}}, name = "Unnamed") where T <: Real = Foil{T}(coords, name)
-Foil(coords :: AbstractMatrix{T}, name = "Unnamed") where T <: Real = Foil{T}(SVector.(coords[:,1], coords[:,2]), name)
+coordinates(foil :: Foil) = foil.coordinates
+
+Foil(coords :: AbstractVector{SVector{2,T}}, name = "Unnamed") where T <: Real = Foil{T}([ getindex.(coords, 1) getindex.(coords, 2) ], name)
+Foil(coords :: AbstractMatrix{T}, name = "Unnamed") where T <: Real = Foil{T}(coords, name)
+
+arc_length(foil :: Foil) = let c = coordinates(foil); norm(c[2:end,:] .- c[1:end-1,:]) end
 
 """
     scale_foil(foil :: Foil, chord)
 
 Scale the coordinates of a Foil, usually to some chord length.
 """
-scale_foil(foil :: Foil, chord) = chord * foil.coords
+scale_foil(foil :: Foil, chord) = chord .* coordinates(foil)
 
 """
     cosine_foil(foil :: Foil, num :: Integer)
 
 Return a Foil with cosine spacing for a given number of points. 
 """
-cosine_foil(foil :: Foil, num :: Integer) = cosine_foil(foil.coords, num)
+cosine_foil(foil :: Foil, num :: Integer) = cosine_foil(coordinates(foil), num)
 
 """
     camber_thickness(foil :: Foil, num :: Integer)
 
 Compute the camber-thickness distribution of a Foil with cosine spacing..
 """
-camber_thickness(foil :: Foil, num :: Integer) = foil_camthick(cosine_foil(foil.coords), num + 1)
+camber_thickness(foil :: Foil, num :: Integer) = foil_camthick(cosine_foil(coordinates(foil)), num + 1)
 
 function max_thickness_to_chord_ratio_location(coords)
-    xs, thiccs = getindex.(coords, 1), getindex.(coords, 3)
+    xs, thiccs = coords[:,1], coords[:,3]
     max_thick_arg = argmax(thiccs)
     xs[max_thick_arg], thiccs[max_thick_arg]
 end
@@ -51,25 +55,23 @@ Read a '.dat' file consisting of 2D coordinates, for an airfoil as an array of `
 """
 function read_foil(path :: String; header = true)
     coords = readdlm(path, skipstart = header ? 1 : 0)
-    @views SVector.(coords[:,1], coords[:,2])
+    # @views @SMatrix [ coords[:,1] coords[:,2] ]
 end
 
 function split_foil(coords)
-    for (i, ((xp, yp), (x, y), (xn, yn))) ∈ (enumerate ∘ adj3)(coords)
+    # display(coords)
+    for (i, ((xp, yp), (x, y), (xn, yn))) ∈ (enumerate ∘ adj3 ∘ collect ∘ eachrow)(coords)
         if x < xp && x < xn
-            if slope(x, y, xp, yp) >= slope(x, y, xn, yn)
-                return splitat(i, coords)
-            else
-                return splitat(i, coords[end:-1:1,:])
-            end
+            return ifelse(slope(x, y, xp, yp) >= slope(x, y, xn, yn), splitat(i, coords), splitat(i, coords[end:-1:1,:]))
         end
     end
     (coords, [])
 end
 
 function paneller(foil :: Foil, num_panels :: Integer) 
-    coords = cosine_foil(foil.coords, Int(ceil(num_panels / 2)))
-    @views Panel2D.(coords[2:end], coords[1:end-1])[end:-1:1]
+    coords = cosine_foil(coordinates(foil), Int(ceil(num_panels / 2)))
+    vecs   = SVector.(coords[:,1], coords[:,2])
+    @views Panel2D.(vecs[2:end,:], vecs[1:end-1,:])[end:-1:1]
 end
 
 """
@@ -77,12 +79,14 @@ Discretises a foil profile into panels by projecting the x-coordinates of a circ
 """
 function cosine_foil(coords, n :: Integer = 40)
     upper, lower = split_foil(coords)
-    n_upper = [ upper    ; 
-               [lower[1]]] # Append leading edge point from lower to upper
-    upper_cos, lower_cos = cosine_interp(n_upper[end:-1:1], n), cosine_interp(lower, n)
+    n_upper = [ upper       ; 
+                lower[1,:]' ] # Append leading edge point from lower to upper
 
-    @views [ upper_cos[end:-1:2] ; 
-             lower_cos           ]
+    upper_cos = cosine_interp(n_upper[end:-1:1,:], n)
+    lower_cos = cosine_interp(lower, n)
+
+    @views [ upper_cos[end:-1:2,:] ; 
+             lower_cos             ]
 end
 
 ## Class shape transformation method
@@ -124,8 +128,8 @@ function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l), coeff_LE = 0, n :: Integer =
     lower_surf = [ bernie(x, alpha_l, dz_l) for x ∈ xs ]
 
     # Counter-clockwise ordering
-    @views [ SVector.(xs, upper_surf)[end:-1:2] ; 
-             SVector.(xs, lower_surf)           ]
+    @views [ xs[end:-1:2] upper_surf[end:-1:2] ; 
+             xs           lower_surf           ]
 end
 
 function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc), coeff_LE = 0, n :: Integer = 40, N1 = 0.5, N2 = 1.)
@@ -143,10 +147,10 @@ function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc), coeff_LE = 0, n 
 end
 
 function coords_to_CST(coords, num_dvs)
-    xs 		 = first.(coords)
+    xs 		 = coords[:,1]
     S_matrix = reduce(hcat, @. bernstein_class(xs, 0.5, 1.0) * bernstein_basis(xs, num_dvs - 1, i) for i in 0:num_dvs - 1)
 
-    alphas 	 = S_matrix \ last.(coords)
+    alphas 	 = S_matrix \ coords[:,2]
     
     return alphas
 end
@@ -154,8 +158,8 @@ end
 function camthick_to_CST(coords, num_dvs)
     xs, camber, thickness = (columns ∘ foil_camthick)(coords)
 
-    alpha_cam  	= coords_to_CST(SVector.(xs, camber), num_dvs)
-    alpha_thick = coords_to_CST(SVector.(xs, thickness), num_dvs)
+    alpha_cam  	= coords_to_CST([ xs camber ], num_dvs)
+    alpha_thick = coords_to_CST([ xs thickness ], num_dvs)
     
     alpha_cam, alpha_thick
 end
@@ -169,13 +173,13 @@ Converts an airfoil to its camber-thickness representation in cosine spacing.
 function foil_camthick(coords, num :: Integer = 40)
     upper, lower = split_foil(cosine_foil(coords, num))
 
-    xs, y_LE  	 = first.(lower), first(lower)[2]   # Getting abscissa and leading edge ordinate
-    y_upper, y_lower = last.(upper[end:-1:1]), last.(lower[2:end]) # Excluding leading edge point
+    xs, y_LE  	 = lower[:,1], lower[1,2]   # Getting abscissa and leading edge ordinate
+    y_upper, y_lower = upper[end:-1:1,2], lower[2:end,2] # Excluding leading edge point
 
     camber    	 = [ y_LE; (y_upper + y_lower) / 2 ]
     thickness 	 = [ 0; y_upper - y_lower ]
 
-    SVector.(xs, camber, thickness)
+    [ xs camber thickness ]
 end
 
 """
@@ -186,24 +190,24 @@ Converts the camber-thickness representation to coordinates given the ``x``-loca
 function camthick_foil(xs, camber, thickness)
     coords = [ [xs camber + thickness / 2][end:-1:2,:];
                 xs camber - thickness / 2 			  ]
-    @views SVector.(coords[:,1], coords[:,2])
+    # @views SVector.(coords[:,1], coords[:,2])
 end
 
-camthick_foil(coords) = @views camthick_foil(getindex.(coords, 1), getindex.(coords, 2), getindex.(coords, 3))
+camthick_foil(coords) = @views camthick_foil(coords[:,1], coords[:,2], coords[:,3])
 
 """
     camber_coordinates(coords :: Array{2, <: Real})
 
 Provides the camber coordinates on the ``x``-``z`` plane at ``y = 0``.
 """
-camber_coordinates(coords) = @views SVector.(getindex.(coords, 1), 0, getindex.(coords, 2))
+camber_coordinates(coords) = @views [ coords[:,1] zeros(length(coords[:,1])) coords[:,2] ]
 
 """
     thickness_coordinates(coords :: Array{2, <: Real})
 
 Provides the thickness coordinates on the ``x``-``z`` plane at ``y = 0``.
 """
-thickness_coordinates(coords) = @views SVector.(getindex.(coords, 1), 0, getindex.(coords, 3))
+thickness_coordinates(coords) = @views [ coords[:,1] zeros(length(coords[:,1])) coords[:,3] ]
 
 
 ## NACA Parametrisation
@@ -252,8 +256,6 @@ function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_e
     end
     coords = [ [x_upper y_upper][end:-1:2,:]; 
                 x_lower y_lower             ]
-                
-    @views SVector.(coords[:,1], coords[:,2])
 end
 
-naca4(a, b, c, d, n = 40; sharp_trailing_edge = false) = naca4((a,b,c,d), n; sharp_trailing_edge = sharp_trailing_edge)
+naca4(a, b, c, d, n = 40; sharp_trailing_edge = true) = naca4((a,b,c,d), n; sharp_trailing_edge = sharp_trailing_edge)

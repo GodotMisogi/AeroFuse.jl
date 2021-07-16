@@ -136,11 +136,15 @@ function vlm_system_derivatives(system, surf, fs, r_ref)
                          name = ac_name);
 
         Γs = AeroMDAO.VortexLattice.solve_system(horseshoes(system), normals(system), normalize(state.velocity), state.omega)
-        forces, moments, trefftz_force = AeroMDAO.VortexLattice.case_dynamics(circulations(surf), horseshoes(surf), Γs, horseshoes(system), state.velocity, state.alpha, state.beta, state.omega, state.rho_ref, state.r_ref)
 
-        # nearfield_coeffs, farfield_coeffs, CFs, CMs = AeroMDAO.VortexLattice.evaluate_coefficients(forces, moments, trefftz_force, state.speed, state.alpha, state.beta, state.omega, state.rho_ref, state.area_ref, state.chord_ref, state.span_ref)
+        # system.circulations = Γs
+        # update_circulations!(system)
 
-        [forces[:]; moments[:]; trefftz_force ]
+        forces, moments, trefftz_force = AeroMDAO.VortexLattice.case_dynamics(Γs, horseshoes(system), state.velocity, state.alpha, state.beta, state.omega, state.rho_ref, state.r_ref)
+
+        nearfield_coeffs, farfield_coeffs, CFs, CMs = AeroMDAO.VortexLattice.evaluate_coefficients(forces, moments, trefftz_force, state.velocity, state.alpha, state.beta, state.rho_ref, state.area_ref, state.chord_ref, state.span_ref)
+
+        [ nearfield_coeffs[:]; farfield_coeffs[:]; reduce(vcat, CFs[:]); reduce(vcat, CMs[:]) ]
     end
 
     V, α, β, Ω = fs.V, fs.alpha, fs.beta, fs.omega

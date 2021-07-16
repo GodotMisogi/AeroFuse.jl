@@ -76,7 +76,7 @@ end
 # In case of only one component
 case_dynamics(Γs, horseshoes, U, α, β, Ω, ρ, r_ref) = case_dynamics(Γs, horseshoes, Γs, horseshoes, U, α, β, Ω, ρ, r_ref)
 
-function evaluate_coefficients(forces, moments, trefftz_force, U, α, β, Ω, ρ, S, c, b)
+function evaluate_coefficients(forces, moments, trefftz_force, U, α, β, ρ, S, c, b)
     V = norm(U)
     q = dynamic_pressure(ρ, V)
 

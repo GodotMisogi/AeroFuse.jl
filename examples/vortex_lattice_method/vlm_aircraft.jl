@@ -29,30 +29,29 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 print_info(vtail, "Vertical Tail")
 
 ## Assembly
-wing_panels  = panel_wing(wing,                 # Wing or HalfWing type
-                          [20, 3],              # Number of spanwise panels for half-wing 
-                          10;                   # Chordwise panels 
-                        #   spacing = "cosine"  # Spacing distribution: Default works well for symmetric
-                         )
+wing_panels, wing_normals  = panel_wing(wing,                 # Wing or HalfWing type
+                                        [20, 3],              # Number of spanwise panels for half-wing 
+                                        10;                   # Chordwise panels 
+                                        # spacing = "cosine"    # Spacing distribution: Default works well for symmetric
+                                       )
 
-htail_panels = panel_wing(htail, [6], 6;
-                          position	= [4., 0, 0],
-                          angle 	= deg2rad(-2.),
-                          axis 	  	= [0., 1., 0.],
-                          spacing   = "uniform"
-                         )
-vtail_panels = panel_wing(vtail, [6], 5; 
-                          position 	= [4., 0, 0],
-                          angle 	= π/2, 
-                          axis 	 	= [1., 0., 0.],
-                          spacing   = "uniform"
-                         )
+htail_panels, htail_normals = panel_wing(htail, [6], 6;
+                                         position = [4., 0, 0],
+                                         angle 	  = deg2rad(-2.),
+                                         axis     = [0., 1., 0.],
+                                         spacing  = "uniform"
+                                        )
 
-aircraft = Dict("Wing" 			  	=> wing_panels,
-                "Horizontal Tail" 	=> htail_panels,
-                "Vertical Tail"   	=> vtail_panels)
+vtail_panels, vtail_normals = panel_wing(vtail, [6], 5; 
+                                         position = [4., 0, 0],
+                                         angle    = π/2, 
+                                         axis     = [1., 0., 0.],
+                                         spacing  = "uniform"
+                                        )
 
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+aircraft = Dict("Wing"             => (wing_panels,  wing_normals),
+                "Horizontal Tail"  => (htail_panels, htail_normals),
+                "Vertical Tail"    => (vtail_panels, vtail_normals))
 
 ## Case
 ac_name = "My Aircraft"
@@ -61,6 +60,7 @@ ref     = [0.25c, 0., 0.]
 V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
+S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 
 @time data = 
     solve_case(aircraft, fs; 
@@ -76,8 +76,8 @@ fs      = Freestream(V, α, β, Ω)
 
 ## Data collection
 comp_names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
-comp  = comp_names[1]			   # Pick your component
-nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horses, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
+comp  = comp_names[1]			    # Pick your component
+nf_coeffs, ff_coeffs, CFs, CMs, horses, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
 print_coefficients(nf_coeffs, ff_coeffs, comp)
 
 ## Stability case
@@ -123,10 +123,11 @@ streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 
 ##
 using Plots
-gr(size = (200, 100), dpi = 300)
+gr(dpi = 300)
 
 ##
-horseshoe_coords = plot_panels(horseshoe_panels[:]);
+aircraft_panels  = [ wing_panels[:]; htail_panels[:]; vtail_panels[:] ]
+horseshoe_coords = plot_panels(aircraft_panels);
 
 z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",

@@ -1,26 +1,38 @@
 using Revise
 using AeroMDAO
 using BenchmarkTools
-using ForwardDiff, ReverseDiff
 using StaticArrays
 using LinearAlgebra
+using ForwardDiff, ReverseDiff, Zygote
 
 ## Foil tests 
-struct FoilTest{T <: Real}
-	foils :: Vector{Foil{T}}
+struct TestFoil{T <: Real}
+    coords :: Matrix{T}
 end
 
-arc_length(foil :: Foil) = let c = foil.coords; norm(c[2:end] .- c[1:end-1]) end
+# a :: TestFoil + b :: TestFoil = TestFoil(a.coords .+ b.coords)
+TestFoil(coords :: AbstractMatrix{T}) where T <: Real = TestFoil{T}(SVector.(coords[:,1], coords[:,2]))
 
-arc_length(fs :: FoilTest) = sum(arc_length, fs.foils)
+AeroMDAO.arc_length(foil :: TestFoil) = let c = foil.coords; norm(c[2:end] .- c[1:end-1]) end
 
-foiler(x) = arc_length(FoilTest(fill(Foil(x, "NACA 0012"), 5)))
+x_coords = naca4(0,0,1,2)
 
-x_coords = let coords = naca4(0,0,1,2); [ getindex.(coords, 1) getindex.(coords, 2) ] end
-airfoils = FoilTest(fill(Foil(x_coords, "NACA 0012"), 5))
+Zygote.gradient(arc_length ∘ TestFoil, x_coords) # PASSES FOR MATRIX
 
-foiler(x_coords)
-ReverseDiff.gradient(foiler, x_coords)
+## 
+struct TestFoils{T <: Real}
+	foils :: Vector{TestFoil{T}}
+end
+
+AeroMDAO.arc_length(fs :: TestFoils) = sum(arc_length, fs.foils)
+
+foiler(x) = arc_length(TestFoils(fill(TestFoil(x), 5)))
+airfoils = TestFoils(fill(TestFoil(x_coords), 5))
+
+Zygote.gradient(arc_length ∘ TestFoils ∘ (x -> fill(x, 5)), TestFoil(x_coords)) # PASSES
+# Zygote.gradient(foiler, x_coords) # FAILS
+
+# x = Zygote.gradient(sum ∘ (x -> reduce(vcat, fill(x, 5))), [1,2,3])
 
 # Great success!
 
@@ -63,7 +75,7 @@ sws = [2.29, 30.]
 xs = [cs; ts; sps; dis; sws]
 wing = winger(xs, length(cs)) 
 
-ForwardDiff.gradient(x -> winger(x, length(cs)), xs)
+Zygote.gradient(x -> winger(x, length(cs)), xs)
 
 # Great success!
 
@@ -71,12 +83,12 @@ ForwardDiff.gradient(x -> winger(x, length(cs)), xs)
 struct FoilerWing{T <: Real}
     foils  :: Vector{Foil{T}}
     chords :: Vector{T}
-    FoilerWing(fs :: AbstractVector{Foil{<: Real}}, cs :: AbstractVector{T}) where T <: Real = new{T}(fs, cs)
+    FoilerWing(fs :: AbstractVector{Foil{T}}, cs :: AbstractVector{T}) where T <: Real = new{T}(fs, cs)
 end
 
-FoilerWing(fs :: AbstractArray{Foil{<: Real}}, cs :: AbstractArray{<: Real}) = FoilerWing(fs, cs)
+# FoilerWing(fs :: AbstractArray{Foil{<: Real}}, cs :: AbstractArray{<: Real}) = FoilerWing(fs, cs)
 
-arc_length(fw :: FoilerWing) = sum(arc_length, fw.foils)
+AeroMDAO.arc_length(fw :: FoilerWing) = sum(arc_length, fw.foils)
 
 # Test
 foiler_wing(x1, x2) = arc_length(FoilerWing(fill(Foil(x1), length(x2)), x2))
@@ -85,17 +97,23 @@ foilwing = foiler_wing(x_coords, cs)
 
 diff_foiler_wing(x) = foiler_wing(reshape(x[1:end-length(cs)], size(x_coords)), x[end-length(cs):end])
 diff_foiler_wing([ x_coords[:]; cs ])
-∂f∂x(x, y) = ForwardDiff.gradient(x -> foiler_wing(x, y), x)
-∂f∂y(x, y) = ForwardDiff.gradient(y -> foiler_wing(x, y), y)
+∂f∂x(x, y) = Zygote.gradient(x -> foiler_wing(x, y), x)
+∂f∂y(x, y) = Zygote.gradient(y -> foiler_wing(x, y), y)
 ForwardDiff.gradient(diff_foiler_wing, [ x_coords[:]; cs])
 ∂f∂x(x_coords, cs)
-∂f∂y(x_coords, cs)
+# ∂f∂y(x_coords, cs)
 
 # Great success!
 
 ## Wing
-winglord(x, n) = Wing(chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], sweep_LEs = x[4n-1:end])
+AeroMDAO.arc_length(fw :: HalfWing) = sum(arc_length, fw.foils)
+AeroMDAO.arc_length(wing :: Wing) = arc_length(wing.left) + arc_length(wing.right)
 
+winglord(x, n) = Wing(foils = fill(Foil(naca4(2,4,1,2)), n), chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], sweep_LEs = x[4n-1:end])
+
+winglord(xs, length(cs))
+
+df = ForwardDiff.gradient(arc_length ∘ (x -> winglord(x, length(cs))), xs)
 
 ## VLM
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
@@ -115,7 +133,7 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
 end
 
 function vlmer(x)
-	wing 		= winger(x, length(cs))
+	wing 		= winglord(x, length(cs))
 	wing_pos    = [0., 0., 0.]
 	ρ 			= 1.225
 	ref     	= zeros(3)
@@ -132,4 +150,4 @@ end
 vlmer(xs)
 
 ## ForwardDiff
-ForwardDiff.jacobian(vlmer, [5.0, 0.0, 10.0, 0.4, 2.0, 0.0, -2.0])
+ForwardDiff.jacobian(vlmer, xs)

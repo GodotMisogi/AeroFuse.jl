@@ -147,18 +147,18 @@ println("Spiral Stability      γ: $γ")
 
 ## Plotting everything
 using Plots
-gr(dpi = 300)
+pyplot()
 
 #
 z_limit = b
 aircraft_plot = 
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
-     aspect_ratio = 1, 
      camera = (30, 60),
      xlim = (0, z_limit),
     #  ylim = (-z_limit/2, z_limit/2),
      zlim = (-z_limit/2, z_limit/2),
-     size = (1280, 720)
+     size = (1920, 1080),
+    #  legend = false
     )
 
 plot!(wing_plan, label = "Wing")

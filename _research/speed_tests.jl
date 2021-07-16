@@ -58,10 +58,13 @@ S, b, c = 9.0, 10.0, 0.9
 #==========================================================================================#
 
 # Stateful
-function alpha_sweep!(α, system :: VLMSystem, surfs, state :: VLMState)
+function alpha_sweep!(α, system, state)
     state.alpha = α
-    evaluate_case!(system, (collect ∘ values)(surfs), state)
-    aerodynamic_coefficients(surfs, state)
+    evaluate_case!(system, state)
+    surfs = surfaces(system)
+    aerodynamic_coefficients(surfs, state),
+    surface_force_coefficients.(surfs, Ref(state)),
+    surface_moment_coefficients.(surfs, Ref(state)), horseshoes.(surfs), normals.(surfs), circulations.(surfs)
 end
 
 # Stateful
@@ -76,10 +79,10 @@ println("AeroMDAO Aircraft Stateful -")
                      span_ref  = b);
 
     # Set up system and surfaces                     
-    system, surfs = build_system(aircraft);
+    system = build_system(aircraft);
     
     # Evaluate sweep
-    coeffs = alpha_sweep!.(deg2rad.(αs), Ref(system), Ref(surfs), Ref(state))
+    coeffs = alpha_sweep!.(deg2rad.(αs), Ref(system), Ref(state))
 end
 
 ## "Functional"
