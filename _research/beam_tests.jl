@@ -1,12 +1,24 @@
 ## Euler-Bernoulli beam tests
 using AeroMDAO
 
-## Deflection stiffness matrix
-K = deflection_stiffness_matrix([1., 1.], [1., 1.], [2., 2.], :z)
+# Beam properties
+E     = 85e9  # Elastic modulus, N/m²
+G     = 25e9  # Shear modulus, N/m²
+σ_max = 350e6 # Yield stress with factor of safety 2.5, N/m²
+ρ     = 1.6e3   # Density, kg/m³
+ν     = 0.3   # Poisson's ratio (UNUSED FOR NOW)
+R     = 3e-2  # Outer radius, m
+t     = 1e-2  # Thickness, m
 
-## 1. Fixed hinged beam subjected to force and moment at the center
-A = K[[3,4,6],[3,4,6]]  # v2, φ2, φ3 
-b = [-1000, 1000, 0]    # F2, M2, M3
+# Create material and tubes
+Ls       = [0.1, 0.1]
+aluminum = Material(E, G, σ_max, ρ)
+tubes    = Tube.(Ref(aluminum), Ls, R, t)
+
+K = tube_stiffness_matrix(aluminum, tubes)
+
+A = K[1:6,1:6]  # v2, φ2, φ3 
+b = [0., 0.1, 0.001, -0.1, 0.03, -0.3]    # F2, M2, M3
 
 x = A \ b
 

@@ -112,13 +112,13 @@ M_S = map(x -> [ x[1] * vec for vec in x[2] ], zip(dircos, [left_moments, right_
 #==========================================================================================#
 
 # Beam properties
-E     = 70e9  # Elastic modulus, N/m²
-G     = 30e9  # Shear modulus, N/m²
-σ_max = 200e6 # Yield stress with factor of safety 2.5, N/m²
-ρ     = 3e3   # Density, kg/m³
+E     = 85e9  # Elastic modulus, N/m²
+G     = 25e9  # Shear modulus, N/m²
+σ_max = 350e6 # Yield stress with factor of safety 2.5, N/m²
+ρ     = 1.6e3   # Density, kg/m³
 ν     = 0.3   # Poisson's ratio (UNUSED FOR NOW)
 R     = 3e-2  # Outer radius, m
-t     = 1e-2  # Thickness, m
+t     = 8e-3  # Thickness, m
 
 # Create material and tubes
 aluminum = Material(E, G, σ_max, ρ)
@@ -187,7 +187,7 @@ circle3D(r, n) = [ (r*cos(θ), 0, r*sin(θ)) for θ in 0:2π/n:2π ];
 circ     = circle3D(R, n_pts) 
 
 beam_pts = (tupvector ∘ bound_leg).(panels[:])
-left_pts = reduce(vcat, [ [ [ circ_pt .+ pt[1], circ_pt .+ pt[2] ] for circ_pt in circ ] for pt in beam_pts ])
+left_pts = [ [ [ circ_pt .+ pt[1], circ_pt .+ pt[2] ] for circ_pt in circ ] for pt in beam_pts ]
 
 mid_pts = midpoint.(wing_pans)
 
@@ -204,27 +204,27 @@ hs_zs  = getindex.(hs_pts, 3)
 
 # Plot
 b = aero_state.span_ref
-plot(camera = (90, 90), 
+plot(camera = (45, 45), 
      xlim = (-b/2, b/2),
     #  ylim = (-b/2, b/2), 
      zlim = (-b/2, b/2)
     )
 
 # Panels
-plot!.(plot_panels(panels[:]), color = :black, label = :none)
+[ plot!(pans, color = :black, label = ifelse(i == 1, "Panels", :none)) for (i, pans) in enumerate(plot_panels(panels[:])) ]
 
 # Planform
-plot!(wing_plan, color = :blue, label = :none)
+plot!(wing_plan, color = :blue, label = "Planform")
 
 # Beams
-plot!.(reduce(vcat, left_pts), color = :green, label = "Beams")
+[ plot!(reduce(vcat, pt), color = :green, label = ifelse(i == 1, "Beams", :none)) for (i, pt) in enumerate(left_pts) ]
 
 # Forces
-quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(Cxs[:], Cys[:], Czs[:]) .* 50)
+quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(Cxs[:], Cys[:], Czs[:]) .* 50, label = "Forces")
 
 # Axis system
-quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(n_cs, 1)[:], getindex.(n_cs, 2)[:], getindex.(n_cs, 3)[:]), color = :orange)
-quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ns, 1)[:], getindex.(ns, 2)[:], getindex.(ns, 3)[:]), color = :red)
-quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ss, 1)[:], getindex.(ss, 2)[:], getindex.(ss, 3)[:]), color = :brown)
+quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(n_cs, 1)[:], getindex.(n_cs, 2)[:], getindex.(n_cs, 3)[:]), color = :orange, label = :none)
+quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ns, 1)[:], getindex.(ns, 2)[:], getindex.(ns, 3)[:]), color = :red, label = :none)
+quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ss, 1)[:], getindex.(ss, 2)[:], getindex.(ss, 3)[:]), color = :brown, label = :none)
 
 plot!()
