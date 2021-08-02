@@ -22,10 +22,10 @@ wing_name   = "Wing"
 print_info(wing, wing_name)
 
 # Mesh
-span_num        = 6
-chord_num       = 1
+span_num        = 5
+chord_num       = 2
 # xyzs            = chop_wing(coordinates(wing), [span_num], chord_num)
-panels, normies = panel_wing(wing, span_num, chord_num, spacing = "cosine");
+panels, normies = panel_wing(wing, span_num, chord_num, spacing = "sine");
 aircraft        = Dict(wing_name => (panels, normies));
 
 # Set up aerodynamic state
@@ -37,9 +37,9 @@ aero_state = VLMState(1., 0., 0., [0.0, 0.0, 0.0],
                       span_ref  = span(wing));
 
 # Test case - Fixed speed
-aero_state.speed   = 20.
-aero_state.alpha   = deg2rad(1.)
-aero_state.rho_ref = 0.98
+aero_state.speed   = 22.876
+aero_state.alpha   = deg2rad(5.)
+aero_state.rho_ref = 0.770816
 
 # Build system with initial guess from aerodynamic-only analysis
 aero_system = solve_case(aircraft, aero_state)
@@ -50,23 +50,56 @@ print_coefficients(aero_surfs[1], aero_state);
 #==========================================================================================#
 
 # Functions on adjacencies
-adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
+adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end,:] .+ x2[1:end-1,:]; [ x2[end] ] ]
 AeroMDAO.VortexLattice.points(horses) = @. r1(bound_leg_center(horses), horses)[:], r2(bound_leg_center(horses), horses)[:]
 
 # Get variables for structural analysis
 forces   = surface_forces(aero_surfs[1]) 
-horsies  = horseshoes(aero_system)
-r1s, r2s = points(horsies)
+horsies  = horseshoes(aero_surfs[1])
+# r1s, r2s = points(horsies)
 
-# Point values
-half_forces = forces[:] / 2
+weight      = 0.25
+plan_coords = coordinates(wing, span_num, chord_num)
+mesh        = reshape(permutedims(reduce(hcat, plan_coords)), (size(plan_coords)..., 3))
+
+# Aerodynamic center locations
+ac_mine = bound_leg_center.(horsies)
+
+ac_pts = 0.5 * (  (1 - weight) * mesh[1:end-1, 1:end-1, :]
+                +      weight  * mesh[2:end,   1:end-1, :]
+                + (1 - weight) * mesh[1:end-1, 2:end,   :]
+                +      weight  * mesh[2:end,   2:end,   :])
+
+# FEM beam node locations
+fem_pts   = (1 - weight) * mesh[1,:,:] + weight * mesh[end,:,:]
+r1s, r2s  = fem_pts[1:end-1,:], fem_pts[2:end,:]
+
+# FEM beam node locations
+# fem_pts   = (1 - weight) * plan_coords[1,:] + weight * plan_coords[end,:]
+# r1s, r2s  = fem_pts[1:end-1], fem_pts[2:end]
+
+## Point values
+half_forces = sum(forces, dims = 1)[:] / 2
 M1s         = @. r1s × half_forces
 M2s         = @. r2s × half_forces
 
+##
 pt_forces   = adjacent_joiner(half_forces, half_forces)
 pt_moments  = adjacent_joiner(M1s, M2s)
 
-# Transform everything to principal axes
+# Matrix version
+pt_loads = zeros(length(half_forces) + 1, 6)
+test_force = permutedims(reduce(hcat, half_forces))
+pt_loads[1:end-1,1:3] = test_force
+pt_loads[2:end,1:3]  += test_force
+
+# test_M1s = permutedims(reduce(hcat, M1s))
+# test_M2s = permutedims(reduce(hcat, M2s))
+# pt_loads[1:end-1,4:end] = test_M1s
+# pt_loads[2:end,4:end]  += test_M2s
+pt_loads[end:-1:6,:]
+
+## Transform everything to principal axes
 wing_pans = (make_panels ∘ coordinates)(wing)[:]
 cs        = diff.(bound_leg.(wing_pans), dims = 1)
 n_cs      = normalize.(reduce(vcat, cs))
@@ -117,7 +150,7 @@ G     = 25e9  # Shear modulus, N/m²
 σ_max = 350e6 # Yield stress with factor of safety 2.5, N/m²
 ρ     = 1.6e3   # Density, kg/m³
 ν     = 0.3   # Poisson's ratio (UNUSED FOR NOW)
-R     = 3e-2  # Outer radius, m
+R     = 1e-2  # Outer radius, m
 t     = 8e-3  # Thickness, m
 
 # Create material and tubes
@@ -139,6 +172,20 @@ function assemble_fem_dynamics(pt_forces, pt_moments)
 
     F  = [ py; pz; px ]
 end
+
+Fx = getindex.(pt_forces,  1)
+Fy = getindex.(pt_forces,  2) 
+Fz = getindex.(pt_forces,  3)
+Mx = getindex.(pt_moments, 1)
+My = getindex.(pt_moments, 2)
+Mz = getindex.(pt_moments, 3)
+
+df = DataFrame([ Fx Fy Fz Mx My Mz ], :auto)
+rename!(df, [:Fx, :Fy, :Fz, :Mx, :My, :Mz])
+
+py = (collect ∘ Iterators.flatten ∘ zip)(Fy, My)
+pz = (collect ∘ Iterators.flatten ∘ zip)(Fz, Mz)
+px = (collect ∘ Iterators.flatten ∘ zip)(Fx, Mx)
 
 ## "FEM" setup
 K = tube_stiffness_matrix(aluminum, tubes)
@@ -191,6 +238,11 @@ left_pts = [ [ [ circ_pt .+ pt[1], circ_pt .+ pt[2] ] for circ_pt in circ ] for 
 
 mid_pts = midpoint.(wing_pans)
 
+mid_pans = midpoint.(panels)[:]
+mid_xs  = getindex.(mid_pans, 1)
+mid_ys  = getindex.(mid_pans, 2)
+mid_zs  = getindex.(mid_pans, 3)
+
 CFs = force_coefficient.(reduce(vcat, F_S), dynamic_pressure(aero_state.rho_ref, aero_state.speed), aero_state.area_ref) 
 # surface_force_coefficients(aero_surfs[1], aero_state)
 Cxs = @. getindex(CFs, 1)
@@ -220,7 +272,8 @@ plot!(wing_plan, color = :blue, label = "Planform")
 [ plot!(reduce(vcat, pt), color = :green, label = ifelse(i == 1, "Beams", :none)) for (i, pt) in enumerate(left_pts) ]
 
 # Forces
-quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(Cxs[:], Cys[:], Czs[:]) .* 50, label = "Forces")
+quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(Cxs[:], Cys[:], Czs[:]) .* 10, label = "Forces")
+quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(getindex.(forces, 1),getindex.(forces, 2),getindex.(forces, 3)) .* 0.1, label = "Forces")
 
 # Axis system
 quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(n_cs, 1)[:], getindex.(n_cs, 2)[:], getindex.(n_cs, 3)[:]), color = :orange, label = :none)
