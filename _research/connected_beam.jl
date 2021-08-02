@@ -58,32 +58,31 @@ forces   = surface_forces(aero_surfs[1])
 horsies  = horseshoes(aero_surfs[1])
 # r1s, r2s = points(horsies)
 
-weight      = 0.35
-plan_coords = coordinates(wing, span_num, chord_num, span_spacing = "sine")
+fem_w       = 0.35
+plan_coords = coordinates(wing, span_num, chord_num)
 mesh        = reshape(permutedims(reduce(hcat, plan_coords)), (size(plan_coords)..., 3))
 
 # Aerodynamic center locations and forces
-
 half_forces = sum(forces, dims = 1)[:] / 2
 ac_mine  = bound_leg_center.(horsies)
 ac_pts   = reshape(permutedims(reduce(hcat, ac_mine)), (size(ac_mine)..., 3))
 
 # FEM beam node locations as Matrix
-fem_arr  = (1 - weight) * mesh[1,:,:] + weight * mesh[end,:,:]
+fem_arr  = (1 - fem_w) * mesh[1,:,:] + fem_w * mesh[end,:,:]
 M1s = sum(let xs = (ac_pts[i,:,:] - fem_arr[1:end-1,:]); 
-              @. SVector(xs[:,1], xs[:,2], xs[:,3]) × half_forces end
+              @. SVector(xs[:,1], xs[:,2], xs[:,3]) × forces[i,:] / 2 end
               for i in eachindex(ac_pts[:,1,1]))
 M2s = sum(let xs = (ac_pts[i,:,:] - fem_arr[2:end,:]); 
-              @. SVector(xs[:,1], xs[:,2], xs[:,3]) × half_forces end
+              @. SVector(xs[:,1], xs[:,2], xs[:,3]) × forces[i,:] / 2 end
               for i in eachindex(ac_pts[:,1,1]))
 
 ## FEM beam node locations as Vector{SVector{3}}
-# fem_pts  = (1 - weight) * plan_coords[1,:] + weight * plan_coords[end,:]
+# fem_pts  = (1 - fem_w) * plan_coords[1,:] + fem_w * plan_coords[end,:]
 # r1s, r2s = fem_pts[1:end-1], fem_pts[2:end]
 # M1s         = @. r1s × half_forces
 # M2s         = @. r2s × half_forces
 
-##
+## Need to check if adjacent_joiner is the right definition...
 pt_forces   = adjacent_joiner(half_forces, half_forces)
 pt_moments  = adjacent_joiner(M1s, M2s)
 
