@@ -7,8 +7,8 @@ G     = 25e9  # Shear modulus, N/m²
 σ_max = 350e6 # Yield stress with factor of safety 2.5, N/m²
 ρ     = 1.6e3   # Density, kg/m³
 ν     = 0.3   # Poisson's ratio (UNUSED FOR NOW)
-R     = 3e-2  # Outer radius, m
-t     = 1e-2  # Thickness, m
+R     = 1e-2  # Outer radius, m
+t     = 8e-3  # Thickness, m
 
 # Create material and tubes
 Ls       = [0.1, 0.1]

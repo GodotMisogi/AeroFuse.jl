@@ -69,13 +69,13 @@ end
 J_coeffs(A, B, L) = A * B / L .* [ 1 -1; -1  1 ]
 
 Iyy_coeffs(E, I, L) = let k0 = 12, k1 = 6L, k2 = 2L^2;
-    E * I / L^3 .* @SMatrix [  k0 -k1 -k0 -k1 ;
+    E * I / L^3 * @SMatrix [  k0 -k1 -k0 -k1 ;
                               -k1 2k2  k1  k2 ;
                               -k0  k1  k0  k1 ;
                               -k1  k2  k1 2k2 ] end
 
 Izz_coeffs(E, I, L) = let k0 = 12, k1 = 6L, k2 = 2L^2;
-    E * I / L^3 .* @SMatrix [  k0  k1 -k0  k1 ;
+    E * I / L^3 * @SMatrix [  k0  k1 -k0  k1 ;
                                k1 2k2 -k1  k2 ;
                               -k0 -k1  k0 -k1 ;
                                k1  k2 -k1 2k2 ] end

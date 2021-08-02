@@ -128,7 +128,7 @@ function build_system(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
     surfs  = @. VLMSurface(getindex.(vals, 1), getindex.(vals, 2), names)
     system = VLMSystem(surfs)
 
-    system # NEED TO THINK ABOUT WHETHER TO RETURN DICTIONARY OF SURFACES
+    system
 end
 
 compute_horseshoes!(system :: VLMSystem, horseshoe_panels) = 
@@ -336,8 +336,8 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
 
     names 	= [ name	   ; # Aircraft name
                 comp_names ] # Component names
-    data  	= [ name_data  ;	# Aircraft data
-                comp_data  ]	# Component data
+    data  	= [ name_data  ; # Aircraft data
+                comp_data  ] # Component data
 
     OrderedDict(names .=> data)
 end
