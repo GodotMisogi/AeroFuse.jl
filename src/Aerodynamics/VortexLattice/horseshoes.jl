@@ -45,7 +45,7 @@ r2(line :: Line) = line.r2
 vector(line :: Line) = r2(line) - r1(line)
 center(line :: Line) = (r1(line) + r2(line)) / 2
 
-points(lines :: Vector{<: Line}) = [ r1.(lines); [(r2 ∘ last)(lines)] ]
+points(lines) = [ r1.(lines); [(r2 ∘ last)(lines)] ]
 
 transform(line :: Line, rotation, translation) = let trans = Translation(translation) ∘ LinearMap(rotation); Line((trans ∘ r1)(line), (trans ∘ r2)(line)) end
 

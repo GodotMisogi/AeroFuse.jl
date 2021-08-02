@@ -148,7 +148,7 @@ end
 ## Iterator methods
 #===========================================================================#
 
-# Need to improve this; the for loop seems really unnecessary
+# Need to improve this via recursion; the for loop seems really unnecessary
 function accumap(f, n, xs)
     data = [ xs ]
     for i = 1:n
