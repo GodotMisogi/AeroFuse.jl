@@ -8,7 +8,7 @@ using DataFrames
 #==========================================================================================#
 
 # Define wing
-wing = WingSection(root_foil  = naca4(0,0,1,2),
+wing = WingSection(root_foil  = naca4(0,0,1,5),
                    span       = 3.11,
                    dihedral   = 0.0, # 5.0
                    sweep_LE   = 0.0, # 20.0
@@ -22,7 +22,7 @@ wing_name   = "Wing"
 print_info(wing, wing_name)
 
 # Mesh
-span_num        = 1
+span_num        = 5
 chord_num       = 2
 # xyzs            = chop_wing(coordinates(wing), [span_num], chord_num)
 panels, normies = panel_wing(wing, span_num, chord_num, spacing = "sine");
@@ -147,6 +147,12 @@ left_moments  = @views pt_moments[1:middle_index(pt_moments)-1]
 right_forces  = @views [ zero_vec; pt_forces[middle_index(pt_forces)+1:end] ]
 right_moments = @views [ zero_vec; pt_moments[middle_index(pt_moments)+1:end] ]
 
+fem_force_trans  = [ dircos[1] * fem_loads[1:3,1:span_num] dircos[2] * fem_loads[1:3,span_num+1:end] ]
+fem_moment_trans = [ dircos[1] * fem_loads[4:end,1:span_num] dircos[2] * fem_loads[4:end,span_num+1:end] ]
+fem_load_trans = [ fem_force_trans ; fem_moment_trans ]
+fem_load_trans'
+
+##
 F_S = map(x -> map(y -> x[1] * y, x[2]), zip(dircos, [left_forces,  right_forces ]))
 M_S = map(x -> map(y -> x[1] * y, x[2]), zip(dircos, [left_moments, right_moments]))
 
@@ -183,17 +189,9 @@ function assemble_fem_dynamics(pt_forces, pt_moments)
 end
 
 function assemble_fem_dynamics(loads)
-    Fx = loads[:,1]
-    Fy = loads[:,2] 
-    Fz = loads[:,3]
-    Mx = loads[:,4]
-    My = loads[:,5]
-    Mz = loads[:,6]
-
-    py = (collect ∘ Iterators.flatten ∘ zip)(Fy, My)
-    pz = (collect ∘ Iterators.flatten ∘ zip)(Fz, Mz)
-    px = [ Fx[:]; Mx[:] ]
-
+    py = loads[[2,5],:][:]          # Fy My interspersed
+    pz = loads[[3,6],:][:]          # Fz Mz interspersed
+    px = [ loads[1,:]; loads[4,:] ] # Fx Mx concatenated
     F  = [ py; pz; px ]
 end
 
@@ -214,7 +212,7 @@ rename!(df, [:Fx, :Fy, :Fz, :Mx, :My, :Mz])
 ## "FEM" setup
 K  = tube_stiffness_matrix(aluminum, tubes)
 Fs = assemble_fem_dynamics.(F_S, M_S)
-F  = reduce(vcat, Fs)
+F  = assemble_fem_dynamics(fem_load_trans) # reduce(vcat, Fs)
 
 ## Solve system(s)
 xs = K \ F
@@ -301,9 +299,9 @@ quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(Cxs[:], Cys[:], Czs[:]) .* 10, lab
 quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(getindex.(forces[:], 1),getindex.(forces[:], 2),getindex.(forces[:], 3)) .* 0.1, label = "Forces")
 
 # Axis system
-# quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(n_cs, 1)[:], getindex.(n_cs, 2)[:], getindex.(n_cs, 3)[:]), color = :orange, label = :none)
-# quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ns, 1)[:], getindex.(ns, 2)[:], getindex.(ns, 3)[:]), color = :red, label = :none)
-# quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ss, 1)[:], getindex.(ss, 2)[:], getindex.(ss, 3)[:]), color = :brown, label = :none)
+quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(n_cs, 1)[:], getindex.(n_cs, 2)[:], getindex.(n_cs, 3)[:]), color = :orange, label = :none)
+quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ns, 1)[:], getindex.(ns, 2)[:], getindex.(ns, 3)[:]), color = :red, label = :none)
+quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ss, 1)[:], getindex.(ss, 2)[:], getindex.(ss, 3)[:]), color = :brown, label = :none)
 
 # Nodes
 scatter!(ac_pts[:,:,1][:], ac_pts[:,:,2][:], ac_pts[:,:,3][:], label = "Aerodynamic Centers")
