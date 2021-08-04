@@ -68,17 +68,13 @@ end
 ## Coefficient matrices
 J_coeffs(A, B, L) = A * B / L .* [ 1 -1; -1  1 ]
 
-Iyy_coeffs(E, I, L) = let k0 = 12, k1 = 6L, k2 = 2L^2;
-    E * I / L^3 * @SMatrix [  k0 -k1 -k0 -k1 ;
-                              -k1 2k2  k1  k2 ;
-                              -k0  k1  k0  k1 ;
-                              -k1  k2  k1 2k2 ] end
+k_coeffs(k0, k1, k2) = @SMatrix [  k0 -k1 -k0 -k1 ;
+                                  -k1 2k2  k1  k2 ;
+                                  -k0  k1  k0  k1 ;
+                                  -k1  k2  k1 2k2 ]
 
-Izz_coeffs(E, I, L) = let k0 = 12, k1 = 6L, k2 = 2L^2;
-    E * I / L^3 * @SMatrix [  k0  k1 -k0  k1 ;
-                               k1 2k2 -k1  k2 ;
-                              -k0 -k1  k0 -k1 ;
-                               k1  k2 -k1 2k2 ] end
+Iyy_coeffs(E, I, L) = let k0 = 12, k1 =  6L, k2 = 2L^2; E * I / L^3 * k_coeffs(k0, k1, k2) end
+Izz_coeffs(E, I, L) = let k0 = 12, k1 = -6L, k2 = 2L^2; E * I / L^3 * k_coeffs(k0, k1, k2) end
 
 ## Composite deflection stiffness matrix of adjacent beam elements
 function deflection_stiffness_matrix(Es, Is, Ls, direction = :z)
