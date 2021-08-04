@@ -104,18 +104,24 @@ fem_loads[4:end,1:end-1] = fem_M_ins
 fem_loads[4:end,2:end]  += fem_M_outs
 
 # Constrain the plane of symmetry and print
-fem_loads[:,span_num+1] .= 0.
-fem_loads' #[:,1:span_num+1]
+# fem_loads[:,span_num+1] .= 0.
+fem_loads #[:,1:span_num+1]
  
-## Transform everything to principal axes
-wing_pans = (make_panels ∘ coordinates)(wing)[:]
-cs        = diff.(bound_leg.(wing_pans), dims = 1)
-n_cs      = normalize.(reduce(vcat, cs))
-ns        = normalize.(panel_normal.(wing_pans))
-ss        = n_cs .× ns
+## Compute principal axes of beams
+ns = (normalize ∘ panel_normal).(panels)      # Normalized normals
+ss = (normalize ∘ bound_leg_vector).(horsies) # Normalized sides
+cs = ss .× ns                                 # Normalized chords
 
-gloref = repeat([[1.; 0; 0], [0.; 1; 0], [0.; 0; 1]], 1, 3)
-dircos = [ dot.(repeat([s, c, n], 1, 3)', gloref) for (c, n, s) in zip(n_cs, ns, ss) ]
+##
+gloref = repeat([[0.; 1; 0.], [0; 0; 1.], [1.; 0.; 0]], 1, 3)
+dircos = [ dot.(repeat([s, c, n], 1, 3)', gloref) for (c, n, s) in zip(cs, ns, ss) ]
+
+## Transform loads to principal axes
+fem_force_trans  = [ dircos[1] * fem_loads[1:3,1:span_num]   dircos[2] * fem_loads[1:3,span_num+1:end]   ]
+fem_moment_trans = [ dircos[1] * fem_loads[4:end,1:span_num] dircos[2] * fem_loads[4:end,span_num+1:end] ]
+fem_loads_trans  = [ fem_force_trans  ; 
+                     fem_moment_trans ]
+fem_loads_trans
 
 ## Splitting for Wing case
 #==========================================================================================#
@@ -147,12 +153,8 @@ left_moments  = @views pt_moments[1:middle_index(pt_moments)-1]
 right_forces  = @views [ zero_vec; pt_forces[middle_index(pt_forces)+1:end] ]
 right_moments = @views [ zero_vec; pt_moments[middle_index(pt_moments)+1:end] ]
 
-fem_force_trans  = [ dircos[1] * fem_loads[1:3,1:span_num] dircos[2] * fem_loads[1:3,span_num+1:end] ]
-fem_moment_trans = [ dircos[1] * fem_loads[4:end,1:span_num] dircos[2] * fem_loads[4:end,span_num+1:end] ]
-fem_load_trans = [ fem_force_trans ; fem_moment_trans ]
-fem_load_trans'
 
-##
+## Axis transformation of loads
 F_S = map(x -> map(y -> x[1] * y, x[2]), zip(dircos, [left_forces,  right_forces ]))
 M_S = map(x -> map(y -> x[1] * y, x[2]), zip(dircos, [left_moments, right_moments]))
 
@@ -181,18 +183,18 @@ function assemble_fem_dynamics(pt_forces, pt_moments)
     My = getindex.(pt_moments, 2)
     Mz = getindex.(pt_moments, 3)
 
-    py = (collect ∘ Iterators.flatten ∘ zip)(Fy, My)
+    px = (collect ∘ Iterators.flatten ∘ zip)(Fx, Mx)
     pz = (collect ∘ Iterators.flatten ∘ zip)(Fz, Mz)
-    px = [ Fx[:]; Mx[:] ]
+    py = [ Fy[:]; My[:] ]
 
-    F  = [ py; pz; px ]
+    F  = [ pz; px; py ]
 end
 
 function assemble_fem_dynamics(loads)
-    py = loads[[2,5],:][:]          # Fy My interspersed
+    px = loads[[2,5],:][:]          # Fy My interspersed
     pz = loads[[3,6],:][:]          # Fz Mz interspersed
-    px = [ loads[1,:]; loads[4,:] ] # Fx Mx concatenated
-    F  = [ py; pz; px ]
+    py = [ loads[1,:]; loads[4,:] ] # Fx Mx concatenated
+    F  = [ pz; px; py ]
 end
 
 Fx = getindex.(pt_forces,  1)
@@ -211,8 +213,11 @@ rename!(df, [:Fx, :Fy, :Fz, :Mx, :My, :Mz])
 
 ## "FEM" setup
 K  = tube_stiffness_matrix(aluminum, tubes)
+
+## Loads
 Fs = assemble_fem_dynamics.(F_S, M_S)
-F  = assemble_fem_dynamics(fem_load_trans) # reduce(vcat, Fs)
+# F  = reduce(vcat, Fs)
+F  = assemble_fem_dynamics(fem_loads_trans) 
 
 ## Solve system(s)
 xs = K \ F
@@ -238,13 +243,41 @@ function compute_displacements(Δs, n)
 end
 
 dx, θx, dy, θy, dz, θz = compute_displacements(xs, length(fem_pts))
-
-ds = SVector.(dx, dy, dz)
-θs = SVector.(θx, θy, θz)
+ds, θs = SVector.(dx, dy, dz), SVector.(θx, θy, θz)
 
 ## Generate DataFrames
 df = DataFrame([ dx θx dy θy dz θz ], :auto)
 rename!(df, [:dx, :θx, :dy, :θy, :dz, :θz])
+
+## Testing permutations and transformations of stiffness matrices
+#==========================================================================================#
+
+# Testing blocks
+Ks = [ tube_stiffness_matrix(aluminum, [tube]) for tube in tubes ]
+Ks[1]
+
+## Testing simultaneous permutations of rows and columns:
+# 1. (Fx1, Fy1, Fz1, Mx1, My1, Mz1, Fx2, Fy2, Fz2, Mx2, My2, Mz2): [9,1,5,11,6,2,10,3,7,12,8,4]
+# 2. (Fx1, Fx2, Mx1, Mx2, Fy1, My1, Fy2, My2, Fz1, Mz1, Fz2, Mz2): [9,10,11,12,1,2,3,4,5,6,7,8]
+inds = [9,1,5,11,6,2,10,3,7,12,8,4]
+perm_Ks = [ K[inds,:][:,inds] for K in Ks ] 
+perm_Ks[1]
+
+## Axis transformation of stiffness matrices
+axis_trans = [0 1 0; 0 0 -1; -1 0 0]
+K_trans = kron(I(4), axis_trans)
+
+K_tran = zeros(12, 12, length(Ls))
+perm_K = zeros(12, 12, length(Ls))
+K_new  = zeros(12, 12, length(Ls))
+for i in 1:length(Ls)
+    perm_K[:,:,i] .= perm_Ks[i]
+    K_tran[:,:,i] .= K_trans
+end
+
+## Using Einstein summation convention for multiplication: D = TᵗKT
+using Einsum
+@einsum D[j,k,i] := K_tran[l,j,i] * perm_K[l,m,i] * K_tran[m,k,i]
 
 ## Plotting
 #==========================================================================================#
@@ -259,20 +292,19 @@ circ     = circle3D(R, n_pts)
 beam_pts = collect(zip(tupvector(fem_pts[1:end-1]), tupvector(fem_pts[2:end])))
 left_pts = [ [ [ circ_pt .+ pt[1], circ_pt .+ pt[2] ] for circ_pt in circ ] for pt in beam_pts ]
 
-mid_pts = midpoint.(wing_pans)
-
 mid_pans = ac_mine # midpoint.(panels)[:]
 mid_xs   = getindex.(mid_pans, 1)
 mid_ys   = getindex.(mid_pans, 2)
 mid_zs   = getindex.(mid_pans, 3)
 
-CFs = force_coefficient.(reduce(vcat, F_S), dynamic_pressure(aero_state.rho_ref, aero_state.speed), aero_state.area_ref) 
-# surface_force_coefficients(aero_surfs[1], aero_state)
-Cxs = @. getindex(CFs, 1)
-Cys = @. getindex(CFs, 2)
-Czs = @. getindex(CFs, 3)
+# Forces between panels
+cs_plot    = reduce(hcat, cs)
+ss_plot    = reduce(hcat, ss)
+ns_plot    = reduce(hcat, ns)
+force_plot = reduce(hcat, forces)
 
-hs_pts = reduce(hcat, points.(collect(eachrow(bound_leg.(horsies)))))
+#
+hs_pts = reduce(hcat, points.(eachrow(bound_leg.(horsies))))
 hs_xs  = getindex.(hs_pts, 1)
 hs_ys  = getindex.(hs_pts, 2)
 hs_zs  = getindex.(hs_pts, 3)
@@ -295,13 +327,13 @@ plot!(wing_plan, color = :blue, label = "Planform")
 [ plot!(reduce(vcat, pt), color = :green, label = ifelse(i == 1, "Beams", :none)) for (i, pt) in enumerate(left_pts) ]
 
 # Forces
-quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(Cxs[:], Cys[:], Czs[:]) .* 10, label = "Forces")
-quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(getindex.(forces[:], 1),getindex.(forces[:], 2),getindex.(forces[:], 3)) .* 0.1, label = "Forces")
+quiver!(hs_xs[:],  hs_ys[:],  hs_zs[:],  quiver=(fem_loads[1,:],  fem_loads[2,:],  fem_loads[3,:] ) .* 0.1, label = "Beam Forces")
+quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1, label = "Panel Forces")
 
-# Axis system
-quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(n_cs, 1)[:], getindex.(n_cs, 2)[:], getindex.(n_cs, 3)[:]), color = :orange, label = :none)
-quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ns, 1)[:], getindex.(ns, 2)[:], getindex.(ns, 3)[:]), color = :red, label = :none)
-quiver!(getindex.(mid_pts, 1)[:], getindex.(mid_pts, 2)[:], getindex.(mid_pts, 3)[:], quiver=(getindex.(ss, 1)[:], getindex.(ss, 2)[:], getindex.(ss, 3)[:]), color = :brown, label = :none)
+# Axis systems
+quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1, color = :orange, label = :none)
+quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, color = :red,    label = :none)
+quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(ss_plot[1,:], ss_plot[2,:], ss_plot[3,:]) .* 1e-1, color = :brown,  label = :none)
 
 # Nodes
 scatter!(ac_pts[:,:,1][:], ac_pts[:,:,2][:], ac_pts[:,:,3][:], label = "Aerodynamic Centers")
