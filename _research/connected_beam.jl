@@ -24,7 +24,6 @@ print_info(wing, wing_name)
 # Mesh
 span_num        = 5
 chord_num       = 2
-# xyzs            = chop_wing(coordinates(wing), [span_num], chord_num)
 panels, normies = panel_wing(wing, span_num, chord_num, spacing = "sine");
 aircraft        = Dict(wing_name => (panels, normies));
 
@@ -52,47 +51,79 @@ print_coefficients(aero_surfs[1], aero_state);
 
 # Functions on adjacencies
 adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
-# AeroMDAO.VortexLattice.points(horses) = @. r1(bound_leg_center(horses), horses)[:], r2(bound_leg_center(horses), horses)[:]
 
-# Get variables for structural analysis
-forces   = surface_forces(aero_surfs[1]) 
-horsies  = horseshoes(aero_surfs[1])
-# r1s, r2s = points(horsies)
-
+## Mesh setup
 fem_w       = 0.35
 plan_coords = chord_coordinates(wing, [span_num], chord_num, spacings = ["sine"])
 mesh        = reshape(permutedims(reduce(hcat, plan_coords)), (size(plan_coords)..., 3))
 
-# Aerodynamic center locations and forces
-half_forces = sum(forces, dims = 1)[:] / 2
-ac_mine  = bound_leg_center.(horsies)
-ac_pts   = reshape(permutedims(reduce(hcat, ac_mine)), (size(ac_mine)..., 3))
-
 # FEM beam node locations as Matrix
-fem_arr  = (1 - fem_w) * mesh[1,:,:] + fem_w * mesh[end,:,:]
-
-# Talk about a complicated...
-M_in  = [ let xs = (ac_pts[i,:,:] - fem_arr[1:end-1,:]); 
-              @. SVector(xs[:,1], xs[:,2], xs[:,3]) × forces[i,:] / 2 end
-              for i in eachindex(ac_pts[:,1,1]) ]
-M_out = [ let xs = (ac_pts[i,:,:] - fem_arr[2:end,:]); 
-              @. SVector(xs[:,1], xs[:,2], xs[:,3]) × forces[i,:] / 2 end
-              for i in eachindex(ac_pts[:,1,1]) ]
-
-M_ins  = sum(M_in)
-M_outs = sum(M_out) 
-
-# FEM beam node locations as Vector{SVector{3}}
 fem_pts  = (1 - fem_w) * plan_coords[1,:] + fem_w * plan_coords[end,:]
-# r1s, r2s = fem_pts[1:end-1], fem_pts[2:end]
-# M_ins    = @. r1s × half_forces
-# M_outs   = @. r2s × half_forces
 
-## Need to check if adjacent_joiner is the right definition...
+# Aerodynamic center locations and forces
+forces      = surface_forces(aero_surfs[1]) 
+half_forces = sum(forces, dims = 1)[:] / 2
+horsies     = horseshoes(aero_surfs[1])
+ac_mine     = bound_leg_center.(horsies)
+
+# Moments
+M_ins  = sum(permutedims(reduce(hcat, eachrow(ac_mine) .- Ref(fem_pts[1:end-1]))) .× forces / 2, dims = 1)[:]
+M_outs = sum(permutedims(reduce(hcat, eachrow(ac_mine) .- Ref(fem_pts[2:end])))   .× forces / 2, dims = 1)[:]
+
+## Load averaging
 pt_forces   = adjacent_joiner(half_forces, half_forces)
 pt_moments  = adjacent_joiner(M_ins, M_outs)
 
-# Matrix version
+## Axis system transformation matrices
+#==========================================================================================#
+
+# Compute local beam axes
+ss = @. normalize(fem_pts[2:end,:] - fem_pts[1:end-1,:])
+ns = @. normalize((plan_coords[end,2:end] - plan_coords[1,1:end-1]) × (plan_coords[1,2:end] - plan_coords[end,1:end-1]))
+cs = @. ss × ns
+
+# WTF array version
+wtf = zeros(3, 3, size(ss)...) # ((x,y,z), (c,s,n), chordwise, spanwise)
+for inds in CartesianIndices(wtf)
+    l,k,i,j  = inds.I
+    wtf[l,1,i,j] = cs[i,j][l]
+    wtf[l,2,i,j] = ss[i,j][l]
+    wtf[l,3,i,j] = ns[i,j][l]
+end
+
+## Active transformations of forces and moments (vs. passive transformation of stiffness matrix)
+global_axis     = I(3)        # Global axis system for panels in VLM
+beam_local_axis = [0. 1. 0.; 
+                   0. 0. 1.; 
+                   1. 0. 0.]  # Orthogonal local axis system for beam in FEM
+
+local_ref = repeat(beam_local_axis, 1, 1, size(ss)...)
+
+## Array comprehension
+mats = [ local_ref[:,:,inds]' * wtf[:,:,inds] * global_axis for inds in CartesianIndices(ss) ]
+
+# Einstein summation
+# @einsum mats_eins[l,k,i,j] := local_ref[m,l,i,j] * wtf[m,n,i,j] * global_axis[n,k]
+
+## Transform forces
+force_trans = mats .* forces
+
+## Matrix version
+# ac_fem   = reshape(permutedims(reduce(hcat, ac_mine)), (size(ac_mine)..., 3))
+# fem_arr  = (1 - fem_w) * mesh[1,:,:] + fem_w * mesh[end,:,:]
+
+# Moments
+# M_in  = [ let xs = (ac_fem[i,:,:] - fem_arr[1:end-1,:]); 
+#               @. SVector(xs[:,1], xs[:,2], xs[:,3]) × forces[i,:] / 2 end
+#               for i in eachindex(ac_fem[:,1,1]) ]
+# M_out = [ let xs = (ac_fem[i,:,:] - fem_arr[2:end,:]); 
+#               @. SVector(xs[:,1], xs[:,2], xs[:,3]) × forces[i,:] / 2 end
+#               for i in eachindex(ac_fem[:,1,1]) ]
+
+# M_ins  = sum(M_in)
+# M_outs = sum(M_out) 
+
+
 fem_loads  = zeros(6, length(pt_forces))
 fem_forces = reduce(hcat, half_forces)
 fem_loads[1:3,1:end-1] = fem_forces
@@ -105,17 +136,8 @@ fem_loads[4:end,2:end]  += fem_M_outs
 
 # Constrain the plane of symmetry and print
 # fem_loads[:,span_num+1] .= 0.
-fem_loads #[:,1:span_num+1]
+fem_loads
  
-## Compute principal axes of beams
-ns = (normalize ∘ panel_normal).(panels)      # Normalized normals
-ss = (normalize ∘ bound_leg_vector).(horsies) # Normalized sides
-cs = ss .× ns                                 # Normalized chords
-
-##
-gloref = repeat([[0.; 1; 0.], [0; 0; 1.], [1.; 0.; 0]], 1, 3)
-dircos = [ dot.(repeat([s, c, n], 1, 3)', gloref) for (c, n, s) in zip(cs, ns, ss) ]
-
 ## Transform loads to principal axes
 fem_force_trans  = [ dircos[1] * fem_loads[1:3,1:span_num]   dircos[2] * fem_loads[1:3,span_num+1:end]   ]
 fem_moment_trans = [ dircos[1] * fem_loads[4:end,1:span_num] dircos[2] * fem_loads[4:end,span_num+1:end] ]
@@ -267,12 +289,11 @@ perm_Ks[1]
 axis_trans = [0 1 0; 0 0 -1; -1 0 0]
 K_trans = kron(I(4), axis_trans)
 
-K_tran = zeros(12, 12, length(Ls))
+K_tran = repeat(K_trans, 1, 1, length(Ls))
+
 perm_K = zeros(12, 12, length(Ls))
-K_new  = zeros(12, 12, length(Ls))
 for i in 1:length(Ls)
     perm_K[:,:,i] .= perm_Ks[i]
-    K_tran[:,:,i] .= K_trans
 end
 
 ## Using Einstein summation convention for multiplication: D = TᵗKT
@@ -292,10 +313,17 @@ circ     = circle3D(R, n_pts)
 beam_pts = collect(zip(tupvector(fem_pts[1:end-1]), tupvector(fem_pts[2:end])))
 left_pts = [ [ [ circ_pt .+ pt[1], circ_pt .+ pt[2] ] for circ_pt in circ ] for pt in beam_pts ]
 
+# Aerodynamic forces
 mid_pans = ac_mine # midpoint.(panels)[:]
 mid_xs   = getindex.(mid_pans, 1)
 mid_ys   = getindex.(mid_pans, 2)
 mid_zs   = getindex.(mid_pans, 3)
+
+# Beam midpoints
+fem_mids = (fem_pts[1:end-1] + fem_pts[2:end]) / 2
+fem_xs   = getindex.(fem_mids, 1)
+fem_ys   = getindex.(fem_mids, 2)
+fem_zs   = getindex.(fem_mids, 3)
 
 # Forces between panels
 cs_plot    = reduce(hcat, cs)
@@ -327,15 +355,15 @@ plot!(wing_plan, color = :blue, label = "Planform")
 [ plot!(reduce(vcat, pt), color = :green, label = ifelse(i == 1, "Beams", :none)) for (i, pt) in enumerate(left_pts) ]
 
 # Forces
-quiver!(hs_xs[:],  hs_ys[:],  hs_zs[:],  quiver=(fem_loads[1,:],  fem_loads[2,:],  fem_loads[3,:] ) .* 0.1, label = "Beam Forces")
+quiver!(fem_arr[:,1], fem_arr[:,2], fem_arr[:,3], quiver=(fem_loads[1,:],  fem_loads[2,:],  fem_loads[3,:] ) .* 0.1, label = "Beam Forces")
 quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1, label = "Panel Forces")
 
 # Axis systems
-quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1, color = :orange, label = :none)
-quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, color = :red,    label = :none)
-quiver!(mid_xs[:], mid_ys[:], mid_zs[:], quiver=(ss_plot[1,:], ss_plot[2,:], ss_plot[3,:]) .* 1e-1, color = :brown,  label = :none)
+quiver!(fem_xs[:], fem_ys[:], fem_zs[:], quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1, color = :orange, label = :none)
+quiver!(fem_xs[:], fem_ys[:], fem_zs[:], quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, color = :red,    label = :none)
+quiver!(fem_xs[:], fem_ys[:], fem_zs[:], quiver=(ss_plot[1,:], ss_plot[2,:], ss_plot[3,:]) .* 1e-1, color = :brown,  label = :none)
 
 # Nodes
-scatter!(ac_pts[:,:,1][:], ac_pts[:,:,2][:], ac_pts[:,:,3][:], label = "Aerodynamic Centers")
+scatter!(ac_fem[:,:,1][:], ac_fem[:,:,2][:], ac_fem[:,:,3][:], label = "Aerodynamic Centers")
 # scatter!(getindex.(ac_mine, 1)[:], getindex.(ac_mine, 2)[:], getindex.(ac_mine, 3)[:], label = "ACs (Mine)")
 plot!()
