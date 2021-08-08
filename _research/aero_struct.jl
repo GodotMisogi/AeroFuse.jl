@@ -5,179 +5,19 @@ using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
+using Einsum
 
-## Helper functions
-#==========================================================================================#
+include("../src/Aerostructural/aerostruct.jl")
 
-# Sum adjacent values
-adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
-
-## Aerodynamic analysis
-#==========================================================================================#
-
-# lifting_line_forces(surf) = sum(surface_forces(surf), dims = 1)[:]
-aerodynamic_forces(surfs) = reduce(vcat, (vec ∘ surface_forces).(surfs))
-
-points(horses) = @. r1(bound_leg_center(horses), horses)[:], r2(bound_leg_center(horses), horses)[:]
-
-total_force(surfs) = sum(sum ∘ surface_forces, surfs) 
-
-function assemble_fem_dynamics(pt_forces, pt_moments)
-    Fx = getindex.(pt_forces,  1)
-    Fy = getindex.(pt_forces,  2)
-    Fz = getindex.(pt_forces,  3)
-    Mx = getindex.(pt_moments, 1)
-    My = getindex.(pt_moments, 2)
-    Mz = getindex.(pt_moments, 3)
-
-    py = (collect ∘ Iterators.flatten ∘ zip)(Fy, My)
-    pz = (collect ∘ Iterators.flatten ∘ zip)(Fz, Mz)
-    px = [ Fx[:]; Mx[:] ]
-
-    F  = [ py; pz; px ]
-end
-
-function compute_loads(forces, r1s, r2s)
-    # Aerodynamic forces
-    half_forces = @. forces / 2
-    M1s         = @. r1s × half_forces
-    M2s         = @. r2s × half_forces
-
-    # Interspersing
-    forces  = adjacent_joiner(half_forces, half_forces)
-    moments = adjacent_joiner(M1s, M2s)
-
-    # Boundary condition, setting F = 0 at center of wing
-    n = ceil(Int, length(horses) / 2) + 1
-    forces[n-1:n+1] .-= forces[n-1:n+1];
-
-    assemble_fem_dynamics(forces, moments)
-end
-
-## Structural analysis
-#==========================================================================================#
-
-solve_beam_residual!(R, K, δ, F) = R .= K * δ - F
-
-function compute_displacements(Δs, r1s, r2s)
-    # Assembly
-    n  = length(r1s) + 1    # Number of finite element points
-    n1 = 2n                 # dim(Fy + My)
-    n2 = n1 + 2n            # dim(Fz + Mz)
-    n3 = n2 +  n            # dim(Fx)
-    n4 = n3 +  n            # dim(Mx)
-
-    dy = @view Δs[1:2:n1]
-    θy = @view Δs[2:2:n1]
-    dz = @view Δs[n1+1:2:n2]
-    θz = @view Δs[n1+2:2:n2]
-    dx = @view Δs[n2+1:n3]
-    θx = @view Δs[n3+1:n4]
-
-    # Coordinates
-    rs = @. SVector(dx, dy, dz)
-    θs = @. SVector(θx, θy, θz)
-    ds = rs .+ θs .× adjacent_joiner(r1s, r2s)
-
-    # A bijective mapping between the wing's geometric and coordinate representations needs to be defined, if it exists.
-    # Suspecting it doesn't due to different perturbations in the section spans at the leading and trailing edges.
-
-    ds, θs
-end
-
-## Load-displacement transfer mechanisms
-#==========================================================================================#
-
-function transfer_displacements!(system :: VLMSystem, xyzs, normals, ds, θs)
-    # Displace and rotate about quarter-chord point, where the beam is located. Needs many corrections...
-    Δxyzs      = permutedims([ ds ds ])
-    new_xyzs   = xyzs + Δxyzs
-    new_pans   = make_panels(new_xyzs)
-    new_horses = horseshoe_line.(new_pans) 
-    # new_norms  = panel_normal.(new_pans)
-    new_norms  = normals[:] 
-    # + (θs[1:end-1] + θs[2:end]) / 2 # WRONG
-
-    # Set new system variables
-    system.horseshoes = new_horses[:]
-    system.normals    = new_norms[:]
-
-    new_xyzs
-end
-
-## Weights and fuel loads
-#==========================================================================================#
-
-load_factor_residual(L, W, n) = L - n * W
-load_factor_residual!(R, L, W, n) = R .= load_factor_residual(L, W, n)
-
-## Coupled residual system
-#==========================================================================================#
-
-function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_surfs :: Vector{<: VLMSurface}, aero_state :: VLMState, xyzs, stiffness_matrix, weight, load_factor)
-    n = (prod ∘ size)(horseshoes(aero_system))   # Get panel size
-
-    # Unpack aerodynamic and structural variables
-    Γ = @view x[1:n] 
-    δ = @view x[n+1:end-1]
-
-    # Get residual vector views
-    R_A = @view R[1:n]
-    R_S = @view R[n+1:end-1]
-    R_W = @view R[end]
-    
-    # Compute displacements
-    r1s, r2s = (points ∘ horseshoes)(aero_system)
-    ds, θs   = compute_displacements(δ, r1s, r2s)
-
-    # The displacements needs to be transformed into the coordinate frame before transferring...
-    
-    # Panel local coordinate system
-    horsies = horseshoes(aero_system)
-    bounds  = bound_leg_vector.(horsies)
-    normies = Ref(aero_state.velocity) .× bounds
-
-    # Compute displacements
-    transfer_displacements!(aero_system, xyzs, normies, ds, θs)
-
-    # Aerodynamic residuals
-    aero_state.alpha = x[end]
-    solve_aerodynamic_residual!(R_A, Γ, aero_system, aero_surfs, aero_state)
-    
-    # Compute forces
-    forces = aerodynamic_forces(aero_surfs)
-
-    # The forces need to be transformed into the principal axes of the finite-elements...
-    # Also need to consider boundary conditions...
-
-    # Direction cosine transformations
-    streams = @. bounds × normies
-    glob    = reduce(hcat, fill([[1 0 0], [0 1 0], [0 0 1]], 3))
-    dircos  = [ dot.(reduce(hcat, fill([c', n', s'], 3)), glob)  for (c, n, s) in zip(bounds, normies, streams) ]
-    F_S     = dircos .* forces
-    F       = compute_loads(F_S, r1s, r2s)
-
-    # Compute lift for load factor residual
-    L = total_force(aero_surfs)[3]
-
-    # Structural residuals
-    solve_beam_residual!(R_S, stiffness_matrix, δ, F)
-
-    # Weight residual
-    load_factor_residual!(R_W, L, weight, load_factor)
-
-    R
-end
-
-## Case
+# Case
 #==========================================================================================#
 
 ## Aerodynamic variables
 
 # Define wing
-wing = WingSection(root_foil  = naca4((0,0,1,2)),
-                   span       = 1.3,
-                   dihedral   = 5.0,
+wing = WingSection(root_foil  = naca4((2,4,1,2)),
+                   span       = 2.6,
+                   dihedral   = 0.0,
                    sweep_LE   = 0.0,
                    taper      = 1.0,
                    root_chord = 0.314,
@@ -189,9 +29,8 @@ wing_name   = "Wing"
 print_info(wing)
 
 # Mesh
-span_num        = 5
-chord_num       = 1
-xyzs            = chord_coordinates(wing, [span_num], chord_num)
+span_num        = 10
+chord_num       = 4
 panels, normies = panel_wing(wing, span_num, chord_num);
 aircraft        = Dict(wing_name => (panels, normies));
 
@@ -204,7 +43,7 @@ aero_state = VLMState(0., 0., 0., [0.0, 0.0, 0.0],
                       span_ref  = span(wing));
 
 # Test case - Fixed speed
-aero_state.speed   = 20.
+aero_state.speed   = 25.
 aero_state.alpha   = deg2rad(1.)
 aero_state.rho_ref = 0.98
 
@@ -213,9 +52,17 @@ aero_system = solve_case(aircraft, aero_state)
 aero_surfs  = surfaces(aero_system)
 print_coefficients(aero_surfs[1], aero_state);
 
-horses  = horseshoes(aero_system)
-Γ_0     = circulations(aero_system)
-normies = normals(aero_system)
+horses     = horseshoes(aero_system)
+Γ_0        = circulations(aero_system)
+# normies    = normals(aero_system)
+
+## Aerodynamic forces and center locations
+vlm_forces = surface_forces(aero_surfs[1]) 
+horsies    = horseshoes(aero_surfs[1])
+vlm_acs    = bound_leg_center.(horsies)
+
+## Mesh setup
+vlm_mesh   = chord_coordinates(wing, [span_num], chord_num, spacings = ["sine"])
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -228,41 +75,37 @@ load_factor = 1.0;
 
 ## Structural variables
 
-# Material - Aluminum
-E     = 70e9  # Elastic modulus, N/m²
-G     = 30e9  # Shear modulus, N/m²
-σ_max = 200e6 # Yield stress with factor of safety 2.5, N/m²
-ρ     = 3e3   # Density, kg/m³
-ν     = 0.3   # Poisson's ratio (UNUSED FOR NOW)
-R     = 1e-1  # Outer radius, m
-t     = 1e-3  # Thickness, m
+# Beam properties
+E     = 85e6  # Elastic modulus, N/m²
+G     = 25e6  # Shear modulus, N/m²
+σ_max = 350e6 # Yield stress with factor of safety 2.5, N/m²
+ρ     = 1.6e3 # Density, kg/m³
+ν     = 0.3   # Poisson ratio (UNUSED FOR NOW)
+R     = 1e-2  # Outer radius, m
+t     = 8e-3  # Thickness, m
 
-Ls    = @. (norm ∘ bound_leg_vector)(horses) # Length, m
-
+# FEM mesh
+fem_w    = 0.35
+fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
+Ls       = norm.(diff(fem_mesh)) # Beam lengths, m 
 aluminum = Material(E, G, σ_max, ρ)
 tubes    = Tube.(Ref(aluminum), Ls, R, t)
 
-## Stiffness matrix setup
-K        = tube_stiffness_matrix(aluminum, tubes)
-forces   = aerodynamic_forces(aero_surfs)
-r1s, r2s = (points ∘ horseshoes)(aero_system)
+# Stiffness matrix, loads and constraints
+D         = build_big_stiffy(aluminum, tubes, fem_mesh)
+fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
+cons      = [span_num]
 
-# Direction cosine matrix transformation
-streams  = @. bounds × normies
-glob     = reduce(hcat, fill([[1 0 0], [0 1 0], [0 0 1]], 3))
-dircos   = [ dot.(reduce(hcat, fill([c', n', s'], 3)), glob)  for (c, n, s) in zip(bounds, normies, streams) ]
-F_S      = dircos .* forces
-F        = compute_loads(F_S, r1s, r2s)
-
-# Generate initial guess from structural-only analysis
-Δx       = K \ F
+## Solve system
+dx        = solve_cantilever_beam(D, fem_loads, cons)
+Δx        = [ zeros(6); dx[:] ]
 
 ## Aerostructural residual
 #==========================================================================================#
 
-solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, (collect ∘ values)(aero_surfs), aero_state, xyzs, K, weight, load_factor)
+solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_state, vlm_mesh, fem_mesh, weight, load_factor)
 
-x0   = [ Γ_0; Δx; aero_state.alpha ]
+x0   = [ Γ_0; Δx[:]; aero_state.alpha ]
 res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
@@ -280,32 +123,91 @@ println("Lift: $lift N")
 println("Speed: $(aero_state.speed) m/s")
 println("Angle of attack: $(rad2deg(aero_state.alpha))ᵒ")
 
+
+x_opt = res_aerostruct.zero 
+
+## Compute displacements
+dx         = @views reshape(x_opt[length(Γ_0)+7:end-1], 6, length(fem_mesh))
+dxs        = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
+θx, θy, θz = @views dx[4,:], dx[5,:], dx[6,:]
+Ts         = rotation_matrix.(θx, θy, θz)
+
+# Perturb VLM mesh and normals
+new_vlm_mesh   = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
+new_panels = make_panels(new_vlm_mesh)
+
+# New beams
+new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
+
+## Aerodynamic forces and center locations
+vlm_forces = surface_forces(aero_surfs[1]) 
+horsies    = horseshoes(aero_surfs[1])
+vlm_acs    = bound_leg_center.(horsies)
+fem_loads  = compute_loads(vlm_acs, vlm_forces, fem_mesh)
+
 ## Generate DataFrames
+df_Fs = DataFrame(permutedims(fem_loads), :auto)
+rename!(df_Fs, [:Fx, :Fy, :Fz, :Mx, :My, :Mz])
 
-# df = DataFrame([ dx θx dy θy dz θz ], :auto)
-# rename!(df, [:dx, :θx, :dy, :θy, :dz, :θz])
-
-# data = DataFrame([ Fx dx Mx θx Fy dy My θy Fz dz Mz θz ], :auto)
-# rename!(data, [:Fx, :dx, :Mx, :θx, :Fy, :dy, :My, :θy, :Fz, :dz, :Mz, :θz])
-
+df_xs = DataFrame(permutedims(dx), :auto)
+rename!(df_xs, [:dx, :dy, :dz, :θx, :θy, :θz])
 
 ## Plotting
 #==========================================================================================#
 
 using Plots
-gr(dpi = 300)
+pyplot(dpi = 300)
 
-plot(aspect_ratio = 1)
-plot!.(plot_panels(panels[:]), color = :black, label = :none)
-plot!(wing_plan, color = :blue, label = :none)
-plot!()
+# Beam circles
+n_pts          = 20
+circle3D(r, n) = [ (r*cos(θ), 0, r*sin(θ)) for θ in 0:2π/n:2π ];
+circ           = circle3D(R * 1e-4, n_pts) 
 
-hs_pts  = bound_leg_center.(horses)
+draw_tube(p1, p2, circ) = [ [ circ_pt .+ p1, circ_pt .+ p2 ] for circ_pt in circ ]
 
-quiver!(getindex.(hs_pts, 1)[:], getindex.(hs_pts, 2)[:], getindex.(hs_pts, 3)[:], quiver=(getindex.(normies, 1)[:], getindex.(normies, 2)[:], getindex.(normies, 3)[:]), color = :orange)
+beam_pts     = zip(tupvector(fem_mesh[1:end-1]), tupvector(fem_mesh[2:end]))
+circ_pts     = [ draw_tube(pt[1], pt[2], circ) for pt in beam_pts ]
 
-# new_hs_pts = bound_leg_center.(new_horses)
+new_beam_pts = zip(tupvector(new_fem_mesh[1:end-1]), tupvector(new_fem_mesh[2:end]))
+new_circ_pts = [ draw_tube(pt[1], pt[2], circ) for pt in new_beam_pts ]
 
-# plot!.(plot_panels(panels[:]), color = :grey, label = :none)
-# quiver!(getindex.(new_hs_pts, 1)[:], getindex.(new_hs_pts, 2)[:], getindex.(new_hs_pts, 3)[:], quiver=(getindex.(new_norms, 1)[:], getindex.(new_norms, 2)[:], getindex.(new_norms, 3)[:]))
-# plot!()
+# Beam loads
+fem_plot   = reduce(hcat, fem_mesh)
+loads_plot = fem_loads
+
+# Aerodynamic centers and forces
+panel_plot = plot_panels(panels[:])
+ac_plot    = reduce(hcat, vlm_acs)
+force_plot = reduce(hcat, vlm_forces)
+
+# Displacements
+new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
+new_panel_plot = plot_panels(make_panels(new_vlm_mesh)[:])
+
+# Plot
+b = aero_state.span_ref
+plot(camera = (45, 45), 
+     xlim = (-b/2, b/2),
+    #  ylim = (-b/2, b/2), 
+     zlim = (0, b/2)
+    )
+
+# Panels
+[ plot!(pans, color = :black, label = ifelse(i == 1, "Panels", :none)) for (i, pans) in enumerate(panel_plot) ]
+[ plot!(pans, color = :brown, label = ifelse(i == 1, "Deflection", :none)) for (i, pans) in enumerate(new_panel_plot) ]
+
+# Beams
+[ plot!(reduce(vcat, pt), color = :green, label = ifelse(i == 1, "Beams", :none)) for (i, pt) in enumerate(circ_pts) ]
+[ plot!(reduce(vcat, pt), color = :purple, label = ifelse(i == 1, "Deflected Beams", :none)) for (i, pt) in enumerate(new_circ_pts) ]
+
+# Forces
+# quiver!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:],
+#         quiver=(loads_plot[1,:], loads_plot[2,:], loads_plot[3,:] ) .* 0.1,
+#         label = "Beam Forces")
+# quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
+#         quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1,
+#         label = "Panel Forces")
+# scatter!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:], label = "Aerodynamic Centers")
+
+# Planform
+plot!(wing_plan, color = :blue, label = "Planform")

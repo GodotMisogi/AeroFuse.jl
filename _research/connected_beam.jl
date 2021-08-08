@@ -3,7 +3,8 @@ using AeroMDAO
 using LinearAlgebra
 using StaticArrays
 using DataFrames
-# using Einsum
+using Einsum
+using UnicodePlots
 
 ## Aerodynamic setup
 #==========================================================================================#
@@ -12,8 +13,8 @@ using DataFrames
 wing = WingSection(root_foil  = naca4(0,0,1,5),
                    span       = 3.11,
                    dihedral   = 0.0, # 5.0
-                   sweep_LE   = 0.0, # 20.0
-                   taper      = 1.0, # 0.5
+                   sweep_LE   = 20.0, # 20.0
+                   taper      = 0.5, # 0.5
                    root_chord = 0.3, 
                    root_twist = 0.0, # 2.0
                    tip_twist  = 0.0)
@@ -50,70 +51,39 @@ print_coefficients(aero_surfs[1], aero_state);
 ## Load transfer scheme
 #==========================================================================================#
 
-# Functions on adjacencies
-adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
-
 ## Mesh setup
-fem_w       = 0.35
-plan_coords = chord_coordinates(wing, [span_num], chord_num, spacings = ["sine"])
-mesh        = reshape(permutedims(reduce(hcat, plan_coords)), (size(plan_coords)..., 3))
+vlm_mesh = chord_coordinates(wing, [span_num], chord_num, spacings = ["sine"])
 
-# FEM beam node locations as Matrix
-fem_pts  = (1 - fem_w) * plan_coords[1,:] + fem_w * plan_coords[end,:]
-
-# Aerodynamic forces
+## Aerodynamic forces
 vlm_forces = surface_forces(aero_surfs[1]) 
 sec_forces = sum(vlm_forces, dims = 1)[:] / 2
 
-# Aerodynamic center locations
+## Aerodynamic center locations
 horsies    = horseshoes(aero_surfs[1])
 vlm_acs    = bound_leg_center.(horsies)
 
-# Moments
-section_moments(vlm_acs, fem_pts, half_vlm_forces) = sum(permutedims(reduce(hcat, eachrow(vlm_acs) .- Ref(fem_pts))) .× half_vlm_forces, dims = 1)[:]
-
-M_ins  = section_moments(vlm_acs, fem_pts[1:end-1], vlm_forces / 2)
-M_outs = section_moments(vlm_acs, fem_pts[2:end],   vlm_forces / 2)
+## This is lazy?
+section_moments(vlm_acs, fem_mesh, half_vlm_forces) = sum(x -> (x[1] .- fem_mesh) .× x[2], zip(eachrow(vlm_acs), eachrow(half_vlm_forces)))
 
 ## Load averaging
-pt_forces  = adjacent_joiner(sec_forces / 2, sec_forces / 2)
-pt_moments = adjacent_joiner(M_ins, M_outs)
+adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
 
-## Axis system transformation matrices
-#==========================================================================================#
+## FEM beam node locations as Matrix
+make_beam_mesh(vlm_mesh, fem_w = 0.35) =  (1 - fem_w) * vlm_mesh[1,:] + fem_w * vlm_mesh[end,:]
 
-# Compute local beam axes
-ss = @. normalize(fem_pts[2:end,:] - fem_pts[1:end-1,:])
-ns = @. normalize((plan_coords[end,2:end] - plan_coords[1,1:end-1]) × (plan_coords[1,2:end] - plan_coords[end,1:end-1]))
-cs = @. ss × ns
+function compute_loads(vlm_acs, vlm_forces, fem_mesh)
+    # Forces
+    sec_forces   = sum(vlm_forces, dims = 1)[:] / 2
+    beam_forces  = adjacent_joiner(sec_forces / 2, sec_forces / 2)
 
-## Active transformations of forces and moments (vs. passive transformation of stiffness matrix)
-global_axis     = I(3)            # Global axis system for panels in VLM
-beam_local_axis = [ 0. -1.  0. ; 
-                    1.  0.  0. ; 
-                    0.  0. -1. ]  # Orthogonal local axis system for beam in FEM
+    # Moments
+    M_ins        = @views section_moments(vlm_acs, fem_mesh[1:end-1], vlm_forces / 2)
+    M_outs       = @views section_moments(vlm_acs, fem_mesh[2:end],   vlm_forces / 2)
+    beam_moments = adjacent_joiner(M_ins, M_outs)
 
-local_axes = repeat(beam_local_axis, 1, 1, size(ss)...)
-
-# WTF array of local coordinate systems
-wtf = zeros(3, 3, size(ss)...) # ((x,y,z), (c,s,n), chordwise, spanwise)
-for inds in CartesianIndices(wtf)
-    l,k,i,j  = inds.I
-    wtf[l,1,i,j] = cs[i,j][l]
-    wtf[l,2,i,j] = ss[i,j][l]
-    wtf[l,3,i,j] = ns[i,j][l]
+    # Concatenate forces and moments into loads array
+    fem_loads    = [ reduce(hcat, beam_forces); reduce(hcat, beam_moments) ]
 end
-
-## Array comprehension
-mats = @views [ local_axes[:,:,inds]' * wtf[:,:,inds]' * global_axis for inds in CartesianIndices(ss) ]
-
-# Einstein summation
-# @einsum mats_eins[l,k,i,j] := local_axes[m,l,i,j] * global_axis[m,k]
-
-## Transform forces
-fem_forces  = [ mats .* pt_forces[1:end-1] ; [mats[end] * pt_forces[end] ] ]
-fem_moments = [ mats .* pt_moments[1:end-1]; [mats[end] * pt_moments[end]] ]
-fem_loads   = [ reduce(hcat, fem_forces); reduce(hcat, fem_moments) ]
 
 ## Structural setup
 #==========================================================================================#
@@ -126,74 +96,102 @@ G     = 25e9  # Shear modulus, N/m²
 ν     = 0.3   # Poisson ratio (UNUSED FOR NOW)
 R     = 1e-2  # Outer radius, m
 t     = 8e-3  # Thickness, m
-Ls    = norm.(diff(fem_pts))
+
+# Make FEM mesh
+fem_w     = 0.35
+fem_mesh  = make_beam_mesh(vlm_mesh, fem_w)
+Ls        = norm.(diff(fem_mesh))
 
 # Create material and tubes
 aluminum = Material(E, G, σ_max, ρ)
 tubes    = Tube.(Ref(aluminum), Ls, R, t)
 
-# Assemble RHS
-function assemble_fem_dynamics(Fx, Fy, Fz, Mx, My, Mz)
-    px = [ Fx; Mx ]                                 # Fx Mx concatenated
-    py = (collect ∘ Iterators.flatten ∘ zip)(Fy, My) # Fy My interspersed
-    pz = (collect ∘ Iterators.flatten ∘ zip)(Fz, Mz) # Fz Mz interspersed
+## Axis transformation of stiffness matrices
+function axis_transformation(fem_mesh)
+    # Compute local beam axes
+    ss = @. normalize(fem_mesh[2:end] - fem_mesh[1:end-1])
+    ns = ss .× fill(SVector(1,0,0), length(fem_mesh) - 1)
+    cs = @. ss × ns
 
-    F  = [ py; pz; px ]
+    # WTF array of local coordinate systems - I can do better than this -_-
+    wtf = zeros(3, 3, size(ss)...) # ((x,y,z), (c,s,n), chordwise, spanwise)
+    for inds in CartesianIndices(wtf)
+        l,k,i  = inds.I
+        wtf[l,1,i] =  ns[i][l]
+        wtf[l,2,i] = -cs[i][l]
+        wtf[l,3,i] = -ss[i][l]
+    end
+    wtf
 end
 
-function assemble_fem_dynamics(loads)
-    px = [ loads[1,:]; loads[4,:] ] # Fx Mx concatenated
-    py = loads[[2,5],:][:]          # Fy My interspersed
-    pz = loads[[3,6],:][:]          # Fz Mz interspersed
-    F  = [ py; pz; px ]
+function transform_stiffy(perm_Ks, wtf)
+    num = length(perm_Ks)
+    K_tran = zeros(12, 12, num)
+    perm_K = zeros(12, 12, num)
+    for i in 1:num
+        perm_K[:,:,i] .= perm_Ks[i]
+        K_tran[:,:,i] .= kron(I(4), wtf[:,:,i])
+    end
+
+    ## Using Einstein summation convention for passive transformation of stiffness matrix: 
+    #  D = Mᵗ(PK)M, where M = I₄ ⊗ T, and P is the permutation matrix acting on the original K
+    @einsum D[j,k,i] := K_tran[l,j,i] * perm_K[l,m,i] * K_tran[m,k,i]
 end
 
-Fx = fem_loads[1,:]
-Fy = fem_loads[2,:] 
-Fz = fem_loads[3,:]
-Mx = fem_loads[4,:]
-My = fem_loads[5,:]
-Mz = fem_loads[6,:]
+function build_big_stiffy(material, tubes, fem_mesh)
+    num = length(tubes)
 
-df_Fs = DataFrame([ Fx Fy Fz Mx My Mz ], :auto)
+    # Building stiffness blocks
+    Ks = [ tube_stiffness_matrix(material, [tube]) for tube in tubes ]
+    # Ks[1]
+
+    ## Testing simultaneous permutations of rows and columns:
+    # 1. (Fx1, Fy1, Fz1, Mx1, My1, Mz1, Fx2, Fy2, Fz2, Mx2, My2, Mz2): [9,1,5,11,6,2,10,3,7,12,8,4]
+    # 2. (Fx1, Fx2, Mx1, Mx2, Fy1, My1, Fy2, My2, Fz1, Mz1, Fz2, Mz2): [9,10,11,12,1,2,3,4,5,6,7,8]
+    inds    = [9,1,5,11,6,2,10,3,7,12,8,4]
+    perm_Ks = [ K[inds,:][:,inds] for K in Ks ] 
+
+    # Compute transformation matrix
+    wtf = axis_transformation(fem_mesh)
+
+    # Transform the stiffness matrix
+    D = transform_stiffy(perm_Ks, wtf)    
+end
+
+## Stiffness matrix, loads, and constraints
+D         = build_big_stiffy(aluminum, tubes, fem_mesh)
+fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
+
+cons      = [span_num]
+stiffness = build_stiffness_matrix(D, cons)
+
+UnicodePlots.spy(stiffness)
+
+## Solve system
+displacements = solve_cantilever_beam(D, fem_loads, cons)
+
+## Generate DataFrames
+df_Fs = DataFrame(permutedims(fem_loads), :auto)
 rename!(df_Fs, [:Fx, :Fy, :Fz, :Mx, :My, :Mz])
 
-## "FEM" setup
-K  = tube_stiffness_matrix(aluminum, tubes)
-
-## Loads
-Ls = assemble_fem_dynamics(Fx, Fy, Fz, Mx, My, Mz)
-# Ls = assemble_fem_dynamics(fem_loads)
-
-## Solve system(s)
-xs = K \ Ls
+df_xs = DataFrame(permutedims(displacements), :auto)
+rename!(df_xs, [:dx, :dy, :dz, :θx, :θy, :θz])
 
 ## Displacement transfer scheme
 #==========================================================================================#
 
-function compute_displacements(Δs, n)
-    # Assembly
-    n1 = 2n                 # dim(Fy + My)
-    n2 = n1 + 2n            # dim(Fz + Mz)
-    n3 = n2 +  n            # dim(Fx)
-    n4 = n3 +  n            # dim(Mx)
+# I guess JJ doesn't know differential forms.
+rotation_matrix(Ωx, Ωy, Ωz) = @SMatrix [  0  -Ωz  Ωy ;
+                                          Ωz  0  -Ωx ;
+                                         -Ωy  Ωx  0  ]
 
-    dy = @view Δs[1:2:n1]
-    θy = @view Δs[2:2:n1]
-    dz = @view Δs[n1+1:2:n2]
-    θz = @view Δs[n1+2:2:n2]
-    dx = @view Δs[n2+1:n3]
-    θx = @view Δs[n3+1:n4]
+transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh) = permutedims(reduce(hcat, map(xyz -> xyz + dxs + Ts .* (xyz - fem_mesh), eachrow(vlm_mesh))))
 
-    dx, θx, dy, θy, dz, θz
-end
-
-dx, θx, dy, θy, dz, θz = compute_displacements(xs, length(fem_pts))
-ds, θs = SVector.(dx, dy, dz), SVector.(θx, θy, θz)
-
-## Generate DataFrames
-df_xs = DataFrame([ dx θx dy θy dz θz ], :auto)
-rename!(df_xs, [:dx, :θx, :dy, :θy, :dz, :θz])
+##
+θx, θy, θz = df_xs[!,4], df_xs[!,5], df_xs[!,6]
+T          = rotation_matrix.(θx, θy, θz)
+dxs        = SVector.(df_xs[!,1], df_xs[!,2], df_xs[!,3])
+new_mesh   = transfer_displacements(dxs, T, vlm_mesh, fem_mesh)
 
 ## Plotting
 #==========================================================================================#
@@ -208,49 +206,69 @@ circ           = circle3D(R, n_pts)
 
 draw_tube(p1, p2, circ) = [ [ circ_pt .+ p1, circ_pt .+ p2 ] for circ_pt in circ ]
 
-beam_pts   = zip(tupvector(fem_pts[1:end-1]), tupvector(fem_pts[2:end]))
+beam_pts   = zip(tupvector(fem_mesh[1:end-1]), tupvector(fem_mesh[2:end]))
 left_pts   = [ draw_tube(pt[1], pt[2], circ) for pt in beam_pts ]
 
 # Beam loads
-fem_plot   = reduce(hcat, fem_pts)
-loads_plot = [ reduce(hcat, pt_forces); reduce(hcat, pt_moments) ]
+fem_plot   = reduce(hcat, fem_mesh)
+loads_plot = fem_loads
 
 # Aerodynamic centers and forces
 panel_plot = plot_panels(panels[:])
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
-# Beam axes
-axes_plot  = reduce(hcat, (fem_pts[1:end-1] + fem_pts[2:end]) / 2)
-cs_plot    = reduce(hcat, cs)
-ss_plot    = reduce(hcat, ss)
-ns_plot    = reduce(hcat, ns)
+# Displacements
+new_mesh_plot  = reduce(hcat, new_mesh)
+new_panel_plot = plot_panels(make_panels(new_mesh)[:])
 
 # Plot
 b = aero_state.span_ref
 plot(camera = (45, 45), 
-     xlim = (-b/2, b/2),
+     xlim = (0, b/2),
     #  ylim = (-b/2, b/2), 
-     zlim = (-b/2, b/2)
+     zlim = (0, b/2)
     )
 
 # Panels
 [ plot!(pans, color = :black, label = ifelse(i == 1, "Panels", :none)) for (i, pans) in enumerate(panel_plot) ]
+[ plot!(pans, color = :brown, label = ifelse(i == 1, "Deflection", :none)) for (i, pans) in enumerate(new_panel_plot) ]
 
 # Planform
 plot!(wing_plan, color = :blue, label = "Planform")
 
 # Beams
-[ plot!(reduce(vcat, pt), color = :green, label = ifelse(i == 1, "Beams", :none)) for (i, pt) in enumerate(left_pts) ]
+# [ plot!(reduce(vcat, pt), color = :green, label = ifelse(i == 1, "Beams", :none)) for (i, pt) in enumerate(left_pts) ]
 
 # Forces
-quiver!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:], quiver=(loads_plot[1,:], loads_plot[2,:], loads_plot[3,:] ) .* 0.1, label = "Beam Forces")
-quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:], quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1, label = "Panel Forces")
-scatter!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:], label = "Aerodynamic Centers")
+# quiver!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:],
+#         quiver=(loads_plot[1,:], loads_plot[2,:], loads_plot[3,:] ) .* 0.1,
+#         label = "Beam Forces")
+# quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
+#         quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1,
+#         label = "Panel Forces")
+# scatter!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:], label = "Aerodynamic Centers")
 
-# Axis systems
-quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:], quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1, color = :orange, label = :none)
-quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:], quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, color = :red,    label = :none)
-quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:], quiver=(ss_plot[1,:], ss_plot[2,:], ss_plot[3,:]) .* 1e-1, color = :brown,  label = :none)
+# Beam axes
+axes_plot  = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
+ss         = @. normalize(fem_mesh[2:end] - fem_mesh[1:end-1])
+ns         = ss .× fill(SVector(1,0,0), length(fem_mesh) - 1)
+cs         = @. ss × ns
+ss_plot    = reduce(hcat, ss)
+cs_plot    = reduce(hcat, cs)
+ns_plot    = reduce(hcat, ns)
+
+quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:], 
+        quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1, 
+        color = :orange, label = :none)
+quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:],
+        quiver=(ss_plot[1,:], ss_plot[2,:], ss_plot[3,:]) .* 1e-1,
+        color = :brown, label = :none)
+quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:],
+        quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, 
+        color = :red, label = :none)
+
+# Displacements
+scatter!(new_mesh_plot[1,:], new_mesh_plot[2,:], new_mesh_plot[3,:], label = "New Nodes")
 
 plot!()

@@ -117,10 +117,12 @@ function tube_stiffness_matrix(Es :: AbstractVector, Gs :: AbstractVector, As ::
     As  = torsional_stiffness_matrix(Es, As, Ls)      
     Js  = torsional_stiffness_matrix(Gs, Js, Ls)
 
-    K   = blockdiag(Iys, Izs, As, Js)
+    K   = blockdiag(Iys, Iys, As, Js)
 end
 
 tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J :: Real, L :: Real, num :: Integer) = tube_stiffness_matrix(fill(E, num), fill(G, num), fill(A, num), fill(Iy, num), fill(Iz, num), fill(J, num), fill(L / num, num))
+
+tube_stiffness_matrix(tube :: Tube) = tube_stiffness_matrix(elastic_modulus(material(tube)), shear_modulus(material(tube)), area(tube), moment_of_inertia(tube), moment_of_inertia(tube), polar_moment_of_inertia(tube), length(tube))
 
 function tube_stiffness_matrix(x :: AbstractMatrix) 
     @assert size(x)[2] == 7 "Input must have 7 columns."
@@ -140,6 +142,68 @@ function tube_stiffness_matrix(mat :: Material, tubes :: Vector{<: Tube})
     G = fill(shear_modulus(mat), n)
 
     tube_stiffness_matrix(E, G, As, Iyys, Izzs, Js, Ls)
+end
+
+function build_stiffness_matrix(D, constraint_indices)
+    ##
+    len = length(D[1,1,:])
+
+    # First element
+    D_start = @views D[1:6,1:6,1]
+
+    # Last element
+    D_end   = @views D[7:end,7:end,end]
+
+    # Summing adjacent elements corresponding to diagonals
+    D_mid   = @views D[7:end,7:end,1:end-1] + D[1:6,1:6,2:end]
+
+    # Upper and lower diagonals
+    D_12    = @views D[1:6,7:end,:]
+    D_21    = @views D[7:end,1:6,:]
+
+    # Build sparse matrix
+    stiffness = spzeros(6 * (len + 2), 6 * (len + 2))
+    stiffness[7:12,7:12]           = D_start
+    stiffness[end-5:end,end-5:end] = D_end
+
+    for m in 1:len
+        mid_inds = 6(m+1)+1:6(m+1)+6
+        off_inds = 6(m)+1:6(m)+6
+        if m < len
+            stiffness[mid_inds,mid_inds] = D_mid[:,:,m]
+        end
+        stiffness[off_inds,mid_inds] = D_12[:,:,m]
+        stiffness[mid_inds,off_inds] = D_21[:,:,m]
+    end
+
+    # Fixed boundary condition by constraining the locations.
+    cons = 6 * (constraint_indices .+ 1)
+    arr = 1:6
+
+    col = arr
+    row = reduce(hcat, con .+ arr for con in cons)
+
+    stiffness[CartesianIndex.(col, row)] .= 1e9
+    stiffness[CartesianIndex.(row, col)] .= 1e9
+
+    stiffness
+end
+
+## Cantilever setup
+function solve_cantilever_beam(D, loads, constraint_indices)
+
+    # Create the stiffness matrix from the array of individual stiffnesses
+    # Also specifies the constraint location
+    K = build_stiffness_matrix(D, constraint_indices)
+    
+    # Build force vector with constraint
+    f = [ zeros(6); loads[:] ]
+
+    # Solve FEM sys
+    x = K \ f 
+
+    # Throw away the junk values for the constraint
+    reshape(x[7:end], 6, length(D[1,1,:]) + 1)
 end
 
 end
