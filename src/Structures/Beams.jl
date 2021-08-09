@@ -129,7 +129,7 @@ function tube_stiffness_matrix(x :: AbstractMatrix)
     @views tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
 end
 
-function tube_stiffness_matrix(mat :: Material, tubes :: Vector{<: Tube})
+function tube_stiffness_matrix(tubes :: Vector{<: Tube})
     n    = length(tubes)
     As   = area.(tubes)
     Js   = polar_moment_of_inertia.(tubes)
@@ -138,8 +138,8 @@ function tube_stiffness_matrix(mat :: Material, tubes :: Vector{<: Tube})
     Ls   = length.(tubes)
 
     # Material propeties
-    E = fill(elastic_modulus(mat), n)
-    G = fill(shear_modulus(mat), n)
+    E = elastic_modulus.(tubes)
+    G = shear_modulus.(tubes)
 
     tube_stiffness_matrix(E, G, As, Iyys, Izzs, Js, Ls)
 end
