@@ -9,13 +9,13 @@ total_force(surfs) = sum(sum ∘ surface_forces, surfs)
 ## Structural analysis
 #==========================================================================================#
 
-make_beam_mesh(vlm_mesh, fem_w = 0.35) =  (1 - fem_w) * vlm_mesh[1,:] + fem_w * vlm_mesh[end,:]
+make_beam_mesh(vlm_mesh, fem_w) =  (1 - fem_w) * vlm_mesh[1,:] + fem_w * vlm_mesh[end,:]
 
 ## Axis transformation of stiffness matrices
-function axis_transformation(fem_mesh)
+function axis_transformation(fem_mesh, vlm_mesh)
     # Compute local beam axes
     ss = @. normalize(fem_mesh[2:end] - fem_mesh[1:end-1])
-    ns = ss .× fill(SVector(1,0,0), length(fem_mesh) - 1)
+    ns = @. normalize((vlm_mesh[end,2:end] - vlm_mesh[1,1:end-1]) × (vlm_mesh[1,2:end] - vlm_mesh[end,1:end-1]))
     cs = @. ss × ns
 
     # WTF array of local coordinate systems - I can do better than this -_-
@@ -43,11 +43,11 @@ function transform_stiffy(perm_Ks, wtf)
     @einsum D[j,k,i] := K_tran[l,j,i] * perm_K[l,m,i] * K_tran[m,k,i]
 end
 
-function build_big_stiffy(material, tubes, fem_mesh)
+function build_big_stiffy(tubes, fem_mesh, vlm_mesh)
     num = length(tubes)
 
     # Building stiffness blocks
-    Ks = [ tube_stiffness_matrix(material, [tube]) for tube in tubes ]
+    Ks = [ tube_stiffness_matrix(tube) for tube in tubes ]
     # Ks[1]
 
     ## Testing simultaneous permutations of rows and columns:
@@ -57,26 +57,10 @@ function build_big_stiffy(material, tubes, fem_mesh)
     perm_Ks = [ K[inds,:][:,inds] for K in Ks ] 
 
     # Compute transformation matrix
-    wtf = axis_transformation(fem_mesh)
+    wtf = axis_transformation(fem_mesh, vlm_mesh)
 
     # Transform the stiffness matrix
     D = transform_stiffy(perm_Ks, wtf)    
-end
-
-# Cantilever setup
-function solve_beam_system(D, loads, constraint_indices)
-    # Create the stiffness matrix from the array of individual stiffnesses
-    # Also specifies the constraint location
-    K = build_stiffness_matrix(D, constraint_indices)
-    
-    # Build force vector with constraint
-    f = [ zeros(6); loads[:] ]
-
-    # Solve FEM sys
-    x = K \ f 
-
-    # Throw away the junk values for the constraint
-    reshape(x[7:end], 6, length(D[1,1,:]) + 1)
 end
 
 solve_beam_residual!(R, K, δ, F) = R .= K * δ - F
@@ -85,22 +69,22 @@ solve_beam_residual!(R, K, δ, F) = R .= K * δ - F
 #==========================================================================================#
 
 # Sum adjacent values
-adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
+adjacent_adder(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
 
 section_moments(vlm_acs, fem_pts, half_vlm_forces) = sum(x -> (x[1] .- fem_pts) .× x[2], zip(eachrow(vlm_acs), eachrow(half_vlm_forces)))
 
 function compute_loads(vlm_acs, vlm_forces, fem_mesh)
     # Forces
     sec_forces   = sum(vlm_forces, dims = 1)[:] / 2
-    beam_forces  = adjacent_joiner(sec_forces / 2, sec_forces / 2)
+    beam_forces  = adjacent_adder(sec_forces / 2, sec_forces / 2)
 
     # Moments
     M_ins        = @views section_moments(vlm_acs, fem_mesh[1:end-1], vlm_forces / 2)
     M_outs       = @views section_moments(vlm_acs, fem_mesh[2:end],   vlm_forces / 2)
-    beam_moments = adjacent_joiner(M_ins, M_outs)
+    beam_moments = adjacent_adder(M_ins, M_outs)
 
     # Concatenate forces and moments into loads array
-    fem_loads    = [ reduce(hcat, beam_forces); reduce(hcat, beam_moments) ]
+    [ reduce(hcat, beam_forces); reduce(hcat, beam_moments) ]
 end
 
 # I guess JJ doesn't know differential forms.
@@ -123,7 +107,7 @@ load_factor_residual!(R, L, W, n) = R .= load_factor_residual(L, W, n)
 ## Coupled residual system
 #==========================================================================================#
 
-function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: VLMState, vlm_mesh, fem_mesh, weight, load_factor)
+function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: VLMState, vlm_mesh, fem_mesh, stiffness_matrix, weight, load_factor)
     n = (prod ∘ size)(horseshoes(aero_system))   # Get panel size
 
     # Unpack aerodynamic and structural variables
@@ -136,44 +120,30 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: V
     R_W = @view R[end]
     
     # Compute displacements
-    δs  = @views reshape(δ[7:end],  6, length(fem_mesh))
+    δs  = @views reshape(δ[7:end], 6, length(fem_mesh))
     dxs = @views SVector.(δs[1,:], δs[2,:], δs[3,:])
-    Ts  = @views rotation_matrix.(δs[4,:], δs[5,:], δs[6,:])
-    
-    # Perturb VLM mesh and normals
-    new_vlm_mesh   = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
+    Ts  = @views rotation_matrix(δs[4:6,:])
 
     # New VLM variables
-    new_panels = make_panels(new_vlm_mesh)
+    new_vlm_mesh  = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
+    new_panels    = make_panels(new_vlm_mesh)
     aero_system.surfaces[1].horseshoes = horseshoe_line.(new_panels)
     # aero_system.surfaces[1].normals    = transfer_normals(Ts, reshape(aero_system.surfaces[1].normals, size(new_panels)))
+    aero_state.alpha = x[end]
 
     # Aerodynamic residuals
-    aero_state.alpha = x[end]
     solve_aerodynamic_residual!(R_A, Γ, aero_system, aero_surfs, aero_state)
     
     # Compute loads
     vlm_acs    = bound_leg_center.(horseshoes(aero_system.surfaces[1]))
     vlm_forces = surface_forces(aero_system.surfaces[1])
-
-    # Compute FEM mesh
-    fem_w     = 0.35
-    fem_mesh  = make_beam_mesh(vlm_mesh, fem_w)
-    Ls        = norm.(diff(fem_mesh)) # Beam lengths, m 
-    tubes     = Tube.(Ref(aluminum), Ls, 0.1, 1e-3)
-
-
-    # Create the stiffness matrix from the array of individual stiffnesses and specify constraints
-    D    = build_big_stiffy(aluminum, tubes, fem_mesh)
-    cons = [length(fem_mesh) ÷ 2]
-    K    = build_stiffness_matrix(D, cons)
     
     # Build force vector with constraint
     fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
-    f = [ zeros(6); fem_loads[:] ]
+    load_vec  = [ zeros(6); fem_loads[:] ]
 
     # Structural residuals
-    solve_beam_residual!(R_S, K, δ, f)
+    solve_beam_residual!(R_S, stiffness_matrix, δ, load_vec)
 
     # Compute lift for load factor residual
     L = total_force(aero_surfs)[3]
