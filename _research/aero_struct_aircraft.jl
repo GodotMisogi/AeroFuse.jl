@@ -75,7 +75,7 @@ aero_state = VLMState(0., 0., 0., [0.0, 0.0, 0.0],
 # Test case - Fixed speed
 aero_state.speed   = 25.
 aero_state.alpha   = deg2rad(3.)
-aero_state.beta    = deg2rad(15.)
+aero_state.beta    = deg2rad(0.)
 aero_state.rho_ref = 0.98
 
 # Build system with initial guess from aerodynamic-only analysis
@@ -212,10 +212,12 @@ loads_plot   = fem_loads
 σs_norm      = σs_max ./ maximum(σs_max)
 σ_norms      = [ σs_norm; σs_norm[end] ]
 
-# Aerodynamic centers and forces
+# Panels
 wing_panel_plot  = plot_panels(wing_panels[:])
 htail_panel_plot = plot_panels(htail_panels[:]) 
 vtail_panel_plot = plot_panels(vtail_panels[:])
+
+# Aerodynamic centers and forces
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
@@ -256,9 +258,7 @@ aircraft_plot =
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
          camera = (-75, 20), 
          xlim = (-b/4, 3b/4),
-         #  ylim = (-b/2, b/2), 
-    #  ylim = (-b/2, b/2), 
-         #  ylim = (-b/2, b/2), 
+     #     ylim = (-b/2, b/2),
          zlim = (-b/8, b/4),
          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
          legend = :topright,

@@ -6,6 +6,7 @@ using StaticArrays
 using DataFrames
 using NLsolve
 using Einsum
+using TimerOutputs
 
 include("../src/Aerostructural/aerostruct.jl")
 
@@ -28,40 +29,45 @@ wing_name   = "Wing"
 print_info(wing)
 
 # Mesh
-span_num        = 10
-chord_num       = 4
-panels, normies = panel_wing(wing, span_num, chord_num, spacing = ["cosine"]);
+span_num        = 12
+chord_num       = 6
+panels, normies = panel_wing(wing, span_num, chord_num, spacing = ["sine"]);
 aircraft        = Dict(wing_name => (panels, normies));
 
-# Set up aerodynamic state
-aero_state = VLMState(0., 0., 0., [0.0, 0.0, 0.0], 
-                      rho_ref   = 1.225,
-                      r_ref     = [ wing_mac[1], 0., 0. ],
-                      area_ref  = projected_area(wing), 
-                      chord_ref = mean_aerodynamic_chord(wing), 
-                      span_ref  = span(wing));
+## Case
+ac_name = "My Aircraft"
+S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+ρ       = 0.98
+ref     = [0.25c, 0., 0.]
+V, α, β = 25.0, 5.0, 0.0
+Ω       = [0.0, 0.0, 0.0]
+fs      = Freestream(V, α, β, Ω)
 
-# Test case - Fixed speed
-aero_state.speed   = 25.
-aero_state.alpha   = deg2rad(1.)
-aero_state.beta    = deg2rad(0.)
-aero_state.rho_ref = 0.98
+# Solve aerodynamic case for initial vector
+@time data = 
+    solve_case(aircraft, fs; 
+               rho_ref     = ρ, 		# Reference density
+               r_ref       = ref, 		# Reference point for moments
+               area_ref    = S, 		# Reference area
+               span_ref    = b, 		# Reference span
+               chord_ref   = c, 		# Reference chord
+               name        = ac_name,	# Aircraft name
+            #    print       = true,		# Prints the results for the entire aircraft
+            #    print_components = true,	# Prints the results for each component
+              );
 
-# Build system with initial guess from aerodynamic-only analysis
-aero_system = solve_case(aircraft, aero_state)
-aero_surfs  = surfaces(aero_system)
-print_coefficients(aero_surfs[1], aero_state);
-
-horses     = horseshoes(aero_system)
-Γ_0        = circulations(aero_system)
+## Data collection
+comp_names = (collect ∘ keys)(data)
+comp  = comp_names[2]
+nf_coeffs, ff_coeffs, CFs, CMs, horsies, Γs = data[comp];
+print_coefficients(nf_coeffs, ff_coeffs, comp)
 
 ## Aerodynamic forces and center locations
-vlm_forces = surface_forces(aero_surfs[1]) 
-horsies    = horseshoes(aero_surfs[1])
 vlm_acs    = bound_leg_center.(horsies)
+vlm_forces = force.(CFs, dynamic_pressure(ρ, V), S)
 
 ## Mesh setup
-vlm_mesh   = chord_coordinates(wing, [span_num], chord_num, spacings = ["cosine"])
+vlm_mesh   = chord_coordinates(wing, [span_num], chord_num, spacings = ["sine"])
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -70,31 +76,34 @@ vlm_mesh   = chord_coordinates(wing, [span_num], chord_num, spacings = ["cosine"
 # W   = (collect ∘ Iterators.flatten ∘ zip)(W_y, zeros(length(My)))
 # F_W = [ zeros(length(py)); W; zeros(length(px)) ]
 weight      = 10 * 9.81
-load_factor = 1.1;
+load_factor = 1.0;
 
 ## Structural variables
 
-# Beam properties
-E     = 85e8  # Elastic modulus, N/m²
-G     = 25e8  # Shear modulus, N/m²
-σ_max = 350e6 # Yield stress with factor of safety 2.5, N/m²
-ρ     = 1.6e3 # Density, kg/m³
-ν     = 0.3   # Poisson ratio (UNUSED FOR NOW)
-r     = 1e-2  # Outer radius, m
-t     = 8e-3  # Thickness, m
-
 # FEM mesh
-fem_w    = 0.35
+fem_w    = 0.40
 fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
 axes     = axis_transformation(fem_mesh, vlm_mesh)
 Ls       = norm.(diff(fem_mesh)) # Beam lengths, m 
-aluminum = Material(E, G, σ_max, ρ)
+
+# Beam properties
+E     = 85e9  # Elastic modulus, N/m²
+G     = 25e9  # Shear modulus, N/m²
+σ_max = 350e6 # Yield stress with factor of safety 2.5, N/m²
+rho   = 1.6e3 # Density, kg/m³
+ν     = 0.3   # Poisson ratio (UNUSED FOR NOW)
+rs    = range(6e-3, stop = 4e-3, length = length(Ls) ÷ 2)  # Outer radius, m
+ts    = range(1e-3, stop = 8e-4, length = length(Ls) ÷ 2)  # Thickness, m
+r     = [ rs[end:-1:1]; rs ]
+t     = [ ts[end:-1:1]; ts ]
+
+aluminum = Material(E, G, σ_max, rho)
 tubes    = Tube.(Ref(aluminum), Ls, r, t)
 
 # Stiffness matrix, loads and constraints
 D         = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
 cons      = [length(fem_mesh) ÷ 2]
-K         = build_stiffness_matrix(D, cons)
+stiffy    = build_stiffness_matrix(D, cons)
 fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
 
 ## Solve system
@@ -104,46 +113,58 @@ dx        = solve_cantilever_beam(D, fem_loads, cons)
 ## Aerostructural residual
 #==========================================================================================#
 
-solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_state, vlm_mesh, fem_mesh, K, weight, load_factor)
+solve_aerostructural_residual!(R, x) = 
+    solve_coupled_residual!(R, x, 
+                            V, deg2rad(β), ρ, Ω, vlm_mesh, normies, # Aerodynamic variables
+                            fem_mesh, stiffy,                       # Structural variables
+                            weight, load_factor)                    # Load factor variables
 
-x0   = [ Γ_0; Δx; aero_state.alpha ]
+x0   = [ Γs[:]; Δx; deg2rad(α) ]
 res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
                         #  extended_trace = true,
-                        #  autodiff   = :forward,
+                         autodiff   = :forward,
                         )
 
+## Get zero
+x_opt = res_aerostruct.zero
+Γ_opt = @views reshape(x_opt[1:length(normies)], size(normies))
+δ_opt = @view x_opt[length(normies)+7:end-1]
+α_opt = x_opt[end];
+
+## Compute displacements
+dx  = @views reshape(δ_opt, 6, length(fem_mesh))
+dxs = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
+Ts  = rotation_matrix(dx[4:6,:])
+
+## Perturb VLM mesh and normals
+new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
+new_panels   = make_panels(new_vlm_mesh)
+
+## Aerodynamic forces and center locations
+new_horsies = horseshoe_line.(new_panels)
+vlm_acs     = bound_leg_center.(new_horsies)
+vlm_forces  = AeroMDAO.VortexLattice.nearfield_forces(Γ_opt, new_horsies, Γ_opt, new_horsies, freestream_to_cartesian(-V, α_opt, deg2rad(β)), Ω, ρ)
+
+# New beams and loads
+new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
+fem_loads    = compute_loads(vlm_acs, vlm_forces, new_fem_mesh)
+
+## Compute stresses
+δxs = eachcol(diff(dx[1:3,:], dims = 2)) # Need to transform these to principal axes
+δθs = eachcol(diff(dx[4:6,:], dims = 2)) # Need to transform these to principal axes 
+σs  = reduce(hcat, von_mises_stress.(tubes, δxs, δθs))
+
 ## Check numbers
-lift     = total_force(values(aero_surfs))[3]
+lift     = sum(vlm_forces)[3]
 load_fac = lift / weight
 
 println("Load factor: $load_fac")
 println("Weight: $weight N")
 println("Lift: $lift N")
-println("Speed: $(aero_state.speed) m/s")
-println("Angle of attack: $(rad2deg(aero_state.alpha))ᵒ")
-
-## Get zero
-x_opt = res_aerostruct.zero 
-
-## Compute displacements
-dx  = @views reshape(x_opt[length(Γ_0)+7:end-1], 6, length(fem_mesh))
-dxs = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
-Ts  = rotation_matrix(dx[4:6,:])
-
-# Perturb VLM mesh and normals
-new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
-new_panels   = make_panels(new_vlm_mesh)
-
-# New beams
-new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
-
-## Aerodynamic forces and center locations
-horsies    = horseshoes(aero_surfs[1])
-vlm_acs    = bound_leg_center.(horsies)
-vlm_forces = surface_forces(aero_surfs[1])
-fem_loads  = compute_loads(vlm_acs, vlm_forces, new_fem_mesh)
+println("Speed: $V m/s")
+println("Angle of attack: $(rad2deg(α_opt))ᵒ")
 
 ## Generate DataFrame
 df = DataFrame(permutedims([ fem_loads; dx ]), :auto)
@@ -155,22 +176,13 @@ rename!(df, [:Fx, :Fy, :Fz, :Mx, :My, :Mz, :dx, :dy, :dz, :θx, :θy, :θz])
 using Plots
 pyplot(dpi = 300)
 
-# Beam circles
-n_pts          = 20
-circle3D(r, n) = [ (r*cos(θ), 0, r*sin(θ)) for θ in 0:2π/n:2π ];
-circ           = circle3D(r, n_pts) 
-
-draw_tube(p1, p2, circ) = [ [ circ_pt .+ p1, circ_pt .+ p2 ] for circ_pt in circ ]
-
-beam_pts     = zip(tupvector(fem_mesh[1:end-1]), tupvector(fem_mesh[2:end]))
-circ_pts     = [ draw_tube(pt[1], pt[2], circ) for pt in beam_pts ]
-
-new_beam_pts = zip(tupvector(new_fem_mesh[1:end-1]), tupvector(new_fem_mesh[2:end]))
-new_circ_pts = [ draw_tube(pt[1], pt[2], circ) for pt in new_beam_pts ]
-
-# Beam loads
-fem_plot   = reduce(hcat, fem_mesh)
-loads_plot = fem_loads
+# Beam loads and stresses
+fem_plot     = reduce(hcat, chop_coordinates(fem_mesh, 1))
+new_fem_plot = reduce(hcat, chop_coordinates(new_fem_mesh, 1))
+loads_plot   = fem_loads
+σs_max       = maximum.(eachcol(σs))
+σs_norm      = σs_max ./ maximum(σs_max)
+σ_norms      = [ σs_norm; σs_norm[end] ]
 
 # Aerodynamic centers and forces
 panel_plot = plot_panels(panels[:])
@@ -188,35 +200,55 @@ ss_plot = axes[:,2,:]
 ns_plot = axes[:,3,:]
 
 # Planforms
-wing_plan   = plot_wing(wing)
+wing_plan  = plot_wing(wing)
+nwing_plan = plot_wing(new_vlm_mesh)
+
+# Streamlines
+seed    = chop_coordinates(new_vlm_mesh[end,:], 2)
+streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
 
 ## Plot
-b = aero_state.span_ref
-plot(camera = (45, 45), 
-     xlim = (-b/2, b/2),
-    #  ylim = (-b/2, b/2), 
-     zlim = (0, b/2),
-    )
+using LaTeXStrings
+# pgfplotsx(size = (900, 600))
+aircraft_plot = 
+    plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
+         camera = (-80, 20), 
+         xlim = (-b/4, 3b/4),
+     #     ylim = (-b/2, b/2),
+         zlim = (-b/8, b/4),
+         bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
+         legend = :topright,
+        #  title = "Coupled Aerostructural Analysis"
+        )
+
 
 # Panels
-# [ plot!(pans, color = :black, label = ifelse(i == 1, "Panels", :none)) for (i, pans) in enumerate(panel_plot) ]
-[ plot!(pans, color = :brown, label = ifelse(i == 1, "Deflection", :none)) for (i, pans) in enumerate(new_panel_plot) ]
+# [ plot!(pans, color = :gray,  label = ifelse(i == 1, "Original Wing Panels", :none),  linestyle = :solid) for (i, pans) in enumerate(panel_plot)  ]
+[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7),  label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_panel_plot)   ]
+
+# Planform
+plot!(wing_plan, color = :gray, label = "Original Wing", linestyle = :solid)
+plot!(nwing_plan, color = :blue, label = "Deflected Wing")
 
 # Beams
-[ plot!(reduce(vcat, pt), color = :green, label = ifelse(i == 1, "Beams", :none)) for (i, pt) in enumerate(circ_pts) ]
-[ plot!(reduce(vcat, pt), color = :purple, label = ifelse(i == 1, "Deflected Beams", :none)) for (i, pt) in enumerate(new_circ_pts) ]
-# Planform
-plot!(wing_plan, color = :blue, label = "Planform")
+thickness = 2.5
+r_norm = [ r; r[end]] / maximum(r) * thickness
+plot!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:], color = :black, label = "Original Beam", linestyle = :solid, linewidth = r_norm)
+plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_norms, 0.5, 0.6, 1.0), label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_norm)
+
+# Streamlines
+[ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
 
 # Forces
+quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
+        quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1,
+        label = "Panel Forces")
+# scatter!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:], label = "Aerodynamic Centers")
 # quiver!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:],
 #         quiver=(loads_plot[1,:], loads_plot[2,:], loads_plot[3,:] ) .* 0.1,
 #         label = "Beam Forces")
-# quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
-#         quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1,
-#         label = "Panel Forces")
-# scatter!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:], label = "Aerodynamic Centers")
 
+# Axis systems
 # quiver!(xs_plot[1,:], xs_plot[2,:], xs_plot[3,:], 
 #         quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1, 
 #         color = :orange, label = :none)
@@ -226,3 +258,6 @@ plot!(wing_plan, color = :blue, label = "Planform")
 # quiver!(xs_plot[1,:], xs_plot[2,:], xs_plot[3,:],
 #         quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, 
 #         color = :red, label = :none)
+
+# savefig(aircraft_plot, "plots/AerostructWing.pdf")
+plot!()

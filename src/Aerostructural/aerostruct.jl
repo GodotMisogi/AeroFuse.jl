@@ -102,7 +102,7 @@ transfer_normals(Ts, normals) = permutedims(reduce(hcat, map(normie -> (Ts[1:end
 ## Weights and fuel loads
 #==========================================================================================#
 
-load_factor_residual(L, W, n) = L - n * W
+load_factor_residual(L, W, n)     = L - n * W
 load_factor_residual!(R, L, W, n) = R .= load_factor_residual(L, W, n)
 
 ## Coupled residual system
@@ -150,6 +150,64 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: V
 
     # Weight residual
     @timeit "Load Factor Residual" load_factor_residual!(R_W, L, weight, load_factor)
+
+    R
+end
+
+## "Pure" versions - AD compatible (for now)
+#==========================================================================================#
+
+evaluate_linear_residual!(R, A, x, b) = R .= A * x - b
+
+function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, normies, fem_mesh, stiffness_matrix, weight, load_factor)
+    n = (prod ∘ size)(normies)   # Get panel size
+
+    # Unpack aerodynamic and structural variables
+    Γ = @view x[1:n] 
+    δ = @view x[n+1:end-1]
+    α = x[end]
+
+    # Get residual vector views
+    R_A = @view R[1:n]
+    R_S = @view R[n+1:end-1]
+    R_W = @view R[end]
+    
+    # Compute displacements
+    δs  = @views reshape(δ[7:end], 6, length(fem_mesh))
+    dxs = @views SVector.(δs[1,:], δs[2,:], δs[3,:])
+    Ts  = @views rotation_matrix(δs[4:6,:])
+
+    ##  New VLM variables
+    new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
+    new_panels   = make_panels(new_vlm_mesh)
+    new_horsies  = horseshoe_line.(new_panels)
+    U            = freestream_to_cartesian(-speed, α, β)
+    vel          = map(hs -> U + Ω × AeroMDAO.VortexLattice.collocation_point(hs), new_horsies[:])
+    inf_mat      = AeroMDAO.VortexLattice.influence_matrix(new_horsies[:], AeroMDAO.VortexLattice.collocation_point.(new_horsies[:]), normies[:], -normalize(U), false)
+    boco         = AeroMDAO.VortexLattice.boundary_condition(vel, normies[:])
+
+    # Compute loads
+    Γs           = reshape(Γ, size(new_horsies))
+    vlm_acs      = bound_leg_center.(new_horsies)
+    vlm_forces   = AeroMDAO.VortexLattice.nearfield_forces(Γs, new_horsies, Γs, new_horsies, U, Ω, ρ)
+    
+    # Build force vector with constraint for structures
+    fem_loads = [ zeros(6); compute_loads(vlm_acs, vlm_forces, fem_mesh)[:] ]
+
+    # Compute lift for load factor residual
+    L = sum(vlm_forces)[3]
+    
+    # println("Angle of Attack: $(rad2deg(x[end]))")
+    # println("Forces: $vlm_forces")
+
+    # Aerodynamic residuals
+    evaluate_linear_residual!(R_A, inf_mat, Γ, boco)
+
+    # Structural residuals
+    evaluate_linear_residual!(R_S, stiffness_matrix, δ, fem_loads)
+
+    # Weight residual
+    load_factor_residual!(R_W, L, weight, load_factor)
 
     R
 end
