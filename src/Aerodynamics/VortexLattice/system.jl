@@ -205,9 +205,11 @@ function solve_aerodynamic_residual!(R, Γ, system :: VLMSystem, surfs :: Vector
     update_velocity!(state)
 
     # Assemble matrix system
+    # compute_influence_matrix!(system, state.velocity)
+    # compute_boundary_condition!(system, state.velocity, state.omega)
     generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
 
-    # Update circulations
+    # Update circulations of system and surfaces
     system.circulations = Γ
     update_circulations!(system)
 
@@ -217,7 +219,7 @@ function solve_aerodynamic_residual!(R, Γ, system :: VLMSystem, surfs :: Vector
     compute_farfield_forces!.(surfs, state.speed, state.alpha, state.beta, state.rho_ref)
 
     # Evaluate residual
-    R = evaluate_residual!(R, Γ, system)
+    evaluate_residual!(R, Γ, system)
 end
 
 ## Pure methods

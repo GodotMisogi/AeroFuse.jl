@@ -4,7 +4,7 @@
 # lifting_line_forces(surf) = sum(surface_forces(surf), dims = 1)[:]
 aerodynamic_forces(surfs) = reduce(vcat, (vec ∘ surface_forces).(surfs))
 
-total_force(surfs) = sum(sum ∘ surface_forces, surfs) 
+total_force(surfs, state) = body_to_wind_axes(sum(sum ∘ surface_forces, surfs), state.alpha, state.beta)
 
 ## Structural analysis
 #==========================================================================================#
@@ -43,18 +43,19 @@ function transform_stiffy(perm_Ks, wtf)
     @einsum D[j,k,i] := K_tran[l,j,i] * perm_K[l,m,i] * K_tran[m,k,i]
 end
 
-function build_big_stiffy(tubes, fem_mesh, vlm_mesh)
-    num = length(tubes)
-
-    # Building stiffness blocks
-    Ks = [ tube_stiffness_matrix(tube) for tube in tubes ]
-    # Ks[1]
-
-    ## Testing simultaneous permutations of rows and columns:
+function permute_stiffy(Ks) 
+    ## Simultaneous permutations of rows and columns:
     # 1. (Fx1, Fy1, Fz1, Mx1, My1, Mz1, Fx2, Fy2, Fz2, Mx2, My2, Mz2): [9,1,5,11,6,2,10,3,7,12,8,4]
     # 2. (Fx1, Fx2, Mx1, Mx2, Fy1, My1, Fy2, My2, Fz1, Mz1, Fz2, Mz2): [9,10,11,12,1,2,3,4,5,6,7,8]
     inds    = [9,1,5,11,6,2,10,3,7,12,8,4]
     perm_Ks = [ K[inds,:][:,inds] for K in Ks ] 
+end
+
+function build_big_stiffy(tubes, fem_mesh, vlm_mesh)
+    # Building stiffness blocks
+    Ks = [ tube_stiffness_matrix(tube) for tube in tubes ]
+
+    perm_Ks = permute_stiffy(Ks)
 
     # Compute transformation matrix
     wtf = axis_transformation(fem_mesh, vlm_mesh)
@@ -132,24 +133,23 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: V
     aero_state.alpha = x[end]
 
     # Aerodynamic residuals
-    solve_aerodynamic_residual!(R_A, Γ, aero_system, aero_surfs, aero_state)
+    @timeit "Aerodynamic Residual" solve_aerodynamic_residual!(R_A, Γ, aero_system, aero_surfs, aero_state)
     
     # Compute loads
     vlm_acs    = bound_leg_center.(horseshoes(aero_system.surfaces[1]))
     vlm_forces = surface_forces(aero_system.surfaces[1])
     
     # Build force vector with constraint
-    fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
-    load_vec  = [ zeros(6); fem_loads[:] ]
+    @timeit "Computing Loads" fem_loads = [ zeros(6); compute_loads(vlm_acs, vlm_forces, fem_mesh)[:] ]
 
     # Structural residuals
-    solve_beam_residual!(R_S, stiffness_matrix, δ, load_vec)
+    @timeit "Structural Residual" solve_beam_residual!(R_S, stiffness_matrix, δ, fem_loads)
 
     # Compute lift for load factor residual
-    L = total_force(aero_surfs)[3]
+    @timeit "Computing Total Lift" L = total_force(aero_surfs, aero_state)[3]
 
     # Weight residual
-    load_factor_residual!(R_W, L, weight, load_factor)
+    @timeit "Load Factor Residual" load_factor_residual!(R_W, L, weight, load_factor)
 
     R
 end

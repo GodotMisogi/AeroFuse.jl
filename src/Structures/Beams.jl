@@ -2,8 +2,12 @@ module Beams
 
 using SparseArrays
 using StaticArrays
+using LinearAlgebra
 
 abstract type AbstractBeam end
+
+## Material definition 
+#==========================================================================================#
 
 struct Material{T}
     elastic_modulus :: T
@@ -26,6 +30,10 @@ elastic_modulus(mat :: Material) = mat.elastic_modulus
 shear_modulus(mat :: Material)   = mat.shear_modulus
 yield_stress(mat :: Material)    = mat.yield_stress 
 density(mat :: Material)         = mat.density
+
+
+## Tube definition
+#==========================================================================================#
 
 struct Tube{T <: Real} <: AbstractBeam
     material  :: Material{T}
@@ -60,7 +68,30 @@ function polar_moment_of_inertia(tube :: Tube)
     π/2 * (r2^4 - r1^4)
 end
 
-# von_mises_stress(spar :: Tube) = 
+## Stress calculations (NEEDS CHECKING)
+#==========================================================================================#
+
+principal_stress(E, L, R, dx, dθ_yz) = E * (dx / L + R * dθ_yz / L)
+torsional_stress(G, L, R, dθ_x)    = G * R * dθ_x / L
+von_mises_stress(σ_xx, σ_xt)      = √(σ_xx^2 + 3σ_xt^2)
+
+function von_mises_stress(tube :: Tube, ds, θs)
+    E = (elastic_modulus ∘ material)(tube)
+    G = (shear_modulus ∘ material)(tube)
+    R = radius(tube)
+    L = length(tube)
+    
+    dx     = ds[1]
+    dθ_yz  = norm(θs[2:end])
+    σ_xx_1 = principal_stress(E, L, R,  dx, dθ_yz)
+    σ_xx_2 = principal_stress(E, L, R, -dx, dθ_yz)
+    σ_xt   = torsional_stress(G, L, R, θs[1])
+
+    von_mises_stress.(SVector(σ_xx_1, σ_xx_2), σ_xt)
+end
+
+## Stiffness matrices
+#==========================================================================================#
 
 # E * I / L^3 .* [ 12 .* [ 1. -1. ; -1.  1.]  6 .* [-1. -1.; 1. 1.] ; 
 #                   6 .* [-1.  1. ; -1.  1.]  2 .* [ 2.  1.; 1. 2.] ]

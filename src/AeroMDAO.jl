@@ -96,9 +96,9 @@ export solve_case, solve_stability_case, streamlines, print_case, print_info, pr
 #==========================================================================================#
 
 include("Structures/Beams.jl")
-import .Beams: Material, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, deflection_stiffness_matrix, torsional_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density
+import .Beams: Material, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, deflection_stiffness_matrix, torsional_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
 
-export Material, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, deflection_stiffness_matrix, torsional_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density
+export Material, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, deflection_stiffness_matrix, torsional_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
 
 ## Post-processing
 #==========================================================================================#
