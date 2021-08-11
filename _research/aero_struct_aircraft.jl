@@ -87,7 +87,7 @@ fs      = Freestream(V, α, β, Ω)
 
 ## Data collection
 Γs = data[ac_name][end]
-CFs, CMs, horsies = data["Wing"][3:end-1];
+CFs, CMs, horsies, Γ0_wing = data["Wing"][3:end];
 
 ## Aerodynamic forces and center locations
 vlm_acs    = bound_leg_center.(horsies)
@@ -150,6 +150,7 @@ solve_aerostructural_residual!(R, x) =
                             fem_mesh, stiffy,           # Structural variables
                             weight, load_factor)        # Load factor variables
 
+## Solve nonlinear system
 x0   = [ Γs[:]; Δx; deg2rad(α) ]
 res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
@@ -159,10 +160,10 @@ res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                         )
 
 ## Get zero
-x_opt = res_aerostruct.zero
-Γ_opt = @views reshape(x_opt[1:length(wing_panels)], size(wing_panels))
-δ_opt = @view x_opt[length(normies)+7:end-1]
-α_opt = x_opt[end];
+x_opt  = res_aerostruct.zero
+all_Γs = @view x_opt[1:length(normies)]
+δ_opt  = @view x_opt[length(normies)+7:end-1]
+α_opt  = x_opt[end];
 
 ## Compute displacements
 dx  = @views reshape(δ_opt, 6, length(fem_mesh))
@@ -170,17 +171,23 @@ dxs = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
 Ts  = rotation_matrix(dx[4:6,:])
 
 ## Perturb VLM mesh and normals
-new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
-new_panels   = make_panels(new_vlm_mesh)
+opt_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
+opt_panels   = make_panels(opt_vlm_mesh)
+
+##
+Γ_wing = @views reshape(x_opt[1:length(wing_panels)], size(wing_panels))
+opt_horsies = horseshoe_line.(opt_panels)
+all_horsies = [ opt_horsies[:]; horseshoe_line.(panties[:]) ]
 
 ## Aerodynamic forces and center locations
-new_horsies = horseshoe_line.(new_panels)
-vlm_acs     = bound_leg_center.(new_horsies)
-vlm_forces  = AeroMDAO.VortexLattice.nearfield_forces(Γ_opt, new_horsies, Γ_opt, new_horsies, freestream_to_cartesian(-V, α_opt, deg2rad(β)), Ω, ρ)
+U          = freestream_to_cartesian(-V, α_opt, deg2rad(β))
+vlm_acs    = bound_leg_center.(opt_horsies)
+vlm_forces = nearfield_forces(Γ_wing, opt_horsies, all_Γs, all_horsies, U, Ω, ρ)
+all_forces = nearfield_forces(all_Γs, all_horsies, all_Γs, all_horsies, U, Ω, ρ)
 
 ## New beams and loads
-new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
-fem_loads    = compute_loads(vlm_acs, vlm_forces, new_fem_mesh)
+opt_fem_mesh = make_beam_mesh(opt_vlm_mesh, fem_w)
+fem_loads    = compute_loads(vlm_acs, vlm_forces, opt_fem_mesh)
 
 ## Compute stresses
 δxs = eachcol(diff(dx[1:3,:], dims = 2)) # Need to transform these to principal axes
@@ -215,8 +222,12 @@ loads_plot   = fem_loads
 σs_norm      = σs_max ./ maximum(σs_max)
 σ_norms      = [ σs_norm; σs_norm[end] ]
 
+# Panels
+wing_panel_plot  = plot_panels(wing_panels[:])
+htail_panel_plot = plot_panels(htail_panels[:]) 
+vtail_panel_plot = plot_panels(vtail_panels[:])
+
 # Aerodynamic centers and forces
-panel_plot = plot_panels(panels[:])
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
@@ -240,7 +251,7 @@ streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
 
 ## Plot
 using LaTeXStrings
-pgfplotsx(size = (900, 600))
+# pgfplotsx(size = (900, 600))
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
          camera = (-80, 20), 
@@ -290,5 +301,5 @@ quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
 #         quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, 
 #         color = :red, label = :none)
 
-savefig(aircraft_plot, "plots/AerostructWing.pdf")
+# savefig(aircraft_plot, "plots/AerostructAircraft.pdf")
 plot!()

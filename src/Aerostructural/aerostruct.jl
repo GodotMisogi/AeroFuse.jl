@@ -135,6 +135,7 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: V
     # Unpack aerodynamic and structural variables
     Γ = @view x[1:n] 
     δ = @view x[n+1:end-1]
+    α = x[end]
 
     # Get residual vector views
     R_A = @view R[1:n]
@@ -151,7 +152,7 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: V
     new_panels    = make_panels(new_vlm_mesh)
     aero_system.surfaces[1].horseshoes = horseshoe_line.(new_panels)
     # aero_system.surfaces[1].normals    = transfer_normals(Ts, reshape(aero_system.surfaces[1].normals, size(new_panels)))
-    aero_state.alpha = x[end]
+    aero_state.alpha = α
 
     # Solve VLM system and update forces
     @timeit "Aerodynamics Setup" solve_aerodynamics!(Γ, aero_system, aero_surfs, aero_state)
@@ -237,7 +238,7 @@ end
 
 # Multiple surfaces
 function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, other_panels, normies, fem_mesh, stiffness_matrix, weight, load_factor)
-    n = (prod ∘ size)(normies) # Get size of VLM system
+    n = length(normies) # Get size of VLM system
 
     # Unpack aerodynamic and structural variables
     Γ = @view x[1:n]
@@ -262,8 +263,8 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, other_panels
 
     # Set up VLM system
     U       = freestream_to_cartesian(-speed, α, β)
-    inf_mat = influence_matrix(all_horsies[:], horseshoe_point.(all_horsies[:]), normies[:], -normalize(U), false)
-    boco    = boundary_condition(quasi_steady_freestream(all_horsies[:], U, Ω), normies[:])
+    inf_mat = influence_matrix(all_horsies, horseshoe_point.(all_horsies), normies[:], -normalize(U), false)
+    boco    = boundary_condition(quasi_steady_freestream(all_horsies, U, Ω), normies[:])
 
     # Compute forces for load factor residual
     all_Γs     = reshape(Γ, size(all_horsies))

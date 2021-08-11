@@ -84,13 +84,12 @@ aero_surfs  = surfaces(aero_system)
 print_coefficients(aero_surfs[1], aero_state);
 
 # Get initial aerodynamic vector for Newton method
-horses     = horseshoes(aero_system)
 Γ_0        = circulations(aero_system)
 
 ## Aerodynamic forces and center locations
+horsies    = horseshoes(aero_surfs[1])
 vlm_acs    = bound_leg_center.(horsies)
 vlm_forces = surface_forces(aero_surfs[1]) 
-horsies    = horseshoes(aero_surfs[1])
 
 ## Mesh setup
 vlm_mesh   = chord_coordinates(wing, span_num, chord_num)
@@ -254,7 +253,7 @@ streams = plot_streams(fs, seed, horsies, Γs, 2.5, 100);
 ## Plot
 b = aero_state.span_ref
 using LaTeXStrings
-pgfplotsx(size = (900, 600))
+# pgfplotsx(size = (900, 600))
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
          camera = (-75, 30), 
@@ -292,5 +291,5 @@ plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_
 #         quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1,
 #         label = "Panel Forces", color = :orange)
 
-savefig(aircraft_plot, "plots/AerostructAircraft.pdf")
-# plot!()
+# savefig(aircraft_plot, "plots/AerostructAircraft.pdf")
+plot!()
