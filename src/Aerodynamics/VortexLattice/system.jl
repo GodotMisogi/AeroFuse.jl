@@ -61,7 +61,7 @@ farfield_forces(surf :: VLMSurface) = surf.farfield_forces
 circulations(surf :: VLMSurface)    = surf.circulations
 name(surf :: VLMSurface)            = surf.name
 
-collocation_points(surf :: VLMSurface) = collocation_point.(horseshoes(surf))
+collocation_points(surf :: VLMSurface) = horseshoe_point.(horseshoes(surf))
 
 function compute_wake_properties!(surface :: VLMSurface, α, β)
     # Reference velocity for broadcasting
@@ -95,7 +95,7 @@ circulations(system :: VLMSystem) = system.circulations
 horseshoes(system :: VLMSystem)   = reduce(vcat, (vec ∘ horseshoes).(surfaces(system)))
 normals(system :: VLMSystem)      = reduce(vcat, (vec ∘ normals).(surfaces(system)))
 
-collocation_points(system :: VLMSystem) = collocation_point.(horseshoes(system))
+collocation_points(system :: VLMSystem) = horseshoe_point.(horseshoes(system))
 
 # Initialization
 function VLMSystem(surfaces :: AbstractVector{VLMSurface{T}}) where T <: Real
@@ -200,28 +200,6 @@ function evaluate_case!(system :: VLMSystem, state :: VLMState)
     system, state
 end
 
-function solve_aerodynamic_residual!(R, Γ, system :: VLMSystem, surfs :: Vector{<: VLMSurface}, state :: VLMState)
-    # Update state velocity
-    update_velocity!(state)
-
-    # Assemble matrix system
-    # compute_influence_matrix!(system, state.velocity)
-    # compute_boundary_condition!(system, state.velocity, state.omega)
-    generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
-
-    # Update circulations of system and surfaces
-    system.circulations = Γ
-    update_circulations!(system)
-
-    # Compute forces
-    compute_surface_forces!.(surfs, Ref(system), Ref(state.velocity), Ref(state.omega), state.rho_ref)
-    compute_surface_moments!.(surfs, Ref(state.r_ref))
-    compute_farfield_forces!.(surfs, state.speed, state.alpha, state.beta, state.rho_ref)
-
-    # Evaluate residual
-    evaluate_residual!(R, Γ, system)
-end
-
 ## Pure methods
 surface_force_coefficients(surf :: VLMSurface, U, ρ, S) = 
     force_coefficient.(surf.surface_forces, dynamic_pressure(ρ, U), S)
@@ -262,11 +240,8 @@ nearfield_coefficients(surf :: VLMSurface, state :: VLMState) = nearfield_coeffi
 
 farfield_coefficients(surf :: VLMSurface, state :: VLMState)  = farfield_coefficients(surf, state.speed, state.rho_ref, state.area_ref)
 
-## Residual setup
+## Cases
 #=============================================#
-
-evaluate_residual!(R, Γ, system :: VLMSystem) =
-    R .= AIC(system) * Γ - RHS(system)
 
 """
     solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)

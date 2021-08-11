@@ -33,15 +33,16 @@ Get the bound legs and collocation points of the horseshoes defined by horseshoe
 """
 make_horseshoes(horseshoe_panels) =	@. horseshoe_line(horseshoe_panels), horseshoe_point(horseshoe_panels)
 
+quasi_steady_freestream(horseshoes, U, Ω) = map(hs -> U + Ω × horseshoe_point(hs), horseshoes)
+
 """
-    solve_system(horseshoes, collocation_points, normals, U, Ω) 
+    solve_system(horseshoes, normals, U, Ω) 
 
 Evaluate and return the vortex strengths ``\\Gamma``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``\\Omega``.
 """
 function solve_system(horseshoes, normals, U, Ω)
-    V = map(hs -> U + Ω × collocation_point(hs), horseshoes)
-    AIC  = influence_matrix(horseshoes, collocation_point.(horseshoes), normals, -normalize(U), false)
-    boco = boundary_condition(V, normals)
+    AIC  = influence_matrix(horseshoes, horseshoe_point.(horseshoes), normals, -normalize(U), false)
+    boco = boundary_condition(quasi_steady_freestream(horseshoes, U, Ω), normals)
     Γs 	 = AIC \ boco 
 end
 

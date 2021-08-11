@@ -83,7 +83,7 @@ end
 Getter for bound leg field of a `Horseshoe`.
 """
 bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
-collocation_point(horseshoe :: Horseshoe) = horseshoe.collocation_point
+horseshoe_point(horseshoe :: Horseshoe) = horseshoe.collocation_point
 
 r1(r, horseshoe :: Horseshoe) = r1(r, bound_leg(horseshoe))
 r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))

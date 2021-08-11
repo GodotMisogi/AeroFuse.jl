@@ -66,7 +66,7 @@ function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
     if print_components
         vals = [ dict[key][1:2] for key in keys(dict) ]
         nf_comp_coeffs, ff_comp_coeffs = getindex.(vals, 1), getindex.(vals, 2)
-        print_coefficients.(nf_comp_coeffs, ff_comp_coeffs)
+        print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(dict))
     elseif print
         nf_coeffs, ff_coeffs = dict[name][1:2] 
         print_coefficients(nf_coeffs, ff_coeffs, name) 
