@@ -25,48 +25,42 @@ wing = WingSection(root_foil  = naca4((0,0,1,2)),
                    root_twist = 0.0,
                    tip_twist  = 0.0)
 wing_mac    = mean_aerodynamic_center(wing)
-wing_name   = "Wing"
 print_info(wing)
 
-# Mesh
-span_num        = [12]
-chord_num       = 6
-panels, normies = panel_wing(wing, span_num, chord_num, spacing = ["sine"]);
-aircraft        = Dict(wing_name => (panels, normies));
+# Mesh details
+span_num  = [12]
+chord_num = 6
 
 ## Aerodynamic case
-ac_name = "My Aircraft"
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 0.98
-ref     = [0.25c, 0., 0.]
+ref     = [0.25 * wing_mac[1], 0., 0.]
 V, α, β = 25.0, 5.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
 # Solve aerodynamic case for initial vector
-@time data = 
-    solve_case(aircraft, fs; 
-               rho_ref     = ρ, 		# Reference density
-               r_ref       = ref, 		# Reference point for moments
-               area_ref    = S, 		# Reference area
-               span_ref    = b, 		# Reference span
-               chord_ref   = c, 		# Reference chord
-               name        = ac_name,	# Aircraft name
-            #    print       = true,		# Prints the results for the entire aircraft
-               print_components = true,	# Prints the results for each component
+@time nf_coeffs, ff_coeffs, CFs, CMs, panels, normies, horsies, Γs = 
+    solve_case(wing, fs;
+               rho_ref   = ρ,
+               r_ref     = ref,
+               span_num  = span_num[1] * 2,
+               chord_num = chord_num,
+               spacing   = ["sine"]
               );
 
-## Data collection
-comp_names = (collect ∘ keys)(data)
-comp  = comp_names[2]
-nf_coeffs, ff_coeffs, CFs, CMs, horsies, Γs = data[comp];
+print_coefficients(nf_coeffs, ff_coeffs)
 
 ## Aerodynamic forces and center locations
 vlm_acs    = bound_leg_center.(horsies)
-vlm_forces = force.(CFs, dynamic_pressure(ρ, V), S)
+vlm_forces = force.(CFs, dynamic_pressure(ρ, V), projected_area(wing))
 
 ## Mesh setup
 vlm_mesh   = chord_coordinates(wing, span_num, chord_num, spacings = ["sine"])
+
+# FEM mesh
+fem_w    = 0.40
+fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
+axes     = axis_transformation(fem_mesh, vlm_mesh)
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -79,11 +73,6 @@ load_factor = 1.0;
 
 ## Structural variables
 
-# FEM mesh
-fem_w    = 0.40
-fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
-axes     = axis_transformation(fem_mesh, vlm_mesh)
-
 ## Beam properties
 Ls    = norm.(diff(fem_mesh)) # Beam lengths, m 
 E     = 85e9                  # Elastic modulus, N/m²
@@ -93,8 +82,8 @@ rho   = 1.6e3                 # Density, kg/m³
 ν     = 0.3                   # Poisson ratio (UNUSED FOR NOW)
 rs    = range(6e-3, stop = 4e-3, length = length(Ls) ÷ 2)  # Outer radius, m
 ts    = range(1e-3, stop = 8e-4, length = length(Ls) ÷ 2)  # Thickness, m
-r     = [ rs[end:-1:1]; rs ]
-t     = [ ts[end:-1:1]; ts ]
+r     = [ reverse(rs); rs ]
+t     = [ reverse(ts); ts ]
 
 aluminum = Material(E, G, σ_max, rho)
 tubes    = Tube.(Ref(aluminum), Ls, r, t)
@@ -120,7 +109,7 @@ solve_aerostructural_residual!(R, x) =
                             weight, load_factor) # Load factor variables
 
 x0   = [ Γs[:]; Δx; deg2rad(α) ]
-res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
+@time res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
                         #  extended_trace = true,
@@ -143,9 +132,10 @@ new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
 new_panels   = make_panels(new_vlm_mesh)
 
 ## Aerodynamic forces and center locations
+U_opt       = freestream_to_cartesian(-V, α_opt, deg2rad(β))
 new_horsies = horseshoe_line.(new_panels)
 vlm_acs     = bound_leg_center.(new_horsies)
-vlm_forces  = nearfield_forces(Γ_opt, new_horsies, Γ_opt, new_horsies, freestream_to_cartesian(-V, α_opt, deg2rad(β)), Ω, ρ)
+vlm_forces  = nearfield_forces(Γ_opt, new_horsies, Γ_opt, new_horsies, U_opt, Ω, ρ)
 
 ## New beams and loads
 new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
@@ -158,7 +148,7 @@ fem_loads    = compute_loads(vlm_acs, vlm_forces, new_fem_mesh)
 
 ## Check numbers
 lift     = sum(vlm_forces)[3]
-load_fac = lift / weight
+load_fac = lift * cos(α_opt) / weight
 
 println("Load factor: $load_fac")
 println("Weight: $weight N")
@@ -227,7 +217,7 @@ aircraft_plot =
 [ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7),  label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_panel_plot)   ]
 
 # Planform
-plot!(wing_plan, color = :gray, label = "Original Wing", linestyle = :solid)
+plot!(wing_plan,  color = :gray, label = "Original Wing", linestyle = :solid)
 plot!(nwing_plan, color = :blue, label = "Deflected Wing")
 
 # Beams
