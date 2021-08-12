@@ -267,14 +267,13 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, other_panels
     boco    = boundary_condition(quasi_steady_freestream(all_horsies, U, Ω), normies[:])
 
     # Compute forces for load factor residual
-    all_Γs     = reshape(Γ, size(all_horsies))
-    all_forces = nearfield_forces(all_Γs, all_horsies, all_Γs, all_horsies, U, Ω, ρ)
+    all_forces = nearfield_forces(Γ, all_horsies, Γ, all_horsies, U, Ω, ρ)
     L          = sum(all_forces)[3]
 
-    # Compute forces for structural residual
-    new_Γs     = reshape(Γ[1:length(new_horsies)], size(new_horsies))
+    # Compute component forces for structural residual
+    new_Γs     = @views reshape(Γ[1:length(new_horsies)], size(new_horsies))
     new_acs    = bound_leg_center.(all_horsies)
-    new_forces = nearfield_forces(new_Γs, new_horsies, all_Γs, all_horsies, U, Ω, ρ)
+    new_forces = nearfield_forces(new_Γs, new_horsies, Γ, all_horsies, U, Ω, ρ)
 
     # Build force vector with constraint for structures
     fem_loads = [ zeros(6); compute_loads(new_acs, new_forces, fem_mesh)[:] ]

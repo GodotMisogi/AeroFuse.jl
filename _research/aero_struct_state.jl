@@ -94,6 +94,11 @@ vlm_forces = surface_forces(aero_surfs[1])
 ## Mesh setup
 vlm_mesh   = chord_coordinates(wing, span_num, chord_num)
 
+# FEM mesh
+fem_w    = 0.40
+fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
+axes     = axis_transformation(fem_mesh, vlm_mesh)
+
 ## Weight variables (FOR FUTURE USE)
 
 # W   = force(ff_t[3], q, S)
@@ -105,12 +110,6 @@ load_factor = 1.3;
 
 ## Structural variables
 
-# FEM mesh
-fem_w    = 0.40
-fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
-axes     = axis_transformation(fem_mesh, vlm_mesh)
-
-
 # Beam properties
 Ls    = norm.(diff(fem_mesh)) # Beam lengths, m 
 E     = 85e9                  # Elastic modulus, N/m²
@@ -120,8 +119,8 @@ G     = 25e9                  # Shear modulus, N/m²
 ν     = 0.3                   # Poisson ratio (UNUSED FOR NOW)
 rs    = range(2e-2, stop = 8e-3, length = length(Ls) ÷ 2)  # Outer radius, m
 ts    = range(8e-3, stop = 2e-3, length = length(Ls) ÷ 2)  # Thickness, m
-r     = [ rs[end:-1:1]; rs ]
-t     = [ ts[end:-1:1]; ts ]
+r     = [ reverse(rs); rs ]
+t     = [ reverse(ts); ts ]
 
 aluminum = Material(E, G, σ_max, ρ)
 tubes    = Tube.(Ref(aluminum), Ls, r, t)
@@ -145,7 +144,7 @@ x0   = [ Γ_0; Δx; aero_state.alpha ]
 
 ## Solve system
 reset_timer!()
-@timeit "Residual" res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
+@time res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
                         #  ftol       = 1e-7,
@@ -156,7 +155,7 @@ print_timer()
 
 ## Check numbers
 lift     = total_force(aero_surfs, aero_state)[3]
-load_fac = lift / weight
+load_fac = lift * cos(aero_state.alpha) / weight
 
 println("Load factor: $load_fac")
 println("Weight: $weight N")

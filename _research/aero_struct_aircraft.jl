@@ -63,16 +63,17 @@ aircraft = Dict(
                );
 wing_mac = mean_aerodynamic_center(wing);
 
+
 ## Aerodynamic case
 ac_name = "My Aircraft"
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 0.98
 ref     = [0.25c, 0., 0.]
-V, α, β = 25.0, 5.0, 0.0
+V, α, β = 25.0, 3.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
-# Solve aerodynamic case for initial vector
+## Solve aerodynamic case for initial vector
 @time data = 
     solve_case(aircraft, fs; 
                rho_ref     = ρ, 		# Reference density
@@ -81,12 +82,12 @@ fs      = Freestream(V, α, β, Ω)
                span_ref    = b, 		# Reference span
                chord_ref   = c, 		# Reference chord
                name        = ac_name,	# Aircraft name
-            #    print       = true,		# Prints the results for the entire aircraft
                print_components = true,	# Prints the results for each component
               );
 
 ## Data collection
-Γs = data[ac_name][end]
+U = aircraft_velocity(fs)
+all_horsies, Γs = data[ac_name][end-1:end]
 CFs, CMs, horsies, Γ0_wing = data["Wing"][3:end];
 
 ## Aerodynamic forces and center locations
@@ -94,7 +95,12 @@ vlm_acs    = bound_leg_center.(horsies)
 vlm_forces = force.(CFs, dynamic_pressure(ρ, V), S)
 
 ## Mesh setup
-vlm_mesh   = chord_coordinates(wing, span_num, chord_num, spacings = ["sine"])
+vlm_mesh   = chord_coordinates(wing, span_num, chord_num, spacings = ["cosine"])
+
+# FEM mesh
+fem_w    = 0.40
+fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
+axes     = axis_transformation(fem_mesh, vlm_mesh)
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -102,15 +108,10 @@ vlm_mesh   = chord_coordinates(wing, span_num, chord_num, spacings = ["sine"])
 # W_y = fill(W / length(CFs) + 1, length(CFs) + 1)
 # W   = (collect ∘ Iterators.flatten ∘ zip)(W_y, zeros(length(My)))
 # F_W = [ zeros(length(py)); W; zeros(length(px)) ]
-weight      = 10 * 9.81
-load_factor = 1.0;
-
+weight      = 60 * 9.81
+load_factor = 1.3;
+ 
 ## Structural variables
-
-# FEM mesh
-fem_w    = 0.40
-fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
-axes     = axis_transformation(fem_mesh, vlm_mesh)
 
 ## Beam properties
 Ls    = norm.(diff(fem_mesh)) # Beam lengths, m 
@@ -121,8 +122,8 @@ rho   = 1.6e3                 # Density, kg/m³
 ν     = 0.3                   # Poisson ratio (UNUSED FOR NOW)
 rs    = range(2e-2, stop = 8e-3, length = length(Ls) ÷ 2)  # Outer radius, m
 ts    = range(8e-3, stop = 2e-3, length = length(Ls) ÷ 2)  # Thickness, m
-r     = [ rs[end:-1:1]; rs ]
-t     = [ ts[end:-1:1]; ts ]
+r     = [ reverse(rs); rs ]
+t     = [ reverse(ts); ts ]
 
 aluminum = Material(E, G, σ_max, rho)
 tubes    = Tube.(Ref(aluminum), Ls, r, t)
@@ -152,7 +153,7 @@ solve_aerostructural_residual!(R, x) =
 
 ## Solve nonlinear system
 x0   = [ Γs[:]; Δx; deg2rad(α) ]
-res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
+@time res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
                         #  extended_trace = true,
@@ -175,15 +176,15 @@ opt_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
 opt_panels   = make_panels(opt_vlm_mesh)
 
 ##
-Γ_wing = @views reshape(x_opt[1:length(wing_panels)], size(wing_panels))
+Γ_wing      = @views reshape(x_opt[1:length(wing_panels)], size(wing_panels))
 opt_horsies = horseshoe_line.(opt_panels)
 all_horsies = [ opt_horsies[:]; horseshoe_line.(panties[:]) ]
 
 ## Aerodynamic forces and center locations
-U          = freestream_to_cartesian(-V, α_opt, deg2rad(β))
+U_opt      = freestream_to_cartesian(-V, α_opt, deg2rad(β))
 vlm_acs    = bound_leg_center.(opt_horsies)
-vlm_forces = nearfield_forces(Γ_wing, opt_horsies, all_Γs, all_horsies, U, Ω, ρ)
-all_forces = nearfield_forces(all_Γs, all_horsies, all_Γs, all_horsies, U, Ω, ρ)
+vlm_forces = nearfield_forces(Γ_wing, opt_horsies, all_Γs, all_horsies, U_opt, Ω, ρ)
+all_forces = nearfield_forces(all_Γs, all_horsies, all_Γs, all_horsies, U_opt, Ω, ρ)
 
 ## New beams and loads
 opt_fem_mesh = make_beam_mesh(opt_vlm_mesh, fem_w)
@@ -195,8 +196,8 @@ fem_loads    = compute_loads(vlm_acs, vlm_forces, opt_fem_mesh)
 σs  = reduce(hcat, von_mises_stress.(tubes, δxs, δθs))
 
 ## Check numbers
-lift     = sum(vlm_forces)[3]
-load_fac = lift / weight
+lift     = sum(all_forces)[3]
+load_fac = lift * cos(α_opt) / weight
 
 println("Load factor: $load_fac")
 println("Weight: $weight N")
@@ -216,7 +217,7 @@ pyplot(dpi = 300)
 
 # Beam loads and stresses
 fem_plot     = reduce(hcat, chop_coordinates(fem_mesh, 1))
-new_fem_plot = reduce(hcat, chop_coordinates(new_fem_mesh, 1))
+new_fem_plot = reduce(hcat, chop_coordinates(opt_fem_mesh, 1))
 loads_plot   = fem_loads
 σs_max       = maximum.(eachcol(σs))
 σs_norm      = σs_max ./ maximum(σs_max)
@@ -232,8 +233,8 @@ ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
 # Displacements
-new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
-new_panel_plot = plot_panels(make_panels(new_vlm_mesh)[:])
+new_vlm_mesh_plot = reduce(hcat, opt_vlm_mesh)
+new_panel_plot = plot_panels(make_panels(opt_vlm_mesh)[:])
 
 xs_plot = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
 axes    = axis_transformation(fem_mesh, vlm_mesh)
@@ -243,11 +244,11 @@ ns_plot = axes[:,3,:]
 
 # Planforms
 wing_plan  = plot_wing(wing)
-nwing_plan = plot_wing(new_vlm_mesh)
+nwing_plan = plot_wing(opt_vlm_mesh)
 
 # Streamlines
-seed    = chop_coordinates(new_vlm_mesh[end,:], 2)
-streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
+seed    = chop_coordinates(opt_vlm_mesh[end,:], 2)
+streams = plot_streams(fs, seed, opt_horsies, Γs, 2.5, 100);
 
 ## Plot
 using LaTeXStrings
@@ -293,7 +294,7 @@ quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
 # Axis systems
 # quiver!(xs_plot[1,:], xs_plot[2,:], xs_plot[3,:], 
 #         quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1, 
-#         color = :orange, label = :none)
+#         color = :darkcyan, label = :none)
 # quiver!(xs_plot[1,:], xs_plot[2,:], xs_plot[3,:],
 #         quiver=(ss_plot[1,:], ss_plot[2,:], ss_plot[3,:]) .* 1e-1,
 #         color = :black, label = :none)
