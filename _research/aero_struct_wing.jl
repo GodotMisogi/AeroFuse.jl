@@ -5,6 +5,7 @@ using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
+using ComponentArrays
 using TimerOutputs
 
 # Case
@@ -98,6 +99,7 @@ dx = solve_cantilever_beam(D, fem_loads, cons)
 ## Aerostructural residual
 #==========================================================================================#
 
+# Set up initial guess and function
 solve_aerostructural_residual!(R, x) = 
     solve_coupled_residual!(R, x, 
                             V, deg2rad(β), ρ, Ω, # Aerodynamic state
@@ -105,7 +107,10 @@ solve_aerostructural_residual!(R, x) =
                             fem_mesh, stiffy,    # Structural variables
                             weight, load_factor) # Load factor variables
 
-x0   = [ Γs[:]; Δx; deg2rad(α) ]
+# Initial guess as ComponentArray for the different equations      
+x0 = ComponentArray(aerodynamics = Γs[:], structures = Δx, load_factor = deg2rad(α))
+
+## 
 reset_timer!()
 @time res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
@@ -117,9 +122,9 @@ print_timer()
 
 ## Get zero
 x_opt = res_aerostruct.zero
-Γ_opt = @views reshape(x_opt[1:length(normies)], size(normies))
-δ_opt = @view x_opt[length(normies)+7:end-1]
-α_opt = x_opt[end];
+Γ_opt = x_opt.aerodynamics
+δ_opt = x_opt.structures[7:end]
+α_opt = x_opt.load_factor
 
 ## Compute displacements
 dx  = @views reshape(δ_opt, 6, length(fem_mesh))

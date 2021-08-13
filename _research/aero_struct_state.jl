@@ -136,9 +136,11 @@ dx        = solve_cantilever_beam(D, fem_loads, cons)
 ## Aerostructural residual
 #==========================================================================================#
 
-## Setup initial guess and function
+# Set up initial guess and function
 solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_state, vlm_mesh, fem_mesh, stiffy, weight, load_factor)
-x0   = [ Γ_0; Δx; aero_state.alpha ]
+
+# Initial guess as ComponentArray for the different equations
+x0 = ComponentArray(aerodynamics = Γ_0, structures = Δx, load_factor = deg2rad(α))
 
 ## Solve system
 reset_timer!()
@@ -162,14 +164,17 @@ println("Speed: $(aero_state.speed) m/s")
 println("Angle of attack: $(rad2deg(aero_state.alpha))ᵒ")
 
 ## Get zero
-x_opt = res_aerostruct.zero;
+x_opt = res_aerostruct.zero
+Γ_opt = x_opt.aerodynamics
+δ_opt = x_opt.structures[7:end]
+α_opt = x_opt.load_factor
 
 # Get circulations
 horsies = horseshoes(aero_system) 
 Γs      = circulations(aero_system)
 
 ## Compute displacements
-dx  = @views reshape(x_opt[length(Γ_0)+7:end-1], 6, length(fem_mesh))
+dx  = @views reshape(δ_opt, 6, length(fem_mesh))
 dxs = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
 Ts  = rotation_matrix(dx[4:6,:])
 
