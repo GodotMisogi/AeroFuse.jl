@@ -158,7 +158,7 @@ x0   = [ Γs[:]; Δx; deg2rad(α) ]
                          show_trace = true,
                         #  extended_trace = true,
                          autodiff   = :forward,
-                        )
+                        );
 
 ## Get zero
 x_opt  = res_aerostruct.zero
@@ -233,7 +233,7 @@ ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
 # Displacements
-new_vlm_mesh_plot = reduce(hcat, opt_vlm_mesh)
+opt_vlm_mesh_plot = reduce(hcat, opt_vlm_mesh)
 new_panel_plot = plot_panels(make_panels(opt_vlm_mesh)[:])
 
 xs_plot = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
@@ -245,6 +245,16 @@ ns_plot = axes[:,3,:]
 # Planforms
 wing_plan  = plot_wing(wing)
 nwing_plan = plot_wing(opt_vlm_mesh)
+htail_plan = plot_wing(htail, 
+                       position = htail_position,
+                       angle    = htail_angle,
+                       axis     = [0., 1., 0.]
+                      )
+vtail_plan = plot_wing(vtail, 
+                       position = [4., 0, 0],
+                       angle    = π/2, 
+                       axis     = [1., 0., 0.]
+                      )
 
 # Streamlines
 seed    = chop_coordinates(opt_vlm_mesh[end,:], 2)
@@ -268,10 +278,14 @@ aircraft_plot =
 # Panels
 # [ plot!(pans, color = :gray, label = ifelse(i == 1, "Original Wing Panels", :none),  linestyle = :solid) for (i, pans) in enumerate(panel_plot)  ]
 [ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7), label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_panel_plot)   ]
+[ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(htail_panel_plot) ]
+[ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(vtail_panel_plot) ]
 
-# Planform
+# Planforms
 plot!(wing_plan, color = :gray, label = "Original Wing", linestyle = :solid)
 plot!(nwing_plan, color = :blue, label = "Deflected Wing")
+plot!(htail_plan, color = :brown, label = "Horizontal Tail")
+plot!(vtail_plan, color = :brown, label = "Vertical Tail")
 
 # Beams
 thickness = 2.5

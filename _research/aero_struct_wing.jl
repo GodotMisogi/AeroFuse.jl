@@ -199,7 +199,7 @@ streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
 
 ## Plot
 using LaTeXStrings
-pgfplotsx(size = (900, 600))
+# pgfplotsx(size = (900, 600))
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
          camera = (-80, 30), 
@@ -249,5 +249,5 @@ quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
 #         quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, 
 #         color = :red, label = :none)
 
-savefig(aircraft_plot, "plots/AerostructWing.pdf")
-# plot!()
+# savefig(aircraft_plot, "plots/AerostructWing.pdf")
+plot!()

@@ -272,7 +272,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, other_panels
 
     # Compute component forces for structural residual
     new_Γs     = @views reshape(Γ[1:length(new_horsies)], size(new_horsies))
-    new_acs    = bound_leg_center.(all_horsies)
+    new_acs    = bound_leg_center.(new_horsies)
     new_forces = nearfield_forces(new_Γs, new_horsies, Γ, all_horsies, U, Ω, ρ)
 
     # Build force vector with constraint for structures
