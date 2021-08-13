@@ -7,7 +7,7 @@ using LinearAlgebra
 using StaticArrays
 using CoordinateTransformations, Rotations
 using ForwardDiff, DiffResults
-using PrettyTables, OrderedCollections
+using PrettyTables, OrderedCollections, TimerOutputs
 
 ## Math tools
 #==========================================================================================#
@@ -73,10 +73,10 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, streamlines, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, horseshoe_line, horseshoe_point, make_horseshoes, nearfield_forces, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, case_dynamics, evaluate_case, VLMState, VLMSystem, VLMSurface, compute_influence_matrix!, compute_boundary_condition!, compute_horseshoes!, solve_system!, matrix_assembly!, update_velocity!, compute_surface_forces!, compute_surface_moments!, compute_farfield_forces!, generate_system!, update_circulations!, evaluate_case!, compute_wake_properties!, normals, horseshoes, surfaces, collocation_points, AIC, RHS, circulations, surface_forces, surface_moments, farfield_forces, surface_force_coefficients, surface_moment_coefficients, nearfield_coefficients, farfield_coefficients, aerodynamic_coefficients, build_system, rate_coefficient, name
+import .VortexLattice: Horseshoe, streamlines, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, horseshoe_line, horseshoe_point, make_horseshoes, nearfield_forces, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, case_dynamics, evaluate_case, VLMState, VLMSystem, VLMSurface, compute_influence_matrix!, compute_boundary_condition!, compute_horseshoes!, solve_system!, matrix_assembly!, update_velocity!, compute_surface_forces!, compute_surface_moments!, compute_farfield_forces!, generate_system!, update_circulations!, evaluate_case!, compute_wake_properties!, normals, horseshoes, surfaces, collocation_points, AIC, RHS, circulations, surface_forces, surface_moments, farfield_forces, total_force, surface_force_coefficients, surface_moment_coefficients, nearfield_coefficients, farfield_coefficients, aerodynamic_coefficients, build_system, rate_coefficient, name
 
 export Horseshoe, streamlines, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, horseshoe_line, horseshoe_point, make_horseshoes, nearfield_forces, nearfield_drag, evaluate_coefficients, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, case_dynamics, evaluate_case,  # Pure
-VLMState, VLMSystem, VLMSurface, compute_influence_matrix!, compute_boundary_condition!, compute_horseshoes!, solve_system!, matrix_assembly!, update_velocity!, compute_surface_forces!, compute_surface_moments!, compute_farfield_forces!, generate_system!, update_circulations!, evaluate_case!, compute_wake_properties!, normals, horseshoes, surfaces, collocation_points, AIC, RHS, circulations, surface_forces, surface_moments, farfield_forces, surface_force_coefficients, surface_moment_coefficients, nearfield_coefficients, farfield_coefficients, aerodynamic_coefficients, build_system, rate_coefficient, name # Impure
+VLMState, VLMSystem, VLMSurface, compute_influence_matrix!, compute_boundary_condition!, compute_horseshoes!, solve_system!, matrix_assembly!, update_velocity!, compute_surface_forces!, compute_surface_moments!, compute_farfield_forces!, generate_system!, update_circulations!, evaluate_case!, compute_wake_properties!, normals, horseshoes, surfaces, collocation_points, AIC, RHS, circulations, surface_forces, surface_moments, farfield_forces, total_force, surface_force_coefficients, surface_moment_coefficients, nearfield_coefficients, farfield_coefficients, aerodynamic_coefficients, build_system, rate_coefficient, name # Impure
 
 ## Profile drag estimation
 
@@ -96,9 +96,17 @@ export solve_case, solve_stability_case, streamlines, print_case, print_info, pr
 #==========================================================================================#
 
 include("Structures/Beams.jl")
-import .Beams: Material, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, deflection_stiffness_matrix, torsional_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
+import .Beams: Material, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
 
-export Material, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, deflection_stiffness_matrix, torsional_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
+export Material, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
+
+## Aerostructural analyses
+#==========================================================================================#
+
+include("Aerostructural/Aerostructural.jl")
+import .Aerostructural: solve_aerodynamics!, make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, transfer_normals, evaluate_linear_residual!, solve_coupled_residual!
+
+export solve_aerodynamics!, make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, transfer_normals, evaluate_linear_residual!, solve_coupled_residual!
 
 ## Post-processing
 #==========================================================================================#

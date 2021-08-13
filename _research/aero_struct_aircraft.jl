@@ -5,10 +5,7 @@ using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
-using Einsum
 using TimerOutputs
-
-include("../src/Aerostructural/aerostruct.jl")
 
 # Case
 #==========================================================================================#
@@ -86,8 +83,7 @@ fs      = Freestream(V, α, β, Ω)
               );
 
 ## Data collection
-U = aircraft_velocity(fs)
-all_horsies, Γs = data[ac_name][end-1:end]
+Γs = data[ac_name][end]
 CFs, CMs, horsies, Γ0_wing = data["Wing"][3:end];
 
 ## Aerodynamic forces and center locations
@@ -145,7 +141,7 @@ panties = [ htail_panels[:]; vtail_panels[:] ]
 normies = [ wing_normals[:]; htail_normals[:]; vtail_normals[:] ]
 
 solve_aerostructural_residual!(R, x) = 
-    solve_coupled_residual!(R, x, 
+    solve_coupled_residual!(R, x,
                             V, deg2rad(β), ρ, Ω,        # Aerodynamic state
                             vlm_mesh, panties, normies, # Aerodynamic variables
                             fem_mesh, stiffy,           # Structural variables
@@ -153,12 +149,14 @@ solve_aerostructural_residual!(R, x) =
 
 ## Solve nonlinear system
 x0   = [ Γs[:]; Δx; deg2rad(α) ]
+reset_timer!()
 @time res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
                         #  extended_trace = true,
-                         autodiff   = :forward,
+                        #  autodiff   = :forward,
                         );
+print_timer()
 
 ## Get zero
 x_opt  = res_aerostruct.zero

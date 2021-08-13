@@ -9,8 +9,6 @@ using Einsum
 using BenchmarkTools
 using TimerOutputs
 
-include("../src/Aerostructural/aerostruct.jl")
-
 # Case
 #==========================================================================================#
 
@@ -154,7 +152,7 @@ reset_timer!()
 print_timer()
 
 ## Check numbers
-lift     = total_force(aero_surfs, aero_state)[3]
+lift     = total_force(system, aero_state)[3]
 load_fac = lift * cos(aero_state.alpha) / weight
 
 println("Load factor: $load_fac")

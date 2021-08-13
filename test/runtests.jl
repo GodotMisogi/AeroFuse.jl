@@ -181,7 +181,7 @@ end
 
 @testset "Structures - Euler-Bernoulli Beam Elastic Stiffness" begin
     # Deflection stiffness matrix
-    K = deflection_stiffness_matrix([1., 1.], [1., 1.], [2., 2.], :z)
+    K = bending_stiffness_matrix([1., 1.], [1., 1.], [2., 2.], :z)
 
     ## 1. Fixed hinged beam subjected to force and moment at the center
     A = K[[3,4,6],[3,4,6]]  # v2, φ2, φ3
@@ -205,9 +205,9 @@ end
     @test F2 ≈ [10., 0., -25., 0., 15, -10.] atol = 1e-6
 end
 
-@testset "Structures - Euler-Bernoulli Beam Torsional Stiffness" begin
-    # Torsional stiffness matrix
-    J = torsional_stiffness_matrix([1., 1., 1.], [1., 1., 1.], [2., 2., 2.])
+@testset "Structures - Euler-Bernoulli Beam Axial Stiffness" begin
+    # Axial stiffness matrix
+    J = axial_stiffness_matrix([1., 1., 1.], [1., 1., 1.], [2., 2., 2.])
 
     ## 1. ???
     A = J[[1,2],[1,2]] # ψ1, ψ2

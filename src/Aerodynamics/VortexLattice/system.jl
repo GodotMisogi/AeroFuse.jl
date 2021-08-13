@@ -178,6 +178,12 @@ function compute_farfield_forces!(surface :: VLMSurface, U, α, β, ρ);
     surface.farfield_forces = trefftz_compute(Δφs, Δs, ∂φ_∂n, θs, U, ρ) 
 end
 
+# Lifting line forces by summation over local chords
+lifting_line_forces(surf :: VLMSurface) = sum(surface_forces(surf), dims = 1)[:]
+
+# Total force of system by summation of local forces over all surfaces
+total_force(system :: VLMSystem, state :: VLMState) = body_to_wind_axes(sum(sum ∘ surface_forces, surfaces(system)), state.alpha, state.beta)
+
 function evaluate_case!(system :: VLMSystem, state :: VLMState)
     # Update state velocity
     update_velocity!(state)
@@ -241,7 +247,7 @@ nearfield_coefficients(surf :: VLMSurface, state :: VLMState) = nearfield_coeffi
 farfield_coefficients(surf :: VLMSurface, state :: VLMState)  = farfield_coefficients(surf, state.speed, state.rho_ref, state.area_ref)
 
 ## Cases
-#=============================================#
+#==========================================================================================#
 
 """
     solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
@@ -267,7 +273,7 @@ end
 function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref, name) 
     # Get dictionary keys and values
     comp_names = (collect ∘ keys)(components)
-    meshes = values(components)
+    meshes     = values(components)
     
     # Flattening for VLM
     horseshoe_panels = first.(meshes)
@@ -276,7 +282,7 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     normies          = reduce(vcat, vec.(normals))
 
     # Get required vortex lattice variables, i.e. horseshoes, collocation points and normals
-    horseshoes = horseshoe_line.(horsies)
+    horseshoes     = horseshoe_line.(horsies)
     horseshoes_arr = [ horseshoe_line.(horses) for horses in horseshoe_panels ]
 
     # Solve system

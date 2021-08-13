@@ -12,7 +12,7 @@ md"### Stiffness matrix"
 
 # ╔═╡ cd8447c0-c8e0-11eb-0430-fbea74d11fb5
 # Deflection stiffness matrix
-K = deflection_stiffness_matrix([1., 1.], [1., 1.], [2., 2.], :z)
+K = bending_stiffness_matrix([1., 1.], [1., 1.], [2., 2.], :z)
 
 # ╔═╡ 6bb731d4-5aed-4b1a-8c2c-60e2ccb94b77
 md"### 1. Fixed hinged beam subjected to force and moment at the center"

@@ -36,7 +36,7 @@ F2 = K * [ x[1:2]; 0.; x[3]; 0.; 0. ]
 
 
 ## Torsional stiffness matrix
-J = torsional_stiffness_matrix([1., 1., 1.], [1., 1., 1.], [2., 2., 2.])
+J = axial_stiffness_matrix([1., 1., 1.], [1., 1., 1.], [2., 2., 2.])
 
 ## 1. ???
 A = J[[1,2],[1,2]] # ψ1, ψ2 

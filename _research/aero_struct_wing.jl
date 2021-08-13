@@ -5,10 +5,7 @@ using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
-using Einsum
 using TimerOutputs
-
-include("../src/Aerostructural/aerostruct.jl")
 
 # Case
 #==========================================================================================#
@@ -109,12 +106,14 @@ solve_aerostructural_residual!(R, x) =
                             weight, load_factor) # Load factor variables
 
 x0   = [ Γs[:]; Δx; deg2rad(α) ]
+reset_timer!()
 @time res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
                         #  extended_trace = true,
                          autodiff   = :forward,
                         )
+print_timer()
 
 ## Get zero
 x_opt = res_aerostruct.zero

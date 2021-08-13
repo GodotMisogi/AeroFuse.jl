@@ -108,7 +108,7 @@ Iyy_coeffs(E, I, L) = let k0 = 12, k1 =  6L, k2 = 2L^2; E * I / L^3 * k_coeffs(k
 Izz_coeffs(E, I, L) = let k0 = 12, k1 = -6L, k2 = 2L^2; E * I / L^3 * k_coeffs(k0, k1, k2) end
 
 ## Composite deflection stiffness matrix of adjacent beam elements
-function deflection_stiffness_matrix(Es, Is, Ls, direction = :z)
+function bending_stiffness_matrix(Es, Is, Ls, direction = :z)
     n = length(Es)
     mat = @MMatrix zeros(2(n+1), 2(n+1))
     block_size = CartesianIndices((4,4))
@@ -122,7 +122,7 @@ function deflection_stiffness_matrix(Es, Is, Ls, direction = :z)
 end
 
 ## Composite torsional stiffness matrix for adjacent beam elements
-function torsional_stiffness_matrix(Es, Is, Ls)
+function axial_stiffness_matrix(Es, Is, Ls)
     n = length(Es)
     mat = @MMatrix zeros(n+1, n+1)
     block_size = CartesianIndices((2,2))
@@ -143,12 +143,12 @@ function tube_stiffness_matrix(Es :: AbstractVector, Gs :: AbstractVector, As ::
     # Check if sizes match
     @assert length(Es) == (length ∘ zip)(Gs, Iys, Izs, Js, Ls) "Lengths of coefficients must be the same as the dimension."
 
-    Izs = deflection_stiffness_matrix(Es, Izs, Ls, :z)
-    Iys = deflection_stiffness_matrix(Es, Iys, Ls, :y)
-    As  = torsional_stiffness_matrix(Es, As, Ls)      
-    Js  = torsional_stiffness_matrix(Gs, Js, Ls)
+    Izs = bending_stiffness_matrix(Es, Izs, Ls, :z)
+    Iys = bending_stiffness_matrix(Es, Iys, Ls, :y)
+    As  = axial_stiffness_matrix(Es, As, Ls)      
+    Js  = axial_stiffness_matrix(Gs, Js, Ls)
 
-    K   = blockdiag(Iys, Iys, As, Js)
+    blockdiag(Iys, Iys, As, Js)
 end
 
 tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J :: Real, L :: Real, num :: Integer) = tube_stiffness_matrix(fill(E, num), fill(G, num), fill(A, num), fill(Iy, num), fill(Iz, num), fill(J, num), fill(L / num, num))
@@ -209,7 +209,6 @@ end
 
 ## Cantilever setup
 function solve_cantilever_beam(D, loads, constraint_indices)
-
     # Create the stiffness matrix from the array of individual stiffnesses
     # Also specifies the constraint location
     K = build_stiffness_matrix(D, constraint_indices)
