@@ -14,14 +14,13 @@ function plot_wing(mesh :: Matrix{SVector{3,T}}, rotation, translation) where T 
                         mesh[end,end:-1:2]; 
                         mesh[end:-1:1,1] 
                     ]
-
-
+                    
     [ tuple(affine(coords)...) for coords in wing_coords ][:]
 end
 
 plot_wing(wing :: Union{HalfWing, Wing}, rotation, translation) = plot_wing(coordinates(wing), rotation, translation)
 
-plot_wing(wing; angle = 0., axis = [1., 0., 0.], position = zeros(3)) = plot_wing(wing, AngleAxis{Float64}(angle, axis...), position)
+plot_wing(wing; angle :: T = 0., axis = [1., 0., 0.], position = zeros(3)) where T <: Real = plot_wing(wing, AngleAxis{T}(angle, axis...), position)
 
 plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = tupvector.(streamlines(freestream, points, horseshoes, Γs, length, num_steps))
 

@@ -114,7 +114,7 @@ end
 vlmesh_wing(wing :: Union{HalfWing, Wing}, span_num, chord_num, spacings = ["cosine"]) = mesh_horseshoes(wing, span_num, chord_num; spacings = spacings), mesh_cambers(wing, span_num, chord_num; spacings = spacings)
 vlmesh_wing(wing :: Union{HalfWing, Wing}, span_num :: Integer, chord_num, spacings = ["cosine"]) = mesh_horseshoes(wing, [span_num], chord_num; spacings = spacings), mesh_cambers(wing, [span_num], chord_num; spacings = spacings)
 
-function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer; rotation = one(RotMatrix{3, Float64}), translation = zeros(3), spacings = ["cosine"])
+function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer; rotation = one(RotMatrix{3, T}), translation = zeros(3), spacings = ["cosine"]) where T <: Real
     horseshoes, cambers = vlmesh_wing(wing, span_num, chord_num, spacings)
     horseshoe_panels    = [ transform(panel, rotation, translation)               for panel in horseshoes ]
     panel_normals       = [ panel_normal(transform(panel, rotation, translation)) for panel in cambers 	  ]
@@ -122,7 +122,7 @@ function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vect
     horseshoe_panels, panel_normals
 end
 
-panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; position = zeros(3), angle = 0., axis = [1., 0., 0.], spacing = spanwise_spacing(comp)) = paneller(comp, span_panels, chord_panels, rotation = AngleAxis{Float64}(angle, axis...), translation = position, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))
+panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; position = zeros(3), angle :: T = 0., axis = [1., 0., 0.], spacing = spanwise_spacing(comp)) where T <: Real = paneller(comp, span_panels, chord_panels, rotation = AngleAxis{T}(angle, axis...), translation = position, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))
 
 number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* spans(wing) / span(wing))
 number_of_spanwise_panels(wing :: Wing,     span_num :: Integer) = number_of_spanwise_panels(right(wing), span_num ÷ 2)
