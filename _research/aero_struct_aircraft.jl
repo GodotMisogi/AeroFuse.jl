@@ -6,6 +6,7 @@ using StaticArrays
 using DataFrames
 using NLsolve
 using TimerOutputs
+using ComponentArrays
 
 # Case
 #==========================================================================================#
@@ -154,11 +155,11 @@ x0 = ComponentArray(aerodynamics = Γs[:], structures = Δx, load_factor = deg2r
 
 ## Solve nonlinear system
 reset_timer!()
-@time res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
+@timeit "Solving Residuals" res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
                         #  extended_trace = true,
-                        #  autodiff   = :forward,
+                         autodiff   = :forward,
                         );
 print_timer()
 

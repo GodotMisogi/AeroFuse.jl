@@ -5,7 +5,7 @@ using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
-using Einsum
+using ComponentArrays
 using BenchmarkTools
 using TimerOutputs
 
