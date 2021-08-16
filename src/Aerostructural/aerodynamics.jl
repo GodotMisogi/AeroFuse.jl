@@ -20,6 +20,10 @@ function solve_aerodynamics!(Γ, system :: VLMSystem, state :: VLMState)
     nothing
 end
 
-influence_matrix!(A, horseshoes, collocation_points, normals, V_hat, finite_core = false) = @einsum A[i,j] = influence_coefficient(horseshoes[j], collocation_points[i], normals[i], V_hat, finite_core)
+# influence_matrix!(A, horseshoes, collocation_points, normals, V_hat, finite_core = false) = @einsum A[i,j] = influence_coefficient(horseshoes[j], collocation_points[i], normals[i], V_hat, finite_core)
 
-boundary_condition!(b, collocation_points, normals, V, Ω) = @einsum b[i] = dot(V + Ω × collocation_points[i], normals[i])
+# boundary_condition!(b, collocation_points, normals, V, Ω) = @einsum b[i] = dot(V + Ω × collocation_points[i], normals[i])
+
+vlm_residual(Γ_j, hs_j, r_i, n_i, U_hat, Ω_hat) = dot(Γ_j * velocity(r_i, hs_j, 1., -U_hat) - (U_hat + Ω_hat × r_i), n_i)
+
+aerodynamic_residual!(R_A, hs, rs, nms, Γs, U_hat, Ω_hat) = @einsum R_A[i] = vlm_residual(Γs[j], hs[j], rs[i], nms[i], U_hat, Ω_hat); R_A

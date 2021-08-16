@@ -151,7 +151,7 @@ solve_aerostructural_residual!(R, x) =
 
 
 # Initial guess as ComponentArray for the different equations
-x0 = ComponentArray(aerodynamics = Γs[:],
+x0 = ComponentArray(aerodynamics = Γs,
                     structures   = Δx,
                     load_factor  = deg2rad(α))
 
@@ -181,15 +181,15 @@ opt_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
 opt_panels   = make_panels(opt_vlm_mesh)
 
 ##
-Γ_wing      = @views reshape(x_opt[1:length(wing_panels)], size(wing_panels))
+Γ_wing      = @views reshape(Γ_opt[1:length(wing_panels)], size(wing_panels))
 opt_horsies = horseshoe_line.(opt_panels)
 all_horsies = [ opt_horsies[:]; horseshoe_line.(panties[:]) ]
 
 ## Aerodynamic forces and center locations
 U_opt      = freestream_to_cartesian(-V, α_opt, deg2rad(β))
 vlm_acs    = bound_leg_center.(opt_horsies)
-vlm_forces = nearfield_forces(Γ_wing, opt_horsies, all_Γs, all_horsies, U_opt, Ω, ρ)
-all_forces = nearfield_forces(all_Γs, all_horsies, all_Γs, all_horsies, U_opt, Ω, ρ)
+vlm_forces = nearfield_forces(Γ_wing, opt_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
+all_forces = nearfield_forces(Γ_opt, all_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
 
 ## New beams and loads
 opt_fem_mesh = make_beam_mesh(opt_vlm_mesh, fem_w)
