@@ -1,8 +1,18 @@
 # Residual equation for linear systems
 evaluate_linear_residual!(R, A, x, b) = R .= A * x - b
 
+function evaluate_aerodynamic_residual!(R, hs, pt, nm, Γ, U, Ω)
+    V_hat = -normalize(U)
+    for i in eachindex(R)
+        for j in eachindex(R)
+            R[i] = dot(velocity(pt[i], hs[j], 1., V_hat, false), nm[i]) * Γ[j] - dot(U + Ω × pt[i], nm[i])
+        end
+    end
+    nothing
+end
+
 # Residual setup for stateful style
-function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: VLMState, vlm_mesh, fem_mesh, stiffness_matrix, weight, load_factor)
+function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: VLMState, surf_name, vlm_mesh, fem_mesh, stiffness_matrix, weight, load_factor)
     n = (length ∘ horseshoes)(aero_system) # VLMSystem size
 
     # Unpack aerodynamic and structural variables
@@ -21,9 +31,10 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: V
     @timeit "Build Rotations" Ts  = @views rotation_matrix(δs[4:6,:])
 
     # New VLM variables
+    surf_index = findfirst(x -> surf_name == x, name.(surfaces(aero_system))) # Get surface index for VLMSystem
     @timeit "Transfer Displacements" new_vlm_mesh  = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
     @timeit "New Panels" new_panels    = make_panels(new_vlm_mesh)
-    @timeit "New Horseshoes" aero_system.surfaces[1].horseshoes = horseshoe_line.(new_panels)
+    @timeit "New Horseshoes" aero_system.surfaces[surf_index].horseshoes = horseshoe_line.(new_panels)
     # aero_system.surfaces[1].normals    = transfer_normals(Ts, reshape(aero_system.surfaces[1].normals, size(new_panels)))
     aero_state.alpha = α
 
@@ -151,6 +162,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, other_panels
 
     # Aerodynamic residuals
     @timeit "Aerodynamic Residual" evaluate_linear_residual!(R_A, inf_mat, Γ, boco)
+    # @timeit "Aerodynamic Residual" evaluate_aerodynamic_residual!(R_A, all_horsies, horseshoe_point.(all_horsies), normies[:], Γ, U, Ω)
 
     # Structural residuals
     @timeit "Structural Residual" evaluate_linear_residual!(R_S, stiffness_matrix, δ, fem_loads)

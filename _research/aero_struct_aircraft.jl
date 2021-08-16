@@ -151,7 +151,9 @@ solve_aerostructural_residual!(R, x) =
 
 
 # Initial guess as ComponentArray for the different equations
-x0 = ComponentArray(aerodynamics = Γs[:], structures = Δx, load_factor = deg2rad(α))
+x0 = ComponentArray(aerodynamics = Γs[:],
+                    structures   = Δx,
+                    load_factor  = deg2rad(α))
 
 ## Solve nonlinear system
 reset_timer!()

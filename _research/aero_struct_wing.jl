@@ -108,7 +108,9 @@ solve_aerostructural_residual!(R, x) =
                             weight, load_factor) # Load factor variables
 
 # Initial guess as ComponentArray for the different equations      
-x0 = ComponentArray(aerodynamics = Γs[:], structures = Δx, load_factor = deg2rad(α))
+x0 = ComponentArray(aerodynamics = Γs[:],
+                    structures   = Δx,
+                    load_factor  = deg2rad(α))
 
 ## 
 reset_timer!()

@@ -3,9 +3,9 @@ function solve_aerodynamics!(Γ, system :: VLMSystem, state :: VLMState)
     update_velocity!(state)
 
     # Assemble matrix system
-    @timeit "Influence Matrix" compute_influence_matrix!(system, state.velocity)
-    @timeit "Boundary Condition" compute_boundary_condition!(system, state.velocity, state.omega)
-    # @timeit "Generating AIC and RHS" generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
+    # @timeit "Influence Matrix" compute_influence_matrix!(system, state.velocity)
+    # @timeit "Boundary Condition" compute_boundary_condition!(system, state.velocity, state.omega)
+    @timeit "Generating AIC and RHS" generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
 
     # Update circulations of system and surfaces
     @timeit "System Circulations"  system.circulations = Γ
@@ -19,3 +19,7 @@ function solve_aerodynamics!(Γ, system :: VLMSystem, state :: VLMState)
 
     nothing
 end
+
+influence_matrix!(A, horseshoes, collocation_points, normals, V_hat, finite_core = false) = @einsum A[i,j] = influence_coefficient(horseshoes[j], collocation_points[i], normals[i], V_hat, finite_core)
+
+boundary_condition!(b, collocation_points, normals, V, Ω) = @einsum b[i] = dot(V + Ω × collocation_points[i], normals[i])

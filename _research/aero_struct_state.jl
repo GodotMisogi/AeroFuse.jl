@@ -137,14 +137,16 @@ dx        = solve_cantilever_beam(D, fem_loads, cons)
 #==========================================================================================#
 
 # Set up initial guess and function
-solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_state, vlm_mesh, fem_mesh, stiffy, weight, load_factor)
+solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_state, "Wing", vlm_mesh, fem_mesh, stiffy, weight, load_factor)
 
 # Initial guess as ComponentArray for the different equations
-x0 = ComponentArray(aerodynamics = Γ_0, structures = Δx, load_factor = deg2rad(α))
+x0 = ComponentArray(aerodynamics = Γ_0,
+                    structures   = Δx,
+                    load_factor  = deg2rad(α))
 
 ## Solve system
 reset_timer!()
-@time res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
+@timeit "Solving Residuals" res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
                         #  ftol       = 1e-7,
@@ -154,7 +156,7 @@ reset_timer!()
 print_timer()
 
 ## Check numbers
-lift     = total_force(system, aero_state)[3]
+lift     = total_force(aero_system, aero_state)[3]
 load_fac = lift * cos(aero_state.alpha) / weight
 
 println("Load factor: $load_fac")
