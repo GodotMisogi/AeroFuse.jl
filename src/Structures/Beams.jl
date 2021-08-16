@@ -1,5 +1,8 @@
 module Beams
 
+## Package imports
+#==========================================================================================#
+
 using SparseArrays
 using StaticArrays
 using LinearAlgebra

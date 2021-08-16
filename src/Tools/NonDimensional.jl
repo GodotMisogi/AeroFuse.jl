@@ -2,8 +2,6 @@ module NonDimensional
 
 using LinearAlgebra: norm
 
-# export dynamic_pressure, force_coefficient, moment_coefficient, moment_coefficients, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, print_coefficients, reynolds_number, print_derivatives
-
 """
     dynamic_pressure(ρ, V)
 

@@ -1,10 +1,17 @@
 module Laplace
 
+## Package imports
+#==========================================================================================#
+
 using StaticArrays
 using LinearAlgebra
-using ..AeroMDAO: Point2D, Point3D
+
+import ..MathTools: Point2D, Point3D
 
 abstract type AbstractLaplace end
+
+## Legacy (to be removed?)
+#==========================================================================================#
 
 # Performs velocity and potential computations for an object on a grid
 grid_data(object :: AbstractLaplace, xs) = velocity(object, xs), potential(object, xs)

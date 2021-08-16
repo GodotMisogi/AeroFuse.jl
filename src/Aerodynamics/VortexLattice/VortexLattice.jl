@@ -5,10 +5,20 @@ using StaticArrays
 using Rotations
 using OrderedCollections
 
-## Panel geometry and math tools
+## Package imports
 #==========================================================================================#
 
-import ..AeroMDAO: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width, make_panels, dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient, weighted_vector, reshape_array, cartesian_to_freestream, freestream_to_cartesian
+# Math tools
+import ..MathTools: weighted_vector, reshape_array
+
+# Panel geometry
+import ..PanelGeometry: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width
+
+# Non-dimensionalization
+import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
+
+# Tools regarding solutions to Laplace's equation
+import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
 
 ## Horseshoe setup
 #==========================================================================================#

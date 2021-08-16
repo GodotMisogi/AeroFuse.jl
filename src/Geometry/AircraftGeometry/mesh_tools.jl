@@ -33,16 +33,3 @@ function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_num, s
     # Chop up spanwise sections
     chop_spans(foil_coords, span_num, spacings, flip)
 end
-
-"""
-    make_panels(xyzs)
-
-Convert an array of coordinates corresponding to a wing, ordered from root to tip and leading-edge to trailing-edge, into panels.
-"""
-make_panels(xyzs) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], xyzs[2:end,2:end], xyzs[1:end-1,2:end])
-
-# WTF was I thinking?
-# spanlist = vectarray.(coords)
-# spanlist = zip(coords, coords[2:end,:])
-# adjacent_sections = zip(spanlist, spanlist[2:end])
-# @views hcat(( Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ adjacent_sections )...)

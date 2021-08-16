@@ -1,14 +1,27 @@
 module LinearVortexSource
 
+## Package imports
+#==========================================================================================#
+
 using LinearAlgebra
 using StaticArrays
 using Base.Iterators
 
-using ..AeroMDAO: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, Point2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, rotation, inverse_rotation, midpair_map, panel_velocity, pressure_coefficient, wake_panel, wake_panels, panel_points
+import ..MathTools: rotation, inverse_rotation, midpair_map
+
+import ..NonDimensional: pressure_coefficient
+
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, wake_panel, wake_panels, panel_points, panel_vector
+
+## Singularities
+#==========================================================================================#
 
 include("singularities.jl")
 
 export constant_source_velocity, linear_source_velocity_a, linear_source_velocity_b, linear_vortex_velocity_a, linear_vortex_velocity_b
+
+## Matrix setups
+#==========================================================================================#
 
 include("matrix.jl")
 

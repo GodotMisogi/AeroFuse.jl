@@ -48,6 +48,13 @@ Compute the coordinates of a Panel3D.
 panel_coords(panel :: Panel3D) = structtolist(panel)
 
 """
+    make_panels(xyzs)
+
+Convert an array of coordinates corresponding to a wing, ordered from root to tip and leading-edge to trailing-edge, into panels.
+"""
+make_panels(xyzs) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], xyzs[2:end,2:end], xyzs[1:end-1,2:end])
+
+"""
     transform(panel :: Panel3D, rotation, translation)
 
 Perform an affine transformation on the coordinates of a Panel3D given a rotation matrix and translation vector.

@@ -1,5 +1,8 @@
 module AircraftGeometry
 
+## Package imports
+#==========================================================================================#
+
 using Base.Math
 using Base.Iterators
 using DelimitedFiles
@@ -8,7 +11,14 @@ using CoordinateTransformations
 using Rotations
 using LinearAlgebra
 
-using ..AeroMDAO: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, fwdsum, fwddiv, fwddiff, weighted_vector, vectarray, Point2D, Panel2D, Panel3D, extend_yz, transform, panel_area, panel_normal, wetted_area
+# Math tools
+import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, fwdsum, fwddiv, fwddiff, weighted_vector, vectarray, extend_yz
+
+# Panel geometry
+import ..PanelGeometry: Panel2D, Panel3D, panel_area, panel_normal, transform, make_panels
+
+## Types
+#==========================================================================================#
 
 abstract type Aircraft end
 
