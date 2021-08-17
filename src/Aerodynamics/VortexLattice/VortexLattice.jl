@@ -4,6 +4,7 @@ using LinearAlgebra
 using StaticArrays
 using Rotations
 using OrderedCollections
+using TimerOutputs
 
 ## Package imports
 #==========================================================================================#
