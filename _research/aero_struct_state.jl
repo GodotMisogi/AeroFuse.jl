@@ -166,7 +166,7 @@ reset_timer!()
             method         = :newton,
             show_trace     = true,
             # extended_trace = true,
-            autodiff       = :forward,
+            # autodiff       = :forward,
            );
 print_timer()
 
@@ -275,7 +275,7 @@ vtail_plan = plot_wing(vtail,
 # Streamlines
 fs      = Freestream(aero_state.speed, rad2deg(aero_state.alpha), rad2deg(aero_state.beta), aero_state.omega)
 seed    = chop_coordinates(new_cam_mesh[end,:], 2)
-streams = plot_streams(fs, seed, horsies, Γs, 2.5, 100);
+streams = plot_streams(fs, seed, horsies, Γs, 5, 100);
 
 ## Plot
 b = aero_state.span_ref
@@ -289,18 +289,18 @@ aircraft_plot =
          zlim = (-b/8, b/8),
          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
          legend = :bottomright,
-         title = "Coupled Aerostructural Analysis"
+         title = "Coupled Aerostructural Analysis (Stateful)"
         )
 
 # Panels
-# [ plot!(pans, color = :lightgray,  label = ifelse(i == 1, "Original Wing Panels", :none),  linestyle = :solid) for (i, pans) in enumerate(cam_plot)  ]
-# [ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7),  label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot)   ]
+[ plot!(pans, color = :lightgray,  label = ifelse(i == 1, "Original Wing Panels", :none),  linestyle = :solid) for (i, pans) in enumerate(cam_plot)  ]
+[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.5),  label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot)   ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(htail_panel_plot) ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(vtail_panel_plot) ]
 
 # Planforms
-plot!(wing_plan, color = :gray, label = "Original Wing Planform", linestyle = :solid)
-plot!(nwing_plan, color = :blue, label = "Deflected Wing Planform")
+plot!(wing_plan, color = :gray, label = "Original Wing", linestyle = :solid)
+plot!(nwing_plan, color = :blue, label = "Deflected Wing")
 plot!(htail_plan, color = :brown, label = "Horizontal Tail")
 plot!(vtail_plan, color = :brown, label = "Vertical Tail")
 
@@ -318,5 +318,5 @@ plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_
 #         quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1,
 #         label = "Panel Forces", color = :orange)
 
-# savefig(aircraft_plot, "plots/AerostructAircraft.pdf")
+# savefig(aircraft_plot, "plots/AerostructAircraftState.pdf")
 plot!()

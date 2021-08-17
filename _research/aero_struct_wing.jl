@@ -204,11 +204,11 @@ new_cam_plot = plot_panels(new_cam_panels[:])
 new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
 new_panel_plot = plot_panels(new_panels[:])
 
-xs_plot = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
-axes    = axis_transformation(fem_mesh, vlm_mesh)
-cs_plot = axes[:,1,:]
-ss_plot = axes[:,2,:]
-ns_plot = axes[:,3,:]
+xs_plot   = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
+axes_plot = reshape(reduce(hcat, axes), 3, 3, length(axes))
+cs_plot   = axes_plot[:,1,:]
+ss_plot   = axes_plot[:,2,:]
+ns_plot   = axes_plot[:,3,:]
 
 # Planforms
 wing_plan  = plot_wing(wing)
@@ -221,7 +221,7 @@ streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
 ## Plot
 b = span(wing)
 using LaTeXStrings
-pgfplotsx(size = (900, 600))
+# pgfplotsx(size = (900, 600))
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
          camera = (-70, 20), 
@@ -271,5 +271,5 @@ quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
 #         quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, 
 #         color = :red, label = :none)
 
-savefig(aircraft_plot, "plots/AerostructWing.pdf")
-# plot!()
+# savefig(aircraft_plot, "plots/AerostructWing.pdf")
+plot!()

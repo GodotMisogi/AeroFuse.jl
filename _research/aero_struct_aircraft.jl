@@ -14,7 +14,7 @@ using ComponentArrays
 ## Aerodynamic variables
 
 # Define wing
-wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
+wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
             chords    = [1.0, 0.6, 0.2],
             twists    = [0.0, 0.0, 0.0],
             spans     = [5.0, 0.3],
@@ -92,8 +92,8 @@ vlm_acs    = bound_leg_center.(horsies)
 vlm_forces = force.(CFs, dynamic_pressure(ρ, V), S)
 
 ## Mesh setup
-vlm_mesh   = chord_coordinates(wing, span_num, chord_num, spacings = ["cosine"])
-cam_mesh   = camber_coordinates(wing, span_num, chord_num, spacings = ["cosine"])
+vlm_mesh   = chord_coordinates(wing, span_num, chord_num)
+cam_mesh   = camber_coordinates(wing, span_num, chord_num)
 cam_panels = make_panels(cam_mesh)
 
 # FEM mesh
@@ -130,7 +130,7 @@ t     = [ reverse(ts); ts ]
 
 tubes    = Tube.(Ref(aluminum), Ls, r, t)
 
-#$ Stiffness matrix, loads and constraints
+## Stiffness matrix, loads and constraints
 D         = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
 cons      = [length(fem_mesh) ÷ 2]
 stiffy    = build_stiffness_matrix(D, cons)
@@ -255,11 +255,11 @@ new_cam_plot = plot_panels(new_cam_panels[:])
 new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
 new_panel_plot = plot_panels(new_panels[:])
 
-xs_plot = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
-axes    = axis_transformation(fem_mesh, vlm_mesh)
-cs_plot = axes[:,1,:]
-ss_plot = axes[:,2,:]
-ns_plot = axes[:,3,:]
+xs_plot   = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
+axes_plot = reshape(reduce(hcat, axes), 3, 3, length(axes))
+cs_plot   = axes_plot[:,1,:]
+ss_plot   = axes_plot[:,2,:]
+ns_plot   = axes_plot[:,3,:]
 
 # Planforms
 wing_plan  = plot_wing(wing)
@@ -277,26 +277,26 @@ vtail_plan = plot_wing(vtail,
 
 # Streamlines
 seed    = chop_coordinates(new_cam_mesh[end,:], 2)
-streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
+streams = plot_streams(fs, seed, new_horsies, Γs, 5, 100);
 
 ## Plot
 using LaTeXStrings
 # pgfplotsx(size = (900, 600))
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
-         camera = (-80, 20), 
-         xlim = (-b/4, 3b/4),
+         camera = (-75, 30), 
+         xlim = (0, b/2),
      #     ylim = (-b/2, b/2),
-         zlim = (-b/8, b/4),
+         zlim = (-b/8, b/8),
          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
-         legend = :topright,
+         legend = :bottomright,
          title = "Coupled Aerostructural Analysis"
         )
 
 
 # Panels
 [ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
-[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7), label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
+[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.5), label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(htail_panel_plot) ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(vtail_panel_plot) ]
 
@@ -316,9 +316,9 @@ plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_
 [ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
 
 # Forces
-quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
-        quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1,
-        label = "Panel Forces", color = :orange)
+# quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
+#         quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.1,
+#         label = "Panel Forces", color = :orange)
 # scatter!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:], label = "Aerodynamic Centers")
 # quiver!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:],
 #         quiver=(loads_plot[1,:], loads_plot[2,:], loads_plot[3,:] ) .* 0.1,
