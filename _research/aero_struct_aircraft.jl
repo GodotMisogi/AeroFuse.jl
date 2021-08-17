@@ -112,19 +112,22 @@ load_factor = 1.3;
  
 ## Structural variables
 
+# Material properties
+E     = 85e9   # Elastic modulus, N/m²
+G     = 25e9   # Shear modulus, N/m²
+σ_max = 350e6  # Yield stress with factor of safety 2.5, N/m²
+rho   = 1.6e3  # Density, kg/m³
+ν     = 0.3    # Poisson ratio (UNUSED FOR NOW)
+
+aluminum = Material(E, G, σ_max, rho)
+
 ## Beam properties
-Ls    = norm.(diff(fem_mesh)) # Beam lengths, m 
-E     = 85e9                  # Elastic modulus, N/m²
-G     = 25e9                  # Shear modulus, N/m²
-σ_max = 350e6                 # Yield stress with factor of safety 2.5, N/m²
-rho   = 1.6e3                 # Density, kg/m³
-ν     = 0.3                   # Poisson ratio (UNUSED FOR NOW)
+Ls    = norm.(diff(fem_mesh))                              # Beam lengths, m 
 rs    = range(2e-2, stop = 8e-3, length = length(Ls) ÷ 2)  # Outer radius, m
 ts    = range(8e-3, stop = 2e-3, length = length(Ls) ÷ 2)  # Thickness, m
 r     = [ reverse(rs); rs ]
 t     = [ reverse(ts); ts ]
 
-aluminum = Material(E, G, σ_max, rho)
 tubes    = Tube.(Ref(aluminum), Ls, r, t)
 
 #$ Stiffness matrix, loads and constraints
@@ -159,12 +162,13 @@ x0 = ComponentArray(aerodynamics = Γs,
 
 ## Solve nonlinear system
 reset_timer!()
-@timeit "Solving Residuals" res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
-                         method     = :newton,
-                         show_trace = true,
-                        #  extended_trace = true,
-                         autodiff   = :forward,
-                        );
+@timeit "Solving Residuals" res_aerostruct = 
+    nlsolve(solve_aerostructural_residual!, x0,
+            method         = :newton,
+            show_trace     = true,
+            # extended_trace = true,
+            autodiff       = :forward,
+           );
 print_timer()
 
 ## Get zero
@@ -259,7 +263,7 @@ ns_plot = axes[:,3,:]
 
 # Planforms
 wing_plan  = plot_wing(wing)
-nwing_plan = plot_wing(new_vlm_mesh)
+nwing_plan = plot_wing(new_cam_mesh)
 htail_plan = plot_wing(htail, 
                        position = htail_position,
                        angle    = htail_angle,
@@ -272,7 +276,7 @@ vtail_plan = plot_wing(vtail,
                       )
 
 # Streamlines
-seed    = chop_coordinates(new_vlm_mesh[end,:], 2)
+seed    = chop_coordinates(new_cam_mesh[end,:], 2)
 streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
 
 ## Plot

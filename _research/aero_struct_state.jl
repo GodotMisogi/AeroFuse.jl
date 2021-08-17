@@ -110,20 +110,23 @@ load_factor = 1.3;
 
 ## Structural variables
 
-# Beam properties
-Ls    = norm.(diff(fem_mesh)) # Beam lengths, m 
-E     = 85e9                  # Elastic modulus, N/m²
-G     = 25e9                  # Shear modulus, N/m²
-σ_max = 350e6                 # Yield stress with factor of safety 2.5, N/m²
-ρ     = 1.6e3                 # Density, kg/m³
-ν     = 0.3                   # Poisson ratio (UNUSED FOR NOW)
+# Material properties
+E     = 85e9   # Elastic modulus, N/m²
+G     = 25e9   # Shear modulus, N/m²
+σ_max = 350e6  # Yield stress with factor of safety 2.5, N/m²
+rho   = 1.6e3  # Density, kg/m³
+ν     = 0.3    # Poisson ratio (UNUSED FOR NOW)
+
+aluminum = Material(E, G, σ_max, rho)
+
+## Beam properties
+Ls    = norm.(diff(fem_mesh))                              # Beam lengths, m 
 rs    = range(2e-2, stop = 8e-3, length = length(Ls) ÷ 2)  # Outer radius, m
 ts    = range(8e-3, stop = 2e-3, length = length(Ls) ÷ 2)  # Thickness, m
 r     = [ reverse(rs); rs ]
 t     = [ reverse(ts); ts ]
 
-aluminum = Material(E, G, σ_max, ρ)
-tubes    = Tube.(Ref(aluminum), Ls, r, t)
+tubes = Tube.(Ref(aluminum), Ls, r, t)
 
 # Stiffness matrix, loads and constraints
 D         = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
@@ -143,7 +146,13 @@ surf_name  = "Wing"
 surf_index = findfirst(x -> surf_name == x, name.(surfaces(aero_system)))
 
 # Set up initial guess and function
-solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_state, surf_index, vlm_mesh, cam_mesh, fem_mesh, stiffy, weight, load_factor)
+solve_aerostructural_residual!(R, x) = 
+    solve_coupled_residual!(R, x,
+                            aero_system, aero_state, # Aerodynamic system and state
+                            surf_index,              # Surface
+                            vlm_mesh, cam_mesh,      # Aerodynamic variables
+                            fem_mesh, stiffy,        # Structural variables
+                            weight, load_factor)     # Load factor variables
 
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = Γ_0,
@@ -152,13 +161,13 @@ x0 = ComponentArray(aerodynamics = Γ_0,
 
 ## Solve system
 reset_timer!()
-@timeit "Solving Residuals" res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
-                         method     = :newton,
-                         show_trace = true,
-                        #  ftol       = 1e-7,
-                        #  extended_trace = true,
-                        #  autodiff   = :forward,
-                        );
+@timeit "Solving Residuals" res_aerostruct =
+    nlsolve(solve_aerostructural_residual!, x0,
+            method         = :newton,
+            show_trace     = true,
+            # extended_trace = true,
+            autodiff       = :forward,
+           );
 print_timer()
 
 ## Check numbers
@@ -251,7 +260,7 @@ ns_plot = axes[:,3,:]
 
 # Planforms
 wing_plan  = plot_wing(wing)
-nwing_plan = plot_wing(new_vlm_mesh)
+nwing_plan = plot_wing(new_cam_mesh)
 htail_plan = plot_wing(htail, 
                        position = htail_position,
                        angle    = htail_angle,
@@ -265,7 +274,7 @@ vtail_plan = plot_wing(vtail,
 
 # Streamlines
 fs      = Freestream(aero_state.speed, rad2deg(aero_state.alpha), rad2deg(aero_state.beta), aero_state.omega)
-seed    = chop_coordinates(new_vlm_mesh[end,:], 2)
+seed    = chop_coordinates(new_cam_mesh[end,:], 2)
 streams = plot_streams(fs, seed, horsies, Γs, 2.5, 100);
 
 ## Plot
