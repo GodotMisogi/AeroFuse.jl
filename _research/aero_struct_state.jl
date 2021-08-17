@@ -15,7 +15,7 @@ using TimerOutputs
 ## Aerodynamic variables
 
 # Define wing
-wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
+wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
             chords    = [1.0, 0.6, 0.2],
             twists    = [0.0, 0.0, 0.0],
             spans     = [5.0, 0.3],
@@ -91,6 +91,8 @@ vlm_forces = surface_forces(aero_surfs[1])
 
 ## Mesh setup
 vlm_mesh   = chord_coordinates(wing, span_num, chord_num)
+cam_mesh   = camber_coordinates(wing, span_num, chord_num)
+cam_panels = make_panels(cam_mesh)
 
 # FEM mesh
 fem_w    = 0.40
@@ -136,13 +138,17 @@ dx        = solve_cantilever_beam(D, fem_loads, cons)
 ## Aerostructural residual
 #==========================================================================================#
 
+# Get surface index for VLMSystem
+surf_name  = "Wing"
+surf_index = findfirst(x -> surf_name == x, name.(surfaces(aero_system)))
+
 # Set up initial guess and function
-solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_state, "Wing", vlm_mesh, fem_mesh, stiffy, weight, load_factor)
+solve_aerostructural_residual!(R, x) = solve_coupled_residual!(R, x, aero_system, aero_state, surf_index, vlm_mesh, cam_mesh, fem_mesh, stiffy, weight, load_factor)
 
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = Γ_0,
                     structures   = Δx,
-                    load_factor  = deg2rad(α))
+                    load_factor  = aero_state.alpha)
 
 ## Solve system
 reset_timer!()
@@ -183,6 +189,10 @@ Ts  = rotation_matrix(dx[4:6,:])
 # Perturb VLM mesh and normals
 new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
 new_panels   = make_panels(new_vlm_mesh)
+
+new_cam_mesh   = transfer_displacements(dxs, Ts, cam_mesh, fem_mesh)
+new_cam_panels = make_panels(new_cam_mesh) 
+new_normals    = panel_normal.(new_cam_panels)
 
 # New beams
 new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
@@ -225,9 +235,13 @@ vtail_panel_plot = plot_panels(vtail_panels[:])
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
+# Cambers
+cam_plot     = plot_panels(cam_panels[:])
+new_cam_plot = plot_panels(new_cam_panels[:])
+
 # Displacements
 new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
-new_panel_plot = plot_panels(make_panels(new_vlm_mesh)[:])
+new_panel_plot = plot_panels(new_panels[:])
 
 xs_plot = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
 axes    = axis_transformation(fem_mesh, vlm_mesh)
@@ -270,14 +284,14 @@ aircraft_plot =
         )
 
 # Panels
-# [ plot!(pans, color = :gray,  label = ifelse(i == 1, "Original Wing Panels", :none),  linestyle = :solid) for (i, pans) in enumerate(wing_panel_plot)  ]
-# [ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7),  label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_panel_plot)   ]
+# [ plot!(pans, color = :lightgray,  label = ifelse(i == 1, "Original Wing Panels", :none),  linestyle = :solid) for (i, pans) in enumerate(cam_plot)  ]
+# [ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7),  label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot)   ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(htail_panel_plot) ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(vtail_panel_plot) ]
 
 # Planforms
-plot!(wing_plan, color = :gray, label = "Original Wing", linestyle = :solid)
-plot!(nwing_plan, color = :blue, label = "Deflected Wing")
+plot!(wing_plan, color = :gray, label = "Original Wing Planform", linestyle = :solid)
+plot!(nwing_plan, color = :blue, label = "Deflected Wing Planform")
 plot!(htail_plan, color = :brown, label = "Horizontal Tail")
 plot!(vtail_plan, color = :brown, label = "Vertical Tail")
 

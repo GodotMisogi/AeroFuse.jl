@@ -93,6 +93,8 @@ vlm_forces = force.(CFs, dynamic_pressure(ρ, V), S)
 
 ## Mesh setup
 vlm_mesh   = chord_coordinates(wing, span_num, chord_num, spacings = ["cosine"])
+cam_mesh   = camber_coordinates(wing, span_num, chord_num, spacings = ["cosine"])
+cam_panels = make_panels(cam_mesh)
 
 # FEM mesh
 fem_w    = 0.40
@@ -138,14 +140,14 @@ dx = solve_cantilever_beam(D, fem_loads, cons)
 ## Aerostructural residual
 #==========================================================================================#
 
-panties = [ htail_panels[:]; vtail_panels[:] ]
-normies = [ wing_normals[:]; htail_normals[:]; vtail_normals[:] ]
+other_horsies = horseshoe_line.([ htail_panels[:]; vtail_panels[:] ])
+normies = [ htail_normals[:]; vtail_normals[:] ]
 
 # Set up initial guess and function
 solve_aerostructural_residual!(R, x) = 
     solve_coupled_residual!(R, x,
                             V, deg2rad(β), ρ, Ω,        # Aerodynamic state
-                            vlm_mesh, panties, normies, # Aerodynamic variables
+                            vlm_mesh, cam_mesh, other_horsies, normies, # Aerodynamic variables
                             fem_mesh, stiffy,           # Structural variables
                             weight, load_factor)        # Load factor variables
 
@@ -176,24 +178,28 @@ dx  = @views reshape(δ_opt, 6, length(fem_mesh))
 dxs = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
 Ts  = rotation_matrix(dx[4:6,:])
 
-## Perturb VLM mesh and normals
-opt_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
-opt_panels   = make_panels(opt_vlm_mesh)
+## Perturb VLM and camber meshes
+new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
+new_panels   = make_panels(new_vlm_mesh)
+
+new_cam_mesh   = transfer_displacements(dxs, Ts, cam_mesh, fem_mesh)
+new_cam_panels = make_panels(new_cam_mesh) 
+new_normals    = panel_normal.(new_cam_panels)
 
 ##
 Γ_wing      = @views reshape(Γ_opt[1:length(wing_panels)], size(wing_panels))
-opt_horsies = horseshoe_line.(opt_panels)
-all_horsies = [ opt_horsies[:]; horseshoe_line.(panties[:]) ]
+new_horsies = horseshoe_line.(new_panels)
+all_horsies = [ new_horsies[:]; other_horsies[:] ]
 
 ## Aerodynamic forces and center locations
 U_opt      = freestream_to_cartesian(-V, α_opt, deg2rad(β))
-vlm_acs    = bound_leg_center.(opt_horsies)
-vlm_forces = nearfield_forces(Γ_wing, opt_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
+vlm_acs    = bound_leg_center.(new_horsies)
+vlm_forces = nearfield_forces(Γ_wing, new_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
 all_forces = nearfield_forces(Γ_opt, all_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
 
 ## New beams and loads
-opt_fem_mesh = make_beam_mesh(opt_vlm_mesh, fem_w)
-fem_loads    = compute_loads(vlm_acs, vlm_forces, opt_fem_mesh)
+new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
+fem_loads    = compute_loads(vlm_acs, vlm_forces, new_fem_mesh)
 
 ## Compute stresses
 δxs = eachcol(diff(dx[1:3,:], dims = 2)) # Need to transform these to principal axes
@@ -222,7 +228,7 @@ pyplot(dpi = 300)
 
 # Beam loads and stresses
 fem_plot     = reduce(hcat, chop_coordinates(fem_mesh, 1))
-new_fem_plot = reduce(hcat, chop_coordinates(opt_fem_mesh, 1))
+new_fem_plot = reduce(hcat, chop_coordinates(new_fem_mesh, 1))
 loads_plot   = fem_loads
 σs_max       = maximum.(eachcol(σs))
 σs_norm      = σs_max ./ maximum(σs_max)
@@ -237,9 +243,13 @@ vtail_panel_plot = plot_panels(vtail_panels[:])
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
+# Cambers
+cam_plot     = plot_panels(cam_panels[:])
+new_cam_plot = plot_panels(new_cam_panels[:])
+
 # Displacements
-opt_vlm_mesh_plot = reduce(hcat, opt_vlm_mesh)
-new_panel_plot = plot_panels(make_panels(opt_vlm_mesh)[:])
+new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
+new_panel_plot = plot_panels(new_panels[:])
 
 xs_plot = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
 axes    = axis_transformation(fem_mesh, vlm_mesh)
@@ -249,7 +259,7 @@ ns_plot = axes[:,3,:]
 
 # Planforms
 wing_plan  = plot_wing(wing)
-nwing_plan = plot_wing(opt_vlm_mesh)
+nwing_plan = plot_wing(new_vlm_mesh)
 htail_plan = plot_wing(htail, 
                        position = htail_position,
                        angle    = htail_angle,
@@ -262,8 +272,8 @@ vtail_plan = plot_wing(vtail,
                       )
 
 # Streamlines
-seed    = chop_coordinates(opt_vlm_mesh[end,:], 2)
-streams = plot_streams(fs, seed, opt_horsies, Γs, 2.5, 100);
+seed    = chop_coordinates(new_vlm_mesh[end,:], 2)
+streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
 
 ## Plot
 using LaTeXStrings
@@ -276,13 +286,13 @@ aircraft_plot =
          zlim = (-b/8, b/4),
          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
          legend = :topright,
-        #  title = "Coupled Aerostructural Analysis"
+         title = "Coupled Aerostructural Analysis"
         )
 
 
 # Panels
-# [ plot!(pans, color = :gray, label = ifelse(i == 1, "Original Wing Panels", :none),  linestyle = :solid) for (i, pans) in enumerate(panel_plot)  ]
-[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7), label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_panel_plot)   ]
+[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
+[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7), label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(htail_panel_plot) ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(vtail_panel_plot) ]
 

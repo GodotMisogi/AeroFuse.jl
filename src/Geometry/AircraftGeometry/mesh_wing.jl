@@ -43,9 +43,19 @@ function camber_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, ch
     chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip)
 end
 
+## Wing variants
+#==========================================================================================#
+
 function chord_coordinates(wing :: Wing, span_num, chord_num; spacings = ["cosine"])
     left_coord  = chord_coordinates(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
     right_coord = chord_coordinates(right(wing), span_num, chord_num; spacings = spacings)
+
+    [ left_coord[:,1:end-1] right_coord ]
+end
+
+function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
+    left_coord  = camber_coordinates(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
+    right_coord = camber_coordinates(right(wing), span_num, chord_num; spacings = spacings)
 
     [ left_coord[:,1:end-1] right_coord ]
 end

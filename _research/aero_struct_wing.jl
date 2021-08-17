@@ -14,7 +14,7 @@ using TimerOutputs
 ## Aerodynamic variables
 
 # Define wing
-wing = WingSection(root_foil  = naca4((0,0,1,2)),
+wing = WingSection(root_foil  = naca4((2,4,1,2)),
                    span       = 2.6,
                    dihedral   = 1.0,
                    sweep_LE   = 20.0,
@@ -54,6 +54,8 @@ vlm_forces = force.(CFs, dynamic_pressure(ρ, V), projected_area(wing))
 
 ## Mesh setup
 vlm_mesh   = chord_coordinates(wing, span_num, chord_num, spacings = ["sine"])
+cam_mesh   = camber_coordinates(wing, span_num, chord_num, spacings = ["sine"])
+cam_panels = make_panels(cam_mesh)
 
 # FEM mesh
 fem_w    = 0.40
@@ -103,7 +105,7 @@ dx = solve_cantilever_beam(D, fem_loads, cons)
 solve_aerostructural_residual!(R, x) = 
     solve_coupled_residual!(R, x, 
                             V, deg2rad(β), ρ, Ω, # Aerodynamic state
-                            vlm_mesh, normies,   # Aerodynamic variables
+                            vlm_mesh, cam_mesh,   # Aerodynamic variables
                             fem_mesh, stiffy,    # Structural variables
                             weight, load_factor) # Load factor variables
 
@@ -114,7 +116,7 @@ x0 = ComponentArray(aerodynamics = Γs[:],
 
 ## 
 reset_timer!()
-@time res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
+@timeit "Solving Residuals" res_aerostruct = nlsolve(solve_aerostructural_residual!, x0,
                          method     = :newton,
                          show_trace = true,
                         #  extended_trace = true,
@@ -133,15 +135,20 @@ dx  = @views reshape(δ_opt, 6, length(fem_mesh))
 dxs = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
 Ts  = rotation_matrix(dx[4:6,:])
 
-## Perturb VLM mesh and normals
+## Perturb VLM and camber meshes
 new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
 new_panels   = make_panels(new_vlm_mesh)
 
+new_cam_mesh   = transfer_displacements(dxs, Ts, cam_mesh, fem_mesh)
+new_cam_panels = make_panels(new_cam_mesh) 
+new_normals    = panel_normal.(new_cam_panels)
+
 ## Aerodynamic forces and center locations
+Γ_opts      = reshape(Γ_opt, size(new_panels))
 U_opt       = freestream_to_cartesian(-V, α_opt, deg2rad(β))
 new_horsies = horseshoe_line.(new_panels)
 vlm_acs     = bound_leg_center.(new_horsies)
-vlm_forces  = nearfield_forces(Γ_opt, new_horsies, Γ_opt, new_horsies, U_opt, Ω, ρ)
+vlm_forces  = nearfield_forces(Γ_opts, new_horsies, Γ_opts, new_horsies, U_opt, Ω, ρ)
 
 ## New beams and loads
 new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
@@ -185,9 +192,13 @@ panel_plot = plot_panels(panels[:])
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
+# Cambers
+cam_plot     = plot_panels(cam_panels[:])
+new_cam_plot = plot_panels(new_cam_panels[:])
+
 # Displacements
 new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
-new_panel_plot = plot_panels(make_panels(new_vlm_mesh)[:])
+new_panel_plot = plot_panels(new_panels[:])
 
 xs_plot = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
 axes    = axis_transformation(fem_mesh, vlm_mesh)
@@ -204,11 +215,12 @@ seed    = chop_coordinates(new_vlm_mesh[end,:], 2)
 streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
 
 ## Plot
+b = span(wing)
 using LaTeXStrings
-# pgfplotsx(size = (900, 600))
+pgfplotsx(size = (900, 600))
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
-         camera = (-80, 30), 
+         camera = (-70, 20), 
          xlim = (-b/4, 3b/4),
      #     ylim = (-b/2, b/2),
          zlim = (-b/8, b/4),
@@ -219,12 +231,12 @@ aircraft_plot =
 
 
 # Panels
-# [ plot!(pans, color = :gray,  label = ifelse(i == 1, "Original Wing Panels", :none),  linestyle = :solid) for (i, pans) in enumerate(panel_plot)  ]
-[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7),  label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_panel_plot)   ]
+[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
+[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7), label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
 
 # Planform
-plot!(wing_plan,  color = :gray, label = "Original Wing", linestyle = :solid)
-plot!(nwing_plan, color = :blue, label = "Deflected Wing")
+plot!(wing_plan,  color = :gray, label = "Original Wing Planform", linestyle = :solid)
+plot!(nwing_plan, color = :blue, label = "Deflected Wing Planform")
 
 # Beams
 thickness = 2.5
@@ -255,5 +267,5 @@ quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
 #         quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, 
 #         color = :red, label = :none)
 
-# savefig(aircraft_plot, "plots/AerostructWing.pdf")
-plot!()
+savefig(aircraft_plot, "plots/AerostructWing.pdf")
+# plot!()
