@@ -118,3 +118,10 @@ function velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat, finite_core = fa
         horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
     end
 end
+
+"""
+    trailing_velocity(r, horseshoe, Γ, V_hat)
+
+Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``, excluding the bound leg contribution.
+"""
+trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = trailing_legs_velocities(r1(r, horseshoe), r2(r, horseshoe), Γ, V)
