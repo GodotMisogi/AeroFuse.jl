@@ -2,16 +2,16 @@
 make_beam_mesh(vlm_mesh, fem_w) =  (1 - fem_w) * vlm_mesh[1,:] + fem_w * vlm_mesh[end,:]
 
 # Axis transformation
-function axis_transformation(s, n1, n2) 
-    s_hat = normalize(s)
-    n_hat = normalize(n1 × n2)
+function axis_transformation(stream, normie) 
+    s_hat = normalize(stream)
+    n_hat = normalize(normie)
     c_hat = s_hat × n_hat
 
     [ n_hat -c_hat -s_hat ]
 end
 
 # Compute local beam axes' transformation matrices using meshes (useless now?)
-axis_transformation(fem_mesh, vlm_mesh) = @. axis_transformation(fem_mesh[2:end] - fem_mesh[1:end-1], (vlm_mesh[end,2:end] - vlm_mesh[1,1:end-1]), (vlm_mesh[1,2:end] - vlm_mesh[end,1:end-1]))
+axis_transformation(fem_mesh :: Vector{SVector{3,T}}, vlm_mesh :: Array{SVector{3,T}}) where T <: Real = @. axis_transformation(fem_mesh[2:end] - fem_mesh[1:end-1], (vlm_mesh[end,2:end] - vlm_mesh[1,1:end-1]) × (vlm_mesh[1,2:end] - vlm_mesh[end,1:end-1]))
 
 # Simultaneous permutations of rows and columns of the stiffness matrix
 permute_stiffy(K) = let inds = [9,1,5,11,6,2,10,3,7,12,8,4]; @view K[inds,:][:,inds] end
@@ -26,7 +26,7 @@ transform_stiffy(K, axis) = let trans = kron(I(4), axis); permutedims(permutedim
 # Build the full stiffness matrix with permutations and axis transformations
 function build_big_stiffy(tubes, fem_mesh, vlm_mesh)
     # Simultaneously compute, permute and transform the stiffness matrices
-    Ks = @views @. transform_stiffy(tube_stiffness_matrix(tubes), axis_transformation(fem_mesh[2:end] - fem_mesh[1:end-1], (vlm_mesh[end,2:end] - vlm_mesh[1,1:end-1]), (vlm_mesh[1,2:end] - vlm_mesh[end,1:end-1])))
+    Ks = @views @. transform_stiffy(tube_stiffness_matrix(tubes), axis_transformation(fem_mesh[2:end] - fem_mesh[1:end-1], (vlm_mesh[end,2:end] - vlm_mesh[1,1:end-1]) × (vlm_mesh[1,2:end] - vlm_mesh[end,1:end-1])))
 
     # Temporary reshaping for sparse matrix construction in Beams.jl
     reshape(reduce(hcat, Ks), 12, 12, length(Ks))
