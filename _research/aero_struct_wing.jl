@@ -60,7 +60,6 @@ cam_panels = make_panels(cam_mesh)
 # FEM mesh
 fem_w    = 0.40
 fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
-axes     = axis_transformation(fem_mesh, vlm_mesh)
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -92,13 +91,13 @@ t     = [ reverse(ts); ts ]
 tubes = Tube.(Ref(aluminum), Ls, r, t)
 
 ## Stiffness matrix, loads and constraints
-D         = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
+Ks         = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
 cons      = [length(fem_mesh) ÷ 2]
-stiffy    = build_stiffness_matrix(D, cons)
+stiffy    = build_stiffness_matrix(Ks, cons)
 fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
 
 ## Solve system
-dx = solve_cantilever_beam(D, fem_loads, cons)
+dx = solve_cantilever_beam(Ks, fem_loads, cons)
 Δx = [ zeros(6); dx[:] ]
 
 ## Aerostructural residual
@@ -180,9 +179,6 @@ rename!(df, [:Fx, :Fy, :Fz, :Mx, :My, :Mz, :dx, :dy, :dz, :θx, :θy, :θz])
 ## Plotting
 #==========================================================================================#
 
-using Plots
-pyplot(dpi = 300)
-
 # Beam loads and stresses
 fem_plot     = reduce(hcat, chop_coordinates(fem_mesh, 1))
 new_fem_plot = reduce(hcat, chop_coordinates(new_fem_mesh, 1))
@@ -202,9 +198,11 @@ new_cam_plot = plot_panels(new_cam_panels[:])
 
 # Displacements
 new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
-new_panel_plot = plot_panels(new_panels[:])
+new_panel_plot    = plot_panels(new_panels[:])
 
+# Axes
 xs_plot   = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
+axes      = axis_transformation(fem_mesh, vlm_mesh)
 axes_plot = reshape(reduce(hcat, axes), 3, 3, length(axes))
 cs_plot   = axes_plot[:,1,:]
 ss_plot   = axes_plot[:,2,:]
@@ -218,10 +216,15 @@ nwing_plan = plot_wing(new_cam_mesh)
 seed    = chop_coordinates(new_cam_mesh[end,:], 2)
 streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
 
-## Plot
 b = span(wing)
+
+## Plot
+using Plots
 using LaTeXStrings
+
+pyplot(dpi = 300)
 # pgfplotsx(size = (900, 600))
+
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
          camera = (-70, 20), 
@@ -232,7 +235,6 @@ aircraft_plot =
          legend = :bottomright,
          title = "Coupled Aerostructural Analysis"
         )
-
 
 # Panels
 [ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]

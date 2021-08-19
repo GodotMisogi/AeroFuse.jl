@@ -37,7 +37,7 @@ wind_to_body_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(-α, -β)
 
 Transform a Line from body to wind axes in a given `Freestream`.
 """
-body_to_wind_axes(line :: Line, α :: T, β :: T) where T <: Real = Line(body_to_wind_axes(line.r1, α, β), body_to_wind_axes(line.r2, α, β)) 
+body_to_wind_axes(line :: Line, α :: T, β :: T) where T <: Real = Line(body_to_wind_axes(r1(line), α, β), body_to_wind_axes(r2(line), α, β)) 
 
 
 ## Reflections and projections

@@ -135,7 +135,7 @@ compute_horseshoes!(system :: VLMSystem, horseshoe_panels) =
     system.horseshoes = horseshoe_line.(horseshoe_panels)
 
 compute_influence_matrix!(system, V) = 
-    system.AIC .= influence_matrix(horseshoes(system), collocation_points(system), normals(system), -normalize(V))
+    system.AIC = influence_matrix(horseshoes(system), collocation_points(system), normals(system), -normalize(V))
 
 compute_boundary_condition!(system :: VLMSystem, V, Ω) = 
     system.RHS = boundary_condition(map(r -> V + Ω × r, collocation_points(system)), normals(system))

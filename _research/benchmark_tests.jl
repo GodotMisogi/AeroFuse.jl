@@ -2,7 +2,7 @@
 using BenchmarkTools
 using StaticArrays
 
-# All subsequent analyses use no symmetry tricks for performance as AeroMDAO hasn't implemented it and apples must be compared to apples.
+# All subsequent analyses use no symmetry tricks for performance as AeroMDAO hasn't implemented them and apples must be compared to apples.
 
 ## AeroMDAO tests: https://github.com/GodotMisogi/AeroMDAO.jl
 #=======================================================#
@@ -232,10 +232,10 @@ println("BYU FLOW Lab VortexLattice.jl - ")
     # display(size.([ wing, htail, vtail ])) # Checking sizes
 
     grids = [wgrid, hgrid, vgrid]
-    surfaces = [wing, htail, vtail]
+    surfs = [wing, htail, vtail]
     surface_id = [1, 2, 3]
 
-    system = steady_analysis(surfaces, ref, fs; symmetric=symmetric, surface_id=surface_id)
+    system = steady_analysis(surfs, ref, fs; symmetric=symmetric, surface_id=surface_id)
 
     CF, CM = body_forces(system; frame=Wind())
 

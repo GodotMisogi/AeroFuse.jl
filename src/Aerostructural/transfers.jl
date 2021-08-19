@@ -38,6 +38,3 @@ rotation_matrix(θs) = rotation_matrix.(θs[1,:], θs[2,:], θs[3,:])
 
 # Transfer states by summing the displacements and the cross product of the rotations with the .
 transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh) = permutedims(reduce(hcat, map(xyz -> xyz + dxs + Ts .* (xyz - fem_mesh), eachrow(vlm_mesh))))
-
-# WRONG WRONG WRONG WRONG WRONG WRONG WRONG
-transfer_normals(Ts, normals) = permutedims(reduce(hcat, map(normie -> (Ts[1:end-1] + Ts[2:end]) / 2 .* normie, eachrow(normals))))
