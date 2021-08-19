@@ -20,20 +20,10 @@ function solve_aerodynamics!(Γ, system :: VLMSystem, state :: VLMState)
     nothing
 end
 
-# influence_matrix!(A, horseshoes, collocation_points, normals, V_hat, finite_core = false) = @einsum A[i,j] = influence_coefficient(horseshoes[j], collocation_points[i], normals[i], V_hat, finite_core)
+# Induced velocities
+induced_velocity(r, hs, Γs, U_hat) = sum(velocity.(Ref(r), hs, Γs, Ref(-U_hat)))
 
-# boundary_condition!(b, collocation_points, normals, V, Ω) = @einsum b[i] = dot(V + Ω × collocation_points[i], normals[i])
+velocity(hs, Γs, r, n, U_hat, Ω_hat) = dot(induced_velocity(r, hs, Γs, U_hat) - (U_hat + Ω_hat × r), n)
 
-vlm_residual(hs, Γs, r, n, U_hat, Ω_hat) = dot(sum(x -> velocity(r, x[1], x[2], -U_hat), zip(hs, Γs)) - (U_hat + Ω_hat × r), n)
-aerodynamic_residual!(R_A, hs, rs, nms, Γs, U_hat, Ω_hat) = @einsum R_A[i] = vlm_residual(hs, Γs, rs[i], nms[i], U_hat, Ω_hat)
-
-
-## Nearfield improvement tests
-
-function kutta_joukowsky(Γ_focus, hs_focus, Γs, horseshoes, U, Ω, ρ)
-    U_hat = -normalize(U)
-    funky(x) = trailing_velocity(x[1][1], x[1][2], x[2][1], x[2][2], U_hat, U, Ω, ρ)
-    sum(funky, Base.Iterators.product(zip(hs_focus, Γ_focus), zip(horseshoes, Γs)))
-end
-
-trailing_velocity(hs, Γ, hs_all, Γ_all, U_hat, U, Ω, ρ) = ρ * (trailing_velocity(horseshoe_point(hs), hs_all, Γ_all, U_hat) - (U + Ω × horseshoe_point(hs))) × bound_leg_center(hs) * Γ
+# Residual computation
+aerodynamic_residual!(R_A, hs, rs, nms, Γs, U_hat, Ω_hat) = R_A .= velocity.(Ref(hs), Ref(Γs), rs, nms, Ref(U_hat), Ref(Ω_hat))

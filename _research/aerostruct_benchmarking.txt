@@ -1,71 +1,34 @@
-Pure (with autodiff) —
+# Aerostructural benchmarking
 
-Iter     f(x) inf-norm    Step 2-norm 
-------   --------------   --------------
-     0     3.249054e+02              NaN
-     1     6.405207e-02     4.176156e-01
-     2     1.397275e-04     3.993671e-04
-     3     7.063716e-09     1.773834e-11
- 39.241436 seconds (150.87 M allocations: 54.558 GiB, 23.13% gc time)
- ──────────────────────────────────────────────────────────────────────────────────────
-                                               Time                   Allocations
-                                       ──────────────────────   ───────────────────────
-           Tot / % measured:                39.3s / 100%            54.6GiB / 100%
+1. Aircraft - (chordwise panels, spanwise panels) 
+   Wing:            (3, 12)
+   Horizontal Tail: (2, 4)
+   Vertical Tail:   (2, 2)
 
- Section                       ncalls     time   %tot     avg     alloc   %tot      avg
- ──────────────────────────────────────────────────────────────────────────────────────
- Influence Matrix                 132    22.2s  56.6%   168ms   31.2GiB  57.2%   242MiB
- All Forces                       132    10.4s  26.5%  78.6ms   14.6GiB  26.7%   113MiB
- Surface Forces                   132    6.43s  16.4%  48.7ms   8.54GiB  15.7%  66.3MiB
- Aerodynamic Residual             132   90.4ms  0.23%   685μs   6.32MiB  0.01%  49.0KiB
- Surface Aerodynamic Centers      132   36.6ms  0.09%   277μs   5.20MiB  0.01%  40.3KiB
- All Horseshoes                   132   31.6ms  0.08%   239μs   39.8MiB  0.07%   309KiB
- Boundary Condition               132   18.1ms  0.05%   137μs   41.9MiB  0.07%   325KiB
- FEM Loads                        132   13.3ms  0.03%   101μs   48.9MiB  0.09%   379KiB
- New Horseshoes                   132   8.31ms  0.02%  62.9μs   29.5MiB  0.05%   229KiB
- Transfer Displacements           132   5.96ms  0.02%  45.1μs   32.7MiB  0.06%   254KiB
- New Panels                       132   3.80ms  0.01%  28.8μs   20.7MiB  0.04%   161KiB
- Compute Total Lift               132   2.78ms  0.01%  21.1μs   57.8KiB  0.00%     448B
- Structural Residual              132   1.76ms  0.00%  13.4μs   3.83MiB  0.01%  29.7KiB
- Build Rotations                  132   1.04ms  0.00%  7.88μs   3.69MiB  0.01%  28.6KiB
- Load Factor Residual             132    422μs  0.00%  3.20μs   39.2KiB  0.00%     304B
- Build Displacements              132    411μs  0.00%  3.11μs    949KiB  0.00%  7.19KiB
- Surface Circulations             132    190μs  0.00%  1.44μs     0.00B  0.00%    0.00B
- ──────────────────────────────────────────────────────────────────────────────────────
 
-Stateful (no autodiff) —
+Finite differences:
 
-Iter     f(x) inf-norm    Step 2-norm 
-------   --------------   --------------
-     0     3.249054e+02              NaN
-     1     6.494612e-02     4.110140e-01
-     2     1.512189e-04     3.944373e-04
-     3     6.102641e-09     1.773803e-11
- 16.464427 seconds (4.29 M allocations: 1.011 GiB, 1.06% gc time, 8.11% compilation time)
- ──────────────────────────────────────────────────────────────────────────────────────
-                                               Time                   Allocations
-                                       ──────────────────────   ───────────────────────
-           Tot / % measured:                16.5s / 92.2%           1.01GiB / 77.9%
+BenchmarkTools.Trial: 20 samples with 1 evaluation.
+ Range (min … max):  243.498 ms … 271.086 ms  ┊ GC (min … max): 3.32% … 6.58%
+ Time  (median):     249.551 ms               ┊ GC (median):    4.61%
+ Time  (mean ± σ):   250.392 ms ±   6.319 ms  ┊ GC (mean ± σ):  4.26% ± 0.97%
 
- Section                       ncalls     time   %tot     avg     alloc   %tot      avg
- ──────────────────────────────────────────────────────────────────────────────────────
- Aerodynamics Setup             3.08k    14.2s  93.1%  4.59ms    468MiB  58.0%   155KiB
-   Generating AIC and RHS       3.08k    8.05s  53.0%  2.61ms    151MiB  18.7%  50.2KiB
-   Surface Forces               3.08k    5.79s  38.1%  1.88ms    192MiB  23.7%  63.6KiB
-   Farfield Forces              3.08k    102ms  0.67%  33.2μs   80.6MiB  10.0%  26.8KiB
-   Surface Moments              3.08k   14.5ms  0.10%  4.69μs   18.4MiB  2.28%  6.11KiB
-   Surface Circulations         3.08k   14.1ms  0.09%  4.56μs   8.61MiB  1.07%  2.86KiB
-   System Circulations          3.08k   10.4ms  0.07%  3.36μs   5.98MiB  0.74%  1.98KiB
- Aerodynamic Residual           3.08k    798ms  5.25%   259μs   12.0MiB  1.48%  3.97KiB
- FEM Loads                      3.08k   93.2ms  0.61%  30.2μs    101MiB  12.5%  33.5KiB
- New Horseshoes                 3.08k   39.4ms  0.26%  12.8μs   81.1MiB  10.1%  26.9KiB
- Transfer Displacements         3.08k   38.5ms  0.25%  12.5μs   79.5MiB  9.85%  26.4KiB
- Structural Residual            3.08k   19.6ms  0.13%  6.35μs   7.34MiB  0.91%  2.44KiB
- Compute Total Lift             3.08k   13.1ms  0.09%  4.23μs    417KiB  0.05%     138B
- Load Factor Residual           3.08k   11.4ms  0.08%  3.71μs    483KiB  0.06%     160B
- New Panels                     3.08k   11.0ms  0.07%  3.55μs   37.6MiB  4.67%  12.5KiB
- Build Rotations                3.08k   8.18ms  0.05%  2.65μs   7.72MiB  0.96%  2.56KiB
- Surface Aerodynamic Centers    3.08k   4.10ms  0.03%  1.33μs   9.79MiB  1.21%  3.25KiB
- Build Displacements            3.08k   3.97ms  0.03%  1.29μs   1.98MiB  0.24%     672B
- Surface Aerodynamic Forces     3.08k   1.07ms  0.01%   347ns     0.00B  0.00%    0.00B
- ──────────────────────────────────────────────────────────────────────────────────────
+  ▃    ▃       ▃█ 
+  █▁▁▇▁█▁▁▁▇▇▇▇██▁▇▇▁▇▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▇ ▁
+  243 ms           Histogram: frequency by time          271 ms <
+
+ Memory estimate: 176.40 MiB, allocs estimate: 448692.
+
+
+Automatic differentiation (forward):
+
+BenchmarkTools.Trial: 33 samples with 1 evaluation.
+ Range (min … max):  130.302 ms … 214.775 ms  ┊ GC (min … max):  8.67% … 13.74%
+ Time  (median):     152.080 ms               ┊ GC (median):     9.37%
+ Time  (mean ± σ):   154.408 ms ±  19.204 ms  ┊ GC (mean ± σ):  10.20% ±  1.78%
+
+   █▁        ▁▁  ▄▁     ▄
+  ▆██▆▁▁▁▁▆▁▁██▆▆██▁▆▆▆▁█▁▁▁▁▆▁▁▆▁▁▆▁▁▆▆▁▁▁▁▆▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▆ ▁
+  130 ms           Histogram: frequency by time          215 ms <
+
+ Memory estimate: 289.44 MiB, allocs estimate: 870719.

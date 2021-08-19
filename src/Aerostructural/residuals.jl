@@ -1,7 +1,7 @@
 # Residual equation for linear systems
-evaluate_linear_residual!(R, A, x, b) = R .= A * x - b
+linear_residual!(R, A, x, b) = R .= A * x - b
 
-# Residual setup for stateful style
+# Residual setup for stateful style (seems pretty retarded right now...)
 function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: VLMState, surf_index, vlm_mesh, cam_mesh, fem_mesh, stiffness_matrix, weight, load_factor)
     n = (length ∘ horseshoes)(aero_system) # VLMSystem size
 
@@ -43,13 +43,13 @@ function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: V
     @timeit "Compute Total Lift" L = total_force(aero_system, aero_state)[3]
 
     # Aerodynamic residuals
-    @timeit "Aerodynamic Residual" evaluate_linear_residual!(R_A, AIC(aero_system), Γ, RHS(aero_system))
+    @timeit "Aerodynamic Residual" linear_residual!(R_A, AIC(aero_system), Γ, RHS(aero_system))
 
     # Structural residuals
-    @timeit "Structural Residual" evaluate_linear_residual!(R_S, stiffness_matrix, δ, fem_loads)
+    @timeit "Structural Residual" linear_residual!(R_S, stiffness_matrix, δ, fem_loads)
 
     # Weight residual
-    @timeit "Load Factor Residual" evaluate_linear_residual!(R_W, weight, load_factor, L * cos(α))
+    @timeit "Load Factor Residual" linear_residual!(R_W, weight, load_factor, L * cos(α))
 
     return R
 end
@@ -85,8 +85,6 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
 
     # Set up VLM system
     U       = freestream_to_cartesian(-speed, α, β)
-    @timeit "Influence Matrix" inf_mat = influence_matrix(new_horsies[:], horseshoe_point.(new_horsies[:]), new_normies[:], -normalize(U), false)
-    @timeit "Boundary Condition" boco    = boundary_condition(quasi_steady_freestream(new_horsies[:], U, Ω), new_normies[:])
 
     # Compute loads
     @timeit "Surface Circulations" Γs         = reshape(Γ, size(new_horsies))
@@ -100,13 +98,13 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
     @timeit "FEM Loads" fem_loads = fem_load_vector(vlm_acs, vlm_forces, fem_mesh)
 
     # Aerodynamic residuals
-    @timeit "Aerodynamic Residual" evaluate_linear_residual!(R_A, inf_mat, Γ, boco)
+    @timeit "Aerodynamic Residual" aerodynamic_residual!(R_A, new_horsies[:], horseshoe_point.(new_horsies[:]), new_normies[:], Γ / speed, U / speed, Ω / speed)
 
     # Structural residuals
-    @timeit "Structural Residual" evaluate_linear_residual!(R_S, stiffness_matrix, δ, fem_loads)
+    @timeit "Structural Residual" linear_residual!(R_S, stiffness_matrix, δ, fem_loads)
 
     # Weight residual
-    @timeit "Load Factor Residual" evaluate_linear_residual!(R_W, weight, load_factor, L * cos(α))
+    @timeit "Load Factor Residual" linear_residual!(R_W, weight, load_factor, L * cos(α))
 
     return R
 end
@@ -158,15 +156,24 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, ot
     @timeit "Aerodynamic Residual" aerodynamic_residual!(R_A, all_horsies, horseshoe_point.(all_horsies), all_normies, Γ / speed, U / speed, Ω / speed)
 
     # Structural residuals
-    @timeit "Structural Residual" evaluate_linear_residual!(R_S, stiffness_matrix, δ, fem_loads)
+    @timeit "Structural Residual" linear_residual!(R_S, stiffness_matrix, δ, fem_loads)
 
     # Weight residual
-    @timeit "Load Factor Residual" evaluate_linear_residual!(R_W, weight, load_factor, L * cos(α))
+    @timeit "Load Factor Residual" linear_residual!(R_W, weight, load_factor, L * cos(α))
 
     return R
-    # HEAVILY ALLOCATING AERODYNAMIC RESIDUAL COMPUTATION
-    # @timeit "Normalizing Velocity" U_hat       = normalize(U)
-    # @timeit "Influence Matrix" inf_mat = influence_matrix(all_horsies, horseshoe_point.(all_horsies), normies[:], -U_hat, false)
-    # @timeit "Boundary Condition" boco    = boundary_condition(quasi_steady_freestream(all_horsies, U_hat, Ω / speed), normies[:])
-    # @timeit "Aerodynamic Residual" evaluate_linear_residual!(R_A, inf_mat, Γ / speed, boco)
+
 end
+
+# HEAVILY ALLOCATING AERODYNAMIC RESIDUAL COMPUTATIONS
+# 
+# Single surface:
+# @timeit "Influence Matrix" inf_mat = influence_matrix(new_horsies[:], horseshoe_point.(new_horsies[:]), new_normies[:], -normalize(U), false)
+# @timeit "Boundary Condition" boco    = boundary_condition(quasi_steady_freestream(new_horsies[:], U, Ω), new_normies[:])
+# @timeit "Aerodynamic Residual" linear_residual!(R_A, inf_mat, Γ, boco)
+#
+# Multiple surfaces:
+# @timeit "Normalizing Velocity" U_hat       = normalize(U)
+# @timeit "Influence Matrix" inf_mat = influence_matrix(all_horsies, horseshoe_point.(all_horsies), normies[:], -U_hat, false)
+# @timeit "Boundary Condition" boco    = boundary_condition(quasi_steady_freestream(all_horsies, U_hat, Ω / speed), normies[:])
+# @timeit "Aerodynamic Residual" linear_residual!(R_A, inf_mat, Γ / speed, boco)
