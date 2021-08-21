@@ -37,4 +37,11 @@ rotation_matrix(Ωx, Ωy, Ωz) = @SMatrix [  0  -Ωz  Ωy ;
 rotation_matrix(θs) = rotation_matrix.(θs[1,:], θs[2,:], θs[3,:])
 
 # Transfer states by summing the displacements and the cross product of the rotations with the .
-transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh) = permutedims(reduce(hcat, map(xyz -> xyz + dxs + Ts .* (xyz - fem_mesh), eachrow(vlm_mesh))))
+transfer_displacement(xyz, dx, rot, r) = xyz + dx + rot * (xyz - r)
+transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh) = permutedims(reduce(hcat, map(xyz -> transfer_displacement.(xyz, dxs, Ts, fem_mesh), eachrow(vlm_mesh))))
+
+function translations_and_rotations(δs)
+    dxs = @views SVector.(δs[1,:], δs[2,:], δs[3,:])
+    Ts  = @views rotation_matrix(δs[4:6,:])
+    dxs, Ts
+end
