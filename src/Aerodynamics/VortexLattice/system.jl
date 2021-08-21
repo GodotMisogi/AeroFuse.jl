@@ -50,7 +50,7 @@ function VLMSurface(panels :: Matrix{Panel3D{T}}, normals :: Matrix{SVector{3,T}
     wake_vectors    = Vector{SVector{3,T}}(undef, m[1])
     farfield_forces = SVector{3,T}(0., 0., 0.)
 
-    VLMSurface{T}(horseshoe_line.(panels), normals, surface_forces, surface_moments, Γs, wake_vectors, wake_AIC, farfield_forces, name)
+    VLMSurface{T}(Horseshoe.(panels, normals), normals, surface_forces, surface_moments, Γs, wake_vectors, wake_AIC, farfield_forces, name)
 end
 
 horseshoes(surf :: VLMSurface)      = surf.horseshoes
@@ -132,10 +132,10 @@ function build_system(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{
 end
 
 compute_horseshoes!(system :: VLMSystem, horseshoe_panels) = 
-    system.horseshoes = horseshoe_line.(horseshoe_panels)
+    system.horseshoes = Horseshoe.(horseshoe_panels)
 
 compute_influence_matrix!(system, V) = 
-    system.AIC = influence_matrix(horseshoes(system), collocation_points(system), normals(system), -normalize(V))
+    system.AIC = influence_matrix(horseshoes(system), -normalize(V))
 
 compute_boundary_condition!(system :: VLMSystem, V, Ω) = 
     system.RHS = boundary_condition(map(r -> V + Ω × r, collocation_points(system)), normals(system))
@@ -256,10 +256,10 @@ Evaluate a vortex lattice case given an array of `Panel3D`s with associated norm
 """
 function evaluate_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
     # Make horseshoes and collocation points
-    horseshoes = horseshoe_line.(horseshoe_panels)
+    horseshoes = Horseshoe.(horseshoe_panels, normals)
 
     # Solve system
-    Γs = reshape(solve_system(horseshoes[:], normals[:], U, Ω), size(horseshoe_panels))
+    Γs = reshape(solve_system(horseshoes[:], U, Ω), size(horseshoe_panels))
 
     # Compute forces and moments
     surface_forces, surface_moments, trefftz_force = case_dynamics(Γs, horseshoes, U, α, β, Ω, rho_ref, r_ref)
@@ -282,11 +282,11 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     normies          = reduce(vcat, vec.(normals))
 
     # Get required vortex lattice variables, i.e. horseshoes, collocation points and normals
-    horseshoes     = horseshoe_line.(horsies)
-    horseshoes_arr = [ horseshoe_line.(horses) for horses in horseshoe_panels ]
+    horseshoes     = Horseshoe.(horsies, normies)
+    horseshoes_arr = [ Horseshoe.(horses, norms) for (horses, norms) in zip(horseshoe_panels, normals) ]
 
     # Solve system
-    Γs = solve_system(horseshoes, normies, U, Ω)
+    Γs = solve_system(horseshoes, U, Ω)
 
     # Reshaping
     panel_sizes = size.(horseshoe_panels)

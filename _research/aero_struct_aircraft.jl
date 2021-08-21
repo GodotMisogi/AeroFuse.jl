@@ -142,16 +142,16 @@ dx = solve_cantilever_beam(Ks, fem_loads, cons)
 ## Aerostructural residual
 #==========================================================================================#
 
-other_horsies = horseshoe_line.([ htail_panels[:]; vtail_panels[:] ])
-normies = [ htail_normals[:]; vtail_normals[:] ]
+other_horsies = Horseshoe.([ htail_panels[:]; vtail_panels[:] ], [ htail_normals[:]; vtail_normals[:] ]) 
 
 # Set up initial guess and function
 solve_aerostructural_residual!(R, x) = 
     solve_coupled_residual!(R, x,
-                            V, deg2rad(β), ρ, Ω,        # Aerodynamic state
-                            vlm_mesh, cam_mesh, other_horsies, normies, # Aerodynamic variables
-                            fem_mesh, stiffy,           # Structural variables
-                            weight, load_factor)        # Load factor variables
+                            V, deg2rad(β), ρ, Ω, # Aerodynamic state
+                            vlm_mesh, cam_mesh,  # Aerodynamic variables
+                            other_horsies,       # Other aerodynamic parameters
+                            fem_mesh, stiffy,    # Structural variables
+                            weight, load_factor) # Load factor variables
 
 
 # Initial guess as ComponentArray for the different equations
@@ -191,7 +191,7 @@ new_normals    = panel_normal.(new_cam_panels)
 
 ##
 Γ_wing      = @views reshape(Γ_opt[1:length(wing_panels)], size(wing_panels))
-new_horsies = horseshoe_line.(new_panels)
+new_horsies = Horseshoe.(new_panels, new_normals)
 all_horsies = [ new_horsies[:]; other_horsies[:] ]
 
 ## Aerodynamic forces and center locations

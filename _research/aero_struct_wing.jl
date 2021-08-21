@@ -149,7 +149,7 @@ new_normals    = panel_normal.(new_cam_panels)
 ## Aerodynamic forces and center locations
 Γ_opts      = reshape(Γ_opt, size(new_panels))
 U_opt       = freestream_to_cartesian(-V, α_opt, deg2rad(β))
-new_horsies = horseshoe_line.(new_panels)
+new_horsies = Horseshoe.(new_panels, new_normals)
 vlm_acs     = bound_leg_center.(new_horsies)
 vlm_forces  = nearfield_forces(Γ_opts, new_horsies, Γ_opts, new_horsies, U_opt, Ω, ρ)
 

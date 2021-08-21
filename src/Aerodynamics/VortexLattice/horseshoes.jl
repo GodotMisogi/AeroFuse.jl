@@ -39,6 +39,7 @@ struct Line{T <: Real}
 end
 
 Line(r1 :: FieldVector{3,T}, r2 :: FieldVector{3,T}) where T <: Real = Line{T}(r1, r2)
+Line((r1, r2)) = Line(r1, r2)
 
 r1(line :: Line) = line.r1
 r2(line :: Line) = line.r2
@@ -74,6 +75,7 @@ A horseshoe type consisting of a bound leg of type Line represening a vortex lin
 struct Horseshoe{T <: Real} <: AbstractVortexArray
     bound_leg         :: Line{T}
     collocation_point :: SVector{3,T}
+    normal            :: SVector{3,T}
     chord             :: T
 end
 
@@ -84,15 +86,16 @@ Getter for bound leg field of a `Horseshoe`.
 """
 bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
 horseshoe_point(horseshoe :: Horseshoe) = horseshoe.collocation_point
+horseshoe_normal(horseshoe :: Horseshoe) = horseshoe.normal
 
 r1(r, horseshoe :: Horseshoe) = r1(r, bound_leg(horseshoe))
 r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
 
 """
-Return a `Horseshoe` bound leg corresponding to a `Panel3D`.
+Create a `Horseshoe` corresponding to a `Panel3D` and normal vector.
 """
-horseshoe_line(panel :: Panel3D, drift = SVector(0., 0., 0.)) = let (r1, r2) = bound_leg(panel); 
-    Horseshoe(Line(r1, r2), horseshoe_point(panel) .+ drift, (norm ∘ average_chord)(panel)) end
+Horseshoe(panel :: Panel3D, normal, drift = SVector(0., 0., 0.)) =
+    Horseshoe(Line(bound_leg(panel)), horseshoe_point(panel) .+ drift, normal, (norm ∘ average_chord)(panel))
 
 """
 Compute the midpoint of the bound leg of a `Horseshoe`.
