@@ -24,7 +24,7 @@ dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dih
 sweeps(wing :: Wing)    = @views [ (reverse ∘ sweeps ∘ left)(wing)    ; (sweeps ∘ right)(wing)    ]
 
 # Symmetric wing
-Wing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4((0,0,1,2))), length(chords))) = let w = HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, sweep_LEs = sweep_LEs); Wing(w, w) end
+Wing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4((0,0,1,2))), length(chords)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = let w = HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, sweep_LEs = sweep_LEs, position = position, angle = angle, axis = axis); Wing(w, w) end
 
 # Single section for convenience
 WingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2))) = let w = HalfWingSection(span = span / 2, dihedral = dihedral, sweep_LE = sweep_LE, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil); Wing(w, w) end

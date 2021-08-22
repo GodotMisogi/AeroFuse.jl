@@ -28,9 +28,10 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweep_LEs = [6.39])
-htail_position = [4., 0, 0.]
-htail_angle    = deg2rad(-3.)
+             sweep_LEs = [6.39],
+             position  = [4., 1, 0.],
+             angle     = 90.,
+             axis      = [0., 1., 0.])
 
 # Vertical tail
 vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)), 
@@ -38,24 +39,19 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97]);
+                 sweep_LEs = [7.97],
+                 position  = [4., 0, 0],
+                 angle     = 90.,
+                 axis      = [1., 0., 0.]);
 
 ## Meshing and assembly
 span_wing, chord_wing       = [8, 3], 6
 wing_panels,  wing_normals  = panel_wing(wing, span_wing, chord_wing;)
 
 span_htail, chord_htail     = [6], 6
-htail_panels, htail_normals = panel_wing(htail, span_htail, chord_htail;
-                                         position = htail_position,
-                                         angle    = htail_angle,
-                                         axis     = [0., 1., 0.]
-                                        )
+htail_panels, htail_normals = panel_wing(htail, span_htail, chord_htail;)
 
-vtail_panels, vtail_normals = panel_wing(vtail, 6, 6; 
-                                         position = [4., 0, 0],
-                                         angle    = π/2, 
-                                         axis     = [1., 0., 0.]
-                                        )
+vtail_panels, vtail_normals = panel_wing(vtail, 6, 6;)
 
 # Aircraft assembly
 aircraft = Dict(
@@ -128,8 +124,8 @@ dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 Δx_wing = [ zeros(6); dx_wing[:] ]
 
 ## Horizontal tail FEM setup
-vlm_mesh_htail   = Ref(htail_position) .+ chord_coordinates(htail, span_htail, chord_htail)
-cam_mesh_htail   = Ref(htail_position) .+ camber_coordinates(htail, span_htail, chord_htail)
+vlm_mesh_htail   = chord_coordinates(htail, span_htail, chord_htail)
+cam_mesh_htail   = camber_coordinates(htail, span_htail, chord_htail)
 
 cam_panels_htail = make_panels(cam_mesh_htail)
 
@@ -286,25 +282,18 @@ new_panel_plot    = plot_panels(reduce(vcat, vec.(make_panels.(new_vlm_meshes)))
 
 ## Planforms
 wing_plan   = plot_wing(wing)
+htail_plan  = plot_wing(htail)                      
+vtail_plan  = plot_wing(vtail)
+
+# New planforms
 nwing_plan  = plot_wing(new_cam_meshes[1])
-htail_plan  = plot_wing(htail, 
-                        position = htail_position,
-                        angle    = htail_angle,
-                        axis     = [0., 1., 0.]
-                       )
-nhtail_plan = plot_wing(new_cam_meshes[2])                      
-vtail_plan  = plot_wing(vtail, 
-                       position = [4., 0, 0],
-                       angle    = π/2, 
-                       axis     = [1., 0., 0.]
-                      )
+nhtail_plan = plot_wing(new_cam_meshes[2])
 
 # # Streamlines
-# seed    = chop_coordinates(new_cam_mesh[end,:], 2)
-# streams = plot_streams(fs, seed, new_horsies, Γs, 5, 100);
+seed    = chop_coordinates(new_cam_meshes[1][end,:], 2)
+streams = plot_streams(fs, seed, new_horsies[1], Γs, 5, 100);
 
 ## Plot
-
 using Plots
 using LaTeXStrings
 
@@ -314,18 +303,17 @@ pyplot(dpi = 300)
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
          camera = (-75, 30), 
-         xlim = (-b/4, 3b/4),
+        #  xlim = (-b/4, 3b/4),
      #     ylim = (-b/2, b/2),
-         zlim = (-b/4, 3b/4),
+        #  zlim = (-b/4, 3b/4),
          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
          legend = :bottomright,
          title = "Coupled Aerostructural Analysis"
         )
 
 # Panels
-[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
-[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.5), label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
-[ plot!(pans, color = :lightgray, label = :none, linestyle = :solid) for (i, pans) in enumerate(htail_panel_plot) ]
+[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
+[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.5), label = ifelse(i == 1, "Deflected Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(vtail_panel_plot) ]
 
 # Planforms
@@ -342,7 +330,7 @@ plot!(vtail_plan, color = :brown, label = "Vertical Tail")
 # plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_norms, 0.5, 0.6, 1.0), label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_norm)
 
 # Streamlines
-# [ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
+[ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
 
 # Forces
 # quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],

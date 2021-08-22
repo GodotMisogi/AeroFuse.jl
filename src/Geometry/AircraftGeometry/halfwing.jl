@@ -9,17 +9,19 @@
 Definition for a `HalfWing` consisting of ``N+1`` airfoils and their associated chord lengths ``c``, twist angles ``\\iota``, for ``N`` sections with span lengths ``b``, dihedrals ``\\delta`` and sweep angles ``\\Lambda``, with all angles in degrees.
 """
 struct HalfWing{T <: Real} <: Aircraft
-    foils     :: Vector{Foil{T}}
-    chords    :: Vector{T}
-    twists    :: Vector{T}
-    spans     :: Vector{T}
-    dihedrals :: Vector{T}
-    sweeps    :: Vector{T} 
-    function HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real
+    foils      :: Vector{Foil{T}}
+    chords     :: Vector{T}
+    twists     :: Vector{T}
+    spans      :: Vector{T}
+    dihedrals  :: Vector{T}
+    sweeps     :: Vector{T}
+    position   :: SVector{3,T}
+    angle_axis :: SVector{4,T} 
+    function HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}, position = zeros(3), angle_axis = [0.,1.,0.,0.]) where T <: Real
         # Error handling
         check_wing(foils, chords, twists, spans, dihedrals, sweeps)
         # Convert angles to radians, with adjusting twists to leading edge, and generate HalfWing
-        new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
+        new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), position, angle_axis)
     end
 end
 
@@ -35,7 +37,7 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 end
         
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
-HalfWing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4((0,0,1,2)), "NACA 0012"), length(chords))) = HalfWing(foils, chords, twists, spans, dihedrals, sweep_LEs)
+HalfWing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = HalfWing(foils, chords, twists, spans, dihedrals, sweep_LEs, position, [deg2rad(angle); axis])
 
 HalfWingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2))) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [sweep_LE])
 
@@ -46,6 +48,11 @@ twists(wing    :: HalfWing) = wing.twists
 spans(wing     :: HalfWing) = wing.spans
 dihedrals(wing :: HalfWing) = wing.dihedrals
 sweeps(wing    :: HalfWing) = wing.sweeps
+
+# Affine transformation
+position(wing :: HalfWing) = wing.position
+orientation(wing :: HalfWing) = wing.angle_axis
+affine_transformation(wing :: HalfWing{T}) where T <: Real = Translation(position(wing)) ∘ LinearMap(AngleAxis{T}(orientation(wing)...))
 
 """
     span(half_wing :: HalfWing)
@@ -98,7 +105,7 @@ function mean_aerodynamic_center(wing :: HalfWing, factor = 0.25)
 
     mac_coords 	= @. SVector(x_mac_LEs + factor * macs, y_macs, 0.)
 
-    sum(mac_coords .* areas) / sum(areas)
+    affine_transformation(wing)(sum(mac_coords .* areas) / sum(areas))
 end
 
 camber_thickness(wing :: HalfWing, num) = camber_thickness.(wing.foils, num)
