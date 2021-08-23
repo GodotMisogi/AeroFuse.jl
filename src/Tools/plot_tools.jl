@@ -5,9 +5,7 @@ end
 
 # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coordinates ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
     
-
-function plot_wing(mesh :: Matrix{SVector{3,T}}, rotation, translation) where T <: Real
-    affine = Translation(translation) ∘ LinearMap(rotation)
+function plot_wing(mesh :: Matrix{SVector{3,T}}) where T <: Real
     wing_coords =   [ 
                         mesh[1,1:end-1]; 
                         mesh[1:end-1,end]; 
@@ -15,12 +13,12 @@ function plot_wing(mesh :: Matrix{SVector{3,T}}, rotation, translation) where T 
                         mesh[end:-1:1,1] 
                     ]
                     
-    [ tuple(affine(coords)...) for coords in wing_coords ][:]
+    wing_coords .|> coords -> tuple(coords...)
 end
 
-plot_wing(wing :: Union{HalfWing, Wing}, rotation, translation) = plot_wing(coordinates(wing), rotation, translation)
+plot_wing(wing :: Union{HalfWing, Wing}) = plot_wing(coordinates(wing))
 
-plot_wing(wing; angle :: T = 0., axis = [1., 0., 0.], position = zeros(3)) where T <: Real = plot_wing(wing, AngleAxis{T}(angle, axis...), position)
+# plot_wing(wing :: Union{HalfWing, Wing}) where T <: Real = plot_wing(wing, AngleAxis{T}(wing.angle_axis...), wing.position)
 
 plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = tupvector.(streamlines(freestream, points, horseshoes, Γs, length, num_steps))
 

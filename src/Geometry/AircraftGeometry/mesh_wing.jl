@@ -9,8 +9,8 @@ chop_trailing_edge(obj :: HalfWing, span_num; y_flip = false) = chop_coordinates
 chop_leading_edge(obj :: Wing, span_num :: Integer)  = chop_coordinates([ leading_edge(left(obj), true)[1:end-1]; leading_edge(right(obj)) ], span_num)
 chop_trailing_edge(obj :: Wing, span_num :: Integer) = chop_coordinates([ trailing_edge(left(obj), true)[1:end-1]; trailing_edge(right(obj)) ], span_num)
 
-coordinates(wing :: HalfWing, y_flip = false) = let (lead, trail) = wing_bounds(wing, y_flip); wing_bounds(lead, trail) end
-coordinates(wing :: Wing) = let (lead, trail) = wing_bounds(wing); wing_bounds(lead, trail) end
+coordinates(wing :: HalfWing, y_flip = false) = let (lead, trail) = wing_bounds(wing, y_flip); affine_transformation(wing).(wing_bounds(lead, trail)) end
+coordinates(wing :: Wing) = let (lead, trail) = wing_bounds(wing); affine_transformation(wing).(wing_bounds(lead, trail)) end
 
 coordinates(wing :: Union{HalfWing, Wing}, span_num, chord_num; span_spacing = ["cosine"], chord_spacing = ["cosine"]) = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
 
@@ -29,7 +29,7 @@ Compute the surface coordinates of a `HalfWing` consisting of `Foil`s and releva
 function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
     leading_xyz  = leading_edge(wing, flip)
     scaled_foils = @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num)
-    chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip)
+    affine_transformation(wing).(chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip))
 end
 
 """
@@ -40,13 +40,13 @@ Compute the camber coordinates of a `HalfWing` consisting of camber distribution
 function camber_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"], flip = false)
     leading_xyz  = leading_edge(wing, flip)
     scaled_foils = @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num)
-    chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip)
+    affine_transformation(wing).(chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip))
 end
 
 ## Wing variants
 #==========================================================================================#
 
-function chord_coordinates(wing :: Wing, span_num, chord_num; spacings = ["cosine"])
+function chord_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"])
     left_coord  = chord_coordinates(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
     right_coord = chord_coordinates(right(wing), span_num, chord_num; spacings = spacings)
 
@@ -59,6 +59,38 @@ function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_
 
     [ left_coord[:,1:end-1] right_coord ]
 end
+
+function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = ["cosine"])
+    left_coord  = surface_coordinates(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
+    right_coord = surface_coordinates(right(wing), span_num, chord_num; spacings = spacings)
+
+    [ left_coord[:,1:end-1] right_coord ]
+end
+
+## Spanwise distribution processing
+#==========================================================================================#
+
+# Numbering
+number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* spans(wing) / span(wing))
+number_of_spanwise_panels(wing :: Wing,     span_num :: Integer) = number_of_spanwise_panels(right(wing), span_num ÷ 2)
+
+function number_of_spanwise_panels(wing :: HalfWing, span_num :: Vector{<: Integer})
+    @assert (length ∘ spans)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
+    span_num
+end
+
+function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer})
+    @assert (length ∘ spans ∘ right)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
+    span_num .÷ 2
+end
+
+# Spacing
+spanwise_spacing(wing :: HalfWing) = [ "sine"; fill("cosine", (length ∘ spans)(wing)         - 1) ]
+spanwise_spacing(wing :: Wing)     = [ "sine"; fill("cosine", (length ∘ spans ∘ right)(wing) - 1) ]
+
+# Coordinates
+chord_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = ["cosine"]) = chord_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
+camber_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = ["cosine"]) = camber_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
 
 ## Panelling
 #==========================================================================================#
@@ -124,28 +156,9 @@ end
 vlmesh_wing(wing :: Union{HalfWing, Wing}, span_num, chord_num, spacings = ["cosine"]) = mesh_horseshoes(wing, span_num, chord_num; spacings = spacings), mesh_cambers(wing, span_num, chord_num; spacings = spacings)
 vlmesh_wing(wing :: Union{HalfWing, Wing}, span_num :: Integer, chord_num, spacings = ["cosine"]) = mesh_horseshoes(wing, [span_num], chord_num; spacings = spacings), mesh_cambers(wing, [span_num], chord_num; spacings = spacings)
 
-function paneller(wing :: Union{Wing, HalfWing}, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer; rotation = one(RotMatrix{3, T}), translation = zeros(3), spacings = ["cosine"]) where T <: Real
-    horseshoes, cambers = vlmesh_wing(wing, span_num, chord_num, spacings)
-    horseshoe_panels    = [ transform(panel, rotation, translation)               for panel in horseshoes ]
-    panel_normals       = [ panel_normal(transform(panel, rotation, translation)) for panel in cambers 	  ]
-
-    horseshoe_panels, panel_normals
+function paneller(wing :: Union{HalfWing{T}, Wing{T}}, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer; spacings = ["cosine"]) where T <: Real
+    horseshoes, cambers = vlmesh_wing(wing, span_num, chord_num, spacings)  
+    horseshoes, panel_normal.(cambers)
 end
 
-panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; position = zeros(3), angle :: T = 0., axis = [1., 0., 0.], spacing = spanwise_spacing(comp)) where T <: Real = paneller(comp, span_panels, chord_panels, rotation = AngleAxis{T}(angle, axis...), translation = position, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))
-
-number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* spans(wing) / span(wing))
-number_of_spanwise_panels(wing :: Wing,     span_num :: Integer) = number_of_spanwise_panels(right(wing), span_num ÷ 2)
-
-function number_of_spanwise_panels(wing :: HalfWing, span_num :: Vector{<: Integer})
-    @assert (length ∘ spans)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
-    span_num
-end
-
-function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer})
-    @assert (length ∘ spans ∘ right)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
-    span_num .÷ 2
-end
-
-spanwise_spacing(wing :: HalfWing) = [ "sine"; fill("cosine", (length ∘ spans)(wing)         - 1) ]
-spanwise_spacing(wing :: Wing)     = [ "sine"; fill("cosine", (length ∘ spans ∘ right)(wing) - 1) ]
+panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = spanwise_spacing(comp)) = paneller(comp, span_panels, chord_panels, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))

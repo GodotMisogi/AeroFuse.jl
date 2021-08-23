@@ -107,36 +107,31 @@ end
                 sweep_LEs = [0.]);
 
     # Horizontal tail
-    htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-    htail = Wing(foils     = htail_foils,
+    htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.25],
                  dihedrals = [0.],
-                 sweep_LEs = [6.39])
+                 sweep_LEs = [6.39],
+                 position  = [4., 0, 0],
+                 angle     = -2.,
+                 axis      = [0., 1., 0.])
 
     # Vertical tail
-    vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
-    vtail = HalfWing(foils     = vtail_foils,
+    vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                      chords    = [0.7, 0.42],
                      twists    = [0.0, 0.0],
                      spans     = [1.0],
                      dihedrals = [0.],
-                     sweep_LEs = [7.97])
+                     sweep_LEs = [7.97],
+                     position  = [4., 0, 0],
+                     angle     = 90.,
+                     axis      = [1., 0., 0.])
 
     ## Assembly
-    wing_panels  = panel_wing(wing, 16, 10;
-                              spacing = "cosine")
-    htail_panels = panel_wing(htail, 6, 6;
-                              position = [4., 0, 0],
-                              angle    = deg2rad(-2.),
-                              axis     = [0., 1., 0.],
-                              spacing  = "cosine")
-    vtail_panels = panel_wing(vtail, 5, 6;
-                              position  = [4., 0, 0],
-                              angle     = π/2,
-                              axis      = [1., 0., 0.],
-                              spacing   = "cosine")
+    wing_panels  = panel_wing(wing, 16, 10; spacing = "cosine")
+    htail_panels = panel_wing(htail, 6,  6; spacing = "cosine")
+    vtail_panels = panel_wing(vtail, 5,  6; spacing = "cosine")
 
     aircraft = Dict("Wing"            => wing_panels,
                     "Horizontal Tail" => htail_panels,

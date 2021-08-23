@@ -28,6 +28,8 @@ end
 
 Panel3D(p1 :: FieldVector{3,T}, p2 :: FieldVector{3,T}, p3 :: FieldVector{3,T}, p4 :: FieldVector{3,T}) where T <: Real = Panel3D{T}(p1, p2, p3, p4)
 
+Panel3D((p1, p2, p3, p4)) = Panel3D(p1, p2, p3, p4)
+
 average_chord(panel :: Panel3D) = (p2(panel) - p1(panel) + p3(panel) - p4(panel)) / 2
 average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)) / 2
 
@@ -59,10 +61,7 @@ make_panels(xyzs) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], 
 
 Perform an affine transformation on the coordinates of a Panel3D given a rotation matrix and translation vector.
 """
-function transform(panel :: Panel3D, rotation, translation)
-    p1, p2, p3, p4 = (Translation(translation) ∘ LinearMap(rotation)).(panel_coords(panel))	
-    Panel3D(p1, p2, p3, p4)
-end
+transform(panel :: Panel3D, rotation, translation) = Panel3D((Translation(translation) ∘ LinearMap(rotation)).(panel_coords(panel)))
 
 """
     midpoint(panel :: Panel3D)

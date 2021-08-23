@@ -27,9 +27,10 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweep_LEs = [6.39])
-htail_position = [4., 0, 0.]
-htail_angle    = deg2rad(-1.)
+             sweep_LEs = [6.39],
+             position  = [4., 0., 0.05],
+             angle     = -3.,
+             axis      = [0., 1., 0.])
 
 # Vertical tail
 vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)), 
@@ -37,21 +38,16 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97]);
+                 sweep_LEs = [7.97],
+                 position  = [4., 0, 0],
+                 angle     = 90.,
+                 axis      = [1., 0., 0.]);
 
 ## Meshing and assembly
 span_num, chord_num         = [8, 3], 6
-wing_panels,  wing_normals  = panel_wing(wing, span_num, chord_num;)
-htail_panels, htail_normals = panel_wing(htail, 6, 6;
-                                         position = htail_position,
-                                         angle    = htail_angle,
-                                         axis     = [0., 1., 0.]
-                                        )
-vtail_panels, vtail_normals = panel_wing(vtail, 6, 6; 
-                                         position = [4., 0, 0],
-                                         angle    = π/2, 
-                                         axis     = [1., 0., 0.]
-                                        )
+wing_panels,  wing_normals  = panel_wing(wing, span_num, chord_num)
+htail_panels, htail_normals = panel_wing(htail, 6, 6)
+vtail_panels, vtail_normals = panel_wing(vtail, 6, 6)
 
 # Aircraft assembly
 aircraft = Dict(
@@ -262,23 +258,14 @@ ns_plot   = axes_plot[:,3,:]
 # Planforms
 wing_plan  = plot_wing(wing)
 nwing_plan = plot_wing(new_cam_mesh)
-htail_plan = plot_wing(htail, 
-                       position = htail_position,
-                       angle    = htail_angle,
-                       axis     = [0., 1., 0.]
-                      )
-vtail_plan = plot_wing(vtail, 
-                       position = [4., 0, 0],
-                       angle    = π/2, 
-                       axis     = [1., 0., 0.]
-                      )
+htail_plan = plot_wing(htail)
+vtail_plan = plot_wing(vtail)
 
 # Streamlines
 seed    = chop_coordinates(new_cam_mesh[end,:], 2)
-streams = plot_streams(fs, seed, new_horsies, Γs, 5, 100);
+streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
-
 using Plots
 using LaTeXStrings
 
