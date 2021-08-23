@@ -29,8 +29,8 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              spans     = [1.25],
              dihedrals = [0.],
              sweep_LEs = [6.39],
-             position  = [4., 1, 0.],
-             angle     = 90.,
+             position  = [4., 0., 0.],
+             angle     = 0.,
              axis      = [0., 1., 0.])
 
 # Vertical tail

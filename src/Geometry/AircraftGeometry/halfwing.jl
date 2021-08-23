@@ -16,12 +16,12 @@ struct HalfWing{T <: Real} <: Aircraft
     dihedrals  :: Vector{T}
     sweeps     :: Vector{T}
     position   :: SVector{3,T}
-    angle_axis :: SVector{4,T} 
-    function HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}, position = zeros(3), angle_axis = [0.,1.,0.,0.]) where T <: Real
+    orientation :: SMatrix{3,3,T}
+    function HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}, position = zeros(3), angle = 0., axis = [0.,1.,0.]) where T <: Real
         # Error handling
         check_wing(foils, chords, twists, spans, dihedrals, sweeps)
         # Convert angles to radians, with adjusting twists to leading edge, and generate HalfWing
-        new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), position, angle_axis)
+        new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), position, AngleAxis{T}(angle, axis...))
     end
 end
 
@@ -37,7 +37,7 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 end
         
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
-HalfWing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = HalfWing(foils, chords, twists, spans, dihedrals, sweep_LEs, position, [deg2rad(angle); axis])
+HalfWing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = HalfWing(foils, chords, twists, spans, dihedrals, sweep_LEs, position, angle, axis)
 
 HalfWingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2))) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [sweep_LE])
 
@@ -51,7 +51,7 @@ sweeps(wing    :: HalfWing) = wing.sweeps
 
 # Affine transformation
 position(wing :: HalfWing) = wing.position
-orientation(wing :: HalfWing) = wing.angle_axis
+orientation(wing :: HalfWing) = wing.orientation
 affine_transformation(wing :: HalfWing{T}) where T <: Real = Translation(position(wing)) ∘ LinearMap(AngleAxis{T}(orientation(wing)...))
 
 """
