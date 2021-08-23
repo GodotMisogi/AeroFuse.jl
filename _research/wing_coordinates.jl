@@ -1,9 +1,22 @@
 using CoordinateTransformations, Rotations, StaticArrays
 using AeroMDAO
 
+# An internal definition of coordinates in structs is restrictive and not extensible.
+# Consider:
+# aff, g :: [Loc] -> [Loc]
+# f1, f2 :: HW -> [Loc]
+# such that f1 = g ∘ aff ∘ f2, with aff only being applied when required.
+#
+# Need to think about this monadically. A monad m is defined as a monoid in a category of endofunctors in terms of the monoidal maps join and return in Haskell:
+# join :: m (m a) -> m a
+# return :: a -> m a
+# This corresponds to composition of morphisms in the Kleisli category, implemented as the bind operator in Haskell.
+# >>= :: m a -> (a -> m b) -> m b
+# xs >>= f = join (fmap f xs)
+
 
 ## Define type
-struct WingCoordinates{T <: Real}
+struct WingCoordinates{T <: Real} <: Aircraft
     wing        :: Union{HalfWing{T}, Wing{T}}
     position    :: SVector{3,T}
     orientation :: AngleAxis{T}
