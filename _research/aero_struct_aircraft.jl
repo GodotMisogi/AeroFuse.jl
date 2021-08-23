@@ -28,8 +28,8 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              spans     = [1.25],
              dihedrals = [0.],
              sweep_LEs = [6.39],
-             position  = [4., 0, 0.],
-             angle     = -1.,
+             position  = [4., 0., 0.05],
+             angle     = -3.,
              axis      = [0., 1., 0.])
 
 # Vertical tail
@@ -258,20 +258,12 @@ ns_plot   = axes_plot[:,3,:]
 # Planforms
 wing_plan  = plot_wing(wing)
 nwing_plan = plot_wing(new_cam_mesh)
-htail_plan = plot_wing(htail, 
-                       position = htail_position,
-                       angle    = htail_angle,
-                       axis     = [0., 1., 0.]
-                      )
-vtail_plan = plot_wing(vtail, 
-                       position = [4., 0, 0],
-                       angle    = π/2, 
-                       axis     = [1., 0., 0.]
-                      )
+htail_plan = plot_wing(htail)
+vtail_plan = plot_wing(vtail)
 
 # Streamlines
 seed    = chop_coordinates(new_cam_mesh[end,:], 2)
-streams = plot_streams(fs, seed, new_horsies, Γs, 5, 100);
+streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
 using Plots

@@ -23,6 +23,8 @@ spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)	  ; (spans
 dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dihedrals ∘ right)(wing) ]
 sweeps(wing :: Wing)    = @views [ (reverse ∘ sweeps ∘ left)(wing)    ; (sweeps ∘ right)(wing)    ]
 
+affine_transformation(wing :: Wing) = affine_transformation(right(wing))
+
 # Symmetric wing
 Wing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4((0,0,1,2))), length(chords)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = let w = HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, sweep_LEs = sweep_LEs, position = position, angle = angle, axis = axis); Wing(w, w) end
 

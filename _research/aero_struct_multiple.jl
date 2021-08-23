@@ -183,11 +183,8 @@ x0 = ComponentArray(aerodynamics = (wing = Γ0_wing, htail = Γ0_htail, vtail = 
 solve_aerostructural_residual!(R, x) = 
     solve_coupled_residual!(R, x,
                             V, deg2rad(β), ρ, Ω,
-                            syms,
-                            vlm_meshes, cam_meshes,
-                            fem_meshes, 
-                            other_horsies,
-                            stiffy, weight, load_factor)
+                            syms, vlm_meshes, cam_meshes, fem_meshes, 
+                            other_horsies, stiffy, weight, load_factor)
 
 ## Solve nonlinear system
 reset_timer!()
@@ -257,30 +254,30 @@ rename!.(dfs, Ref([:Fx, :Fy, :Fz, :Mx, :My, :Mz, :dx, :dy, :dz, :θx, :θy, :θz
 ## Plotting
 #==========================================================================================#
 
-## Beam loads and stresses
+# Beam loads and stresses
 fem_plot     = @. reduce(hcat, chop_coordinates(fem_meshes, 1))
 new_fem_plot = @. reduce(hcat, chop_coordinates(new_fem_meshes, 1))
 # loads_plot   = fem_loads
 
-## Panels
+# Panels
 wing_panel_plot  = plot_panels(wing_panels[:])
 htail_panel_plot = plot_panels(htail_panels[:]) 
 vtail_panel_plot = plot_panels(vtail_panels[:])
 
-## Aerodynamic centers and forces
+# Aerodynamic centers and forces
 ac_plot    = @. reduce(hcat, new_acs)
 force_plot = @. reduce(hcat, new_forces)
 
-## Cambers
+# Cambers
 cam_panels   = @. make_panels(cam_meshes)
 cam_plot     = plot_panels(reduce(vcat, vec.(cam_panels)))
 new_cam_plot = plot_panels(reduce(vcat, vec.(new_cam_panels)))
 
-## Displacements
+# Displacements
 new_vlm_mesh_plot = @. reduce(hcat, new_vlm_meshes)
 new_panel_plot    = plot_panels(reduce(vcat, vec.(make_panels.(new_vlm_meshes))))
 
-## Planforms
+# Planforms
 wing_plan   = plot_wing(wing)
 htail_plan  = plot_wing(htail)                      
 vtail_plan  = plot_wing(vtail)
@@ -289,9 +286,9 @@ vtail_plan  = plot_wing(vtail)
 nwing_plan  = plot_wing(new_cam_meshes[1])
 nhtail_plan = plot_wing(new_cam_meshes[2])
 
-# # Streamlines
+# Streamlines
 seed    = chop_coordinates(new_cam_meshes[1][end,:], 2)
-streams = plot_streams(fs, seed, new_horsies[1], Γs, 5, 100);
+streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
 using Plots
@@ -302,10 +299,10 @@ pyplot(dpi = 300)
 
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
-         camera = (-75, 30), 
-        #  xlim = (-b/4, 3b/4),
+         camera = (-60, 30), 
+         xlim = (-b/4, 3b/4),
      #     ylim = (-b/2, b/2),
-        #  zlim = (-b/4, 3b/4),
+         zlim = (-b/8, b/8),
          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
          legend = :bottomright,
          title = "Coupled Aerostructural Analysis"
@@ -341,5 +338,5 @@ plot!(vtail_plan, color = :brown, label = "Vertical Tail")
 #         quiver=(loads_plot[1,:], loads_plot[2,:], loads_plot[3,:] ) .* 0.1,
 #         label = "Beam Forces")
 
-# savefig(aircraft_plot, "plots/AerostructAircraft.pdf")
+# savefig(aircraft_plot, "plots/AerostructWingTail.pdf")
 plot!()

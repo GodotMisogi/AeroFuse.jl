@@ -21,7 +21,7 @@ struct HalfWing{T <: Real} <: Aircraft
         # Error handling
         check_wing(foils, chords, twists, spans, dihedrals, sweeps)
         # Convert angles to radians, with adjusting twists to leading edge, and generate HalfWing
-        new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), position, AngleAxis{T}(angle, axis...))
+        new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), position, AngleAxis{T}(deg2rad(angle), axis...))
     end
 end
 
@@ -52,7 +52,7 @@ sweeps(wing    :: HalfWing) = wing.sweeps
 # Affine transformation
 position(wing :: HalfWing) = wing.position
 orientation(wing :: HalfWing) = wing.orientation
-affine_transformation(wing :: HalfWing{T}) where T <: Real = Translation(position(wing)) ∘ LinearMap(AngleAxis{T}(orientation(wing)...))
+affine_transformation(wing :: HalfWing{T}) where T <: Real = Translation(position(wing)) ∘ LinearMap(orientation(wing))
 
 """
     span(half_wing :: HalfWing)
