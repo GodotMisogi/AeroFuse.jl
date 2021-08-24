@@ -28,9 +28,10 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweep_LEs = [6.39])
-htail_position = [4., 0, 0.]
-htail_angle    = deg2rad(-1.)
+             sweep_LEs = [6.39],
+             position  = [4., 0, 0.],
+             angle     = -1.,
+             axis      = [0., 1., 0.])
 
 # Vertical tail
 vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)), 
@@ -38,21 +39,16 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97]);
+                 sweep_LEs = [7.97], 
+                 position  = [4., 0, 0],
+                 angle     = π/2, 
+                 axis      = [1., 0., 0.])
 
 ## Meshing and assembly
 span_num, chord_num         = [8, 3], 6
 wing_panels,  wing_normals  = panel_wing(wing, span_num, chord_num;)
-htail_panels, htail_normals = panel_wing(htail, 6, 6;
-                                         position = htail_position,
-                                         angle    = htail_angle,
-                                         axis     = [0., 1., 0.]
-                                        )
-vtail_panels, vtail_normals = panel_wing(vtail, 6, 6; 
-                                         position = [4., 0, 0],
-                                         angle    = π/2, 
-                                         axis     = [1., 0., 0.]
-                                        )
+htail_panels, htail_normals = panel_wing(htail, 6, 6;)
+vtail_panels, vtail_normals = panel_wing(vtail, 6, 6;)
 
 # Aircraft assembly
 aircraft = Dict(
@@ -128,7 +124,7 @@ t     = [ reverse(ts); ts ]
 tubes = Tube.(Ref(aluminum), Ls, r, t)
 
 # Stiffness matrix, loads and constraints
-Ks         = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
+Ks        = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
 cons      = [length(fem_mesh) ÷ 2]
 stiffy    = build_stiffness_matrix(Ks, cons)
 fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)

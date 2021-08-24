@@ -1,7 +1,4 @@
 function solve_aerodynamics!(Γ, system :: VLMSystem, state :: VLMState)
-    # Update state velocity
-    update_velocity!(state)
-
     # Assemble matrix system
     # @timeit "Influence Matrix" compute_influence_matrix!(system, state.velocity)
     # @timeit "Boundary Condition" compute_boundary_condition!(system, state.velocity, state.omega)

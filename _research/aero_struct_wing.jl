@@ -32,7 +32,7 @@ chord_num = 6
 ## Aerodynamic case
 ρ       = 0.98
 ref     = [0.25 * wing_mac[1], 0., 0.]
-V, α, β = 25.0, 5.0, 0.0
+V, α, β = 25.0, 5.0, 15.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
@@ -46,7 +46,7 @@ fs      = Freestream(V, α, β, Ω)
                spacing   = ["sine"]
               );
 
-print_coefficients(nf_coeffs, ff_coeffs)
+print_coefficients(nf_coeffs, ff_coeffs, "Wing")
 
 ## Aerodynamic forces and center locations
 vlm_acs    = bound_leg_center.(horsies)
@@ -55,7 +55,6 @@ vlm_forces = force.(CFs, dynamic_pressure(ρ, V), projected_area(wing))
 ## Mesh setup
 vlm_mesh   = chord_coordinates(wing, span_num, chord_num, spacings = ["sine"])
 cam_mesh   = camber_coordinates(wing, span_num, chord_num, spacings = ["sine"])
-cam_panels = make_panels(cam_mesh)
 
 # FEM mesh
 fem_w    = 0.40
@@ -91,7 +90,7 @@ t     = [ reverse(ts); ts ]
 tubes = Tube.(Ref(aluminum), Ls, r, t)
 
 ## Stiffness matrix, loads and constraints
-Ks         = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
+Ks        = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
 cons      = [length(fem_mesh) ÷ 2]
 stiffy    = build_stiffness_matrix(Ks, cons)
 fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
@@ -188,6 +187,7 @@ loads_plot   = fem_loads
 σ_norms      = [ σs_norm; σs_norm[end] ]
 
 # Aerodynamic centers and forces
+cam_panels = make_panels(cam_mesh)
 panel_plot = plot_panels(panels[:])
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
@@ -214,7 +214,7 @@ nwing_plan = plot_wing(new_cam_mesh)
 
 # Streamlines
 seed    = chop_coordinates(new_cam_mesh[end,:], 2)
-streams = plot_streams(fs, seed, new_horsies, Γs, 2.5, 100);
+streams = plot_streams(fs, seed, new_horsies, Γ_opts, 2.5, 100);
 
 b = span(wing)
 
@@ -227,7 +227,7 @@ pyplot(dpi = 300)
 
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
-         camera = (-70, 20), 
+         camera = (-85, 20), 
          xlim = (-b/4, 3b/4),
      #     ylim = (-b/2, b/2),
          zlim = (-b/8, b/4),

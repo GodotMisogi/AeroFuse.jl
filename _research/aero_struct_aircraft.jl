@@ -28,8 +28,8 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              spans     = [1.25],
              dihedrals = [0.],
              sweep_LEs = [6.39],
-             position  = [4., 0., 0.05],
-             angle     = -3.,
+             position  = [4., 0., 0.08],
+             angle     = 3.,
              axis      = [0., 1., 0.])
 
 # Vertical tail
@@ -262,7 +262,7 @@ htail_plan = plot_wing(htail)
 vtail_plan = plot_wing(vtail)
 
 # Streamlines
-seed    = chop_coordinates(new_cam_mesh[end,:], 2)
+seed    = chop_coordinates(new_cam_mesh[end,:], 3)
 streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
@@ -274,10 +274,10 @@ pyplot(dpi = 300)
 
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
-         camera = (-75, 30), 
+         camera = (-75, 20), 
          xlim = (0, b/2),
      #     ylim = (-b/2, b/2),
-         zlim = (-b/8, b/8),
+         zlim = (-b/8, b/4),
          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
          legend = :bottomright,
          title = "Coupled Aerostructural Analysis"
