@@ -33,8 +33,9 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho
     span_nums = number_of_spanwise_panels(wing, span_num)
 
     # Compute panels and normals
-    horseshoe_panels, camber_panels = vlmesh_wing(wing, span_nums, chord_num, space)
-    normals = panel_normal.(camber_panels)
+    horseshoe_panels = mesh_horseshoes(wing, span_nums, chord_num; spacings = space)
+    camber_panels    = mesh_cambers(wing, span_nums, chord_num; spacings = space)
+    normals          = panel_normal.(camber_panels)
 
     # Compute forces and moments
     nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs = evaluate_case(horseshoe_panels, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)

@@ -29,8 +29,8 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              spans     = [1.25],
              dihedrals = [0.],
              sweep_LEs = [6.39],
-             position  = [4., 0., 0.08],
-             angle     = -3.,
+             position  = [4., 0., 0.],
+             angle     = 0.,
              axis      = [0., 1., 0.])
 
 # Vertical tail
@@ -46,10 +46,18 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 
 ## Meshing and assembly
 span_wing, chord_wing       = [8], 6
+vlm_mesh_wing               = chord_coordinates(wing, span_wing, chord_wing)
+cam_mesh_wing               = camber_coordinates(wing, span_wing, chord_wing)
+
 wing_panels,  wing_normals  = panel_wing(wing, span_wing, chord_wing;)
+cam_panels_wing             = make_panels(cam_mesh_wing)
 
 span_htail, chord_htail     = [6], 6
+vlm_mesh_htail              = chord_coordinates(htail, span_htail, chord_htail)
+cam_mesh_htail              = camber_coordinates(htail, span_htail, chord_htail)
+
 htail_panels, htail_normals = panel_wing(htail, span_htail, chord_htail;)
+cam_panels_htail            = make_panels(cam_mesh_htail)
 
 vtail_panels, vtail_normals = panel_wing(vtail, 6, 6;)
 
@@ -90,11 +98,6 @@ CFs_htail, CMs_htail, hs_htail, Γ0_htail = data["Horizontal Tail"][3:end];
 Γ0_vtail = data["Vertical Tail"][end];
 
 ## Wing FEM setup
-vlm_mesh_wing   = chord_coordinates(wing, span_wing, chord_wing)
-cam_mesh_wing   = camber_coordinates(wing, span_wing, chord_wing)
-
-cam_panels_wing = make_panels(cam_mesh_wing)
-
 vlm_acs_wing    = bound_leg_center.(hs_wing)
 vlm_forces_wing = force.(CFs_wing, dynamic_pressure(ρ, V), S)
 
@@ -124,11 +127,6 @@ dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 Δx_wing = [ zeros(6); dx_wing[:] ]
 
 ## Horizontal tail FEM setup
-vlm_mesh_htail   = chord_coordinates(htail, span_htail, chord_htail)
-cam_mesh_htail   = camber_coordinates(htail, span_htail, chord_htail)
-
-cam_panels_htail = make_panels(cam_mesh_htail)
-
 vlm_acs_htail    = bound_leg_center.(hs_htail)
 vlm_forces_htail = force.(CFs_htail, dynamic_pressure(ρ, V), S)
 
@@ -138,7 +136,7 @@ fem_mesh_htail   = make_beam_mesh(vlm_mesh_htail, fem_weight_htail)
 # Beam properties
 Ls_htail = norm.(diff(fem_mesh_htail))                              # Beam lengths, m 
 rs_htail = range(8e-3, stop = 2e-3, length = length(Ls_htail) ÷ 2)  # Outer radius, m
-ts_htail = range(4e-3, stop = 8e-4, length = length(Ls_htail) ÷ 2)  # Thickness, m
+ts_htail = range(6e-4, stop = 2e-4, length = length(Ls_htail) ÷ 2)  # Thickness, m
 r_htail  = [ reverse(rs_htail); rs_htail ]
 t_htail  = [ reverse(ts_htail); ts_htail ]
 
@@ -221,7 +219,7 @@ all_horsies = [ reduce(vcat, vec.(new_horsies)); other_horsies ];
 
 ## Aerodynamic forces and center locations
 U_opt      = freestream_to_cartesian(-V, α_opt, deg2rad(β))
-new_acs    = map(horsies -> bound_leg_center.(horsies), new_horsies)
+new_acs    = new_horsies .|> horsies -> bound_leg_center.(horsies)
 all_forces = nearfield_forces(Γ_opt, all_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
 
 new_Γs     = getindex.(Ref(Γ_opt), syms)
@@ -232,9 +230,9 @@ new_fem_meshes = make_beam_mesh.(new_vlm_meshes, fem_weights)
 fem_loads      = compute_loads.(new_acs, new_forces, new_fem_meshes);
 
 ## Compute stresses
-# δxs = eachcol(diff(dx[1:3,:], dims = 2)) # Need to transform these to principal axes
-# δθs = eachcol(diff(dx[4:6,:], dims = 2)) # Need to transform these to principal axes 
-# σs  = reduce(hcat, von_mises_stress.(tubes, δxs, δθs))
+δxs = Δs .|> dx -> eachcol(diff(dx[1:3,:], dims = 2)) # Need to transform these to principal axes
+δθs = Δs .|> dx -> eachcol(diff(dx[4:6,:], dims = 2)) # Need to transform these to principal axes 
+σs  = map((tubes, δx, δθ) -> reduce(hcat, von_mises_stress.(tubes, δx, δθ)), [ tubes_wing, tubes_htail ], δxs, δθs)
 
 ## Check numbers
 lift     = sum(all_forces)[3]
@@ -256,9 +254,12 @@ rename!.(dfs, Ref([:Fx, :Fy, :Fz, :Mx, :My, :Mz, :dx, :dy, :dz, :θx, :θy, :θz
 # Beam loads and stresses
 fem_plot     = @. reduce(hcat, chop_coordinates(fem_meshes, 1))
 new_fem_plot = @. reduce(hcat, chop_coordinates(new_fem_meshes, 1))
-# loads_plot   = fem_loads
+loads_plot   = fem_loads
+σs_max       = map(σ -> maximum.(eachcol(σ)), σs)
+σs_norm      = [ σ_max ./ maximum(σ_max) for σ_max in σs_max ]
+σ_norms      = [ [ σ_norm; σ_norm[end] ] for σ_norm in σs_norm ]
 
-# Panels
+## Panels
 wing_panel_plot  = plot_panels(wing_panels[:])
 htail_panel_plot = plot_panels(htail_panels[:]) 
 vtail_panel_plot = plot_panels(vtail_panels[:])
@@ -286,31 +287,30 @@ nwing_plan  = plot_wing(new_cam_meshes[1])
 nhtail_plan = plot_wing(new_cam_meshes[2])
 
 # Streamlines
-seed    = chop_coordinates(new_cam_meshes[1][end,:], 3)
+seed    = chop_coordinates(new_cam_meshes[1][end,:], 4)
 streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
 using Plots
 using LaTeXStrings
 
-plotly(dpi = 300, size = (1280, 720))
 # pyplot(dpi = 300)
-# pgfplotsx(size = (900, 600))
+pgfplotsx(size = (900, 600))
 
 aircraft_plot = 
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
          camera = (-75, 20), 
-         xlim = (-b/4, 3b/4),
+         xlim = (-b/8, 3b/4),
      #     ylim = (-b/2, b/2),
-         zlim = (-b/4, 3b/4),
+         zlim = (-b/8, b/4),
          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
-         legend = :bottomright,
+         legend = :topright,
          title = "Coupled Aerostructural Analysis"
         )
 
 # Panels
-[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
-[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.5), label = ifelse(i == 1, "Deflected Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
+# [ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
+# [ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.5), label = ifelse(i == 1, "Deflected Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
 [ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(vtail_panel_plot) ]
 
 # Planforms
@@ -321,13 +321,15 @@ plot!(nhtail_plan, color = :blue, label = "Deflected Horizontal Tail")
 plot!(vtail_plan, color = :brown, label = "Vertical Tail")
 
 # Beams
-# thickness = 2.5
-# r_norm = [ r; r[end]] / maximum(r) * thickness
-# plot!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:], color = :black, label = "Original Beam", linestyle = :solid, linewidth = r_norm)
-# plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_norms, 0.5, 0.6, 1.0), label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_norm)
+thickness = 2.5
+normer(rs) = [ rs; rs[end] ] / maximum(rs)
+r_norms = @. normer([ r_wing, r_htail ]) * thickness
+[ plot!(fem[1,:], fem[2,:], fem[3,:], color = :black, label = "Original Beam", linestyle = :solid, linewidth = r_ns) for (fem, r_ns) in zip(fem_plot, r_norms) ]
+
+[ plot!(new_fem[1,:], new_fem[2,:], new_fem[3,:], color = RGBA.(σ_ns, 0.5, 0.6, 1.0), label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_ns) for (new_fem, σ_ns, r_ns) in zip(new_fem_plot, σ_norms, r_norms) ]
 
 # Streamlines
-[ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
+[ plot!(stream, color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
 
 # Forces
 # quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
@@ -338,5 +340,5 @@ plot!(vtail_plan, color = :brown, label = "Vertical Tail")
 #         quiver=(loads_plot[1,:], loads_plot[2,:], loads_plot[3,:] ) .* 0.1,
 #         label = "Beam Forces")
 
-# savefig(aircraft_plot, "plots/AerostructWingTail.pdf")
-plot!()
+savefig(aircraft_plot, "plots/AerostructWingTail.pdf")
+# plot!()
