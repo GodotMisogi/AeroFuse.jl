@@ -44,18 +44,31 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  angle     = π/2, 
                  axis      = [1., 0., 0.])
 
-## Meshing and assembly
-span_num, chord_num         = [8, 3], 6
-wing_panels,  wing_normals  = panel_wing(wing, span_num, chord_num;)
-htail_panels, htail_normals = panel_wing(htail, 6, 6;)
-vtail_panels, vtail_normals = panel_wing(vtail, 6, 6;)
+# Wing
+wing_n_span   = [8, 3]
+wing_n_chord  = 6
+vlm_mesh      = chord_coordinates(wing, wing_n_span, wing_n_chord)
+cam_mesh      = camber_coordinates(wing, wing_n_span, wing_n_chord)
+wing_panels   = make_panels(vlm_mesh)
+wing_cambers  = make_panels(cam_mesh)
+wing_normals  = panel_normal.(wing_cambers)
+
+# Other panels
+htail_panels, htail_normals = panel_wing(htail, 6, 6)
+vtail_panels, vtail_normals = panel_wing(vtail, 6, 6)
+
+# Horseshoes
+wing_horsies  = Horseshoe.(wing_panels,  wing_normals)
+htail_horsies = Horseshoe.(htail_panels,  htail_normals)
+vtail_horsies = Horseshoe.(vtail_panels,  vtail_normals)
 
 # Aircraft assembly
 aircraft = Dict(
-                "Wing"            => (wing_panels,  wing_normals),
-                "Horizontal Tail" => (htail_panels, htail_normals),
-                "Vertical Tail"   => (vtail_panels, vtail_normals),
+                "Wing"            => wing_horsies,
+                "Horizontal Tail" => htail_horsies,
+                "Vertical Tail"   => vtail_horsies,
                );
+
 wing_mac = mean_aerodynamic_center(wing);
 
 # Set up aerodynamic state
@@ -84,11 +97,6 @@ print_coefficients(aero_surfs[1], aero_state);
 horsies    = horseshoes(aero_surfs[1])
 vlm_acs    = bound_leg_center.(horsies)
 vlm_forces = surface_forces(aero_surfs[1]) 
-
-## Mesh setup
-vlm_mesh   = chord_coordinates(wing, span_num, chord_num)
-cam_mesh   = camber_coordinates(wing, span_num, chord_num)
-cam_panels = make_panels(cam_mesh)
 
 # FEM mesh
 fem_w    = 0.40
@@ -237,7 +245,7 @@ ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
 # Cambers
-cam_plot     = plot_panels(cam_panels[:])
+cam_plot     = plot_panels(wing_cambers[:])
 new_cam_plot = plot_panels(new_cam_panels[:])
 
 # Displacements
