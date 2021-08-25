@@ -62,7 +62,7 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
     nf, ff, dvs
 end
 
-function solve_stability_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false) where T <: Real
+function solve_stability_case(aircraft :: Dict{String, Matrix{Horseshoe{T}}}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false) where T <: Real
     # Reference values and scaling inputs
     S, b, c = area_ref, span_ref, chord_ref
     x, scale = scale_inputs(freestream, b , c)

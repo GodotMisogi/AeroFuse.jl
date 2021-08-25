@@ -271,25 +271,16 @@ function evaluate_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β
 end
 
 function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref, name) 
-    # Get dictionary keys and values
-    comp_names = (collect ∘ keys)(components)
-    meshes     = values(components)
-    
-    # Flattening for VLM
-    horseshoe_panels = first.(meshes)
-    normals          = last.(meshes)
-    horsies          = reduce(vcat, vec.(horseshoe_panels))
-    normies          = reduce(vcat, vec.(normals))
-
-    # Get required vortex lattice variables, i.e. horseshoes, collocation points and normals
-    horseshoes     = Horseshoe.(horsies, normies)
-    horseshoes_arr = [ Horseshoe.(horses, norms) for (horses, norms) in zip(horseshoe_panels, normals) ]
+    # Get dictionary keys and values, i.e. names and horseshoes
+    comp_names     = (collect ∘ keys)(components)
+    horseshoes_arr = values(components)
+    horseshoes     = reduce(vcat, vec.(horseshoes_arr)) # Flattening for VLM system solution
 
     # Solve system
     Γs = solve_system(horseshoes, U, Ω)
 
     # Reshaping
-    panel_sizes = size.(horseshoe_panels)
+    panel_sizes = size.(horseshoes_arr)
     panel_inds 	= [ 0; cumsum(prod.(panel_sizes)) ]
     Γs_arr 		= reshape_array(Γs, panel_inds, panel_sizes)
 

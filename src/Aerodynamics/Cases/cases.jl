@@ -56,7 +56,7 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho
     nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs
 end
 
-function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false) where T <: Real
+function solve_case(components :: Dict{String, Matrix{Horseshoe{T}}}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false) where T <: Real
     # Unpack Freestream
     U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
     
@@ -83,7 +83,7 @@ end
 # solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) = evaluate_case(components, state.speed, state.alpha, state.beta, state.omega, rho_ref = state.rho_ref, r_ref = state.r_ref, area_ref = state.area_ref, chord_ref = state.chord_ref, span_ref = state.span_ref, name)
 
 # Mutating version
-function solve_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
+function solve_case(aircraft :: Dict{String, Matrix{Horseshoe{T}}}, state :: VLMState) where T <: Real
     # Build surfaces and systems
     system = build_system(aircraft)
 

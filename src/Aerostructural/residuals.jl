@@ -65,7 +65,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
     α = x.load_factor
 
     # Get residual vector views
-    R_A = @view R[1:length(Γ)]
+    R_A = R.aerodynamics
     R_S = R.structures
     R_W = @view R[end]
     
@@ -80,7 +80,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
     new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
 
     # Compute loads
-    @timeit "Surface Forces"  vlm_forces = nearfield_forces(Γ, new_horsies, Γ, new_horsies, U, Ω, ρ)
+    @timeit "Surface Forces" vlm_forces = nearfield_forces(Γ, new_horsies, Γ, new_horsies, U, Ω, ρ)
     
     # Compute lift for load factor residual
     L = sum(vlm_forces)[3]
@@ -89,7 +89,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
     fem_loads = fem_load_vector(bound_leg_center.(new_horsies), vlm_forces, fem_mesh)
 
     # Aerodynamic residuals
-    @timeit "Aerodynamic Residual" aerodynamic_residual!(R_A, new_horsies[:], horseshoe_point.(new_horsies[:]), horseshoe_normal.(new_horsies[:]), Γ[:] / speed, U / speed, Ω / speed)
+    @timeit "Aerodynamic Residual" aerodynamic_residual!(R_A, new_horsies, horseshoe_point.(new_horsies), horseshoe_normal.(new_horsies), Γ / speed, U / speed, Ω / speed)
 
     # Structural residuals
     linear_residual!(R_S, stiffness_matrix, δ, fem_loads)

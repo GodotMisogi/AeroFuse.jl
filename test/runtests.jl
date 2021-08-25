@@ -129,13 +129,13 @@ end
                      axis      = [1., 0., 0.])
 
     ## Assembly
-    wing_panels  = panel_wing(wing, 16, 10; spacing = "cosine")
-    htail_panels = panel_wing(htail, 6,  6; spacing = "cosine")
-    vtail_panels = panel_wing(vtail, 5,  6; spacing = "cosine")
+    wing_panels , wing_normals  = panel_wing(wing, 16, 10; spacing = "cosine")
+    htail_panels, htail_normals = panel_wing(htail, 6,  6; spacing = "cosine")
+    vtail_panels, vtail_normals = panel_wing(vtail, 5,  6; spacing = "cosine")
 
-    aircraft = Dict("Wing"            => wing_panels,
-                    "Horizontal Tail" => htail_panels,
-                    "Vertical Tail"   => vtail_panels)
+    aircraft = Dict("Wing"            => Horseshoe.(wing_panels , wing_normals),
+                    "Horizontal Tail" => Horseshoe.(htail_panels, htail_normals),
+                    "Vertical Tail"   => Horseshoe.(vtail_panels, vtail_normals))
 
     ## Reference quantities
     ac_name = "My Aircraft"
