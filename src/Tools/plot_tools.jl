@@ -1,7 +1,5 @@
-function plot_panels(panels :: Vector{<: Panel3D})
-    coords = panel_coords.(panels)
-    tupvector.([coord; [coord[1]]] for coord in coords)
-end
+plot_panel(panel :: Panel3D) = let ps = panel_coords(panel); Tuple.([ ps; [ps[1]] ]) end
+plot_panels(panels :: Vector{<: Panel3D}) = plot_panel.(panels)
 
 # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coordinates ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
     
@@ -20,7 +18,7 @@ plot_wing(wing :: Union{HalfWing, Wing}) = plot_wing(coordinates(wing))
 
 # plot_wing(wing :: Union{HalfWing, Wing}) where T <: Real = plot_wing(wing, AngleAxis{T}(wing.angle_axis...), wing.position)
 
-plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = tupvector.(streamlines(freestream, points, horseshoes, Γs, length, num_steps))
+plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = map(x -> Tuple.(x)[:], streamlines(freestream, points, horseshoes, Γs, length, num_steps))
 
 plot_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30; rotation = one(RotMatrix{3, Float64}), translation = SVector(0, 0, 0)) = plot_panels(transform(panel, rotation, translation) for panel in mesh_wing(wing, span_num, chord_num)[:])
 

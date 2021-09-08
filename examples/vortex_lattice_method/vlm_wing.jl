@@ -44,7 +44,7 @@ solve_stability_case(wing, fs;
                      rho_ref    = ρ,
                      r_ref      = ref,
                      span_num   = [25, 8],
-                     chord_num  = 6,
+                     chord_num  = 5,
                      name       = "My Wing",
                      viscous    = true,
                      x_tr       = [0.3, 0.3],
@@ -59,7 +59,7 @@ print_derivatives(dvs, "Wing")
 ## Plotting
 using StaticArrays
 using Plots
-gr(size = (600, 400), dpi = 300)
+gr(dpi = 300)
 
 ## Streamlines
 
@@ -83,13 +83,9 @@ streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 ## Display
 horseshoe_coords = plot_panels(horseshoe_panels[:])
 wing_coords      = plot_wing(wing);
-colpoints        = horseshoe_point.(horseshoe_panels)
+horseshoe_points = Tuple.(horseshoe_point.(horseshoe_panels))[:]
 
-# Coordinates
-xs = getindex.(colpoints, 1);
-ys = getindex.(colpoints, 2);
-zs = getindex.(colpoints, 3);
-
+## Coordinates
 z_limit = 5
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
@@ -97,14 +93,14 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      zlim = (-0.1, z_limit),
      size = (800, 600))
 plot!.(horseshoe_coords, color = :black, label = :none)
-scatter!(tupvector(colpoints)[:], marker = 1, color = :black, label = :none)
+scatter!(horseshoe_points, marker = 1, color = :black, label = :none)
 plot!.(streams, color = :green, label = :none)
 plot!()
 
 ## Spanwise forces
 wind_CFs = body_to_wind_axes.(CFs, fs.alpha, fs.beta)
 CDis     = @. getindex(wind_CFs, 1)
-CYs	     = @. getindex(wind_CFs, 2)
+CYs      = @. getindex(wind_CFs, 2)
 CLs      = @. getindex(wind_CFs, 3)
 
 area_scale  = S ./ sum(panel_area, horseshoe_panels, dims = 1)[:]
@@ -124,10 +120,7 @@ plot(plot_CD, plot_CY, plot_CL, layout = (3,1))
 ## Lift distribution
 
 # Exaggerated CF distribution for plot
-hs_pts = bound_leg_center.(horses)
-hs_xs  = getindex.(hs_pts, 1)
-hs_ys  = getindex.(hs_pts, 2)
-hs_zs  = getindex.(hs_pts, 3)
+hs_pts = Tuple.(bound_leg_center.(horses))[:]
 
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
@@ -136,6 +129,6 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
     )
 plot!.(horseshoe_coords, color = :gray, label = :none)
 # scatter!(cz_pts, zcolor = CLs[:], marker = 2, label = "CL (Exaggerated)")
-quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(CDis[:], CYs[:], CLs[:]) .* 100)
+quiver!(hs_pts, quiver=(CDis[:], CYs[:], CLs[:]) .* 100, label = "Forces (Exaggerated)")
 plot!(size = (800, 600))
 plot!()

@@ -16,7 +16,10 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweep_LEs = [6.39])
+             sweep_LEs = [6.39],
+             position  = [4., 0, 0],
+             angle 	   = -2.,
+             axis      = [0., 1., 0.])
 print_info(htail, "Horizontal Tail")
 
 # Vertical tail
@@ -25,7 +28,10 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97])
+                 sweep_LEs = [7.97],
+                 position  = [4., 0, 0],
+                 angle     = 90., 
+                 axis      = [1., 0., 0.])
 print_info(vtail, "Vertical Tail")
 
 ## Assembly
@@ -36,22 +42,16 @@ wing_panels, wing_normals  = panel_wing(wing,                 # Wing or HalfWing
                                        )
 
 htail_panels, htail_normals = panel_wing(htail, [6], 6;
-                                         position = [4., 0, 0],
-                                         angle 	  = deg2rad(-2.),
-                                         axis     = [0., 1., 0.],
                                          spacing  = "uniform"
                                         )
 
-vtail_panels, vtail_normals = panel_wing(vtail, [6], 5; 
-                                         position = [4., 0, 0],
-                                         angle    = π/2, 
-                                         axis     = [1., 0., 0.],
+vtail_panels, vtail_normals = panel_wing(vtail, [6], 5;
                                          spacing  = "uniform"
                                         )
 
-aircraft = Dict("Wing"             => (wing_panels,  wing_normals),
-                "Horizontal Tail"  => (htail_panels, htail_normals),
-                "Vertical Tail"    => (vtail_panels, vtail_normals))
+aircraft = Dict("Wing"             => Horseshoe.(wing_panels,  wing_normals),
+                "Horizontal Tail"  => Horseshoe.(htail_panels, htail_normals),
+                "Vertical Tail"    => Horseshoe.(vtail_panels, vtail_normals))
 
 ## Case
 ac_name = "My Aircraft"
@@ -71,7 +71,7 @@ fs      = Freestream(V, α, β, Ω)
                chord_ref   = c, 		# Reference chord
                name        = ac_name,	# Aircraft name
                print       = true,		# Prints the results for the entire aircraft
-            #    print_components = true,	# Prints the results for each component
+               print_components = true,	# Prints the results for each component
               );
 
 ## Data collection
@@ -123,11 +123,12 @@ streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 
 ##
 using Plots
-gr(dpi = 300)
+plotlyjs(size = (1280, 720), dpi = 300)
 
 ##
 aircraft_panels  = [ wing_panels[:]; htail_panels[:]; vtail_panels[:] ]
-horseshoe_coords = plot_panels(aircraft_panels);
+horseshoe_coords = plot_panels(aircraft_panels)
+horseshoe_points = Tuple.(horseshoe_point.(aircraft_panels))[:];
 
 z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
@@ -138,6 +139,7 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      size = (1280, 720)
     )
 plot!.(horseshoe_coords, color = :gray, label = :none)
+scatter!(horseshoe_points, marker = 1, color = :black, label = :none)
 plot!.(streams, color = :green, label = :none)
 plot!()
 
@@ -149,10 +151,7 @@ CDis     = @. getindex(wind_CFs, 1)
 CYs	     = @. getindex(wind_CFs, 2)
 CLs      = @. getindex(wind_CFs, 3)
 
-hs_pts = bound_leg_center.(horses)
-hs_xs  = getindex.(hs_pts, 1)
-hs_ys  = getindex.(hs_pts, 2)
-hs_zs  = getindex.(hs_pts, 3)
+hs_pts = Tuple.(bound_leg_center.(horses))[:]
 
-quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(CDis[:], CYs[:], CLs[:]) .* 500)
+quiver!(hs_pts, quiver=(CDis[:], CYs[:], CLs[:]) .* 500)
 plot!()

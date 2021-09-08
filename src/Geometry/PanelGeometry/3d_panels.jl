@@ -47,7 +47,7 @@ wetted_area(panels :: Matrix{<: Panel3D}) = sum(panel -> panel_area(panel), pane
 
 Compute the coordinates of a Panel3D.
 """
-panel_coords(panel :: Panel3D) = structtolist(panel)
+panel_coords(panel :: Panel3D) = [ p1(panel), p2(panel), p3(panel), p4(panel) ]
 
 """
     make_panels(xyzs)
