@@ -51,6 +51,14 @@ function body_to_earth_rates(Φs)
 	  0	sφ / cθ	cφ / cθ ]
 end
 
+function quaternion_matrix(ω)
+	ω1, ω2, ω3 = ω ./ 2
+	@SMatrix [ 0  -ω1 -ω2 -ω3 ;
+			   ω1  0   ω3 -ω2 ; 
+			   ω2 -ω3  0   ω1 ;  
+			   ω3  ω2 -ω1  0  ]
+end
+
 # Kinematic equations
 linear_momentum_body_axes(F, g, mass, U, a, Ω) = F + mass * (g - a + Ω × U)
 angular_momentum_body_axes(M, I, Ω, α, h) = M - I * α + Ω × (I * Ω + h)
