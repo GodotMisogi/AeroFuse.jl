@@ -175,6 +175,39 @@ println("Angle of attack: $(rad2deg(α_opt))ᵒ")
 df = DataFrame(permutedims([ fem_loads; dx ]), :auto)
 rename!(df, [:Fx, :Fy, :Fz, :Mx, :My, :Mz, :dx, :dy, :dz, :θx, :θy, :θz])
 
+## Fuel burn computation
+#==========================================================================================#
+
+# Aircraft assembly
+aircraft = Dict("Wing" => Horseshoe.(new_panels, new_normals))
+
+## Evaluate case
+@time data = solve_case(aircraft, fs; 
+                        rho_ref     = ρ,
+                        r_ref       = ref,
+                        area_ref    = projected_area(wing),
+                        span_ref    = span(wing),
+                        chord_ref   = mean_aerodynamic_chord(wing),
+                        print       = true,
+                       );
+
+## Get coefficients
+nf_coeffs = data["Wing"][1]
+CD, CL    = nf_coeffs[[1,3]]
+
+## Compute fuel burn using Bréguet equation
+fuel_fractions(ffs) = 1 - prod(ffs)
+breguet_fuel_fraction(R, V, SFC, CD, CL) = exp(-R * SFC / (V * (CL / CD)))
+breguet_fuel_burn(W, args...) = W * (1 - breguet_fuel_fraction(args...))
+
+
+SFC = 0.001
+R  = 50000
+Ws = 0
+
+m_f = breguet_fuel_burn(weight, R, V, SFC, CD, CL)
+
+
 ## Plotting
 #==========================================================================================#
 
