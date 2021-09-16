@@ -1,6 +1,25 @@
 using AeroMDAO
 using Test
 
+@testset "NACA-4 Doublet-Source Panel Method" begin
+    # Define airfoil
+    airfoil = (Foil ∘ naca4)((0,0,1,2))
+
+    # Define uniform flow
+    uniform = Uniform2D(1., 0.)
+
+    # Evaluate case
+    cl_1, cls_1, cms_1, cps_1, panels = solve_case(airfoil, uniform; num_panels = 80)
+
+    # α = 5ᵒ
+    uniform = Uniform2D(1., 5.)
+    cl_2, cls_2, cms_2, cps_2, panels = solve_case(airfoil, uniform; num_panels = 80)
+
+    @test cl_1       ≈ 0.0       atol = 1e-6
+    @test cl_2       ≈ 0.5996184 atol = 1e-6
+    @test sum(cls_2) ≈ 0.6007449 atol = 1e-6
+end
+
 @testset "Airfoil Processing and Doublet-Source Panel Method" begin
     # Import and read airfoil coordinates
     coo_foil  = naca4(2,4,1,2)
@@ -17,7 +36,7 @@ using Test
     alpha_l = coords_to_CST(low, num_dv)
 
     # Generate same airfoil using Kulfan CST parametrisation
-    cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), 0.0)
+    cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.))
 
     # Test coefficients
     uniform  = Uniform2D(1., 5.)
