@@ -1,14 +1,15 @@
 ## Aircraft analysis case
 using AeroMDAO
 
-## Wing
+## Lifting surfaces
+
+# Wing
 wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
             chords    = [1.0, 0.6, 0.2],
             twists    = [2.0, 0.0, -2.0],
             spans     = [4.0, 0.2],
             dihedrals = [5., 30.],
             sweep_LEs = [5., 30.]);
-print_info(wing, "Wing")
 
 # Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
@@ -20,7 +21,6 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              position  = [4., 0, 0],
              angle 	   = -2.,
              axis      = [0., 1., 0.])
-print_info(htail, "Horizontal Tail")
 
 # Vertical tail
 vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
@@ -32,13 +32,17 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  position  = [4., 0, 0],
                  angle     = 90., 
                  axis      = [1., 0., 0.])
+
+# Print info
+print_info(wing, "Wing")
+print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
 ## Assembly
 wing_panels, wing_normals  = panel_wing(wing,                 # Wing or HalfWing type
                                         [20, 3],              # Number of spanwise panels for half-wing 
                                         10;                   # Chordwise panels 
-                                        # spacing = "cosine"    # Spacing distribution: Default works well for symmetric
+                                        # spacing = "cosine"  # Spacing distribution: Default works well for symmetric
                                        )
 
 htail_panels, htail_normals = panel_wing(htail, [6], 6;
@@ -53,11 +57,14 @@ aircraft = Dict("Wing"             => Horseshoe.(wing_panels,  wing_normals),
                 "Horizontal Tail"  => Horseshoe.(htail_panels, htail_normals),
                 "Vertical Tail"    => Horseshoe.(vtail_panels, vtail_normals))
 
+wing_mac = mean_aerodynamic_center(wing)
+x_w     = wing_mac[1]
+
 ## Case
 ac_name = "My Aircraft"
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 1.225
-ref     = [0.25c, 0., 0.]
+ref     = [ x_w, 0., 0.]
 V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
@@ -123,7 +130,7 @@ streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 
 ##
 using Plots
-plotlyjs(size = (1280, 720), dpi = 300)
+gr(size = (1280, 720), dpi = 300)
 
 ##
 aircraft_panels  = [ wing_panels[:]; htail_panels[:]; vtail_panels[:] ]

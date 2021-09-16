@@ -3,15 +3,16 @@ using AeroMDAO
 using DataFrames
 using Plots
 
-## Wing
+## Lifting surfaces
+
+# Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
 wing       = Wing(foils     = wing_foils,
                   chords    = [1.0, 0.6],
                   twists    = [0.0, 0.0],
                   spans     = [5.0],
-                  dihedrals = [11.3],
+                  dihedrals = [0.],
                   sweep_LEs = [2.29]);
-print_info(wing, "Wing")
 
 # Horizontal tail
 htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
@@ -20,8 +21,11 @@ htail       = Wing(foils     = htail_foils,
                    twists    = [0.0, 0.0],
                    spans     = [1.25],
                    dihedrals = [0.],
-                   sweep_LEs = [6.39])
-print_info(htail, "Horizontal Tail")
+                   sweep_LEs = [6.39],
+                   position	 = [4., 0, 0],
+                   angle     = deg2rad(-0.),
+                   axis      = [0., 1., 0.])
+
 
 # Vertical tail
 vtail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
@@ -30,27 +34,25 @@ vtail = HalfWing(foils     = vtail_foils,
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97])
+                 sweep_LEs = [7.97],
+                 position  = [4., 0, 0],
+                 angle     = 90., 
+                 axis      = [1., 0., 0.])
+
+# Print info
+print_info(wing, "Wing")
+print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
 # Assembly
-wing_panels  = panel_wing(wing, [20], 10);
-htail_panels = panel_wing(htail, [12], 12;
-                          position	= [4., 0, 0],
-                          angle 	= deg2rad(-0.),
-                          axis 	  	= [0., 1., 0.]
-                         )
-vtail_panels = panel_wing(vtail, [12], 10; 
-                          position 	= [4., 0, 0],
-                          angle 	= π/2, 
-                          axis 	 	= [1., 0., 0.]
-                         )
+wing_panels, wing_normals   = panel_wing(wing, [20], 10)
+htail_panels, htail_normals = panel_wing(htail, [12], 12)
+vtail_panels, vtail_normals = panel_wing(vtail, [12], 10)
 
-aircraft = Dict(
-                "Wing" 			  	=> wing_panels,
-                # "Horizontal Tail" 	=> htail_panels,
-                # "Vertical Tail"   	=> vtail_panels
-                )
+aircraft = Dict("Wing"            => Horseshoe.(wing_panels,  wing_normals ),
+                "Horizontal Tail" => Horseshoe.(htail_panels, htail_normals),
+                "Vertical Tail"   => Horseshoe.(vtail_panels, vtail_normals))
+
 
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
 
@@ -66,7 +68,7 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
                       );
     
     # Get data
-    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs = data["Aircraft"]
+    nf_coeffs, ff_coeffs = data["Aircraft"][1:2]
 
     # Filter relevant data
     [ ff_coeffs; nf_coeffs[4:6] ]
@@ -89,6 +91,6 @@ data = DataFrame([ (α, CD, CY, CL, Cl, Cm, Cn) for (α, (CD, CY, CL, Cl, Cm, Cn
 rename!(data, [:α, :CD, :CY, :CL, :Cl, :Cm, :Cn])
 
 ##
-plotly(dpi = 300)
+pyplot(dpi = 300)
 plot(xlabel = "CD", ylabel = "CL", title = "Drag Polar")
 plot!(data[!,"CD"], data[!,"CL"], label = :none, marker = :dot)

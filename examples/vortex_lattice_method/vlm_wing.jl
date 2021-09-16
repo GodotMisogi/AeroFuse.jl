@@ -59,7 +59,7 @@ print_derivatives(dvs, "Wing")
 ## Plotting
 using StaticArrays
 using Plots
-gr(dpi = 300)
+gr()
 
 ## Streamlines
 
@@ -83,7 +83,8 @@ streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 ## Display
 horseshoe_coords = plot_panels(horseshoe_panels[:])
 wing_coords      = plot_wing(wing);
-horseshoe_points = Tuple.(horseshoe_point.(horseshoe_panels))[:]
+horseshoe_points = Tuple.(horseshoe_point.(horseshoe_panels))
+ys               = getindex.(horseshoe_points[1,:], 2)
 
 ## Coordinates
 z_limit = 5
@@ -93,7 +94,7 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      zlim = (-0.1, z_limit),
      size = (800, 600))
 plot!.(horseshoe_coords, color = :black, label = :none)
-scatter!(horseshoe_points, marker = 1, color = :black, label = :none)
+scatter!(horseshoe_points[:], marker = 1, color = :black, label = :none)
 plot!.(streams, color = :green, label = :none)
 plot!()
 
@@ -109,13 +110,13 @@ span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
 span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
 CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * fs.V * c)
 
-plot_CD = plot(ys[1,:], span_CDis, label = :none, ylabel = "CDi")
-plot_CY = plot(ys[1,:], span_CYs, label = :none, ylabel = "CY")
+plot_CD = plot(ys, span_CDis, label = :none, ylabel = "CDi")
+plot_CY = plot(ys, span_CYs, label = :none, ylabel = "CY")
 plot_CL = begin
-            plot(ys[1,:], span_CLs, label = :none, xlabel = "y", ylabel = "CL")
-            plot!(ys[1,:], CL_loadings, label = "Normalized", xlabel = "y")
+            plot(ys, span_CLs, label = :none, xlabel = "y", ylabel = "CL")
+            plot!(ys, CL_loadings, label = "Normalized", xlabel = "y")
           end
-plot(plot_CD, plot_CY, plot_CL, layout = (3,1))
+plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 
 ## Lift distribution
 
@@ -131,4 +132,3 @@ plot!.(horseshoe_coords, color = :gray, label = :none)
 # scatter!(cz_pts, zcolor = CLs[:], marker = 2, label = "CL (Exaggerated)")
 quiver!(hs_pts, quiver=(CDis[:], CYs[:], CLs[:]) .* 100, label = "Forces (Exaggerated)")
 plot!(size = (800, 600))
-plot!()

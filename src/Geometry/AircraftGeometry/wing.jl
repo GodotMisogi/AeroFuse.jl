@@ -23,13 +23,16 @@ spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)	  ; (spans
 dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dihedrals ∘ right)(wing) ]
 sweeps(wing :: Wing)    = @views [ (reverse ∘ sweeps ∘ left)(wing)    ; (sweeps ∘ right)(wing)    ]
 
+Base.position(wing :: Wing)     = (position ∘ right)(wing)
+orientation(wing :: Wing)  = (orientation ∘ right)(wing)
+
 affine_transformation(wing :: Wing) = affine_transformation(right(wing))
 
 # Symmetric wing
 Wing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4((0,0,1,2))), length(chords)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = let w = HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, sweep_LEs = sweep_LEs, position = position, angle = angle, axis = axis); Wing(w, w) end
 
 # Single section for convenience
-WingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2))) = let w = HalfWingSection(span = span / 2, dihedral = dihedral, sweep_LE = sweep_LE, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil); Wing(w, w) end
+WingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = let w = HalfWingSection(span = span / 2, dihedral = dihedral, sweep_LE = sweep_LE, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis); Wing(w, w) end
 
 """
     span(wing :: Wing)
@@ -72,4 +75,5 @@ end
 leading_edge(wing :: Wing)  = @views [ leading_edge(left(wing), true)[1:end-1,:] ; leading_edge(right(wing))  ]
 trailing_edge(wing :: Wing) = @views [ trailing_edge(left(wing), true)[1:end-1,:]; trailing_edge(right(wing)) ]
 
-mean_aerodynamic_center(wing :: Wing, factor = 0.25) = (mean_aerodynamic_center(right(wing), factor) .+ mean_aerodynamic_center(left(wing), factor)) ./ 2
+reflect_xz(vector) = SVector(vector[1], -vector[2], vector[3])
+mean_aerodynamic_center(wing :: Wing, factor = 0.25) = (mean_aerodynamic_center(right(wing), factor) .+ reflect_xz(mean_aerodynamic_center(left(wing), factor))) ./ 2
