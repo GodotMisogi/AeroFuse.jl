@@ -1,4 +1,4 @@
-## 
+##
 using Revise
 
 ##
@@ -27,7 +27,7 @@ _ndims(x) = Base.IteratorSize(x) isa Base.HasShape ? _ndims(Base.IteratorSize(x)
                         reshape(sum(y->y[n], dy; dims=dims), axes(xs[n]))
                     end
                 end
-                
+
 @Zygote.adjoint function Iterators.Zip(xs)
                     back(dy::NamedTuple{(:is,)}) = tuple(dy.is)
                     back(dy::AbstractArray) = ntuple(length(xs)) do d

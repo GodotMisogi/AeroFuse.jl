@@ -28,7 +28,7 @@ distmat(ps :: AbstractVector{Point}) = [ not_perimeter(p_i, p_j) for p_i in ps, 
 
 function funky(xs :: AbstractVector{<: Real}, ys :: AbstractVector{<: Real}, rhs :: AbstractVector{<: Real})
   ps = Point.(xs, ys)
-  inf = distmat(ps) 
+  inf = distmat(ps)
   boco = rhs
 
   φs = inf \ boco

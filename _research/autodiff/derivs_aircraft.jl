@@ -21,7 +21,7 @@ Zygote.gradient(arc_length ∘ TestFoil, x_coords) # PASSES FOR MATRIX
 
 ##
 struct TestFoils{T <: Real}
-	foils :: Vector{TestFoil{T}}
+    foils :: Vector{TestFoil{T}}
 end
 
 AeroMDAO.arc_length(fs :: TestFoils) = sum(arc_length, fs.foils)
@@ -117,34 +117,32 @@ df = ForwardDiff.gradient(arc_length ∘ (x -> winglord(x, length(cs))), xs)
 
 ## VLM
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
-	# Evaluate case
-	data = 	solve_case(aircraft, fs;
+    # Evaluate case
+    data =  solve_case(aircraft, fs;
                        rho_ref   = ρ,
                        r_ref     = ref,
                        area_ref  = S,
                        span_ref  = b,
                        chord_ref = c,
-                       print 	 = print
+                       print     = print
                       );
 
-	nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = data["Aircraft"]
+    nf_coeffs, ff_coeffs = data["Aircraft"][1:2]
 
-	[ ff_coeffs[1:3]; nf_coeffs[4:6] ]
+    [ ff_coeffs[1:3]; nf_coeffs[4:6] ]
 end
 
 function vlmer(x)
-	wing 		= winglord(x, length(cs))
-	wing_pos    = [0., 0., 0.]
-	ρ 			= 1.225
-	ref     	= zeros(3)
-	V, α, β 	= 1.0, 0.0, 0.0
-	Ω 			= zeros(3)
-	fs 	    	= Freestream(V, α, β, Ω)
-	S, b, c 	= projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
-	wing_panels = panel_wing(wing, [20], 10,
-                          	 position = wing_pos);
-	aircraft 	= Dict("Wing" => wing_panels)
-	results 	= vlm_analysis(aircraft, fs, ρ, ref, S, b, c)
+    wing        = winglord(x, length(cs))
+    ρ           = 1.225
+    ref         = zeros(3)
+    V, α, β     = 1.0, 0.0, 0.0
+    Ω           = zeros(3)
+    fs          = Freestream(V, α, β, Ω)
+    S, b, c     = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
+    wing_panels = panel_wing(wing, [20], 10);
+    aircraft    = Dict("Wing" => wing_panels)
+    results     = vlm_analysis(aircraft, fs, ρ, ref, S, b, c)
 end
 
 vlmer(xs)

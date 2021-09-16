@@ -10,7 +10,7 @@ struct Point
     x :: Real
     y :: Real
 end
-    
+
 width(p::Point) = p.x
 height(p::Point) = p.y
 
@@ -18,7 +18,7 @@ a::Point + b::Point = Point(width(a) + width(b), height(a) + height(b))
 a::Point - b::Point = Point(width(a) - width(b), height(a) - height(b))
 dist(p::Point) = sqrt(width(p)^2 + height(p)^2)
 zero(:: Point) = Point(0, 0)
-                
+
 
 @Zygote.adjoint width(p::Point) = p.x, x̄ -> (Point(x̄, 0),)
 @Zygote.adjoint height(p::Point) = p.y, ȳ -> (Point(0, ȳ),)
