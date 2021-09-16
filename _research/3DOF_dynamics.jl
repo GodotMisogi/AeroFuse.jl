@@ -1,6 +1,7 @@
 using AeroMDAO
 using NLsolve
 using DifferentialEquations
+using TaylorSeries
 using Plots
 
 ## Aerodynamic coefficients (convert to struct for generality)
@@ -59,7 +60,7 @@ end
 
 # Freestream transformations
 magnitude(U, W) = sqrt(U^2 + W^2)
-angle(U, W) = atan(W / U)
+angle(U, W) = atan(W, U)
 cartesian_to_freestream(u, w) = magnitude(u, w), angle(u, w)
 freestream_to_cartesian(V, α) = V * cos(α), V * sin(α)
 
@@ -69,11 +70,12 @@ rotation_2D(θ) = [ cos(θ) sin(θ) ;
 
 inverse_rotation_2D(θ) = rotation_2D(-θ)
 
+
 # Net forces
-translational_forces(T, D, L, W, α, Θ) = [T; 0] + rotation_2D(Θ) * [0; W] + rotation_2D(α) * [D; L]
-horizontal_forces(T, D, L, W, α, Θ) = T - D * cos(α) + L * sin(α) - W * sin(Θ)
-vertical_forces(D, L, W, α, Θ) = -D * sin(α) - L * cos(α) + W * cos(Θ)
-longitudinal_moment(M_A, T, Δ_zT) = M_A - T * Δ_zT
+translational_forces(T, D, L, W, α, Θ) = [T; 0] + rotation(Θ) * [0; W] + rotation(α) * [D; L]
+horizontal_forces(T, D, L, W, α, Θ)    = T - D * cos(α) + L * sin(α) - W * sin(Θ)
+vertical_forces(D, L, W, α, Θ)         = -D * sin(α) - L * cos(α) + W * cos(Θ)
+longitudinal_moment(M_A, T, Δ_zT)      = M_A - T * Δ_zT
 
 ## Trim analysis
 #===========================================================================#
@@ -229,8 +231,13 @@ prob = ODEProblem(ode, x_init, tspan, ps)
 ## ODE solution
 sol = solve(prob)
 
+## Sensitivity analysis
+# dg(out,u,p,t,i) = (out.=1.0.-u)
+# ts = 0:0.5:100
+# du0, dp = adjoint_sensitivities(sol, RK4(), dg, ts; sensealg=ZygoteAdjoint())
+
 ## Plotting
-unicodeplots()
+pyplot()
 
 ##
-plot(sol, vars = [1,2,3,4,5,6], layout = (3,2))
+plot(sol, vars = [1,2,3,4,5,6], layout = (2,3))
