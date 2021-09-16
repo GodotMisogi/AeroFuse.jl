@@ -43,7 +43,6 @@ vtail = HalfWingSection(span       = 0.8,
                         position   = [5., 0., 0.],
                         angle      = 90.,
                         axis       = [1., 0., 0.])
-vtail_plan = plot_wing(vtail)
 
 # Print info
 print_info(wing, "Wing")
@@ -142,6 +141,8 @@ using Plots
 pyplot()
 
 wing_plan = plot_wing(wing)
+htail_plan = plot_wing(htail)
+vtail_plan = plot_wing(vtail)
 
 #
 z_limit = b
