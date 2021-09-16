@@ -69,7 +69,17 @@ affine_2D(x, y, x_s, y_s, α_s) 	= rotation(x - x_s, y - y_s, α_s)
 inverse_rotation(x, y, angle) 	= SVector(x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle))
 rotation(x, y, angle) 			= SVector(x * cos(angle) + y * sin(angle), -x * sin(angle) + y * cos(angle))
 
-slope(x1, y1, x2, y2) 			= (y2 - y1) / (x2 - x1)
+# Matrix versions
+rotation(θ)         = [ cos(θ) sin(θ) ;
+                       -sin(θ) cos(θ) ]
+inverse_rotation(θ) = rotation(-θ)
+
+# Cartesian-polar coordinates
+magnitude(U, W) = sqrt(U^2 + W^2)
+angle(U, W) = atan(W, U)
+
+
+slope(x1, y1, x2, y2) = (y2 - y1) / (x2 - x1)
 
 ## Array conversions
 #===========================================================================#

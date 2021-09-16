@@ -32,15 +32,6 @@ CM_Q̂  = -7.055 # Moment-dynamic pressure derivative
 moment_coefficient(α, δe, q̂, CM_0, CM_α, CM_δe, CM_q̂) = CM_0 + CM_α * α + CM_δe * δe + CM_q̂ * q̂
 moment_coefficient(α, δe, Q̂) = moment_coefficient(α, δe, Q̂, CM_0, CM_α, CM_δe, CM_Q̂)
 
-# Pitch rate coefficient
-pitch_rate_coefficient(Q, c_ref, V_ref) = Q * c_ref / V_ref
-
-# Garbage
-force(CF, q, S)        = q * S * CF
-force(CF, ρ, V, S)     = force(CF, dynamic_pressure(ρ, V), S)
-moment(CM, q, S, c)    = force(CM, q, S) * c
-moment(CM, ρ, V, S, c) = moment(CM, dynamic_pressure(ρ, V), S, c)
-
 function compute_aerodynamics(α, δe, q̂, q∞, S_ref, c_ref)
 	# Compute aerodynamic coefficients from Taylor series approximations
 	CD =   drag_coefficient(α)
@@ -57,19 +48,6 @@ end
 
 ## Equations of motion
 #===========================================================================#
-
-# Freestream transformations
-magnitude(U, W) = sqrt(U^2 + W^2)
-angle(U, W) = atan(W, U)
-cartesian_to_freestream(u, w) = magnitude(u, w), angle(u, w)
-freestream_to_cartesian(V, α) = V * cos(α), V * sin(α)
-
-# Rotations
-rotation_2D(θ) = [ cos(θ) sin(θ) ;
-                  -sin(θ) cos(θ) ]
-
-inverse_rotation_2D(θ) = rotation_2D(-θ)
-
 
 # Net forces
 translational_forces(T, D, L, W, α, Θ) = [T; 0] + rotation(Θ) * [0; W] + rotation(α) * [D; L]
@@ -111,7 +89,7 @@ function compute_dynamics(Q, α, δe, T_in, mass, g, ρ, V_ref, S_ref, c_ref)
 	q∞ = dynamic_pressure(ρ, V_ref)
 	
 	# Aerodynamic forces and moment
-	Q̂       = pitch_rate_coefficient(Q, V_ref, c_ref)
+	Q̂       = rate_coefficient(Q, V_ref, c_ref)
 	D, L, M = compute_aerodynamics(α, δe, Q̂, q∞, S_ref, c_ref)
 	
 	# Propulsive forces 
@@ -153,7 +131,7 @@ function longitudinal_equations_of_motion!(dx, x, params, t)
     dx[3]   = longitudinal_moment(M, T, Δ_zT) / Iyy
 	
 	# Coordinate transformations to Earth axes
-    dx[4:5] = inverse_rotation_2D(Θ) * x[1:2]
+    dx[4:5] = inverse_rotation(Θ) * x[1:2]
 	
 	# Pitch rate
 	dx[6]   = Q
@@ -203,7 +181,7 @@ T_s, δe_s, Θ_s = trim_state = res_trim.zero
 
 ## ODE integration
 
-# Initial state
+# Initial state setup
 Δδe            = deg2rad(-1.)
 δe_init        = δe_s + Δδe
 
@@ -217,7 +195,7 @@ z_e_init       = 0.
 Q_init         = 0
 T_init         = T_s
 
-
+# ODE initial state
 x_init = [ u_init, w_init, Q_init, x_e_init, z_e_init, Θ_init, δe_init ]
 ps     = [ mass, g, Iyy, Δ_zT, T_init, ρ, S_ref, c_ref ]
 tspan  = (0, 100.)

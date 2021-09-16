@@ -43,7 +43,6 @@ moment_coefficient(moment, q, S, b, c) = moment_coefficient.(moment, q, S, [b, c
 
 rate_coefficient(Ω, V, b, c) = rate_coefficient.(Ω, V, [b, c, b])
 
-
 """
     aerodynamic_coefficients(force, moment, Ω, V, S, b, c, ρ)
 
