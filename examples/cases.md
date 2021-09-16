@@ -36,7 +36,7 @@ foil    = kulfan_CST(alpha_u, alpha_l, dzs, 0.2)
 *Camber-Thickness Representation*
 ```julia
 foil_camthick(coords	  :: Array{2, Real},  # 2D coordinates
-              num = 40	  :: Integer)         # Number of points for distributions
+              num = 40	  :: Integer)       # Number of points for distributions
 ```
 
 ```julia
@@ -45,13 +45,13 @@ coords    = read_foil(foilpath)           # Read coordinates file
 cos_foil  = cosine_foil(coords, 51)       # Cosine spacing with 51 points on upper and lower surfaces
 xcamthick = foil_camthick(cos_foil)       # Convert to camber-thickness representation
 foiler    = camthick_foil(xcamthick[:,1], # x-components
-                          xcamthick[:,2],	# Camber distribution
-                          xcamthick[:,3])	# Thickness distribution
+                          xcamthick[:,2], # Camber distribution
+                          xcamthick[:,3]) # Thickness distribution
 ```
 
 ## Doublet-Source Panel Method
 
-AeroMDAO provides convenience functions using its specific types for analyses.
+AeroMDAO provides convenient functions using its specific types for analyses.
 
 The `Foil` type converts the coordinates into a friendly type for analyses.
 
@@ -84,6 +84,8 @@ cl, cls, cms, cps, panels =
              num_panels = 80)
 ```
 
+_Disclaimer_: Only sharp trailing edge airfoils are supported for now. Blunt trailing edge support will be added soon.
+
 ## Wing Parametrization
 
 The following image depicts the parametrization schema used for wing planforms in terms of nested trapezoids.
@@ -98,7 +100,10 @@ HalfWing(foils     :: Vector{Foil}, # Foil profiles
          twists	   :: Vector{Real}, # Twist angles (deg)
          spans	   :: Vector{Real}, # Section span lengths
          dihedrals :: Vector{Real}, # Dihedral angles (deg)
-         sweeps	   :: Vector{Real}) # Leading-edge sweep angles (deg)
+         sweeps	   :: Vector{Real}, # Leading-edge sweep angles (deg)
+         position  = [0., 0., 0.],  # Global leading edge position
+         angle     = 0.,            # Angle of rotation (deg)
+         axis      = [0., 1., 0.],  # Axis/plane of rotation about leading edge
 ```
 
 We can create a `Wing` by feeding two `HalfWing`s to it.
@@ -124,10 +129,11 @@ wing       = Wing(wing_right, wing_right)
 We can obtain the relevant geometric information of the wing for design analyses by calling convenience methods, which automatically perform the necessary calculations on the nested trapezoidal planforms.
 
 ```julia
-b  = span(wing)
-S  = projected_area(wing)
-c  = mean_aerodynamic_chord(wing)
-AR = aspect_ratio(wing)
+b   = span(wing)
+S   = projected_area(wing)
+AR  = aspect_ratio(wing)
+c   = mean_aerodynamic_chord(wing)
+mac = mean_aerodynamic_center(wing)
 ```
 
 There is also a convenient function for printing this information, whose last optional argument provides the name of the wing. [Pretty Tables](https://github.com/ronisbr/PrettyTables.jl) is used for pretty-printing.
@@ -155,8 +161,8 @@ U = 10.0
 
 freestream = Freestream(U, α, β, Ω);
 
-ρ = 1.225
-r_ref = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
+ρ     = 1.225
+r_ref = [ mean_aerodynamic_center(wing)[1], 0., 0.]
 ```
 
 Now we run the case with specifications of the number of spanwise and chordwise panels by calling the `solve_case()` function, which has an associated method.
@@ -180,7 +186,7 @@ The method uses the planform of the wing to compute the horseshoe elements, and 
 
 A "viscous" analysis is also supported using traditional wetted-area methods based on the equivalent skin-friction drag formulation of Schlichting, which have limited applicability due to their reliance on empirical form factors. The transition locations over each section can be specified as a vector of fractions of the normalized local average chord lengths of each section, or alternatively as a number for fixing it at approximately the same local average fraction over all sections.
 
-It returns the nearfield and farfield coefficients, the non-dimensionalised force and moment coefficients over the panels, the panels used for the horseshoe elements, the camber panels, the horseshoe elements used for plotting streamlines, and the associated vortex strengths `Γs` corresponding to the solution of the system. The following [example script](vortex_lattice_method/vlm_wing.jl) is provided for reference.
+The analysis returns the nearfield and farfield coefficients, the non-dimensionalised force and moment coefficients over the panels, the panels used for the horseshoe elements, the camber panels, the horseshoe elements used for plotting streamlines, and the associated vortex strengths `Γs` corresponding to the solution of the system. The following [example script](vortex_lattice_method/vlm_wing.jl) is provided for reference.
 ```julia
 nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs =
     solve_case(wing, freestream;
@@ -229,23 +235,20 @@ print_derivatives(dv_coeffs, "Wing")
 
 ### Aircraft Analysis
 
-Aircraft analysis by definition of multiple lifting surfaces using the `HalfWing` or `Wing` types are also supported, but is slightly more complex due to the increases in user specifications. Particularly, you will have to mesh the different components by yourself by specifying the number of chordwise panels, spanwise panels and their associated spacings, the position, and the orientation in the angle-axis representation.
+Aircraft analysis by definition of multiple lifting surfaces using the `HalfWing` or `Wing` types are also supported, but is slightly more complex due to the increases in user specifications. Particularly, you will have to mesh the different components yourself by specifying the number of chordwise panels, spanwise panels and their associated spacing distributions.
 
 ```julia
-panel_wing(wing                    :: Union{HalfWing, Wing},
-           span_num,               :: Union{Integer, Vector{<: Integer}},
-           chord_num               :: Integer;
-           spacing  = "cosine"     :: Union{String, Vector{String}}
-           position	= [0., 0., 0.]
-           angle 	= 0.,
-           axis     = [1., 0., 0.]
+panel_wing(wing                :: Union{HalfWing, Wing},
+           span_num,           :: Union{Integer, Vector{<: Integer}},
+           chord_num           :: Integer;
+           spacing  = "cosine" :: Union{String, Vector{String}} # Options: "uniform", "sine", "cosine"
           )
 ```
 
 This method returns the horseshoe panels for the analysis, and the associated normal vectors based on the camber distribution of the wing. Consider a case in which you have a wing, horizontal tail, and vertical tail.
 
 ```julia
-## Wing
+# Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
 wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
             chords    = [1.0, 0.6, 0.2],
@@ -253,7 +256,6 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
             spans     = [5.0, 0.5],
             dihedrals = [5., 5.],
             sweep_LEs = [5., 5.]);
-print_info(wing, "Wing")
 
 # Horizontal tail
 htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
@@ -262,8 +264,10 @@ htail = Wing(foils     = htail_foils,
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweep_LEs = [6.39])
-print_info(htail, "Horizontal Tail")
+             sweep_LEs = [6.39],
+             position  = [4., 0, 0],
+             angle     = -2.,
+             axis      = [0., 1., 0.])
 
 # Vertical tail
 vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
@@ -272,33 +276,33 @@ vtail = HalfWing(foils     = vtail_foils,
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97])
+                 sweep_LEs = [7.97],
+                 position  = [4., 0, 0],
+                 angle     = 90.,
+                 axis      = [1., 0., 0.])
+
+print_info(wing, "Wing")
+print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
 # Assembly
-wing_panels  = panel_wing(wing, [20, 5], 10;
-                        #   spacing = "uniform"
-                          )
-htail_panels = panel_wing(htail, [6], 6;
-                          position	= [4., 0, 0],
-                          angle 	= deg2rad(-2.),
-                          axis 	  	= [0., 1., 0.],
-                        #   spacing = "uniform"
-                         )
-vtail_panels = panel_wing(vtail, [6], 5;
-                          position 	= [4., 0, 0],
-                          angle 	= π/2,
-                          axis 	 	= [1., 0., 0.],
-                        #   spacing = "uniform"
-                         )
+wing_panels , wing_normals  = panel_wing(wing, [20, 5], 10;
+                                         spacing = "uniform"
+                                        )
+htail_panels, htail_normals = panel_wing(htail, [6], 6);
+                                         spacing = "uniform"
+                                        )
+vtail_panels, vtail_normals = panel_wing(vtail, [6], 5;
+                                         spacing = "uniform"
+                                        )
 ```
 
 To prepare the analyses, you will have to assemble this information into a dictionary, where the keys are the names of the components.
 
 ```julia
-aircraft = Dict("Wing"            => wing_panels,
-                "Horizontal Tail" => htail_panels,
-                "Vertical Tail"   => vtail_panels)
+aircraft = Dict("Wing"            => Horseshoe.(wing_panels,  wing_normals ),
+                "Horizontal Tail" => Horseshoe.(htail_panels, htail_normals),
+                "Vertical Tail"   => Horseshoe.(vtail_panels, vtail_normals))
 ```
 
 Very similarly to the wing-only case, there is an associated `solve_case()` method which takes a dictionary of the panels and normal vectors, and the reference data for computing the non-dimensional coefficients:
@@ -310,36 +314,40 @@ V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
-ref     = [0.25c, 0., 0.]
+S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
+wing_mac = mean_aerodynamic_chord(wing) 
+x_w      = wing_mac[1]
+ref      = [ x_w, 0., 0.]
 
 data =
     solve_case(aircraft, fs;
-               rho_ref          = ρ, 		# Reference density
-               r_ref            = ref, 		# Reference point for moments
-               area_ref         = S, 		# Reference area
-               span_ref         = b, 		# Reference span
-               chord_ref        = c, 		# Reference chord
-               name             = ac_name,	# Aircraft name
-               print            = true,		# Prints the results for the entire aircraft
-               print_components = true,	    # Prints the results for each component
+               rho_ref          = ρ,        # Reference density
+               r_ref            = ref,      # Reference point for moments
+               area_ref         = S,        # Reference area
+               span_ref         = b,        # Reference span
+               chord_ref        = c,        # Reference chord
+               name             = ac_name,  # Aircraft name
+               print            = true,     # Prints the results for the entire aircraft
+               print_components = true,     # Prints the results for each component
               );
 ```
 
-And similarly for obtaining the stability derivatives. A unique feature which is not easily obtained from other implementations (really? should check...) is the stability derivatives of each component:
+And similarly for obtaining the stability derivatives. A unique feature which is not easily obtained from other implementations (really? should check...) is the stability derivatives of each component thanks to the automatic differentiation setup:
 
 ```julia
 dv_data =
     solve_stability_case(aircraft, fs;
-                         rho_ref     = ρ,
-                         r_ref       = ref,
-                         area_ref    = S,
-                         span_ref    = b,
-                         chord_ref   = c,
-                         name        = ac_name,
-                         print       = true,
+                         rho_ref          = ρ,
+                         r_ref            = ref,
+                         area_ref         = S,
+                         span_ref         = b,
+                         chord_ref        = c,
+                         name             = ac_name,
+                         print            = true,
                          print_components = true,
                         );
 ```
 
 Documentation to be completed. For now, refer to these [analysis](vortex_lattice_method/vlm_aircraft.jl) and [stability analysis](vortex_lattice_method/stability_aircraft.jl) scripts with a full aircraft configuration. There's also an interesting test [surrogate model test script](vortex_lattice_method/surrogates.jl)!
+
+## Aerostructural Analysis
