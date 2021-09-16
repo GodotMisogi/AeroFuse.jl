@@ -81,13 +81,13 @@ function solve_problem(panels, u, α, sources :: Bool, wake_length)
 
     # Solve for doublet strengths
     φs 				= solve_strengths(panels, u, α, r_te, sources; bound = wake_length)
-    
+
     # Evaluate inviscid edge velocities
     u_es, Δrs 		= tangential_velocities(panels, φs, u, sources)
-    
-    # Compute coefficients 
+
+    # Compute coefficients
     cls, cms, cps 	= eval_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
-    
+
     # Evaluate lift coefficient from wake doublet strength
     cl_wake 		= lift_coefficient(φs[end] - φs[1] + φ_TE, speed)
 

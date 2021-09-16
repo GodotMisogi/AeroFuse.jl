@@ -36,7 +36,7 @@ foil    = kulfan_CST(alpha_u, alpha_l, dzs, 0.2)
 *Camber-Thickness Representation*
 ```julia
 foil_camthick(coords	  :: Array{2, Real},  # 2D coordinates
-              num = 40	  :: Integer)         # Number of points for distributions 
+              num = 40	  :: Integer)         # Number of points for distributions
 ```
 
 ```julia
@@ -53,17 +53,17 @@ foiler    = camthick_foil(xcamthick[:,1], # x-components
 
 AeroMDAO provides convenience functions using its specific types for analyses.
 
-The `Foil` type converts the coordinates into a friendly type for analyses. 
+The `Foil` type converts the coordinates into a friendly type for analyses.
 
 ```julia
 airfoil = naca4((2,4,1,2))
 foil    = Foil(airfoil)
 ```
 
-The `Uniform2D` type consists of the freestream speed and angle of attack. 
+The `Uniform2D` type consists of the freestream speed and angle of attack.
 
 ```julia
-V, α    = 1.0, 3.0 
+V, α    = 1.0, 3.0
 uniform = Uniform2D(V, α)
 ```
 
@@ -78,7 +78,7 @@ solve_case(foil            :: Foil,
 The method returns the lift coefficient calculated by the doublet strength of the wake panel, the lift, moment and pressure coefficients over the panels, and the panels generated for post-processing.
 
 ```julia
-cl, cls, cms, cps, panels = 
+cl, cls, cms, cps, panels =
   solve_case(foil,
              uniform;
              num_panels = 80)
@@ -182,14 +182,14 @@ A "viscous" analysis is also supported using traditional wetted-area methods bas
 
 It returns the nearfield and farfield coefficients, the non-dimensionalised force and moment coefficients over the panels, the panels used for the horseshoe elements, the camber panels, the horseshoe elements used for plotting streamlines, and the associated vortex strengths `Γs` corresponding to the solution of the system. The following [example script](vortex_lattice_method/vlm_wing.jl) is provided for reference.
 ```julia
-nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs = 
-    solve_case(wing, freestream; 
-               rho_ref   = ρ, 
+nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs =
+    solve_case(wing, freestream;
+               rho_ref   = ρ,
                r_ref     = r_ref,
                area_ref  = S,
                span_ref  = b,
                chord_ref = c,
-               span_num  = [15, 9], 
+               span_num  = [15, 9],
                chord_num = 6,
                viscous   = true,
                x_tr      = [0.3, 0.3]);
@@ -208,14 +208,14 @@ If the viscous option is enabled, this function also prints the pressure, induce
 AeroMDAO uses the [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl) package, which leverages forward-mode automatic differentiation to obtain the stability derviatives with respect to the angle of attack and sideslip and the non-dimensionalized roll rates at low computational cost. To obtain the stability derivatives, simply replace `solve_case()` with `solve_stability_case()`, which will return **only** the nearfield, farfield and stability derivative coefficients. This is due to limitations of using closures in `ForwardDiff`, and hence no post-processing values are provided using this function.
 
 ```julia
-nf_coeffs, ff_coeffs, dv_coeffs = 
-    solve_stability_case(wing, freestream; 
-                         rho_ref   = ρ, 
+nf_coeffs, ff_coeffs, dv_coeffs =
+    solve_stability_case(wing, freestream;
+                         rho_ref   = ρ,
                          r_ref     = r_ref,
                          area_ref  = S,
                          span_ref  = b,
                          chord_ref = c,
-                         span_num  = [15, 9], 
+                         span_num  = [15, 9],
                          chord_num = 6,
                          viscous   = false,
                          x_tr      = [0.3, 0.3]);
@@ -232,12 +232,12 @@ print_derivatives(dv_coeffs, "Wing")
 Aircraft analysis by definition of multiple lifting surfaces using the `HalfWing` or `Wing` types are also supported, but is slightly more complex due to the increases in user specifications. Particularly, you will have to mesh the different components by yourself by specifying the number of chordwise panels, spanwise panels and their associated spacings, the position, and the orientation in the angle-axis representation.
 
 ```julia
-panel_wing(wing                    :: Union{HalfWing, Wing}, 
+panel_wing(wing                    :: Union{HalfWing, Wing},
            span_num,               :: Union{Integer, Vector{<: Integer}},
            chord_num               :: Integer;
            spacing  = "cosine"     :: Union{String, Vector{String}}
            position	= [0., 0., 0.]
-           angle 	= 0.,          
+           angle 	= 0.,
            axis     = [1., 0., 0.]
           )
 ```
@@ -267,7 +267,7 @@ print_info(htail, "Horizontal Tail")
 
 # Vertical tail
 vtail_foils = Foil.(fill(naca4((0,0,0,9)), 2))
-vtail = HalfWing(foils     = vtail_foils, 
+vtail = HalfWing(foils     = vtail_foils,
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
@@ -285,9 +285,9 @@ htail_panels = panel_wing(htail, [6], 6;
                           axis 	  	= [0., 1., 0.],
                         #   spacing = "uniform"
                          )
-vtail_panels = panel_wing(vtail, [6], 5; 
+vtail_panels = panel_wing(vtail, [6], 5;
                           position 	= [4., 0, 0],
-                          angle 	= π/2, 
+                          angle 	= π/2,
                           axis 	 	= [1., 0., 0.],
                         #   spacing = "uniform"
                          )
@@ -313,8 +313,8 @@ fs      = Freestream(V, α, β, Ω)
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
 ref     = [0.25c, 0., 0.]
 
-data = 
-    solve_case(aircraft, fs; 
+data =
+    solve_case(aircraft, fs;
                rho_ref          = ρ, 		# Reference density
                r_ref            = ref, 		# Reference point for moments
                area_ref         = S, 		# Reference area
@@ -329,7 +329,7 @@ data =
 And similarly for obtaining the stability derivatives. A unique feature which is not easily obtained from other implementations (really? should check...) is the stability derivatives of each component:
 
 ```julia
-dv_data = 
+dv_data =
     solve_stability_case(aircraft, fs;
                          rho_ref     = ρ,
                          r_ref       = ref,

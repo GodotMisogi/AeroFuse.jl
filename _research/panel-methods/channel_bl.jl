@@ -18,8 +18,8 @@ u_edge(ρ_e, m_chan, h, δ_star) = m_chan / (ρ_e * (h - δ_star))
 
 function channel_flow(h, H, δ_star, H_star, dHstar_dH)
     β_Hs_H = H / H_star * dHstar_dH
-    B_δs_u = -δ_star / (h - δ_star) 
-   
+    B_δs_u = -δ_star / (h - δ_star)
+
     [   1       0   H + 2;
      -β_Hs_H β_Hs_H 1 - H;
         0    B_δs_u   1  ]
@@ -35,7 +35,7 @@ function solve_channel(ρ :: Real, h1 :: Real, u_invs :: Vector{<: Real}, xs :: 
 
     m_chan = ρ * u_invs[1] * h1
 
-    hs = h1 * u_invs[1] ./ u_invs    
+    hs = h1 * u_invs[1] ./ u_invs
 
     θ, δ = 0.2, 0.3
 
@@ -46,7 +46,7 @@ function solve_channel(m_chan :: Real, hs :: Vector{<: Real}, xs :: Vector{<: Re
     L = sum(xs)
     ν = 1.5e-5
 
-    u_invs = m_chan / ρ ./ hs    
+    u_invs = m_chan / ρ ./ hs
 
     θ, δ = 0.1, 0.2
 

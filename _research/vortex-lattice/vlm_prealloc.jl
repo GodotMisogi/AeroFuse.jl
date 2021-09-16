@@ -5,7 +5,6 @@
 function matrix_assembly!(AIC :: AbstractMatrix{<: Real}, boco, colpoints :: AbstractArray{<: SVector{3, <: Real}}, normals :: AbstractArray{<: SVector{3, <: Real}}, horseshoes :: Vector{<: Horseshoe}, U, Ω, V_hat)
     for i ∈ 1:length(colpoints)
         for j ∈ 1:length(horseshoes)
-            
             AIC[i,j] = dot(total_horseshoe_velocity(r1(colpoints[i], horseshoes[j]), r2(colpoints[i], horseshoes[j]), 1., V_hat), normals[i])
         end
         boco[i] = dot(velocities[i], normals[i])
@@ -46,7 +45,7 @@ end
 """
     solve_strengths_prealloc(panels, u, bound = 1e3)
 
-Solve the system of equations ``[AIC][\\phi] = [\\hat{U} \\cdot \\vec{n}]`` given the array of Panel2Ds, a freestream velocity vector ``u``, and an optional bound for the length of the wake. 
+Solve the system of equations ``[AIC][\\phi] = [\\hat{U} \\cdot \\vec{n}]`` given the array of Panel2Ds, a freestream velocity vector ``u``, and an optional bound for the length of the wake.
 """
 function solve_strengths_prealloc(panels, u, bound = 1e3)
     n = length(panels) + 1
@@ -94,7 +93,7 @@ function lift_coefficient_prealloc(panels, φs, u)
     panel_dists = (zeros ∘ length)(panels)
     panel_vels  = (zeros ∘ length)(panels)
     speed       = norm(u)
-    
+
     panel_distances!(panel_dists, panels)
     panel_velocities!(panel_vels, panels, φs[1:end-1], u)
     cps = @. pressure_coefficient(speed, panel_vels)
@@ -104,7 +103,7 @@ function lift_coefficient_prealloc(panels, φs, u)
 end
 
 # Pre-allocated versions
-# @timeit "Solve System (Pre-allocated)" 
+# @timeit "Solve System (Pre-allocated)"
 # φs = solve_strengths_prealloc(panels, u)
-# @timeit "Lift Coefficient (Pre-allocated)" 
+# @timeit "Lift Coefficient (Pre-allocated)"
 # cl = lift_coefficient_prealloc(panels, φs, u)

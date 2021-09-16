@@ -1,7 +1,7 @@
 ## Coordinates
 #==========================================================================================#
 
-wing_bounds(lead, trail) = permutedims([ lead trail ]) 
+wing_bounds(lead, trail) = permutedims([ lead trail ])
 
 chop_leading_edge(obj  :: HalfWing, span_num; y_flip = false) = chop_coordinates(leading_edge(obj, y_flip),  span_num)
 chop_trailing_edge(obj :: HalfWing, span_num; y_flip = false) = chop_coordinates(trailing_edge(obj, y_flip), span_num)

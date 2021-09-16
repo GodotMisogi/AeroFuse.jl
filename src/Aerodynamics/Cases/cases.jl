@@ -39,7 +39,7 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho
 
     # Compute forces and moments
     nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs = evaluate_case(horseshoe_panels, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
-    
+
     # Viscous drag evaluation
     if viscous
         # Compute profile drag via wetted-area equivalent skin-friction method
@@ -59,18 +59,18 @@ end
 function solve_case(components :: Dict{String, Matrix{Horseshoe{T}}}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false) where T <: Real
     # Unpack Freestream
     U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
-    
+
     # Evaluate case
     dict = evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref, name)
-    
+
     # Printing if needed
     if print_components
         vals = [ dict[key][1:2] for key in keys(dict) ]
         nf_comp_coeffs, ff_comp_coeffs = getindex.(vals, 1), getindex.(vals, 2)
         print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(dict))
     elseif print
-        nf_coeffs, ff_coeffs = dict[name][1:2] 
-        print_coefficients(nf_coeffs, ff_coeffs, name) 
+        nf_coeffs, ff_coeffs = dict[name][1:2]
+        print_coefficients(nf_coeffs, ff_coeffs, name)
     end
 
     dict

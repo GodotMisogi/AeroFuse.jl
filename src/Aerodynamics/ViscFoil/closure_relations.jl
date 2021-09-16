@@ -40,17 +40,17 @@ y_plus(u_t, μ_e, ρ_e, η) = ρ_e * u_t * η / μ_e
 
 # Velocity profile
 function turb_ue(Cf, θ, y_p, η, a, b)
-	uτ_ue = √(Cf / 2)
-	s 	  = Cf / abs(Cf)
+    uτ_ue = √(Cf / 2)
+    s 	  = Cf / abs(Cf)
 
-	uτ_ue * s / 0.09 * atan(0.09y_p) + (1 - uτ_ue * s * π / 0.18) * √(tanh(a * (η, θ)^b))
+    uτ_ue * s / 0.09 * atan(0.09y_p) + (1 - uτ_ue * s * π / 0.18) * √(tanh(a * (η, θ)^b))
 end
 
 # H*?
 function turb_H_star(H_k, Re_θ)
-	H_0 = ifelse(Re_θ < 400, 4, 3 + 400/Re_θ)
+    H_0 = ifelse(Re_θ < 400, 4, 3 + 400/Re_θ)
 
-	1.505 + 4/Re_θ + ifelse(H_k < H_0, (0.165 - 1.6/√Re_θ) * (H_0 - H_k)^1.6 / H_k, (H_k - H_0)^2 * (0.04 / H_k + 0.007log(10, Re_θ)/(H_k - H_0 + 4/log(10, Re_θ))^2))
+    1.505 + 4/Re_θ + ifelse(H_k < H_0, (0.165 - 1.6/√Re_θ) * (H_0 - H_k)^1.6 / H_k, (H_k - H_0)^2 * (0.04 / H_k + 0.007log(10, Re_θ)/(H_k - H_0 + 4/log(10, Re_θ))^2))
 end
 
 # CD
@@ -88,7 +88,7 @@ m(H_k) = (0.058(H_k - 4)^2 / (H_k - 1) - 0.068) / l(H_k)
 #============================================#
 
 # Cf = 2lam_CF(H) / Re
-cf(U_e, θ, H, ν = 1.5e-5) = 2 * lam_CF(H) / reynolds_number(U_e, θ, ν) 
+cf(U_e, θ, H, ν = 1.5e-5) = 2 * lam_CF(H) / reynolds_number(U_e, θ, ν)
 
 # CD = lam_H_star(H) * lam_CD(H) / 2Re
 cD(U_e, θ, H, ν) = lam_H_star(H) * lam_CD(H) / (2 * reynolds_number(U_e, θ, ν) )

@@ -25,14 +25,14 @@ b = @time neumann_boundary_condition(panels, velocity(uniform))
 cl = 2 * sum((fwdsum(γs) / 2) .* panel_length.(panels)) / uniform.mag
 
 ## Velocities and pressure coefficient
-# panel_vels = [ velocity(uniform) .+ sum(vortex_velocity.(γs[1:end-1], γs[2:end], panels, Ref(panel_i))) for panel_i in panels ] 
+# panel_vels = [ velocity(uniform) .+ sum(vortex_velocity.(γs[1:end-1], γs[2:end], panels, Ref(panel_i))) for panel_i in panels ]
 
 qts = γs
 cps = @. 1 - qts^2 / uniform.mag^2
 
 ## Pressure coefficient
 # upper, lower = get_surface_values(panels, cps)
-# upper, lower = [ upper; lower[1] ], [ lower; upper[1] ]  
+# upper, lower = [ upper; lower[1] ], [ lower; upper[1] ]
 # plot(first.(upper), last.(upper), label = "Upper")
 # plot(first.(lower), last.(lower), label = "Lower")
 

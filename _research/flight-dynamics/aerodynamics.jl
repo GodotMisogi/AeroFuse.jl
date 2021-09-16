@@ -5,9 +5,9 @@ function post_stall_CL(α, AR, CL_s, α_s)
     # Processing
     sα, cα     = sincos(α)
     sα_s, cα_s = sincos(α_s)
-    
+
     # Parameters
-    C1 = 1.1 + 0.018AR 
+    C1 = 1.1 + 0.018AR
     A1 = C1 / 2
     A2 = (CL_s - C1 * sα_s * cα_s) * sα_s / cα_s^2
 
@@ -29,7 +29,7 @@ function post_stall_CD(α, AR, CD_s, α_s, foil_tc)
     CD = B1 * sα + B2 * cα
 end
 
-lifting_line_slope(CLα, AR, e) = CLα / (1 + CLα/(π * e * AR)) 
+lifting_line_slope(CLα, AR, e) = CLα / (1 + CLα/(π * e * AR))
 induced_drag(CL, AR, e) = CL^2 / (π * e * AR)
 
 biplane_induced_drag(L, q, b, σ) = (1 + σ)/(π * q) * L^2 / b^2

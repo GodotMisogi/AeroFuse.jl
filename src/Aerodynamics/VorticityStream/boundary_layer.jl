@@ -12,23 +12,23 @@ include("VorticityStream.jl")
 # end
 
 function edge_velocity(σs, panels, wake_panels, u)
-	all_panels 			= [panels; wake_panels]
-	foil_vortices		= vortex_matrix(panels, panels)
-	all_sources			= source_matrix(panels, all_panels)
-	wake_wake_vortices	= vortex_matrix(wake_panels, wake_panels)
-	wake_foil_vortices	= vortex_matrix(wake_panels, panels)
-	wake_boundary		= boundary_vector(colpoints.(wake_panels), u)
+    all_panels          = [panels; wake_panels]
+    foil_vortices       = vortex_matrix(panels, panels)
+    all_sources         = source_matrix(panels, all_panels)
+    wake_wake_vortices  = vortex_matrix(wake_panels, wake_panels)
+    wake_foil_vortices  = vortex_matrix(wake_panels, panels)
+    wake_boundary       = boundary_vector(colpoints.(wake_panels), u)
 
-	P 		= -foil_vortices^(-1) * all_sources
-	P_s 	= 
-	# D1 	= visc_visc_vortices # PLACEHOLDER
-	D1 		= wake_foil_vortices * P + wake_wake_vortices
-	U_inv 	= [ (zeros ∘ length)(panels) ; 
-					wake_boundary		 ]
-	D   	= [ P	;
-				D1	]
+    P       = -foil_vortices^(-1) * all_sources
+    P_s     = 
+    # D1  = visc_visc_vortices # PLACEHOLDER
+    D1      = wake_foil_vortices * P + wake_wake_vortices
+    U_inv   = [ (zeros ∘ length)(panels) ; 
+                    wake_boundary  ]
+    D       = [ P
+                D1 ]
 
-	U_e 	= U_inv + D * σs
+    U_e     = U_inv + D * σs
 end
 
 end

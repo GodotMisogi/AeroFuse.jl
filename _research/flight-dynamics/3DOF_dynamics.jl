@@ -33,17 +33,17 @@ moment_coefficient(α, δe, q̂, CM_0, CM_α, CM_δe, CM_q̂) = CM_0 + CM_α * �
 moment_coefficient(α, δe, Q̂) = moment_coefficient(α, δe, Q̂, CM_0, CM_α, CM_δe, CM_Q̂)
 
 function compute_aerodynamics(α, δe, q̂, q∞, S_ref, c_ref)
-	# Compute aerodynamic coefficients from Taylor series approximations
-	CD =   drag_coefficient(α)
-	CL =   lift_coefficient(α, δe)
+    # Compute aerodynamic coefficients from Taylor series approximations
+    CD =   drag_coefficient(α)
+    CL =   lift_coefficient(α, δe)
     CM = moment_coefficient(α, δe, q̂)
-    
+
     # Compute dimensional aerodynamic forces and moment
-    D =  force(CD, q∞, S_ref) 
-	L =  force(CL, q∞, S_ref)
+    D =  force(CD, q∞, S_ref)
+    L =  force(CL, q∞, S_ref)
     M = moment(CM, q∞, S_ref, c_ref)
-	
-	return D, L, M
+
+    return D, L, M
 end
 
 ## Equations of motion
@@ -59,47 +59,47 @@ longitudinal_moment(M_A, T, Δ_zT)      = M_A - T * Δ_zT
 #===========================================================================#
 
 function total_dynamics!(R, T, D, L, W, M, α, Θ, Δ_zT)
-	R[1] = horizontal_forces(T, D, L, W, α, Θ)
-	R[2] = vertical_forces(D, L, W, α, Θ)
-	R[3] = longitudinal_moment(M, T, Δ_zT)
+    R[1] = horizontal_forces(T, D, L, W, α, Θ)
+    R[2] = vertical_forces(D, L, W, α, Θ)
+    R[3] = longitudinal_moment(M, T, Δ_zT)
 end
 
 function trim_equations!(R, x, params)
-	# Unpack variables
-	T  = x[1] # Thrust
-	δe = x[2] # Elevator deflection angle
-	Θ  = x[3] # Pitch angle
-	
-	# Other parameters
-	W, Δ_zT, q∞, S_ref, c_ref, γ = params
-	
-	# Compute aerodynamics
-	α       = Θ - γ # Angle of attack
-	Q̂       = 0.    # Trim definition
-	D, L, M = compute_aerodynamics(α, δe, Q̂, q∞, S_ref, c_ref)
+    # Unpack variables
+    T  = x[1] # Thrust
+    δe = x[2] # Elevator deflection angle
+    Θ  = x[3] # Pitch angle
 
-	total_dynamics!(R, T, D, L, W, M, α, Θ, Δ_zT)
+    # Other parameters
+    W, Δ_zT, q∞, S_ref, c_ref, γ = params
+
+    # Compute aerodynamics
+    α       = Θ - γ # Angle of attack
+    Q̂       = 0.    # Trim definition
+    D, L, M = compute_aerodynamics(α, δe, Q̂, q∞, S_ref, c_ref)
+
+    total_dynamics!(R, T, D, L, W, M, α, Θ, Δ_zT)
 end
 
 ## Integration of 3-DOF EOM
 #===========================================================================#
 
 function compute_dynamics(Q, α, δe, T_in, mass, g, ρ, V_ref, S_ref, c_ref)
-	# Dynamic pressure for dimensionalisation
-	q∞ = dynamic_pressure(ρ, V_ref)
-	
-	# Aerodynamic forces and moment
-	Q̂       = rate_coefficient(Q, V_ref, c_ref)
-	D, L, M = compute_aerodynamics(α, δe, Q̂, q∞, S_ref, c_ref)
-	
-	# Propulsive forces 
-	# (Replace with some velocity-dependent curve with thrust coefficient?)
-	T = T_in
+    # Dynamic pressure for dimensionalisation
+    q∞ = dynamic_pressure(ρ, V_ref)
 
-	# Weight (Replace with fuel burn computation?)
-	W = mass * g
-	
-	T, D, L, W, M
+    # Aerodynamic forces and moment
+    Q̂       = rate_coefficient(Q, V_ref, c_ref)
+    D, L, M = compute_aerodynamics(α, δe, Q̂, q∞, S_ref, c_ref)
+
+    # Propulsive forces
+    # (Replace with some velocity-dependent curve with thrust coefficient?)
+    T = T_in
+
+    # Weight (Replace with fuel burn computation?)
+    W = mass * g
+
+    T, D, L, W, M
 end
 
 function longitudinal_equations_of_motion!(dx, x, params, t)
@@ -108,36 +108,36 @@ function longitudinal_equations_of_motion!(dx, x, params, t)
     w = x[2] # z-velocity (Heave speed)
     Q = x[3] # Pitch rate
     Θ = x[6] # Pitch attitude
-	
-	δe = x[7] # Elevator deflection angle
 
-	# Parameters
-	mass, g, Iyy, Δ_zT, T_in, ρ, S_ref, c_ref = params
-   
+    δe = x[7] # Elevator deflection angle
+
+    # Parameters
+    mass, g, Iyy, Δ_zT, T_in, ρ, S_ref, c_ref = params
+
     # Compute freestream values
-	speed, α = cartesian_to_freestream(u, w)
-	
-	# Compute forces and moment
-	T, D, L, W, M = compute_dynamics(Q, α, δe, T_in, mass, g, ρ, speed, S_ref, c_ref)
+    speed, α = cartesian_to_freestream(u, w)
+
+    # Compute forces and moment
+    T, D, L, W, M = compute_dynamics(Q, α, δe, T_in, mass, g, ρ, speed, S_ref, c_ref)
 
     # Nonlinear longitudinal equations of motion
-	#============================================#
-	
-	# Translational dynamics
+    #============================================#
+
+    # Translational dynamics
     dx[1]   = -Q * w + horizontal_forces(T, D, L, W, α, Θ) / mass
-	dx[2]   =  Q * u + vertical_forces(D, L, W, α, Θ) / mass
-	
-	# Longitudinal dynamics
+    dx[2]   =  Q * u + vertical_forces(D, L, W, α, Θ) / mass
+
+    # Longitudinal dynamics
     dx[3]   = longitudinal_moment(M, T, Δ_zT) / Iyy
-	
-	# Coordinate transformations to Earth axes
+
+    # Coordinate transformations to Earth axes
     dx[4:5] = inverse_rotation(Θ) * x[1:2]
-	
-	# Pitch rate
-	dx[6]   = Q
-	
-	# Elevator deflection rate (Could be modified for a controller law later?)
-	dx[7]   = 0.
+
+    # Pitch rate
+    dx[6]   = Q
+
+    # Elevator deflection rate (Could be modified for a controller law later?)
+    dx[7]   = 0.
 
     return dx
 end
@@ -157,7 +157,7 @@ weight = mass * g
 ## Trim analysis
 ρ    = 1.225
 V, α = 120 * 0.514, 0.
-q∞   = dynamic_pressure(ρ, V) 
+q∞   = dynamic_pressure(ρ, V)
 γ    = 0.
 
 # Initial guess
@@ -173,9 +173,9 @@ trim_equations!(R, x) = trim_equations!(R, x, params)
 
 ## Solve system
 res_trim = nlsolve(trim_equations!,    # Nonlinear equation
-				   x0, 				   # Initial guess
-	               method = :newton,   # Solution method
-				  )
+                   x0,                 # Initial guess
+                   method = :newton,   # Solution method
+                  )
 
 T_s, δe_s, Θ_s = trim_state = res_trim.zero
 
@@ -201,8 +201,8 @@ ps     = [ mass, g, Iyy, Δ_zT, T_init, ρ, S_ref, c_ref ]
 tspan  = (0, 100.)
 
 ## ODE setup
-ode = ODEFunction(longitudinal_equations_of_motion!, 
-				  syms = [:u, :w, :Q, :xₑ, :zₑ, :Θ, :δe])
+ode = ODEFunction(longitudinal_equations_of_motion!,
+                  syms = [:u, :w, :Q, :xₑ, :zₑ, :Θ, :δe])
 
 prob = ODEProblem(ode, x_init, tspan, ps)
 

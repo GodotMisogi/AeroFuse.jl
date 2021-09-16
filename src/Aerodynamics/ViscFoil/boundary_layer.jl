@@ -134,9 +134,9 @@ function boundary_layer_fd(Us, δ_stars, θs, Ts, ΔXs, tags, n_crit, a, ν)
                         Re_θs[1:end-1], Re_θs[2:end],       # Local Reynolds numbers
                         n_crit)                             # Critical amplification ratio
 
-    R1 		= getindex.(Rs, 1)                              # Momentum residual
-    R2 		= getindex.(Rs, 2)                              # Kinetic energy residual
-    R3 		= getindex.(Rs, 3)                              # Amplification/shear stress residual
+    R1      = getindex.(Rs, 1)                              # Momentum residual
+    R2      = getindex.(Rs, 2)                              # Kinetic energy residual
+    R3      = getindex.(Rs, 3)                              # Amplification/shear stress residual
 
     R1, R2, R3
 end

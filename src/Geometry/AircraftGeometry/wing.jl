@@ -36,7 +36,7 @@ WingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 
 
 """
     span(wing :: Wing)
-    
+
 Compute the span of a `Wing`.
 """
 span(wing :: Wing) = (span ∘ left)(wing) + (span ∘ right)(wing)
@@ -45,14 +45,14 @@ taper_ratio(wing :: Wing) = (taper_ratio ∘ left)(wing), (taper_ratio ∘ right
 
 """
     projected_area(wing :: Wing)
-    
+
 Compute the projected_area of a `Wing`.
 """
 projected_area(wing :: Wing) = (projected_area ∘ left)(wing) + (projected_area ∘ right)(wing)
 
 """
     mean_aerodynamic_chord(wing :: Wing)
-    
+
 Compute the mean aerodynamic chord of a `Wing`.
 """
 mean_aerodynamic_chord(wing :: Wing) = ((mean_aerodynamic_chord ∘ left)(wing) + (mean_aerodynamic_chord ∘ right)(wing)) / 2

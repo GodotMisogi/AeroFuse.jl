@@ -21,13 +21,13 @@ V, α, β = 1.0, 5.0, 5.0
 fs      = Freestream(V, α, β, Ω)
 
 ## Panelling error closure
-panel_case(x, y) = solve_case(wing, fs; 
-                              rho_ref   = ρ, 
+panel_case(x, y) = solve_case(wing, fs;
+                              rho_ref   = ρ,
                               r_ref     = ref,
                               area_ref  = S,
                               span_ref  = b,
                               chord_ref = c,
-                              span_num  = y, 
+                              span_num  = y,
                               chord_num = x,
                               viscous   = false,
                               x_tr      = [0.3, 0.3],
@@ -40,10 +40,10 @@ ys = xs .* 2# fill(maximum(xs) * 4, length(xs))
 
 nf_data, ff_data = zeros(5)', zeros(5)'
 for (x, y) in zip(xs, ys)
-    @time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = 
+    @time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs =
     panel_case(x, y)
 
-    println("Distribution: nx = $x, ny = $y")	
+    println("Distribution: nx = $x, ny = $y")
     print_coefficients(nf_coeffs, ff_coeffs)
     nf_data = [ nf_data; [x; y; nf_coeffs[1:3] ]' ]
     ff_data = [ ff_data; [x; y; ff_coeffs[1:3] ]' ]
@@ -74,4 +74,4 @@ plot!(data[2:end-1,"chord_num"], errors[!,"CY_ff"], label = "CY Farfield")
 ##
 plot()
 plot!(data[2:end,"chord_num"], data[2:end,"CL_nf"], marker = :dot, label = "Nearfield")
-plot!(data[2:end,"chord_num"], data[2:end,"CL_ff"], marker = :dot, label = "Farfield") 
+plot!(data[2:end,"chord_num"], data[2:end,"CL_ff"], marker = :dot, label = "Farfield")

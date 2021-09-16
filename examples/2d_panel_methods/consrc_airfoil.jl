@@ -22,7 +22,7 @@ sum(σs)
 
 ## Pressure coefficient
 pts = collocation_point.(panels);
-panel_vels = [ velocity(uniform) .+ sum(source_velocity.(σs, panels, Ref(panel_i))) for panel_i in panels ] 
+panel_vels = [ velocity(uniform) .+ sum(source_velocity.(σs, panels, Ref(panel_i))) for panel_i in panels ]
 
 qts = @. dot(panel_vels, panel_tangent(panels))
 cps = @. 1 - qts^2 / uniform.mag^2

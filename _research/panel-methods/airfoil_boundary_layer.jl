@@ -17,11 +17,11 @@ num_wake = 28
 u        = velocity(uniform)
 
 ## Doublet-source panel method evaluation
-@time cl, cls, cms, cps, panels = 
-solve_case(airfoil, 
+@time cl, cls, cms, cps, panels =
+solve_case(airfoil,
             uniform;
             viscous = false,
-            sources = false, 
+            sources = false,
             wake_length = 1e5,
             wake_panels = num_wake,
             num_panels = num_pans)

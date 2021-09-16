@@ -9,7 +9,7 @@ using LinearAlgebra
 
 abstract type AbstractBeam end
 
-## Material definition 
+## Material definition
 #==========================================================================================#
 
 struct Material{T}
@@ -31,7 +31,7 @@ end
 
 elastic_modulus(mat :: Material) = mat.elastic_modulus
 shear_modulus(mat :: Material)   = mat.shear_modulus
-yield_stress(mat :: Material)    = mat.yield_stress 
+yield_stress(mat :: Material)    = mat.yield_stress
 density(mat :: Material)         = mat.density
 
 
@@ -43,8 +43,8 @@ struct Tube{T <: Real} <: AbstractBeam
     length    :: T
     radius    :: T
     thickness :: T
-    function Tube(material :: Material{T}, length :: T, radius :: T, thickness :: T) where T <: Real 
-        @assert length > 0. && radius > 0. && thickness > 0. "Length, outer radius and thickness must be positive."   
+    function Tube(material :: Material{T}, length :: T, radius :: T, thickness :: T) where T <: Real
+        @assert length > 0. && radius > 0. && thickness > 0. "Length, outer radius and thickness must be positive."
         new{T}(material, length, radius, thickness)
     end
 end
@@ -83,7 +83,7 @@ function von_mises_stress(tube :: Tube, ds, θs)
     G = (shear_modulus ∘ material)(tube)
     R = radius(tube)
     L = length(tube)
-    
+
     dx     = ds[1]
     dθ_yz  = norm(θs[2:end])
     σ_xx_1 = principal_stress(E, L, R,  dx, dθ_yz)
@@ -96,7 +96,7 @@ end
 ## Stiffness matrices
 #==========================================================================================#
 
-# E * I / L^3 .* [ 12 .* [ 1. -1. ; -1.  1.]  6 .* [-1. -1.; 1. 1.] ; 
+# E * I / L^3 .* [ 12 .* [ 1. -1. ; -1.  1.]  6 .* [-1. -1.; 1. 1.] ;
 #                   6 .* [-1.  1. ; -1.  1.]  2 .* [ 2.  1.; 1. 2.] ]
 
 ## Coefficient matrices
@@ -148,7 +148,7 @@ function tube_stiffness_matrix(Es :: AbstractVector, Gs :: AbstractVector, As ::
 
     Izs = bending_stiffness_matrix(Es, Izs, Ls, :z)
     Iys = bending_stiffness_matrix(Es, Iys, Ls, :y)
-    As  = axial_stiffness_matrix(Es, As, Ls)      
+    As  = axial_stiffness_matrix(Es, As, Ls)
     Js  = axial_stiffness_matrix(Gs, Js, Ls)
 
     blockdiag(Iys, Iys, As, Js)
@@ -158,7 +158,7 @@ tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J
 
 tube_stiffness_matrix(tube :: Tube) = tube_stiffness_matrix(elastic_modulus(material(tube)), shear_modulus(material(tube)), area(tube), moment_of_inertia(tube), moment_of_inertia(tube), polar_moment_of_inertia(tube), length(tube))
 
-function tube_stiffness_matrix(x :: AbstractMatrix) 
+function tube_stiffness_matrix(x :: AbstractMatrix)
     @assert size(x)[2] == 7 "Input must have 7 columns."
     @views tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
 end
@@ -216,12 +216,12 @@ function solve_cantilever_beam(Ks, loads, constraint_indices)
     # Create the stiffness matrix from the array of individual stiffnesses
     # Also specifies the constraint location
     K = build_stiffness_matrix(Ks, constraint_indices)
-    
+
     # Build force vector with constraint
     f = [ zeros(6); loads[:] ]
 
     # Solve FEM sys
-    x = K \ f 
+    x = K \ f
 
     # Throw away the junk values for the constraint
     reshape(x[7:end], 6, length(Ks) + 1)

@@ -1,8 +1,8 @@
 ## Stability derivative cases
 function scale_inputs(freestream :: Freestream, b, c)
     # Building input vector
-    x0 = [ freestream.alpha; 
-           freestream.beta; 
+    x0 = [ freestream.alpha;
+           freestream.beta;
            rate_coefficient(freestream.omega, freestream.V, b, c) ]
 
     # Unscaling non-dimensional rate coefficients
@@ -30,11 +30,11 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
     function stab(x)
         fs 	 = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
         data = solve_case(wing, fs;
-                          rho_ref   = rho_ref, 
-                          r_ref     = r_ref, 
-                          area_ref  = S, 
-                          span_ref  = b, 
-                          chord_ref = c, 
+                          rho_ref   = rho_ref,
+                          r_ref     = r_ref,
+                          area_ref  = S,
+                          span_ref  = b,
+                          chord_ref = c,
                           chord_num = chord_num,
                           span_num  = span_num,
                           viscous 	= viscous,
@@ -71,10 +71,10 @@ function solve_stability_case(aircraft :: Dict{String, Matrix{Horseshoe{T}}}, fr
     function stab(x)
         fs 	 = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
         data = solve_case(aircraft, fs,
-                          rho_ref   = rho_ref, 
-                          r_ref     = r_ref, 
-                          area_ref  = S, 
-                          span_ref  = b, 
+                          rho_ref   = rho_ref,
+                          r_ref     = r_ref,
+                          area_ref  = S,
+                          span_ref  = b,
                           chord_ref = c,
                           name 		= name)
 
@@ -95,8 +95,8 @@ function solve_stability_case(aircraft :: Dict{String, Matrix{Horseshoe{T}}}, fr
     # Dictionary assembly
     ranges  = (1:num_comps) .* 9                      # Painful hacking
     bounds  = zip([ 1; ranges[1:end-1] .+ 1], ranges) # Painful hacking
-    data 	= OrderedDict(name => (vars[1:6, i], vars[7:end, i], derivs[first(inds):last(inds)-3,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds)) 
-    
+    data 	= OrderedDict(name => (vars[1:6, i], vars[7:end, i], derivs[first(inds):last(inds)-3,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds))
+
     # Printing
     if print;            print_case(data, name)        end
     if print_components; print_case.(Ref(data), names) end

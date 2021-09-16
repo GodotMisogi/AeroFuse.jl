@@ -12,7 +12,7 @@ using Optim
 
 function run_case(wing, V, α, ρ, span_num, chord_num)
     uniform = Freestream(V, α, 0.0, zeros(3))
-    coeffs  = solve_case(wing, uniform, 
+    coeffs  = solve_case(wing, uniform,
                          rho_ref = ρ,
                          span_num = span_num,
                          chord_num = chord_num,
@@ -49,10 +49,10 @@ wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
 
 x0 = [(chords ∘ right)(wing); α]
 
-make_wing(x) = Wing(chords    = x, 
+make_wing(x) = Wing(chords    = x,
                     foils     = foils(right(wing)),
                     spans     = spans(right(wing)),
-                    twists    = rad2deg.(twists(right(wing))), 
+                    twists    = rad2deg.(twists(right(wing))),
                     dihedrals = rad2deg.(dihedrals(right(wing))),
                     sweep_LEs = rad2deg.(sweeps(right(wing))))
 
@@ -168,11 +168,11 @@ evaluate_constraints(wing, system) = [ sum(farfield_forces, surfaces(system))[3]
 #============================================#
 
 # Set up state
-state = VLMState(V, deg2rad(α), 0., [0., 0., 0.], 
+state = VLMState(V, deg2rad(α), 0., [0., 0., 0.],
                  rho_ref   = ρ,
                  r_ref     = [ wing_mac[1], 0, 0 ],
-                 area_ref  = projected_area(wing), 
-                 chord_ref = mean_aerodynamic_chord(wing), 
+                 area_ref  = projected_area(wing),
+                 chord_ref = mean_aerodynamic_chord(wing),
                  span_ref  = span(wing));
 
 # Aircraft assembly
@@ -188,20 +188,20 @@ vtail_1 = HalfWingSection(root_foil  = naca4((0,0,1,2)),
                           taper      = 0.731,
                           root_chord = 0.260,
                           sweep_LE   = 15.)
-vtail_2  = vtail_1 
+vtail_2  = vtail_1
 aircraft = Dict("Wing"    => panel_wing(wing, span_num, chord_num),
                 "HTail"   => panel_wing(htail, 6, 6;
                                         position = [1., 0, 0.],
                                         angle    = deg2rad(0.),
                                         axis     = [0., 1., 0.]),
-                # "VTail 1" =>  panel_wing(vtail_1, 6, 5; 
+                # "VTail 1" =>  panel_wing(vtail_1, 6, 5;
                 #                          position = [1., 0., 0],
-                #                          angle    = π/2, 
+                #                          angle    = π/2,
                 #                          axis     = [1., 0, 0],
                 #                          spacing  = "cosine"),
-                # "VTail 2" => panel_wing(vtail_2, 6, 5; 
+                # "VTail 2" => panel_wing(vtail_2, 6, 5;
                 #                         position = [1., 0.435, 0],
-                #                         angle    = π/2, 
+                #                         angle    = π/2,
                 #                         axis     = [1., 0, 0],
                 #                         spacing  = "cosine")
                 );
@@ -265,7 +265,7 @@ htail_plan     = plot_wing(htail,
                            axis     = [0., 1., 0.])
 vtail_plan     = plot_wing(vtail_1,
                            position = [1., 0., 0],
-                           angle    = π/2, 
+                           angle    = π/2,
                            axis     = [1., 0, 0])
 
 b = span(opt_wing)

@@ -65,7 +65,7 @@ function aircraft_eom_2D!(dx, x, p, t)
     dα_dt   = @view dx[3]
 	du_dt 	= @view dx[4:5]
 	dω_dt 	= @view dx[6]
-    
+
     # Parametric inputs
 	mass, g, F_b, M_b, I, h	= p(t, r_e, α[1], u_b, ω[1])
 
@@ -77,7 +77,7 @@ function aircraft_eom_2D!(dx, x, p, t)
 end
 
 # Dimensionalise forces
-function thrust_force(V, ρ, α, δ_T) 
+function thrust_force(V, ρ, α, δ_T)
     κ       = 1.
     A_disk  = 1.0
     P       = 1/2 * ρ * A_disk * V^3

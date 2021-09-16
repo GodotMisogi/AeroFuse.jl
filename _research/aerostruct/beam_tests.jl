@@ -5,7 +5,7 @@ using AeroMDAO
 E     = 85e9  # Elastic modulus, N/m²
 G     = 25e9  # Shear modulus, N/m²
 σ_max = 350e6 # Yield stress with factor of safety 2.5, N/m²
-ρ     = 1.6e3   # Density, kg/m³
+ρ     = 1.6e3 # Density, kg/m³
 ν     = 0.3   # Poisson's ratio (UNUSED FOR NOW)
 R     = 1e-2  # Outer radius, m
 t     = 8e-3  # Thickness, m
@@ -17,7 +17,7 @@ tubes    = Tube.(Ref(aluminum), Ls, R, t)
 
 K = tube_stiffness_matrix(aluminum, tubes)
 
-A = K[1:6,1:6]  # v2, φ2, φ3 
+A = K[1:6,1:6]  # v2, φ2, φ3
 b = [0., 0.1, 0.001, -0.1, 0.03, -0.3]    # F2, M2, M3
 
 x = A \ b
@@ -39,7 +39,7 @@ F2 = K * [ x[1:2]; 0.; x[3]; 0.; 0. ]
 J = axial_stiffness_matrix([1., 1., 1.], [1., 1., 1.], [2., 2., 2.])
 
 ## 1. ???
-A = J[[1,2],[1,2]] # ψ1, ψ2 
+A = J[[1,2],[1,2]] # ψ1, ψ2
 b = [-1000, 1000]  # R2, R2
 
 x = A \ b

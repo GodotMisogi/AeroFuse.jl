@@ -90,7 +90,7 @@ m(H_k) = (0.058(H_k - 4)^2 / (H_k - 1) - 0.068) / l(H_k)
 #============================================#
 
 # Cf = 2lam_CF(H) / Re
-cf(U_e, θ, H, ν = 1.5e-5) = 2 * lam_CF(H) / reynolds_number(U_e, θ, ν) 
+cf(U_e, θ, H, ν = 1.5e-5) = 2 * lam_CF(H) / reynolds_number(U_e, θ, ν)
 
 # CD = lam_H_star(H) * lam_CD(H) / 2Re
 cD(U_e, θ, H, ν) = lam_H_star(H) * lam_CD(H) / (2 * reynolds_number(U_e, θ, ν) )

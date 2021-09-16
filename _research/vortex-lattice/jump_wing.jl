@@ -1,4 +1,4 @@
-## 
+##
 using Revise
 using JuMP
 using Ipopt
@@ -13,8 +13,8 @@ using ForwardDiff
 
 ## Helper functions
 function make_wing(x)
-    wing_right = HalfWing(Foil.(naca4((0,0,1,2)) for i ∈ 1:5), 
-                         [ x[1:5]... ], 
+    wing_right = HalfWing(Foil.(naca4((0,0,1,2)) for i ∈ 1:5),
+                         [ x[1:5]... ],
                          [0., 0., 0., 0., 0.],
                          [0.2, 0.2, 0.2, 0.2],
                          [0., 0., 0., 0.],
@@ -49,7 +49,7 @@ end
 function optimize_cdi_naca4(m, p, t, c)
     wing = naca4_wing(m, p, t, c)
     nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, 10., 0., 0.)
-    
+
     cdi = ff_coeffs[1]
 end
 
@@ -58,7 +58,7 @@ function chords_lift(x...)
     ρ, speed = 1.225, 10.
     wing = make_wing(x)
     nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, speed, 0., 0.)
-    
+
     cl = ff_coeffs[3]
     lift = 1/2 * ρ * speed^2 * projected_area(wing) * cl
 end
@@ -138,9 +138,9 @@ y = span(wing) / 2 - 0.5
 # seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
 
 span_points = 10
-init = trailing_chopper(wing.right, span_points) 
+init = trailing_chopper(wing.right, span_points)
 dx, dy, dz = 0, 0, 1e-3
-seed = [ init .+ Ref([dx, dy, dz]); 
+seed = [ init .+ Ref([dx, dy, dz]);
          init .+ Ref([dx, dy, -dz]) ]
 
 trace_streams = trace_streamlines(uniform, seed, horseshoes[:], Γs[:], 2, 100);
@@ -164,7 +164,7 @@ PlotlyJS.plot(
 
 naca4_design = Model(with_optimizer(Ipopt.Optimizer))
 
-@variable(naca4_design, 1e-4 <= digits[1:4] <= 1.) 
+@variable(naca4_design, 1e-4 <= digits[1:4] <= 1.)
 
 register(naca4_design, :optimize_cdi_naca4, 4, optimize_cdi_naca4, autodiff = true)
 

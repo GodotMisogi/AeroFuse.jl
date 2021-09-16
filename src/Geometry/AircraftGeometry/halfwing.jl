@@ -5,7 +5,7 @@
              spans      :: Vector{Real},
              dihedrals  :: Vector{Real},
              sweeps     :: Vector{Real})
-             
+
 Definition for a `HalfWing` consisting of ``N+1`` airfoils and their associated chord lengths ``c``, twist angles ``\\iota``, for ``N`` sections with span lengths ``b``, dihedrals ``\\delta`` and sweep angles ``\\Lambda``, with all angles in degrees.
 """
 struct HalfWing{T <: Real} <: Aircraft
@@ -35,7 +35,7 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     # Check if dihedrals and sweeps are within bounds
     @assert any(x -> x >= -90. || x <= 90., dihedrals) || any(x -> x >= -90. || x <= 90., sweeps) "Dihedrals and sweep angles must not exceed ±90ᵒ."
 end
-        
+
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
 HalfWing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = HalfWing(foils, chords, twists, spans, dihedrals, sweep_LEs, position, angle, axis)
 
@@ -65,7 +65,7 @@ taper_ratio(wing :: HalfWing) = last(wing.chords) / first(wing.chords)
 
 """
     projected_area(half_wing :: HalfWing)
-    
+
 Compute the projected area of a `HalfWing` onto the ``x``-``y`` plane.
 """
 function projected_area(wing :: HalfWing)
@@ -80,7 +80,7 @@ section_projected_areas(wing :: HalfWing) = wing.spans .* fwdsum(wing.chords) / 
 
 """
     mean_aerodynamic_chord(half_wing :: HalfWing)
-    
+
 Compute the mean aerodynamic chord of a `HalfWing`.
 """
 function mean_aerodynamic_chord(wing :: HalfWing)
@@ -121,10 +121,10 @@ function max_tbyc_sweeps(wing :: HalfWing, num)
     widths 		= @. wing.spans / cos(wing.dihedrals)
 
     sweeps 		= @. atan(ds, widths)
-    xs 	  		= fwdsum(xs_temp) / 2 
+    xs 	  		= fwdsum(xs_temp) / 2
     tbycs 		= fwdsum(max_tbyc) / 2
 
-    xs, tbycs, sweeps 
+    xs, tbycs, sweeps
 end
 
 """
@@ -138,7 +138,7 @@ function leading_edge(wing :: HalfWing, flip = false)
     sweeped_spans 	 = [ 0; cumsum(@. spans * tan(sweeps)) ]
     dihedraled_spans = [ 0; cumsum(@. spans * tan(dihedrals)) ]
     cum_spans 		 = [ 0; cumsum(spans) ]
-    
+
     leading 		 = SVector.(sweeped_spans, ifelse(flip, -cum_spans, cum_spans), dihedraled_spans)
 
     ifelse(flip, leading[end:-1:1], leading)
@@ -152,9 +152,9 @@ Compute the leading and trailing edge coordinates of a `HalfWing`, with an optio
 function wing_bounds(wing :: HalfWing, flip = false)
     chords 	 		= wing.chords
     twisted_chords 	= @. chords * sin(wing.twists)
-    
+
     leading  		= leading_edge(wing, flip)
-    trailing 		= SVector.(chords, (zeros ∘ length)(chords), twisted_chords) 
+    trailing 		= SVector.(chords, (zeros ∘ length)(chords), twisted_chords)
 
     shifted_trailing = ifelse(flip, trailing[end:-1:1], trailing) .+ leading
 

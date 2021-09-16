@@ -5,7 +5,7 @@ using StaticArrays
 using LinearAlgebra
 using ForwardDiff, ReverseDiff, Zygote
 
-## Foil tests 
+## Foil tests
 struct TestFoil{T <: Real}
     coords :: Matrix{T}
 end
@@ -19,7 +19,7 @@ x_coords = naca4(0,0,1,2)
 
 Zygote.gradient(arc_length ∘ TestFoil, x_coords) # PASSES FOR MATRIX
 
-## 
+##
 struct TestFoils{T <: Real}
 	foils :: Vector{TestFoil{T}}
 end
@@ -42,7 +42,7 @@ struct HalfWingTest{T <: Real}
     twists    :: Vector{T}
     spans     :: Vector{T}
     dihedrals :: Vector{T}
-    sweeps    :: Vector{T} 
+    sweeps    :: Vector{T}
     HalfWingTest(chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
 end
 
@@ -52,7 +52,7 @@ section_projected_areas(wing :: HalfWingTest) = wing.spans .* fwdsum(wing.chords
 
 """
     mean_aerodynamic_chord(half_wing :: HalfWing)
-    
+
 Compute the mean aerodynamic chord of a `HalfWing`.
 """
 function AeroMDAO.AircraftGeometry.mean_aerodynamic_chord(wing :: HalfWingTest)
@@ -73,7 +73,7 @@ sws = [2.29, 30.]
 # winger(x, n) = mean_aerodynamic_chord(HalfWing(chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], sweep_LEs = x[4n-1:end]))
 
 xs = [cs; ts; sps; dis; sws]
-wing = winger(xs, length(cs)) 
+wing = winger(xs, length(cs))
 
 Zygote.gradient(x -> winger(x, length(cs)), xs)
 
@@ -118,17 +118,17 @@ df = ForwardDiff.gradient(arc_length ∘ (x -> winglord(x, length(cs))), xs)
 ## VLM
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
 	# Evaluate case
-	data = 	solve_case(aircraft, fs; 
-                       rho_ref   = ρ, 
+	data = 	solve_case(aircraft, fs;
+                       rho_ref   = ρ,
                        r_ref     = ref,
                        area_ref  = S,
                        span_ref  = b,
                        chord_ref = c,
                        print 	 = print
                       );
-		
+
 	nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = data["Aircraft"]
-			   
+
 	[ ff_coeffs[1:3]; nf_coeffs[4:6] ]
 end
 

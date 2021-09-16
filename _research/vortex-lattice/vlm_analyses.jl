@@ -15,7 +15,7 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
             dihedrals = [11.3],
             sweep_LEs = [2.29]);
 
-# Horizontal tail 
+# Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
@@ -24,7 +24,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              sweep_LEs = [6.39])
 
 # Vertical tail
-vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)), 
+vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
@@ -38,9 +38,9 @@ htail_panels, htail_normals = panel_wing(htail, 6, 6;
                                          angle    = deg2rad(-2.),
                                          axis     = [0., 1., 0.]
                                         )
-vtail_panels, vtail_normals = panel_wing(vtail, 6, 5; 
+vtail_panels, vtail_normals = panel_wing(vtail, 6, 5;
                                          position = [4., 0, 0],
-                                         angle    = π/2, 
+                                         angle    = π/2,
                                          axis     = [1., 0., 0.]
                                         )
 
@@ -56,11 +56,11 @@ aircraft = Dict(
 
 # Set up state
 wing_mac = mean_aerodynamic_center(wing);
-state = VLMState(1., 0., 0., [0., 0., 0.], 
+state = VLMState(1., 0., 0., [0., 0., 0.],
                  rho_ref   = 1.225,
                  r_ref     = [ wing_mac[1], 0, 0 ],
-                 area_ref  = projected_area(wing), 
-                 chord_ref = mean_aerodynamic_chord(wing), 
+                 area_ref  = projected_area(wing),
+                 chord_ref = mean_aerodynamic_chord(wing),
                  span_ref  = span(wing));
 
 # Set up system
@@ -117,7 +117,7 @@ x             = [ state.alpha ]
 
 # Nonlinear solution
 solve_alpha_residual!(R, x) = solve_alpha_residual!(R, x, system, state, weight, load_factor)
-@time res_alpha = 
+@time res_alpha =
     nlsolve(solve_alpha_residual!, x,
             method     = :newton,
             show_trace = true,
@@ -152,7 +152,7 @@ x             = [ state.speed ]
 
 # Nonlinear solution
 solve_speed_residual!(R, x) = solve_speed_residual!(R, x, system, state, weight, load_factor)
-@time res_speed = 
+@time res_speed =
     nlsolve(solve_speed_residual!, x,
             method     = :newton,
             show_trace = true,

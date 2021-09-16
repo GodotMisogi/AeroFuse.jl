@@ -15,7 +15,7 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
             dihedrals = [11.3],
             sweep_LEs = [2.29]);
 
-# Horizontal tail 
+# Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
@@ -24,7 +24,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              sweep_LEs = [6.39])
 
 # Vertical tail
-vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)), 
+vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
@@ -38,9 +38,9 @@ htail_panels, htail_normals = panel_wing(htail, 12, 12;
                                           angle    = deg2rad(-2.),
                                           axis     = [0., 1., 0.]
                                          )
-vtail_panels, vtail_normals = panel_wing(vtail, 12, 10; 
+vtail_panels, vtail_normals = panel_wing(vtail, 12, 10;
                                          position = [4., 0, 0],
-                                         angle    = π/2, 
+                                         angle    = π/2,
                                          axis     = [1., 0., 0.]
                                         )
 
@@ -62,10 +62,10 @@ fs       = Freestream(1.0, 1.0, 0.0, [0.0, 0.0, 0.0])
 @time begin
     # Set up state
     state = VLMState(fs;
-                     r_ref     = x_w,  
+                     r_ref     = x_w,
                      rho_ref   = ρ,
-                     area_ref  = S, 
-                     chord_ref = c, 
+                     area_ref  = S,
+                     chord_ref = c,
                      span_ref  = b,
                      name      = ac_name);
 
@@ -109,8 +109,8 @@ function vlm_state_derivatives(fs)
     function get_derivatives(x :: AbstractVector{<: Real})
         state = VLMState(x[1], x[2], x[3], x[4:6],
                          rho_ref = ρ,
-                         area_ref = S, 
-                         chord_ref = c, 
+                         area_ref = S,
+                         chord_ref = c,
                          span_ref = b,
                          name = ac_name);
 
@@ -130,8 +130,8 @@ function vlm_system_derivatives(system, surf, fs, r_ref)
         state = VLMState(x[1], x[2], x[3], x[4:6],
                          r_ref = x[7:end],
                          rho_ref = ρ,
-                         area_ref = S, 
-                         chord_ref = c, 
+                         area_ref = S,
+                         chord_ref = c,
                          span_ref = b,
                          name = ac_name);
 

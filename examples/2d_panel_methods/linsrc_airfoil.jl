@@ -22,7 +22,7 @@ sum(σs)
 
 ## Pressure coefficient
 pts = panel_points(panels)[1:end-1];
-panel_vels = [ velocity(uniform) .+ sum(source_velocity.(σs[1:end-1], σs[2:end], panels, x, y)) for (x, y) in pts ] 
+panel_vels = [ velocity(uniform) .+ sum(source_velocity.(σs[1:end-1], σs[2:end], panels, x, y)) for (x, y) in pts ]
 
 qts = @. dot(panel_vels, panel_tangent(panels))
 cps = @. 1 - qts^2 / uniform.mag^2

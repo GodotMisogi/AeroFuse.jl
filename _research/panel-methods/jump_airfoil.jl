@@ -1,4 +1,4 @@
-## 
+##
 using Revise
 using AeroMDAO
 using JuMP
@@ -31,8 +31,8 @@ println("Lower Cl: $lower_cl")
 lower_design = Model(with_optimizer(Ipopt.Optimizer))
 num_dv = 5
 
-@variable(lower_design, -1. <= α_l[1:num_dv] <= 0.) 
-@variable(lower_design, -5. <= α <= 10.) 
+@variable(lower_design, -1. <= α_l[1:num_dv] <= 0.)
+@variable(lower_design, -5. <= α <= 10.)
 
 register(lower_design, :optimize_lower, num_dv + 1, optimize_lower, autodiff = true)
 
@@ -47,11 +47,11 @@ println("Angle: $(value(α)), Optimal Lower Cl: $(objective_value(lower_design))
 
 ## Plot
 lower_test = kulfan_CST(α_u, α_l0, dzs, 0., 80)
-plot(lower_test[:,1], lower_test[:,2], 
+plot(lower_test[:,1], lower_test[:,2],
      label = "Test Lower Surface", aspectratio = 1)
 
 lower_opt = kulfan_CST(α_u, [ α_l_vals[1:end-1]... ], dzs, 0., 80)
-plot!(lower_opt[:,1], lower_opt[:,2], 
+plot!(lower_opt[:,1], lower_opt[:,2],
      label = "Optimal Lower Surface", aspectratio = 1)
 
 
@@ -78,8 +78,8 @@ println("Camber Cl: $camber_cl")
 cam_design = Model(with_optimizer(Ipopt.Optimizer))
 num_dv = 4
 
-@variable(cam_design, -0.1 <= α_c[1:num_dv] <= 0.1) 
-@variable(cam_design, -5. <= α <= 10.) 
+@variable(cam_design, -0.1 <= α_c[1:num_dv] <= 0.1)
+@variable(cam_design, -5. <= α <= 10.)
 
 register(cam_design, :optimize_camber, num_dv + 1, optimize_camber, autodiff = true)
 
@@ -94,11 +94,11 @@ println("Angle: $(value(α)), Optical Camber Cl: $(objective_value(cam_design))"
 
 ## Plot
 camber_test = camber_CST(α_c0, α_t, dct, 0., 80)
-plot(camber_test[:,1], camber_test[:,2], 
+plot(camber_test[:,1], camber_test[:,2],
      label = "Test Camber", aspectratio = 1)
 
 camber_opt = camber_CST([ α_c_vals[1:end-1]... ], α_t, dct, 0., 80)
-plot!(camber_opt[:,1], camber_opt[:,2], 
+plot!(camber_opt[:,1], camber_opt[:,2],
      label = "Optimal Camber", aspectratio = 1)
 
 
@@ -122,8 +122,8 @@ println("NACA4 Cl: $naca_cl")
 ## Optimization model
 naca_design = Model(with_optimizer(Ipopt.Optimizer))
 
-@variable(naca_design, 1e-4 <= digits[1:4] <= 2.) 
-@variable(naca_design, -5. <= α <= 15.) 
+@variable(naca_design, 1e-4 <= digits[1:4] <= 2.)
+@variable(naca_design, -5. <= α <= 15.)
 
 register(naca_design, :optimize_naca4, 5, optimize_naca4, autodiff = true)
 
@@ -138,9 +138,9 @@ naca_vals = value.(digits)
 
 ## Plot
 naca_test = naca4(coeffs_0, 40, sharp_trailing_edge = true)
-plot(naca_test[:,1], naca_test[:,2], 
+plot(naca_test[:,1], naca_test[:,2],
      label = "Test NACA", aspectratio = 1)
 
 naca_opt = naca4(tuple(naca_vals...), 40, sharp_trailing_edge = true)
-plot!(naca_opt[:,1], naca_opt[:,2], 
+plot!(naca_opt[:,1], naca_opt[:,2],
      label = "Optimal NACA", aspectratio = 1)

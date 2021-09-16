@@ -21,7 +21,7 @@ wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
             dihedrals = [0., 45.],
             sweep_LEs = [5., 60.]);
 
-# Horizontal tail 
+# Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
@@ -33,7 +33,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)), 
+vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
@@ -82,8 +82,8 @@ V, α, β = 25.0, 3.0, 0.0
 fs      = Freestream(V, α, β, Ω)
 
 ## Solve aerodynamic case for initial vector
-@time data = 
-    solve_case(aircraft, fs; 
+@time data =
+    solve_case(aircraft, fs;
                rho_ref     = ρ, 		# Reference density
                r_ref       = ref, 		# Reference point for moments
                area_ref    = S, 		# Reference area
@@ -113,7 +113,7 @@ fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
 # F_W = [ zeros(length(py)); W; zeros(length(px)) ]
 weight      = 60 * 9.81
 load_factor = 1.3;
- 
+
 ## Structural variables
 
 # Material properties
@@ -126,7 +126,7 @@ rho   = 1.6e3  # Density, kg/m³
 aluminum = Material(E, G, σ_max, rho)
 
 ## Beam properties
-Ls    = norm.(diff(fem_mesh))                              # Beam lengths, m 
+Ls    = norm.(diff(fem_mesh))                              # Beam lengths, m
 rs    = range(2e-2, stop = 8e-3, length = length(Ls) ÷ 2)  # Outer radius, m
 ts    = range(8e-3, stop = 2e-3, length = length(Ls) ÷ 2)  # Thickness, m
 r     = [ reverse(rs); rs ]
@@ -150,7 +150,7 @@ dx = solve_cantilever_beam(Ks, fem_loads, cons)
 other_horsies = [ htail_horsies[:]; vtail_horsies[:] ]
 
 # Set up initial guess and function
-solve_aerostructural_residual!(R, x) = 
+solve_aerostructural_residual!(R, x) =
     solve_coupled_residual!(R, x,
                             V, deg2rad(β), ρ, Ω, # Aerodynamic state
                             vlm_mesh, cam_mesh,  # Aerodynamic variables
@@ -166,7 +166,7 @@ x0 = ComponentArray(aerodynamics = Γs,
 
 ## Solve nonlinear system
 reset_timer!()
-@timeit "Solving Residuals" res_aerostruct = 
+@timeit "Solving Residuals" res_aerostruct =
     nlsolve(solve_aerostructural_residual!, x0,
             method         = :newton,
             show_trace     = true,
@@ -191,7 +191,7 @@ new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
 new_panels   = make_panels(new_vlm_mesh)
 
 new_cam_mesh   = transfer_displacements(dxs, Ts, cam_mesh, fem_mesh)
-new_cam_panels = make_panels(new_cam_mesh) 
+new_cam_panels = make_panels(new_cam_mesh)
 new_normals    = panel_normal.(new_cam_panels)
 
 ##
@@ -211,7 +211,7 @@ fem_loads    = compute_loads(vlm_acs, vlm_forces, new_fem_mesh)
 
 ## Compute stresses
 δxs = eachcol(diff(dx[1:3,:], dims = 2)) # Need to transform these to principal axes
-δθs = eachcol(diff(dx[4:6,:], dims = 2)) # Need to transform these to principal axes 
+δθs = eachcol(diff(dx[4:6,:], dims = 2)) # Need to transform these to principal axes
 σs  = reduce(hcat, von_mises_stress.(tubes, δxs, δθs))
 
 ## Check numbers
@@ -241,7 +241,7 @@ loads_plot   = fem_loads
 
 # Panels
 wing_panel_plot  = plot_panels(wing_panels[:])
-htail_panel_plot = plot_panels(htail_panels[:]) 
+htail_panel_plot = plot_panels(htail_panels[:])
 vtail_panel_plot = plot_panels(vtail_panels[:])
 
 # Aerodynamic centers and forces
@@ -282,9 +282,9 @@ plotlyjs(dpi = 300)
 # pyplot(dpi = 300, size = (900, 600))
 # pgfplotsx(size = (900, 600))
 
-aircraft_plot = 
+aircraft_plot =
     plot(xaxis = "x", yaxis = "y", zaxis = "z",
-         camera = (-75, 20), 
+         camera = (-75, 20),
          xlim = (0, b/2),
      #     ylim = (-b/2, b/2),
          zlim = (-b/8, b/4),
@@ -324,14 +324,14 @@ plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_
 #         label = "Beam Forces")
 
 # Axis systems
-# quiver!(xs_plot[1,:], xs_plot[2,:], xs_plot[3,:], 
-#         quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1, 
+# quiver!(xs_plot[1,:], xs_plot[2,:], xs_plot[3,:],
+#         quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1,
 #         color = :darkcyan, label = :none)
 # quiver!(xs_plot[1,:], xs_plot[2,:], xs_plot[3,:],
 #         quiver=(ss_plot[1,:], ss_plot[2,:], ss_plot[3,:]) .* 1e-1,
 #         color = :black, label = :none)
 # quiver!(xs_plot[1,:], xs_plot[2,:], xs_plot[3,:],
-#         quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, 
+#         quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1,
 #         color = :red, label = :none)
 
 # savefig(aircraft_plot, "plots/AerostructAircraft.pdf")

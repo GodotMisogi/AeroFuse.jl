@@ -39,7 +39,7 @@ function cavity_length_foil(foil :: Foil, cavity_start, cavity_end, N_panels = 4
     wet_lower = [wl; tl]
 end
 
-# Cavity termination models 
+# Cavity termination models
 cavity_pressure(sf, sl, A = 0.5, ν = 1.0, λ = 0.1) = sf < (1 - λ) * sl ? 0 : A * ((sf - (1 - λ) * sl) / (sl - (1 - λ) * sl))^ν
 
 function cavity_influence_matrix(wetted_panels :: Vector{Panel2D}, wetted_cavpanels :: Vector{Panel2D}, cavity_panels :: Vector{Panel2D})
@@ -59,7 +59,7 @@ function cavity_influence_matrix(wetted_panels :: Vector{Panel2D}, wetted_cavpan
     # Cavity transition condition
     doublets_wetcav   = doublet_matrix(wetted_panels, cavity_panels)
     doublets_cavcav   = doublet_matrix(cavity_panels, cavity_panels)
-  
+
     sf                = panel_length.(wetted_cavpanels)
     sl                = sum(panel_length.(cavity_panels))
     trans             = cumsum(panel_length.(cavity_panels)) .* (1 .- cavity_pressure.(cumsum(sf), sl))
@@ -93,7 +93,7 @@ function cavity_boundary_vector(wetted_panels :: Vector{Panel2D}, wetted_cavpane
 
     # Doublet terms
     bound_cav               = [ potential(freestream, colpoint...) - potential(freestream, (p1 ∘ first)(cavity_panels)...) for colpoint in collocation_point.(cavity_panels) ]
-    
+
     boundary_doublets_wet  = doublet_matrix(cavity_panels, wetted_panels) * bound_cav
     boundary_doublets_cav  = doublet_matrix(cavity_panels, cavity_panels) * bound_cav
 
@@ -110,7 +110,7 @@ function cavity_boundary_vector(wetted_panels :: Vector{Panel2D}, wetted_cavpane
                                                source_closure                ;
                                                      0                       ;
                                                      0                       ]
-end    
+end
 
 
 function solve_strengths(panels :: Vector{Panel2D}, cavity_panels :: Vector{Panel2D}, freestream :: Uniform2D)

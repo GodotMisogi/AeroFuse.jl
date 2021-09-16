@@ -22,7 +22,7 @@ wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 2)),
             dihedrals = [5.],
             sweep_LEs = [15.]);
 
-# Horizontal tail 
+# Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
@@ -34,7 +34,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)), 
+vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
@@ -96,8 +96,8 @@ V, α, β  = 25.0, 3.0, 0.0
 fs       = Freestream(V, α, β, Ω)
 
 ## Solve aerodynamic case for initial vector
-@time data = 
-    solve_case(aircraft, fs; 
+@time data =
+    solve_case(aircraft, fs;
                rho_ref     = ρ, 		# Reference density
                r_ref       = ref, 		# Reference point for moments
                area_ref    = S, 		# Reference area
@@ -121,13 +121,13 @@ fem_weight_wing = 0.40
 fem_mesh_wing   = make_beam_mesh(wing_vlm_mesh, fem_weight_wing)
 
 aluminum = Material(       # Aluminum properties
-                    85e9,  # Elastic modulus, N/m² 
-                    25e9,  # Shear modulus, N/m², 
-                    350e6, # Yield stress with factor of safety 2.5, N/m², 
+                    85e9,  # Elastic modulus, N/m²
+                    25e9,  # Shear modulus, N/m²,
+                    350e6, # Yield stress with factor of safety 2.5, N/m²,
                     1.6e3, # Density, kg/m³
                     )
 
-Ls_wing = norm.(diff(fem_mesh_wing))                              # Beam lengths, m 
+Ls_wing = norm.(diff(fem_mesh_wing))                              # Beam lengths, m
 rs_wing = range(2e-2, stop = 1e-2, length = length(Ls_wing) ÷ 2)  # Outer radius, m
 ts_wing = range(1e-2, stop = 6e-3, length = length(Ls_wing) ÷ 2)  # Thickness, m
 r_wing  = [ reverse(rs_wing); rs_wing ]
@@ -150,7 +150,7 @@ fem_weight_htail = 0.35
 fem_mesh_htail   = make_beam_mesh(htail_vlm_mesh, fem_weight_htail)
 
 # Beam properties
-Ls_htail = norm.(diff(fem_mesh_htail))                              # Beam lengths, m 
+Ls_htail = norm.(diff(fem_mesh_htail))                              # Beam lengths, m
 rs_htail = range(8e-3, stop = 2e-3, length = length(Ls_htail) ÷ 2)  # Outer radius, m
 ts_htail = range(6e-4, stop = 2e-4, length = length(Ls_htail) ÷ 2)  # Thickness, m
 r_htail  = [ reverse(rs_htail); rs_htail ]
@@ -194,15 +194,15 @@ x0 = ComponentArray(aerodynamics = (wing = Γ0_wing, htail = Γ0_htail, vtail = 
                     load_factor  = deg2rad(α))
 
 # Set up initial guess and function
-solve_aerostructural_residual!(R, x) = 
+solve_aerostructural_residual!(R, x) =
     solve_coupled_residual!(R, x,
                             V, deg2rad(β), ρ, Ω,
-                            syms, vlm_meshes, cam_meshes, fem_meshes, 
+                            syms, vlm_meshes, cam_meshes, fem_meshes,
                             other_horsies, stiffy, weight, load_factor)
 
 ## Solve nonlinear system
 reset_timer!()
-@timeit "Solving Residuals" res_aerostruct = 
+@timeit "Solving Residuals" res_aerostruct =
     nlsolve(solve_aerostructural_residual!, x0,
             method         = :newton,
             show_trace     = true,
@@ -247,7 +247,7 @@ fem_loads      = compute_loads.(new_acs, new_forces, new_fem_meshes);
 
 ## Compute stresses
 δxs = Δs .|> dx -> eachcol(diff(dx[1:3,:], dims = 2)) # Need to transform these to principal axes
-δθs = Δs .|> dx -> eachcol(diff(dx[4:6,:], dims = 2)) # Need to transform these to principal axes 
+δθs = Δs .|> dx -> eachcol(diff(dx[4:6,:], dims = 2)) # Need to transform these to principal axes
 σs  = map((tubes, δx, δθ) -> reduce(hcat, von_mises_stress.(tubes, δx, δθ)), [ tubes_wing, tubes_htail ], δxs, δθs)
 
 ## Check numbers
@@ -277,7 +277,7 @@ loads_plot   = fem_loads
 
 ## Panels
 wing_panel_plot  = plot_panels(wing_panels[:])
-htail_panel_plot = plot_panels(htail_panels[:]) 
+htail_panel_plot = plot_panels(htail_panels[:])
 vtail_panel_plot = plot_panels(vtail_panels[:])
 
 # Aerodynamic centers and forces
@@ -295,7 +295,7 @@ new_panel_plot    = plot_panels(reduce(vcat, vec.(make_panels.(new_vlm_meshes)))
 
 # Planforms
 wing_plan   = plot_wing(wing)
-htail_plan  = plot_wing(htail)                      
+htail_plan  = plot_wing(htail)
 vtail_plan  = plot_wing(vtail)
 
 # New planforms
@@ -314,9 +314,9 @@ plotlyjs(dpi = 300, size = (1280, 720))
 # pyplot(dpi = 300)
 # pgfplotsx(size = (900, 600))
 
-aircraft_plot = 
+aircraft_plot =
     plot(xaxis = "x", yaxis = "y", zaxis = "z",
-         camera = (-75, 20), 
+         camera = (-75, 20),
          xlim = (-b/4, 3b/4),
      #     ylim = (-b/2, b/2),
          zlim = (-b/4, 3b/4),

@@ -8,7 +8,7 @@ dzs     = (0., 0.)
 airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, dzs, 0.0, 60);      # Kulfan CST airfoil
 # airfoil = Foil(naca4((0,0,1,2), 100; sharp_trailing_edge = true)) # NACA 4-digit airfoil
 uniform = Uniform2D(1., 0.)
-@time cl, cls, cms, cps, panels = solve_case(airfoil, 
+@time cl, cls, cms, cps, panels = solve_case(airfoil,
                                              uniform;
                                              num_panels = 80)
 

@@ -15,7 +15,7 @@ wing = WingSection(root_foil  = naca4(0,0,1,5),
                    dihedral   = 0.0, # 5.0
                    sweep_LE   = 20.0, # 20.0
                    taper      = 0.5, # 0.5
-                   root_chord = 0.3, 
+                   root_chord = 0.3,
                    root_twist = 0.0, # 2.0
                    tip_twist  = 0.0)
 wing_mac    = mean_aerodynamic_center(wing)
@@ -30,11 +30,11 @@ panels, normies = panel_wing(wing, span_num, chord_num, spacing = "sine");
 aircraft        = Dict(wing_name => (panels, normies));
 
 # Set up aerodynamic state
-aero_state = VLMState(1., 0., 0., [0.0, 0.0, 0.0], 
+aero_state = VLMState(1., 0., 0., [0.0, 0.0, 0.0],
                       rho_ref   = 1.225,
                       r_ref     = [ wing_mac[1], 0., 0. ],
-                      area_ref  = projected_area(wing), 
-                      chord_ref = mean_aerodynamic_chord(wing), 
+                      area_ref  = projected_area(wing),
+                      chord_ref = mean_aerodynamic_chord(wing),
                       span_ref  = span(wing));
 
 # Test case - Fixed speed
@@ -55,7 +55,7 @@ print_coefficients(aero_surfs[1], aero_state);
 vlm_mesh = chord_coordinates(wing, [span_num], chord_num, spacings = ["sine"])
 
 ## Aerodynamic forces
-vlm_forces = surface_forces(aero_surfs[1]) 
+vlm_forces = surface_forces(aero_surfs[1])
 sec_forces = sum(vlm_forces, dims = 1)[:] / 2
 
 ## Aerodynamic center locations
@@ -133,7 +133,7 @@ function transform_stiffy(perm_Ks, wtf)
         K_tran[:,:,i] .= kron(I(4), wtf[:,:,i])
     end
 
-    ## Using Einstein summation convention for passive transformation of stiffness matrix: 
+    ## Using Einstein summation convention for passive transformation of stiffness matrix:
     #  D = Mᵗ(PK)M, where M = I₄ ⊗ T, and P is the permutation matrix acting on the original K
     @einsum D[j,k,i] := K_tran[l,j,i] * perm_K[l,m,i] * K_tran[m,k,i]
 end
@@ -149,13 +149,13 @@ function build_big_stiffy(material, tubes, fem_mesh)
     # 1. (Fx1, Fy1, Fz1, Mx1, My1, Mz1, Fx2, Fy2, Fz2, Mx2, My2, Mz2): [9,1,5,11,6,2,10,3,7,12,8,4]
     # 2. (Fx1, Fx2, Mx1, Mx2, Fy1, My1, Fy2, My2, Fz1, Mz1, Fz2, Mz2): [9,10,11,12,1,2,3,4,5,6,7,8]
     inds    = [9,1,5,11,6,2,10,3,7,12,8,4]
-    perm_Ks = [ K[inds,:][:,inds] for K in Ks ] 
+    perm_Ks = [ K[inds,:][:,inds] for K in Ks ]
 
     # Compute transformation matrix
     wtf = axis_transformation(fem_mesh)
 
     # Transform the stiffness matrix
-    D = transform_stiffy(perm_Ks, wtf)    
+    D = transform_stiffy(perm_Ks, wtf)
 end
 
 ## Stiffness matrix, loads, and constraints
@@ -202,7 +202,7 @@ pyplot(dpi = 300)
 # Beam circles
 n_pts          = 20
 circle3D(r, n) = [ (r*cos(θ), 0, r*sin(θ)) for θ in 0:2π/n:2π ];
-circ           = circle3D(R, n_pts) 
+circ           = circle3D(R, n_pts)
 
 draw_tube(p1, p2, circ) = [ [ circ_pt .+ p1, circ_pt .+ p2 ] for circ_pt in circ ]
 
@@ -224,9 +224,9 @@ new_panel_plot = plot_panels(make_panels(new_mesh)[:])
 
 # Plot
 b = aero_state.span_ref
-plot(camera = (45, 45), 
+plot(camera = (45, 45),
      xlim = (0, b/2),
-    #  ylim = (-b/2, b/2), 
+    #  ylim = (-b/2, b/2),
      zlim = (0, b/2)
     )
 
@@ -258,14 +258,14 @@ ss_plot    = reduce(hcat, ss)
 cs_plot    = reduce(hcat, cs)
 ns_plot    = reduce(hcat, ns)
 
-quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:], 
-        quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1, 
+quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:],
+        quiver=(cs_plot[1,:], cs_plot[2,:], cs_plot[3,:]) .* 1e-1,
         color = :orange, label = :none)
 quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:],
         quiver=(ss_plot[1,:], ss_plot[2,:], ss_plot[3,:]) .* 1e-1,
         color = :brown, label = :none)
 quiver!(axes_plot[1,:], axes_plot[2,:], axes_plot[3,:],
-        quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1, 
+        quiver=(ns_plot[1,:], ns_plot[2,:], ns_plot[3,:]) .* 1e-1,
         color = :red, label = :none)
 
 # Displacements

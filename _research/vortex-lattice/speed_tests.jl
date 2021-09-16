@@ -38,9 +38,9 @@ htail_panels = panel_wing(htail, 6, 6;
                           spacing  = "cosine"
                          )
 
-vtail_panels = panel_wing(vtail, 6, 5; 
+vtail_panels = panel_wing(vtail, 6, 5;
                           position = [4., 0, 0],
-                          angle    = π/2, 
+                          angle    = π/2,
                           axis 	   = [1., 0., 0.],
                           spacing  = "cosine"
                          )
@@ -71,16 +71,16 @@ end
 println("AeroMDAO Aircraft Stateful -")
 @benchmark begin
     # Set up state
-    state = VLMState(1., 0., 0., zeros(3); 
-                     r_ref     = x_ref,  
+    state = VLMState(1., 0., 0., zeros(3);
+                     r_ref     = x_ref,
                      rho_ref   = ρ,
-                     area_ref  = S, 
-                     chord_ref = c, 
+                     area_ref  = S,
+                     chord_ref = c,
                      span_ref  = b);
 
-    # Set up system and surfaces                     
+    # Set up system and surfaces
     system = build_system(aircraft);
-    
+
     # Evaluate sweep
     coeffs = alpha_sweep!.(deg2rad.(αs), Ref(system), Ref(state))
 end
@@ -92,7 +92,7 @@ println("AeroMDAO Aircraft Functional -")
     fses = Freestream.(1.0, αs, 0., Ref(zeros(3)))
 
     # Evaluate sweep
-    data = solve_case.(Ref(aircraft), fses; 
+    data = solve_case.(Ref(aircraft), fses;
                        rho_ref   = ρ,
                        r_ref     = x_ref,
                        area_ref  = S,

@@ -22,7 +22,7 @@ wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
             dihedrals = [0., 45.],
             sweep_LEs = [5., 60.]);
 
-# Horizontal tail 
+# Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
@@ -34,14 +34,14 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)), 
+vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97], 
+                 sweep_LEs = [7.97],
                  position  = [4., 0, 0],
-                 angle     = π/2, 
+                 angle     = π/2,
                  axis      = [1., 0., 0.])
 
 # Wing
@@ -72,11 +72,11 @@ aircraft = Dict(
 wing_mac = mean_aerodynamic_center(wing);
 
 # Set up aerodynamic state
-aero_state = VLMState(0., 0., 0., [0.0, 0.0, 0.0], 
+aero_state = VLMState(0., 0., 0., [0.0, 0.0, 0.0],
                       rho_ref   = 1.225,
                       r_ref     = [ wing_mac[1], 0., 0. ],
-                      area_ref  = projected_area(wing), 
-                      chord_ref = mean_aerodynamic_chord(wing), 
+                      area_ref  = projected_area(wing),
+                      chord_ref = mean_aerodynamic_chord(wing),
                       span_ref  = span(wing));
 
 # Test case - Fixed speed
@@ -96,7 +96,7 @@ print_coefficients(aero_surfs[1], aero_state);
 ## Aerodynamic forces and center locations
 horsies    = horseshoes(aero_surfs[1])
 vlm_acs    = bound_leg_center.(horsies)
-vlm_forces = surface_forces(aero_surfs[1]) 
+vlm_forces = surface_forces(aero_surfs[1])
 
 # FEM mesh
 fem_w    = 0.40
@@ -123,7 +123,7 @@ rho   = 1.6e3  # Density, kg/m³
 aluminum = Material(E, G, σ_max, rho)
 
 ## Beam properties
-Ls    = norm.(diff(fem_mesh))                              # Beam lengths, m 
+Ls    = norm.(diff(fem_mesh))                              # Beam lengths, m
 rs    = range(2e-2, stop = 8e-3, length = length(Ls) ÷ 2)  # Outer radius, m
 ts    = range(8e-3, stop = 2e-3, length = length(Ls) ÷ 2)  # Thickness, m
 r     = [ reverse(rs); rs ]
@@ -149,7 +149,7 @@ surf_name  = "Wing"
 surf_index = findfirst(x -> surf_name == x, name.(surfaces(aero_system)))
 
 # Set up initial guess and function
-solve_aerostructural_residual!(R, x) = 
+solve_aerostructural_residual!(R, x) =
     solve_coupled_residual!(R, x,
                             aero_system, aero_state, # Aerodynamic system and state
                             surf_index,              # Surface
@@ -190,7 +190,7 @@ x_opt = res_aerostruct.zero
 α_opt = x_opt.load_factor
 
 # Get circulations
-horsies = horseshoes(aero_system) 
+horsies = horseshoes(aero_system)
 Γs      = circulations(aero_system)
 
 ## Compute displacements
@@ -203,7 +203,7 @@ new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
 new_panels   = make_panels(new_vlm_mesh)
 
 new_cam_mesh   = transfer_displacements(dxs, Ts, cam_mesh, fem_mesh)
-new_cam_panels = make_panels(new_cam_mesh) 
+new_cam_panels = make_panels(new_cam_mesh)
 new_normals    = panel_normal.(new_cam_panels)
 
 # New beams
@@ -217,7 +217,7 @@ fem_loads  = compute_loads(vlm_acs, vlm_forces, new_fem_mesh)
 
 ## Compute stresses
 δxs = eachcol(diff(dx[1:3,:], dims = 2)) # Need to transform these to principal axes
-δθs = eachcol(diff(dx[4:6,:], dims = 2)) # Need to transform these to principal axes 
+δθs = eachcol(diff(dx[4:6,:], dims = 2)) # Need to transform these to principal axes
 σs  = reduce(hcat, von_mises_stress.(tubes, δxs, δθs))
 
 ## Generate DataFrame
@@ -237,7 +237,7 @@ loads_plot   = fem_loads
 
 # Panels
 wing_panel_plot  = plot_panels(wing_panels[:])
-htail_panel_plot = plot_panels(htail_panels[:]) 
+htail_panel_plot = plot_panels(htail_panels[:])
 vtail_panel_plot = plot_panels(vtail_panels[:])
 
 # Aerodynamic centers and forces
@@ -263,14 +263,14 @@ ns_plot   = axes_plot[:,3,:]
 # Planforms
 wing_plan  = plot_wing(wing)
 nwing_plan = plot_wing(new_cam_mesh)
-htail_plan = plot_wing(htail, 
+htail_plan = plot_wing(htail,
                        position = htail_position,
                        angle    = htail_angle,
                        axis     = [0., 1., 0.]
                       )
-vtail_plan = plot_wing(vtail, 
+vtail_plan = plot_wing(vtail,
                        position = [4., 0, 0],
-                       angle    = π/2, 
+                       angle    = π/2,
                        axis     = [1., 0., 0.]
                       )
 
@@ -288,9 +288,9 @@ using LaTeXStrings
 pyplot(dpi = 300)
 # pgfplotsx(size = (900, 600))
 
-aircraft_plot = 
+aircraft_plot =
     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
-         camera = (-75, 30), 
+         camera = (-75, 30),
          xlim = (0, b/2),
      #     ylim = (-b/2, b/2),
          zlim = (-b/8, b/8),

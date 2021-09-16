@@ -6,10 +6,10 @@ trace_coords(xs, ys, zs, color = :black) = [    scatter3d(
                                                             x = x,
                                                             y = y,
                                                             z = z,
-                                                            mode = :lines, 
+                                                            mode = :lines,
                                                             line = attr(color = color),
                                                             showlegend = false,
-                                                        ) 
+                                                        )
                                                 for (x, y, z) in zip(xs, ys, zs) ]
 
 trace_panels(panels :: Vector{<: Panel3D}) = trace_coords(panel_splits(panel_coords.(panels))...)
@@ -32,7 +32,7 @@ function trace_panels(panels :: Vector{<: Panel3D}, Γs :: Vector{<: Real})
                         intensity = fill(norm_Γ, length(x)),
                         text = norm_Γ,
                         showscale = false,
-                    ) 
+                    )
                 for (x, y, z, norm_Γ) in zip(xs, ys, zs, norm_Γs) ]
 end
 

@@ -29,14 +29,14 @@ htail       = Wing(foils     = htail_foils,
 
 # Vertical tail
 vtail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
-vtail = HalfWing(foils     = vtail_foils, 
+vtail = HalfWing(foils     = vtail_foils,
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
                  sweep_LEs = [7.97],
                  position  = [4., 0, 0],
-                 angle     = 90., 
+                 angle     = 90.,
                  axis      = [1., 0., 0.])
 
 # Print info
@@ -59,15 +59,15 @@ wing_mac = mean_aerodynamic_center(wing)
 ## VLM setup
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
     # Evaluate case
-    data =  solve_case(aircraft, fs; 
-                       rho_ref   = ρ, 
+    data =  solve_case(aircraft, fs;
+                       rho_ref   = ρ,
                        r_ref     = ref,
                        area_ref  = S,
                        span_ref  = b,
                        chord_ref = c,
                        print     = print
                       );
-    
+
     # Get data
     nf_coeffs, ff_coeffs = data["Aircraft"][1:2]
 
@@ -121,7 +121,7 @@ lower_bound, upper_bound = minimum.(eachcol(data[:,3])), maximum.(eachcol(data[:
 zs = data[:,3]
 
 ## Generate surrogate
-surrogate_model = LobachevskySurrogate(αβs, zs, lower_bound, upper_bound); 
+surrogate_model = LobachevskySurrogate(αβs, zs, lower_bound, upper_bound);
 
 ## Evaluate surrogate
 num     = 100

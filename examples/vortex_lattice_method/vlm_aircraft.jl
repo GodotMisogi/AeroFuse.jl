@@ -30,7 +30,7 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  dihedrals = [0.],
                  sweep_LEs = [7.97],
                  position  = [4., 0, 0],
-                 angle     = 90., 
+                 angle     = 90.,
                  axis      = [1., 0., 0.])
 
 # Print info
@@ -40,8 +40,8 @@ print_info(vtail, "Vertical Tail")
 
 ## Assembly
 wing_panels, wing_normals  = panel_wing(wing,                 # Wing or HalfWing type
-                                        [20, 3],              # Number of spanwise panels for half-wing 
-                                        10;                   # Chordwise panels 
+                                        [20, 3],              # Number of spanwise panels for half-wing
+                                        10;                   # Chordwise panels
                                         # spacing = "cosine"  # Spacing distribution: Default works well for symmetric
                                        )
 
@@ -69,8 +69,8 @@ V, α, β = 1.0, 1.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
-@time data = 
-    solve_case(aircraft, fs; 
+@time data =
+    solve_case(aircraft, fs;
                rho_ref     = ρ, 		# Reference density
                r_ref       = ref, 		# Reference point for moments
                area_ref    = S, 		# Reference area
@@ -88,7 +88,7 @@ nf_coeffs, ff_coeffs, CFs, CMs, horses, Γs = data[comp]; #  Get the nearfield, 
 print_coefficients(nf_coeffs, ff_coeffs, comp)
 
 ## Stability case
-@time dv_data = 
+@time dv_data =
     solve_stability_case(aircraft, fs;
                          rho_ref     = ρ,
                          r_ref       = ref,
@@ -101,7 +101,7 @@ print_coefficients(nf_coeffs, ff_coeffs, comp)
                         );
 
 ## Data collection
-names = (collect ∘ keys)(dv_data) 
+names = (collect ∘ keys)(dv_data)
 comp  = names[1]
 nf, ff, dvs = dv_data[comp];
 print_coefficients(nf, ff, comp)
@@ -119,9 +119,9 @@ print_derivatives(dvs, comp)
 
 # Spanwise distribution
 span_points = 10
-init        = chop_leading_edge(wing, span_points) 
+init        = chop_leading_edge(wing, span_points)
 dx, dy, dz  = 0, 0, 1e-3
-seed        = [ init .+ Ref([dx, dy, dz]) ; 
+seed        = [ init .+ Ref([dx, dy, dz]) ;
                 init .+ Ref([dx, dy,-dz]) ];
 
 distance = 8
@@ -141,7 +141,7 @@ z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      camera = (30, 60),
     #  xlim = (-z_limit/2, z_limit/2),
-     aspect_ratio = 1, 
+     aspect_ratio = 1,
      zlim = (-z_limit/2, z_limit/2),
      size = (1280, 720)
     )

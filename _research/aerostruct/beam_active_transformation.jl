@@ -67,8 +67,8 @@ cs = @. ss × ns
 
 ## Active transformations of forces and moments (vs. passive transformation of stiffness matrix)
 global_axis     = I(3)            # Global axis system for panels in VLM
-beam_local_axis = [ 0. -1.  0. ; 
-                   -1.  0.  0. ; 
+beam_local_axis = [ 0. -1.  0. ;
+                   -1.  0.  0. ;
                     0.  0. -1. ]  # Orthogonal local axis system for beam in FEM
 
 # WTF array of local coordinate systems

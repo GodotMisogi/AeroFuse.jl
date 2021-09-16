@@ -22,7 +22,7 @@ doublet_source_case(coords, uniform)
 ## Cosine spacing
 cos_foil = cosine_foil(coords, 60)
 
-doublet_source_case(cos_foil, uniform)                                             
+doublet_source_case(cos_foil, uniform)
 
 ## Camber-thickness transformations
 xcamthick = foil_camthick(cos_foil)

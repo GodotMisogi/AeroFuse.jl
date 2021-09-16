@@ -43,7 +43,7 @@ vtail = HalfWingSection(span       = 0.8,
                         position   = [5., 0., 0.],
                         angle      = 90.,
                         axis       = [1., 0., 0.])
-vtail_plan = plot_wing(vtail)           
+vtail_plan = plot_wing(vtail)
 
 # Print info
 print_info(wing, "Wing")
@@ -89,8 +89,8 @@ V, α, β = 1.0, 3.0, 0.0
 Ω 		= [0.0, 0.0, 0.0]
 fs 	    = Freestream(V, α, β, Ω)
 
-@time dv_data = 
-solve_stability_case(aircraft, fs; 
+@time dv_data =
+solve_stability_case(aircraft, fs;
                      rho_ref     = ρ,           # Reference density
                      r_ref       = ref,         # Reference point for moments
                      area_ref    = S,           # Reference area
@@ -145,7 +145,7 @@ wing_plan = plot_wing(wing)
 
 #
 z_limit = b
-aircraft_plot = 
+aircraft_plot =
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      camera = (30, 60),
      xlim = (0, z_limit),

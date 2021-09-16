@@ -16,7 +16,7 @@ function vortex_ring(p1, p2, p3, p4)
     v4 = quarter_point(p4, p3)
     v2 = @. v1 + p2 - p1
     v3 = @. v4 + p3 - p4
-    
+
     v1, v2, v3, v4
 end
 
@@ -28,7 +28,7 @@ vortex_ring(panel :: Panel3D) = vortex_ring(panel.p1, panel.p2, panel.p3, panel.
 """
 Constructor for vortex rings on a Panel3D using Lines. The following convention is adopted:
 
-``` 
+```
     p1 —bound_leg→ p4
     |               |
 left_line       right_line
