@@ -24,7 +24,10 @@ println("AeroMDAO Aircraft Functional -")
                  twists    = [0.0, 0.0],
                  spans     = [1.25],
                  dihedrals = [0.],
-                 sweep_LEs = [6.39])
+                 sweep_LEs = [6.39],
+                 position  = [4., 0, 0],
+                 angle     = 0.,
+                 axis      = [0., 1., 0.],)
 
     # Vertical tail
     vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
@@ -32,27 +35,28 @@ println("AeroMDAO Aircraft Functional -")
                      twists    = [0.0, 0.0],
                      spans     = [1.0],
                      dihedrals = [0.],
-                     sweep_LEs = [7.97])
+                     sweep_LEs = [7.97],
+                     position  = [4., 0, 0],
+                     angle     = 90,
+                     axis      = [1., 0., 0.],)
 
-    wing_panels  = panel_wing(wing, 20, 20, spacing = "cosine")
+    wing_panels, wing_normals   = panel_wing(wing, 20, 20, spacing = "cosine")
 
-    htail_panels = panel_wing(htail, 12, 12;
-                              position = [4., 0, 0],
-                              angle    = deg2rad(0.),
-                              axis 	   = [0., 1., 0.],
-                              spacing  = "cosine"
-                             )
+    htail_panels, htail_normals = panel_wing(htail, 12, 12;
+                                             spacing  = "cosine"
+                                            )
 
-    vtail_panels = panel_wing(vtail, 12, 10;
-                              position = [4., 0, 0],
-                              angle    = π/2,
-                              axis 	   = [1., 0., 0.],
-                              spacing  = "cosine"
-                             )
+    vtail_panels, vtail_normals = panel_wing(vtail, 12, 10;
+                                             spacing  = "cosine"
+                                            )
 
-    aircraft = Dict("Wing" 			  	=> wing_panels,
-                    "Horizontal Tail" 	=> htail_panels,
-                    "Vertical Tail"   	=> vtail_panels)
+    # Aircraft assembly
+    aircraft = Dict(
+                    "Wing"            => Horseshoe.(wing_panels,  wing_normals),
+                    "Horizontal Tail" => Horseshoe.(htail_panels,  htail_normals),
+                    "Vertical Tail"   => Horseshoe.(vtail_panels,  vtail_normals),
+                   );
+
 
     # display(size.([ wing_panels[1], htail_panels[1], vtail_panels[1] ])) # Checking sizes
 
@@ -92,7 +96,10 @@ println("AeroMDAO Aircraft Stateful -")
                  twists    = [0.0, 0.0],
                  spans     = [1.25],
                  dihedrals = [0.],
-                 sweep_LEs = [6.39])
+                 sweep_LEs = [6.39],
+                 position  = [4., 0, 0],
+                 angle     = 0.,
+                 axis      = [0., 1., 0.],)
 
     # Vertical tail
     vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
@@ -100,27 +107,28 @@ println("AeroMDAO Aircraft Stateful -")
                      twists    = [0.0, 0.0],
                      spans     = [1.0],
                      dihedrals = [0.],
-                     sweep_LEs = [7.97])
+                     sweep_LEs = [7.97],
+                     position  = [4., 0, 0],
+                     angle     = 90,
+                     axis      = [1., 0., 0.],)
 
-    wing_panels  = panel_wing(wing, 20, 20, spacing = "cosine")
+    wing_panels, wing_normals   = panel_wing(wing, 20, 20, spacing = "cosine")
 
-    htail_panels = panel_wing(htail, 12, 12;
-                              position = [4., 0, 0],
-                              angle    = deg2rad(0.),
-                              axis 	   = [0., 1., 0.],
-                              spacing  = "cosine"
-                             )
+    htail_panels, htail_normals = panel_wing(htail, 12, 12;
+                                             spacing  = "cosine"
+                                            )
 
-    vtail_panels = panel_wing(vtail, 12, 10;
-                              position = [4., 0, 0],
-                              angle    = π/2,
-                              axis 	   = [1., 0., 0.],
-                              spacing  = "cosine"
-                             )
+    vtail_panels, vtail_normals = panel_wing(vtail, 12, 10;
+                                             spacing  = "cosine"
+                                            )
 
-    aircraft = Dict("Wing"            => wing_panels,
-                    "Horizontal Tail" => htail_panels,
-                    "Vertical Tail"   => vtail_panels)
+    # Aircraft assembly
+    aircraft = Dict(
+                    "Wing"            => (wing_panels,  wing_normals),
+                    "Horizontal Tail" => (htail_panels,  htail_normals),
+                    "Vertical Tail"   => (vtail_panels,  vtail_normals),
+                   );
+
 
     ρ       = 1.225
     x_ref   = [0.5, 0., 0.]

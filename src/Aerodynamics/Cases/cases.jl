@@ -83,7 +83,7 @@ end
 # solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) = evaluate_case(components, state.speed, state.alpha, state.beta, state.omega, rho_ref = state.rho_ref, r_ref = state.r_ref, area_ref = state.area_ref, chord_ref = state.chord_ref, span_ref = state.span_ref, name)
 
 # Mutating version
-function solve_case(aircraft :: Dict{String, Matrix{Horseshoe{T}}}, state :: VLMState) where T <: Real
+function solve_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
     # Build surfaces and systems
     system = build_system(aircraft)
 
