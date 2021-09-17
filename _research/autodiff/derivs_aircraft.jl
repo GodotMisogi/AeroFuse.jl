@@ -4,9 +4,10 @@ using BenchmarkTools
 using StaticArrays
 using LinearAlgebra
 using ForwardDiff, ReverseDiff, Zygote
+using ProtoStructs
 
 ## Foil tests
-struct TestFoil{T <: Real}
+@proto struct TestFoil{T <: Real}
     coords :: Matrix{T}
 end
 
@@ -20,16 +21,16 @@ x_coords = naca4(0,0,1,2)
 Zygote.gradient(arc_length ∘ TestFoil, x_coords) # PASSES FOR MATRIX
 
 ##
-struct TestFoils{T <: Real}
+@proto struct TestFoils{T <: Real}
     foils :: Vector{TestFoil{T}}
 end
 
 AeroMDAO.arc_length(fs :: TestFoils) = sum(arc_length, fs.foils)
 
 foiler(x) = arc_length(TestFoils(fill(TestFoil(x), 5)))
-airfoils = TestFoils(fill(TestFoil(x_coords), 5))
+# airfoils = TestFoils(fill(TestFoil(x_coords), 5))
 
-Zygote.gradient(arc_length ∘ TestFoils ∘ (x -> fill(x, 5)), TestFoil(x_coords)) # PASSES
+# Zygote.gradient(arc_length ∘ TestFoils ∘ (x -> fill(x, 5)), TestFoil(x_coords)) # PASSES
 # Zygote.gradient(foiler, x_coords) # FAILS
 
 # x = Zygote.gradient(sum ∘ (x -> reduce(vcat, fill(x, 5))), [1,2,3])
@@ -37,7 +38,7 @@ Zygote.gradient(arc_length ∘ TestFoils ∘ (x -> fill(x, 5)), TestFoil(x_coord
 # Great success!
 
 ## Wing tests
-struct HalfWingTest{T <: Real}
+@proto struct HalfWingTest{T <: Real}
     chords    :: Vector{T}
     twists    :: Vector{T}
     spans     :: Vector{T}
@@ -80,7 +81,7 @@ Zygote.gradient(x -> winger(x, length(cs)), xs)
 # Great success!
 
 ## Composed wing-foil
-struct FoilerWing{T <: Real}
+@proto struct FoilerWing{T <: Real}
     foils  :: Vector{Foil{T}}
     chords :: Vector{T}
     FoilerWing(fs :: AbstractVector{Foil{T}}, cs :: AbstractVector{T}) where T <: Real = new{T}(fs, cs)

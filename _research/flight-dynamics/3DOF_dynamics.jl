@@ -3,6 +3,7 @@ using NLsolve
 using DifferentialEquations
 using TaylorSeries
 using Plots
+using ProtoStructs
 
 ## Aerodynamic coefficients (convert to struct for generality)
 #===========================================================================#
@@ -182,7 +183,7 @@ T_s, δe_s, Θ_s = trim_state = res_trim.zero
 ## ODE integration
 
 # Initial state setup
-Δδe            = deg2rad(-1.)
+Δδe            = deg2rad(-1)
 δe_init        = δe_s + Δδe
 
 Θ_init         = Θ_s
