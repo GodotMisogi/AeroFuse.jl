@@ -5,7 +5,6 @@ module Aerostructural
 
 using StaticArrays
 using LinearAlgebra
-using Einsum
 using ComponentArrays
 using TimerOutputs
 
