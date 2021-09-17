@@ -29,8 +29,8 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              spans     = [1.25],
              dihedrals = [0.],
              sweep_LEs = [6.39],
-             position  = [4., 0, 0.],
-             angle     = -1.,
+             position  = [4., 0,  0.08],
+             angle     = 3.,
              axis      = [0., 1., 0.])
 
 # Vertical tail
@@ -41,7 +41,7 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  dihedrals = [0.],
                  sweep_LEs = [7.97],
                  position  = [4., 0, 0],
-                 angle     = π/2,
+                 angle     = 90.,
                  axis      = [1., 0., 0.])
 
 # Wing
@@ -64,9 +64,9 @@ vtail_horsies = Horseshoe.(vtail_panels,  vtail_normals)
 
 # Aircraft assembly
 aircraft = Dict(
-                "Wing"            => wing_horsies,
-                "Horizontal Tail" => htail_horsies,
-                "Vertical Tail"   => vtail_horsies,
+                "Wing"            => (wing_panels,  wing_normals),
+                "Horizontal Tail" => (htail_panels, htail_normals),
+                "Vertical Tail"   => (vtail_panels, vtail_normals)
                );
 
 wing_mac = mean_aerodynamic_center(wing);
@@ -90,10 +90,10 @@ aero_system = solve_case(aircraft, aero_state)
 aero_surfs  = surfaces(aero_system)
 print_coefficients(aero_surfs[1], aero_state);
 
-# Get initial aerodynamic vector for Newton method
+## Get initial aerodynamic vector for Newton method
 Γ_0        = circulations(aero_system)
 
-## Aerodynamic forces and center locations
+# Aerodynamic forces and center locations
 horsies    = horseshoes(aero_surfs[1])
 vlm_acs    = bound_leg_center.(horsies)
 vlm_forces = surface_forces(aero_surfs[1])

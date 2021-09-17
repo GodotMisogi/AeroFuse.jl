@@ -84,13 +84,13 @@ fs      = Freestream(V, α, β, Ω)
 ## Solve aerodynamic case for initial vector
 @time data =
     solve_case(aircraft, fs;
-               rho_ref     = ρ, 		# Reference density
-               r_ref       = ref, 		# Reference point for moments
-               area_ref    = S, 		# Reference area
-               span_ref    = b, 		# Reference span
-               chord_ref   = c, 		# Reference chord
-               name        = ac_name,	# Aircraft name
-               print_components = true,	# Prints the results for each component
+               rho_ref          = ρ,         # Reference density
+               r_ref            = ref,       # Reference point for moments
+               area_ref         = S,         # Reference area
+               span_ref         = b,         # Reference span
+               chord_ref        = c,         # Reference chord
+               name             = ac_name,   # Aircraft name
+               print_components = true,      # Prints the results for each component
               );
 
 ## Data collection
