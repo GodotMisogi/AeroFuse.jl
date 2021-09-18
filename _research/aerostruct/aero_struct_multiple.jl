@@ -310,8 +310,9 @@ streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
 using Plots
 using LaTeXStrings
 
-plotlyjs(dpi = 300, size = (1280, 720))
-# pyplot(dpi = 300)
+# gr()
+# plotlyjs(dpi = 300, size = (1280, 720))
+pyplot(dpi = 300)
 # pgfplotsx(size = (900, 600))
 
 aircraft_plot =
@@ -319,7 +320,7 @@ aircraft_plot =
          camera = (-75, 20),
          xlim = (-b/4, 3b/4),
      #     ylim = (-b/2, b/2),
-         zlim = (-b/4, 3b/4),
+         zlim = (-b/8, b/4),
         #  bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
          legend = :topright,
          title = "Coupled Aerostructural Analysis"
@@ -343,7 +344,7 @@ normer(rs) = [ rs; rs[end] ] / maximum(rs)
 r_norms = @. normer([ r_wing, r_htail ]) * thickness
 [ plot!(fem[1,:], fem[2,:], fem[3,:], color = :black, label = "Original Beam", linestyle = :solid, linewidth = r_ns) for (fem, r_ns) in zip(fem_plot, r_norms) ]
 
-[ plot!(new_fem[1,:], new_fem[2,:], new_fem[3,:], color = RGBA.(σ_ns, 0.5, 0.6, 1.0), label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_ns) for (new_fem, σ_ns, r_ns) in zip(new_fem_plot, σ_norms, r_norms) ]
+[ plot!(new_fem[1,:], new_fem[2,:], new_fem[3,:], m = (thickness, 0.8, :heat, Plots.stroke(0)), zcolor = σ_ns, cbar = true, label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_ns) for (new_fem, σ_ns, r_ns) in zip(new_fem_plot, σ_norms, r_norms) ]
 
 # Streamlines
 [ plot!(stream, color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]

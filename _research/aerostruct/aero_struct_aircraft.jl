@@ -278,9 +278,10 @@ streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
 using Plots
 using LaTeXStrings
 
-plotlyjs(dpi = 300)
+# gr()
+# plotlyjs(dpi = 300)
 # pyplot(dpi = 300, size = (900, 600))
-# pgfplotsx(size = (900, 600))
+pgfplotsx(size = (900, 600))
 
 aircraft_plot =
     plot(xaxis = "x", yaxis = "y", zaxis = "z",
@@ -289,7 +290,7 @@ aircraft_plot =
      #     ylim = (-b/2, b/2),
          zlim = (-b/8, b/4),
          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
-         legend = :bottomright,
+         legend = :topleft,
          title = "Coupled Aerostructural Analysis"
         )
 
@@ -309,7 +310,7 @@ plot!(vtail_plan, color = :brown, label = "Vertical Tail")
 thickness = 2.5
 r_norm = [ r; r[end]] / maximum(r) * thickness
 plot!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:], color = :black, label = "Original Beam", linestyle = :solid, linewidth = r_norm)
-plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_norms, 0.5, 0.6, 1.0), label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_norm)
+plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], m = (thickness, 0.8, :viridis, Plots.stroke(0)), zcolor = σ_norms, cbar = true, label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_norm)
 
 # Streamlines
 [ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
