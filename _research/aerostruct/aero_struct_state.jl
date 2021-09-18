@@ -263,16 +263,8 @@ ns_plot   = axes_plot[:,3,:]
 # Planforms
 wing_plan  = plot_wing(wing)
 nwing_plan = plot_wing(new_cam_mesh)
-htail_plan = plot_wing(htail,
-                       position = htail_position,
-                       angle    = htail_angle,
-                       axis     = [0., 1., 0.]
-                      )
-vtail_plan = plot_wing(vtail,
-                       position = [4., 0, 0],
-                       angle    = π/2,
-                       axis     = [1., 0., 0.]
-                      )
+htail_plan = plot_wing(htail)
+vtail_plan = plot_wing(vtail)
 
 # Streamlines
 fs      = Freestream(aero_state.speed, rad2deg(aero_state.alpha), rad2deg(aero_state.beta), aero_state.omega)
