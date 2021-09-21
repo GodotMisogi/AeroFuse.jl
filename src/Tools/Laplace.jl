@@ -31,13 +31,13 @@ end
 
 struct Singularity2D{T <: Real} <: AbstractLaplace
     strength :: T
-    r 		 :: Point2D{T}
+    r        :: Point2D{T}
 end
 
 # Getters
 strength(s :: Singularity2D) = s.strength
-x(s :: Singularity2D) 		 = s.r.x
-y(s :: Singularity2D) 		 = s.r.y
+x(s :: Singularity2D)        = s.r.x
+y(s :: Singularity2D)        = s.r.y
 
 source_velocity(src :: Singularity2D, x, y) = SVector(strength(src) / (2π) * (x - y(src)) / ((x - y(src))^2 + (y - x(src))^2), str / (2π) * (y - x(src)) / ((x - y(src))^2 + (y - x(src))^2))
 source_potential(src :: Singularity2D, x, y) = strength(src) / (4π) * log((x - y(src))^2 + (y - x(src))^2)
@@ -54,7 +54,7 @@ vortex_stream(vor :: Singularity2D, x, y) = -strength(vor) / (4π) * log((x - y(
 
 struct Uniform2D{T <: Real} <: AbstractLaplace
     magnitude :: T
-    angle 	  :: T
+    angle     :: T
     Uniform2D{T}(mag, ang) where T <: Real = new(mag, deg2rad(ang))
 end
 
@@ -72,8 +72,8 @@ stream(uni :: Uniform2D, x, y)    = uni.magnitude * (y * cos(uni.angle) - x * si
 #============================================#
 
 # struct Singularity3D{T <: Real} <: AbstractLaplace
-# 	str :: T
-# 	r 	:: Point3D{T}
+#       str :: T
+#       r   :: Point3D{T}
 # end
 
 # source_velocity(src :: Source2D, x, y, z)
@@ -84,7 +84,7 @@ stream(uni :: Uniform2D, x, y)    = uni.magnitude * (y * cos(uni.angle) - x * si
 #============================================#
 
 struct Freestream{T <: Real} <: AbstractLaplace
-    V 	  :: T
+    V     :: T
     alpha :: T
     beta  :: T
     omega :: SVector{3,T}

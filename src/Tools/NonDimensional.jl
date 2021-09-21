@@ -51,7 +51,7 @@ Compute the relevant aerodynamic coefficients given a net force, moment and angu
 function aerodynamic_coefficients(force, moment, V, S, b, c, ρ)
     q = dynamic_pressure(ρ, V)
 
-    [ force_coefficient(force, q, S) 		 ;
+    [ force_coefficient(force, q, S)         ;
       moment_coefficient(moment, q, S, b, c) ]
 end
 

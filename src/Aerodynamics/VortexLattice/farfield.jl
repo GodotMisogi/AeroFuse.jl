@@ -23,9 +23,9 @@ Compute the normal derivative strengths of the doublets given the wake `Line`s, 
 """
 function doublet_normal_derivatives(wake_lines :: Vector{<: Line}, Δφs, normals)
     centers = center.(wake_lines)
-    pts 	= points(wake_lines)
-    AIC   	= trefftz_influence_matrix(centers, normals, pts)
-    ∂φ_∂n 	= AIC * Δφs
+    pts     = points(wake_lines)
+    AIC     = trefftz_influence_matrix(centers, normals, pts)
+    ∂φ_∂n   = AIC * Δφs
 end
 
 project_vector(vector, U) = vector - dot(U, vector) * U

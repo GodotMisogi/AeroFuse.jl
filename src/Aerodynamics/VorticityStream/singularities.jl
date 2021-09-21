@@ -37,13 +37,13 @@ end
 # two_piece_source(λ1, λ2, r1, r2, r) = (r - r1) / (r2 - r1) * λ1 + (r2 - r) / (r2 - r1) * λ2
 
 # function source_stream_plus(str, x, n, x_p, x_q)
-# 	s_p, s_q, r_p, r_q, β_p, β_q = transform(x, n, x_p, x_q)
-# 	str / 4π * (x_p * β_p - x_q * β_q + n * log(r_p / r_q))
+#   s_p, s_q, r_p, r_q, β_p, β_q = transform(x, n, x_p, x_q)
+#   str / 4π * (x_p * β_p - x_q * β_q + n * log(r_p / r_q))
 # end
 
 # function source_stream_minus(str, x, n, x_p, x_q)
-# 	s_p, s_q, r_p, r_q, β_p, β_q = transform(x, n, x_p, x_q)
-# 	λ_plus = source_stream_1(1., x, n, x_p, x_q)
+#   s_p, s_q, r_p, r_q, β_p, β_q = transform(x, n, x_p, x_q)
+#   λ_plus = source_stream_1(1., x, n, x_p, x_q)
 
-# 	str / (4π * (x_p - x_q)) * ((x_p + x_q) * λ_plus + r_p^2 * β_p - r_q^2 * β_q + n * (x_q - x_p))
+#   str / (4π * (x_p - x_q)) * ((x_p + x_q) * λ_plus + r_p^2 * β_p - r_q^2 * β_q + n * (x_q - x_p))
 # end

@@ -42,7 +42,7 @@ include("influences.jl")
 
 Get the bound legs and collocation points of the horseshoes defined by horseshoe `Panel3D`s.
 """
-make_horseshoes(horseshoe_panels) =	@. Horseshoe(horseshoe_panels), horseshoe_point(horseshoe_panels)
+make_horseshoes(horseshoe_panels) = @. Horseshoe(horseshoe_panels), horseshoe_point(horseshoe_panels)
 
 quasi_steady_freestream(horseshoes, U, Ω) = map(hs -> U + Ω × horseshoe_point(hs), horseshoes)
 
@@ -54,7 +54,7 @@ Evaluate and return the vortex strengths ``\\Gamma``s given `Horseshoes`, their 
 function solve_system(horseshoes, U, Ω)
     AIC  = influence_matrix(horseshoes, -normalize(U), false)
     boco = boundary_condition(quasi_steady_freestream(horseshoes, U, Ω), horseshoe_normal.(horseshoes))
-    Γs 	 = AIC \ boco 
+    Γs   = AIC \ boco 
 end
 
 ## Force evaluations
@@ -96,13 +96,13 @@ function evaluate_coefficients(forces, moments, trefftz_force, U, α, β, ρ, S,
     force, moment = sum(forces), sum(moments)
 
     # Transform near-field dynamics to wind axes
-    trans_force	 = body_to_wind_axes(force, α, β)
+    trans_force  = body_to_wind_axes(force, α, β)
     trans_force  = [ nearfield_drag(force, U); trans_force[2:end] ]
     trans_moment = body_to_wind_axes(stability_flip(moment), α, β)
 
     # Compute coefficients
     nearfield_coeffs = aerodynamic_coefficients(trans_force, trans_moment, V, S, b, c, ρ)
-    farfield_coeffs	 = force_coefficient(trefftz_force, q, S)
+    farfield_coeffs  = force_coefficient(trefftz_force, q, S)
 
     # Non-dimensional panel coefficients
     CFs = force_coefficient.(forces, q, S)

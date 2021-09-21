@@ -147,10 +147,10 @@ function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc), coeff_LE = 0, n 
 end
 
 function coords_to_CST(coords, num_dvs)
-    xs 		 = coords[:,1]
+    xs       = coords[:,1]
     S_matrix = reduce(hcat, @. bernstein_class(xs, 0.5, 1.0) * bernstein_basis(xs, num_dvs - 1, i) for i in 0:num_dvs - 1)
 
-    alphas 	 = S_matrix \ coords[:,2]
+    alphas   = S_matrix \ coords[:,2]
 
     return alphas
 end
@@ -158,7 +158,7 @@ end
 function camthick_to_CST(coords, num_dvs)
     xs, camber, thickness = (columns ∘ foil_camthick)(coords)
 
-    alpha_cam  	= coords_to_CST([ xs camber ], num_dvs)
+    alpha_cam   = coords_to_CST([ xs camber ], num_dvs)
     alpha_thick = coords_to_CST([ xs thickness ], num_dvs)
 
     alpha_cam, alpha_thick
@@ -173,11 +173,11 @@ Converts an airfoil to its camber-thickness representation in cosine spacing.
 function foil_camthick(coords, num :: Integer = 40)
     upper, lower = split_foil(cosine_foil(coords, num))
 
-    xs, y_LE  	 = lower[:,1], lower[1,2]   # Getting abscissa and leading edge ordinate
+    xs, y_LE         = lower[:,1], lower[1,2]            # Getting abscissa and leading edge ordinate
     y_upper, y_lower = upper[end:-1:1,2], lower[2:end,2] # Excluding leading edge point
 
-    camber    	 = [ y_LE; (y_upper + y_lower) / 2 ]
-    thickness 	 = [ 0; y_upper - y_lower ]
+    camber       = [ y_LE; (y_upper + y_lower) / 2 ]
+    thickness    = [ 0; y_upper - y_lower          ]
 
     [ xs camber thickness ]
 end
@@ -189,7 +189,7 @@ Converts the camber-thickness representation to coordinates given the ``x``-loca
 """
 function camthick_foil(xs, camber, thickness)
     coords = [ [xs camber + thickness / 2][end:-1:2,:];
-                xs camber - thickness / 2 			  ]
+                xs camber - thickness / 2             ]
     # @views SVector.(coords[:,1], coords[:,2])
 end
 
@@ -244,9 +244,9 @@ function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_e
         y_lower = -thickness
     else
         # Compute camberline
-        camber 	= naca4_camberline.(Ref(pos), Ref(cam), xs)
+        camber  = naca4_camberline.(Ref(pos), Ref(cam), xs)
         # Compute gradients
-        grads 	= naca4_gradient.(Ref(pos), Ref(cam), xs)
+        grads   = naca4_gradient.(Ref(pos), Ref(cam), xs)
         # Upper surface
         x_upper = @. xs - thickness * sin(grads)
         y_upper = @. camber + thickness * cos(grads)

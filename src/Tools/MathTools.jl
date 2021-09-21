@@ -57,7 +57,7 @@ structtolist(x) = [ name << x for name ∈ (fieldnames ∘ typeof)(x) ]
 
 ⊗(A, B)    = kron(A, B)
 
-×(xs, ys) 	= product(xs, ys)
+×(xs, ys)   = product(xs, ys)
 dot(V₁, V₂) = sum(V₁ .* V₂)
 # ×(xs, ys) = (collect ∘ zip)(xs' ⊗ (ones ∘ length)(ys), (ones ∘ length)(xs)' ⊗ ys)
 
@@ -65,9 +65,9 @@ dot(V₁, V₂) = sum(V₁ .* V₂)
 #===========================================================================#
 
 # Transforms (x, y) to the coordinate system with (x_s, y_s) as origin oriented at α_s.
-affine_2D(x, y, x_s, y_s, α_s) 	= rotation(x - x_s, y - y_s, α_s)
-inverse_rotation(x, y, angle) 	= SVector(x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle))
-rotation(x, y, angle) 			= SVector(x * cos(angle) + y * sin(angle), -x * sin(angle) + y * cos(angle))
+affine_2D(x, y, x_s, y_s, α_s)  = rotation(x - x_s, y - y_s, α_s)
+inverse_rotation(x, y, angle)   = SVector(x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle))
+rotation(x, y, angle)           = SVector(x * cos(angle) + y * sin(angle), -x * sin(angle) + y * cos(angle))
 
 # Matrix versions
 rotation(θ)         = [ cos(θ) sin(θ) ;
@@ -96,9 +96,9 @@ reflect_mapper(f, xs) = @views [ f(xs[:,end:-1:1]) xs ]
 
 fwddiff_matrix(n) = [ I zeros(n) ] - [ zeros(n) I ]
 
-fwdsum(xs) 	 = @views @. xs[2:end] + xs[1:end-1]
+fwdsum(xs)   = @views @. xs[2:end] + xs[1:end-1]
 fwddiff(xs)  = @views @. xs[2:end] - xs[1:end-1]
-fwddiv(xs) 	 = @views @. xs[2:end] / xs[1:end-1]
+fwddiv(xs)   = @views @. xs[2:end] / xs[1:end-1]
 ord2diff(xs) = @views @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
 
 adj3(xs) = @views zip(xs[1:end-2,:], xs[2:end-1,:], xs[3:end,:])

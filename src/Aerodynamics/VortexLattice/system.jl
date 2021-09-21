@@ -1,15 +1,15 @@
 mutable struct VLMState{T <: Real}
-	speed     :: T
+    speed     :: T
     alpha     :: T
     beta      :: T
     velocity  :: SVector{3,T}
     omega     :: SVector{3,T}
-	r_ref 	  :: SVector{3,T}
-	rho_ref   :: T
-	area_ref  :: T
-	chord_ref :: T
-	span_ref  :: T
-	name 	  :: String
+    r_ref     :: SVector{3,T}
+    rho_ref   :: T
+    area_ref  :: T
+    chord_ref :: T
+    span_ref  :: T
+    name      :: String
     VLMState(U, α, β, Ω :: AbstractVector{T} = zeros(3); r_ref = zeros(3), rho_ref = 1.225, area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") where T <: Real = new{T}(U, α, β, freestream_to_cartesian(-U, α, β), SVector(Ω...), SVector(r_ref...), rho_ref, area_ref, chord_ref, span_ref, name)
 end
 
@@ -281,8 +281,8 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
 
     # Reshaping
     panel_sizes = size.(horseshoes_arr)
-    panel_inds 	= [ 0; cumsum(prod.(panel_sizes)) ]
-    Γs_arr 		= reshape_array(Γs, panel_inds, panel_sizes)
+    panel_inds  = [ 0; cumsum(prod.(panel_sizes)) ]
+    Γs_arr      = reshape_array(Γs, panel_inds, panel_sizes)
 
     # Compute forces and moments
     results = case_dynamics.(Γs_arr, horseshoes_arr, Ref(Γs), Ref(horseshoes), Ref(U), α, β, Ref(Ω), rho_ref, Ref(r_ref))
@@ -308,9 +308,9 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     name_data = (nf_coeffs, ff_coeffs, name_CFs, name_CMs, horseshoes, Γs)
     comp_data = tuple.(nf_comp_coeffs, ff_comp_coeffs, CFs, CMs, horseshoes_arr, Γs_arr)
 
-    names 	= [ name	   ; # Aircraft name
+    names   = [ name     ; # Aircraft name
                 comp_names ] # Component names
-    data  	= [ name_data  ; # Aircraft data
+    data    = [ name_data  ; # Aircraft data
                 comp_data  ] # Component data
 
     OrderedDict(names .=> data)

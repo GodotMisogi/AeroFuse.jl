@@ -41,7 +41,7 @@ y_plus(u_t, μ_e, ρ_e, η) = ρ_e * u_t * η / μ_e
 # Velocity profile
 function turb_ue(Cf, θ, y_p, η, a, b)
     uτ_ue = √(Cf / 2)
-    s 	  = Cf / abs(Cf)
+    s     = Cf / abs(Cf)
 
     uτ_ue * s / 0.09 * atan(0.09y_p) + (1 - uτ_ue * s * π / 0.18) * √(tanh(a * (η, θ)^b))
 end

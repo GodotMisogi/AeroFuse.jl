@@ -70,12 +70,12 @@ function solve_strengths(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     woke_matrix = [ -woke_vector zeros(length(panels), length(panels) -2) woke_vector ]
 
     # AIC
-    AIC 	= doublet_matrix(panels, panels) + woke_matrix
-    boco 	= dot.(collocation_point.(panels), Ref(u)) - woke_vector * dot(u, r_te)
+    AIC     = doublet_matrix(panels, panels) + woke_matrix
+    boco    = dot.(collocation_point.(panels), Ref(u)) - woke_vector * dot(u, r_te)
 
     # AIC
-    # AIC 	= influence_matrix(panels, woke_panel)
-    # boco 	= boundary_vector(ifelse(sources, panels, collocation_point.(panels)), u, r_te) - [ woke_vector; 0 ] .* dot(u, r_te)
+    # AIC   = influence_matrix(panels, woke_panel)
+    # boco  = boundary_vector(ifelse(sources, panels, collocation_point.(panels)), u, r_te) - [ woke_vector; 0 ] .* dot(u, r_te)
 
     AIC \ boco
 end
@@ -89,8 +89,8 @@ function tangential_velocities(panels, φs, u, sources :: Bool)
     # Δrs   = midpair_map(panel_dist, panels)
     # Δφs   = -midpair_map(-, φs[1:end-1])
 
-    Δrs   	 = @. panel_dist(panels[2:end], panels[1:end-1])
-    Δφs   	 = @. φs[1:end-1] - φs[2:end]
+    Δrs      = @. panel_dist(panels[2:end], panels[1:end-1])
+    Δφs      = @. φs[1:end-1] - φs[2:end]
     tangents = @. panel_tangent(panels[2:end])
 
     vels  = ifelse(sources, panel_velocity.(Δφs, Δrs, Ref(u), tangents), Δφs ./ Δrs)

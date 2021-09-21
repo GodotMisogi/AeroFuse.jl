@@ -28,7 +28,7 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
 
     # Closure to generate results with input vector
     function stab(x)
-        fs 	 = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
+        fs   = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
         data = solve_case(wing, fs;
                           rho_ref   = rho_ref,
                           r_ref     = r_ref,
@@ -37,8 +37,8 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
                           chord_ref = c,
                           chord_num = chord_num,
                           span_num  = span_num,
-                          viscous 	= viscous,
-                          x_tr 		= x_tr,
+                          viscous   = viscous,
+                          x_tr      = x_tr,
                           spacing   = spacing)
 
         [ data[1]; data[2] ] # Concatenate nearfield and farfield coefficients for DiffResults value
@@ -52,9 +52,9 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
     derivs = DiffResults.jacobian(result)
 
     # Gather results
-    nf 	= ifelse(viscous, vars[1:8], vars[1:6]) 	  	# Nearfield coefficients
-    ff 	= ifelse(viscous, vars[9:end], vars[7:end]) 	# Farfield coefficients
-    dvs = ifelse(viscous, derivs[[1,4:8...],:], derivs[1:6,:])	# Nearfield stability derivatives, uses total drag for viscous cases just in case of generalisations
+    nf  = ifelse(viscous, vars[1:8], vars[1:6])       # Nearfield coefficients
+    ff  = ifelse(viscous, vars[9:end], vars[7:end])  # Farfield coefficients
+    dvs = ifelse(viscous, derivs[[1,4:8...],:], derivs[1:6,:])  # Nearfield stability derivatives, uses total drag for viscous cases just in case of generalisations
 
     # Print if needed
     if print; print_case(nf, ff, derivs, name) end
@@ -69,33 +69,33 @@ function solve_stability_case(aircraft :: Dict{String, Matrix{Horseshoe{T}}}, fr
 
     # Closure to generate results with input vector
     function stab(x)
-        fs 	 = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
+        fs   = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
         data = solve_case(aircraft, fs,
                           rho_ref   = rho_ref,
                           r_ref     = r_ref,
                           area_ref  = S,
                           span_ref  = b,
                           chord_ref = c,
-                          name 		= name)
+                          name  = name)
 
         # Creates array of nearfield and farfield coefficients for each component as a row vector.
         coeffs = reduce(hcat, let comps = data[name]; [ comps[1]; comps[2] ] end for name in names)
     end
 
-    names 	  = [ reduce(vcat, keys(aircraft)); name ]
+    names     = [ reduce(vcat, keys(aircraft)); name ]
     num_comps = length(names)
 
-    y 		= zeros(9, num_comps)
-    result 	= DiffResults.JacobianResult(y, x)
-    result 	= ForwardDiff.jacobian!(result, stab, x)
+    y   = zeros(9, num_comps)
+    result  = DiffResults.JacobianResult(y, x)
+    result  = ForwardDiff.jacobian!(result, stab, x)
 
-    vars 	= DiffResults.value(result)
-    derivs 	= DiffResults.jacobian(result)
+    vars    = DiffResults.value(result)
+    derivs  = DiffResults.jacobian(result)
 
     # Dictionary assembly
     ranges  = (1:num_comps) .* 9                      # Painful hacking
     bounds  = zip([ 1; ranges[1:end-1] .+ 1], ranges) # Painful hacking
-    data 	= OrderedDict(name => (vars[1:6, i], vars[7:end, i], derivs[first(inds):last(inds)-3,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds))
+    data    = OrderedDict(name => (vars[1:6, i], vars[7:end, i], derivs[first(inds):last(inds)-3,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds))
 
     # Printing
     if print;            print_case(data, name)        end

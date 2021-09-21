@@ -91,19 +91,19 @@ end
 
 function mean_aerodynamic_center(wing :: HalfWing, factor = 0.25)
     # Compute mean aerodynamic chords and projected areas
-    macs 		= section_macs(wing)
-    areas 		= section_projected_areas(wing)
+    macs        = section_macs(wing)
+    areas       = section_projected_areas(wing)
 
     # Computing leading edge coordinates
-    wing_LE 	= leading_edge(wing)
-    x_LEs 		= getindex.(wing_LE, 1)
-    y_LEs		= getindex.(wing_LE, 2)
+    wing_LE     = leading_edge(wing)
+    x_LEs       = getindex.(wing_LE, 1)
+    y_LEs       = getindex.(wing_LE, 2)
 
     # Compute x-y locations of MACs
-    x_mac_LEs	= @views @. y_mac.(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
-    y_macs		= @views @. y_mac.(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
+    x_mac_LEs   = @views @. y_mac.(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
+    y_macs      = @views @. y_mac.(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
 
-    mac_coords 	= @. SVector(x_mac_LEs + factor * macs, y_macs, 0.)
+    mac_coords  = @. SVector(x_mac_LEs + factor * macs, y_macs, 0.)
 
     affine_transformation(wing)(sum(mac_coords .* areas) / sum(areas))
 end
@@ -114,15 +114,15 @@ max_thickness_to_chord_ratio_location(wing :: HalfWing, num) = max_thickness_to_
 
 function max_tbyc_sweeps(wing :: HalfWing, num)
     xs_max_tbyc = max_thickness_to_chord_ratio_location(wing, num)
-    max_tbyc 	= last.(xs_max_tbyc)
-    xs_temp 	= first.(xs_max_tbyc)
-    xs 			= first.(leading_edge(wing)) .+ wing.chords .* first.(xs_temp)
-    ds 			= fwddiff(xs)
-    widths 		= @. wing.spans / cos(wing.dihedrals)
+    max_tbyc    = last.(xs_max_tbyc)
+    xs_temp     = first.(xs_max_tbyc)
+    xs          = first.(leading_edge(wing)) .+ wing.chords .* first.(xs_temp)
+    ds          = fwddiff(xs)
+    widths      = @. wing.spans / cos(wing.dihedrals)
 
-    sweeps 		= @. atan(ds, widths)
-    xs 	  		= fwdsum(xs_temp) / 2
-    tbycs 		= fwdsum(max_tbyc) / 2
+    sweeps      = @. atan(ds, widths)
+    xs          = fwdsum(xs_temp) / 2
+    tbycs       = fwdsum(max_tbyc) / 2
 
     xs, tbycs, sweeps
 end
@@ -135,11 +135,11 @@ Compute the leading edge coordinates of a `HalfWing`, with an option to flip the
 function leading_edge(wing :: HalfWing, flip = false)
     spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
 
-    sweeped_spans 	 = [ 0; cumsum(@. spans * tan(sweeps)) ]
+    sweeped_spans    = [ 0; cumsum(@. spans * tan(sweeps)) ]
     dihedraled_spans = [ 0; cumsum(@. spans * tan(dihedrals)) ]
-    cum_spans 		 = [ 0; cumsum(spans) ]
+    cum_spans        = [ 0; cumsum(spans) ]
 
-    leading 		 = SVector.(sweeped_spans, ifelse(flip, -cum_spans, cum_spans), dihedraled_spans)
+    leading          = SVector.(sweeped_spans, ifelse(flip, -cum_spans, cum_spans), dihedraled_spans)
 
     ifelse(flip, leading[end:-1:1], leading)
 end
@@ -150,11 +150,11 @@ end
 Compute the leading and trailing edge coordinates of a `HalfWing`, with an option to flip the signs of the ``y``-coordinates.
 """
 function wing_bounds(wing :: HalfWing, flip = false)
-    chords 	 		= wing.chords
-    twisted_chords 	= @. chords * sin(wing.twists)
+    chords          = wing.chords
+    twisted_chords  = @. chords * sin(wing.twists)
 
-    leading  		= leading_edge(wing, flip)
-    trailing 		= SVector.(chords, (zeros ∘ length)(chords), twisted_chords)
+    leading         = leading_edge(wing, flip)
+    trailing        = SVector.(chords, (zeros ∘ length)(chords), twisted_chords)
 
     shifted_trailing = ifelse(flip, trailing[end:-1:1], trailing) .+ leading
 

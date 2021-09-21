@@ -16,10 +16,10 @@ end
 
 left(wing :: Wing)      = wing.left
 right(wing :: Wing)     = wing.right
-foils(wing :: Wing)     = @views [ (foils ∘ left)(wing)[end:-1:2]	  ; (foils ∘ right)(wing)     ]
-chords(wing :: Wing)    = @views [ (chords ∘ left)(wing)[end:-1:2]	  ; (chords ∘ right)(wing)    ]
-twists(wing :: Wing)    = @views [ (twists ∘ left)(wing)[end:-1:2]	  ; (twists ∘ right)(wing)    ]
-spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)	  ; (spans ∘ right)(wing)     ]
+foils(wing :: Wing)     = @views [ (foils ∘ left)(wing)[end:-1:2]     ; (foils ∘ right)(wing)     ]
+chords(wing :: Wing)    = @views [ (chords ∘ left)(wing)[end:-1:2]    ; (chords ∘ right)(wing)    ]
+twists(wing :: Wing)    = @views [ (twists ∘ left)(wing)[end:-1:2]    ; (twists ∘ right)(wing)    ]
+spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)     ; (spans ∘ right)(wing)     ]
 dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dihedrals ∘ right)(wing) ]
 sweeps(wing :: Wing)    = @views [ (reverse ∘ sweeps ∘ left)(wing)    ; (sweeps ∘ right)(wing)    ]
 
@@ -63,7 +63,7 @@ mean_aerodynamic_chord(wing :: Wing) = ((mean_aerodynamic_chord ∘ left)(wing) 
 Return the leading and trailing edge coordinates of a `Wing`.
 """
 function wing_bounds(wing :: Wing)
-    left_lead, left_trail 	= wing_bounds(left(wing), true)
+    left_lead, left_trail   = wing_bounds(left(wing), true)
     right_lead, right_trail = wing_bounds(right(wing))
 
     leading  = @views [ left_lead[1:end-1,:] ; right_lead  ]
