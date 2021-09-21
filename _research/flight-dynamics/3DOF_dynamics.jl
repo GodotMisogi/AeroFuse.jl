@@ -13,25 +13,24 @@ CL_0  = 0.895 # Lift coefficient at α = 0
 CL_a  = 5.01  # Lift curve slope (Lift-AoA derivative)
 CL_de = 0.722 # Lift-elevator derivative
 
-lift_coefficient(α, δe, CL_0, CL_a, CL_δe) = CL_0 + CL_a * α + CL_δe * δe
-lift_coefficient(α, δe) = lift_coefficient(α, δe, CL_0, CL_a, CL_de)
+lift_coefficient(α, δe) = CL_0 + HomogeneousPolynomial([CL_a, CL_de])(α, δe)
 
 # Drag coefficient
-CD₀      = 0.177 # Profile drag coefficient (at α when CL = 0? Hmm, this is inconsistent...)
+CD₀      = 0.177 # Profile drag coefficient at α = 0
 ∂CD_∂α   = 0.232 # Drag-AoA derivative
 ∂²CD_∂α² = 1.393 # Drag-AoA second derivative
 
-drag_coefficient(α, CD₀, ∂CD_∂α, ∂²CD_∂α²) = CD₀ + ∂CD_∂α * α + ∂²CD_∂α² * α^2
-drag_coefficient(α) = drag_coefficient(α, CD₀, ∂CD_∂α, ∂²CD_∂α²)
+drag_coefficient(α) = Taylor1([CD₀, ∂CD_∂α, ∂²CD_∂α²])(α)
 
-# Moment coefficient
-CM_0  = -0.046 # Moment coefficient at α = 0?
+## Moment coefficient
+CM_0  = -0.046 # Moment coefficient at α = 0
 CM_α  = -1.087 # Moment curve slope (Moment-AoA derivative)
 CM_δe = -1.88  # Moment-elevator derivative
 CM_Q̂  = -7.055 # Moment-dynamic pressure derivative
 
 moment_coefficient(α, δe, q̂, CM_0, CM_α, CM_δe, CM_q̂) = CM_0 + CM_α * α + CM_δe * δe + CM_q̂ * q̂
 moment_coefficient(α, δe, Q̂) = moment_coefficient(α, δe, Q̂, CM_0, CM_α, CM_δe, CM_Q̂)
+
 
 function compute_aerodynamics(α, δe, q̂, q∞, S_ref, c_ref)
     # Compute aerodynamic coefficients from Taylor series approximations
@@ -203,7 +202,7 @@ tspan  = (0, 100.)
 
 ## ODE setup
 ode = ODEFunction(longitudinal_equations_of_motion!,
-                  syms = [:u, :w, :Q, :xₑ, :zₑ, :Θ, :δe])
+                  syms = [:u, :w, :Q̂, :xₑ, :zₑ, :Θ, :δe])
 
 prob = ODEProblem(ode, x_init, tspan, ps)
 
@@ -216,7 +215,7 @@ sol = solve(prob)
 # du0, dp = adjoint_sensitivities(sol, RK4(), dg, ts; sensealg=ZygoteAdjoint())
 
 ## Plotting
-pyplot()
+gr(dpi = 300)
 
 ##
 plot(sol, vars = [1,2,3,4,5,6], layout = (2,3))
