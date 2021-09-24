@@ -4,6 +4,7 @@ using DifferentialEquations
 using TaylorSeries
 using Plots
 using ProtoStructs
+using SimulationLogs
 
 ## Aerodynamic coefficients (convert to struct for generality)
 #===========================================================================#
@@ -115,7 +116,8 @@ function longitudinal_equations_of_motion!(dx, x, params, t)
     mass, g, Iyy, Δ_zT, T_in, ρ, S_ref, c_ref = params
 
     # Compute freestream values
-    speed, α = cartesian_to_freestream(u, w)
+    @log t
+    @log speed, α = cartesian_to_freestream(u, w)
 
     # Compute forces and moment
     T, D, L, W, M = compute_dynamics(Q, α, δe, T_in, mass, g, ρ, speed, S_ref, c_ref)
@@ -219,3 +221,8 @@ gr(dpi = 300)
 
 ##
 plot(sol, vars = [1,2,3,4,5,6], layout = (2,3))
+
+##
+log = get_log(sol)
+
+plot(log.t, log.α, label = "α")
