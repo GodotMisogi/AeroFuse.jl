@@ -1,5 +1,5 @@
 using Rotations
-using StaticArrays
+using StaticArrays, SparseArrays
 using LinearAlgebra
 using BenchmarkTools
 using DifferentialEquations
@@ -65,25 +65,21 @@ linear_momentum_body_axes(F, g, mass, U, a, Ω) = F + mass * (g - a + Ω × U)
 angular_momentum_body_axes(M, I, Ω, α, h) = M - I * α + Ω × (I * Ω + h)
 
 linear_acceleration(F, g, mass, U, Ω) = F / mass - (Ω × U - g)
-angular_acceleration(M, I, Ω, h) = M - Ω × (I * Ω + h)
+angular_acceleration(M, I, Ω, h)      = M - Ω × (I * Ω + h)
 
 # Equations of motion
 function aircraft_eom!(dx, x, p, t)
-    φ_b     = @view x[4:6]
-    U_b     = @view x[7:9]
-    p_b     = @view x[10:end]
+    φ  = @view x[4:6]
+    U  = @view x[7:9]
 
-    mass, g, F_b, M_b, I, h = p(t, U_b, φ_b, p_b)
+    acc, rot = p(t, x)
 
-    dr_dt   = @view dx[1:3]
-    dφ_dt   = @view dx[4:6]
-    du_dt   = @view dx[7:9]
-    dp_dt   = @view dx[10:end]
+    dx[1:3]    = body_to_earth(φ) * U       # mul!(x0, body_to_earth(φ), U)
+    dx[4:6]    = body_to_earth_rates(φ) * U # mul!(x0, body_to_earth_rates(φ), U)
+    dx[7:9]    = acc
+    dx[10:end] = rot
 
-    dr_dt  .= body_to_earth(φ_b) * U_b      # mul!(x0, body_to_earth(φ_b), U_b)
-    dφ_dt  .= body_to_earth_rates(φ_b) * U_b # mul!(x0, body_to_earth_rates(φ_b), U_b)
-    du_dt  .= linear_acceleration(F_b, g, mass, U_b, p_b)
-    dp_dt  .= angular_acceleration(M_b, I, p_b, h)
+    dx
 end
 
 ## Surfaces
@@ -94,8 +90,7 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
                        area_ref  = S,
                        span_ref  = b,
                        chord_ref = c,
-                       print     = print
-                      );
+                       print     = print);
 
     # Get data
     nf_coeffs, ff_coeffs = @views data["Aircraft"][1:2]
@@ -120,74 +115,60 @@ x_w = [ wing_mac[1], 0, 0 ]
 ## Meshing
 wing, htail, vtail = vanilla.surfs
 
-wing_n_span   = [8]
-wing_n_chord  = 6
-wing_vlm_mesh = chord_coordinates(wing, wing_n_span, wing_n_chord)
-wing_cam_mesh = camber_coordinates(wing, wing_n_span, wing_n_chord)
-wing_panels   = make_panels(wing_vlm_mesh)
-wing_cambers  = make_panels(wing_cam_mesh)
-wing_normals  = panel_normal.(wing_cambers)
-wing_horsies  = Horseshoe.(wing_panels,  wing_normals)
-
-# Horizontal tail
-htail_n_span   = [6]
-htail_n_chord  = 6
-htail_vlm_mesh = chord_coordinates(htail, htail_n_span, htail_n_chord)
-htail_cam_mesh = camber_coordinates(htail, htail_n_span, htail_n_chord)
-htail_panels   = make_panels(htail_vlm_mesh)
-htail_cambers  = make_panels(htail_cam_mesh)
-htail_normals  = panel_normal.(htail_cambers)
-htail_horsies  = Horseshoe.(htail_panels, htail_normals)
-
-# Vertical tail
-vtail_n_span   = [6]
-vtail_n_chord  = 6
-vtail_vlm_mesh = chord_coordinates(vtail, vtail_n_span, vtail_n_chord)
-vtail_cam_mesh = camber_coordinates(vtail, vtail_n_span, vtail_n_chord)
-vtail_panels   = make_panels(vtail_vlm_mesh)
-vtail_cambers  = make_panels(vtail_cam_mesh)
-vtail_normals  = panel_normal.(vtail_cambers)
-vtail_horsies  = Horseshoe.(vtail_panels, vtail_normals)
+wing_panels, wing_normals   = panel_wing(wing, 8, 6)
+htail_panels, htail_normals = panel_wing(htail, 6, 6)
+vtail_panels, vtail_normals = panel_wing(vtail, 6, 5)
 
 # Aircraft assembly
 aircraft = Dict(
-                "Wing"            => wing_horsies,
-                "Horizontal Tail" => htail_horsies,
-                "Vertical Tail"   => vtail_horsies,
+                "Wing"            => Horseshoe.(wing_panels,  wing_normals),
+                "Horizontal Tail" => Horseshoe.(htail_panels, htail_normals),
+                "Vertical Tail"   => Horseshoe.(vtail_panels, vtail_normals),
                );
 
 ## Evaluate case
 ρ       = 1.225
 ref     = x_w
-V, α, β = 5.0, 1.0, 0.0
+V, α, β = 5.0, 0.0, 0.0
 Ω       = @SVector [0., 0., 0.]     # Angular velocity
 fs      = Freestream(V, α, β, Ω)
 
-res = vlm_analysis(aircraft, fs, ρ, ref, S, b, c, false)
+res = vlm_analysis(aircraft, fs, ρ, ref, S, b, c, true);
 
 ## Differential equations setup
 thrust_force(u) = SVector(20u^2 + 10u + 20, 0., 0.)
 aero_stability(CFs, CMs, q, S, b, c) = SVector(1., -1, 1) .* CFs .* q * S, CMs .* SVector(b, c, b) .* q * S
 
-function params(t, U, φ, Ω, mass, g, inertia, h, ac, ρ, ref, S, b, c)
-    fs = Freestream(U, Ω)
-    q = dynamic_pressure(ρ, fs.V)
+function compute_6DOF_dynamics(t, x, p)
+    r = @view x[1:3]
+    φ = @view x[4:6]
+    U = @view x[7:9]
+    Ω = @view x[10:end]
 
-    # Evaluate forces
+    ac, mass, g, I, h, ρ, ref, S, b, c = p
+
+    fs = Freestream(U, Ω)
+    q  = dynamic_pressure(ρ, fs.V)
 
     # Aerodynamics
-    coeffs   = vlm_analysis(ac, fs, ρ, ref, S, b, c)
     @log t
-    @log CFs, CMs = @views coeffs[1:3], coeffs[4:end]
+    @log α, β, Ω     = fs.alpha, fs.beta, fs.omega
+    @log aero_coeffs = vlm_analysis(ac, fs, ρ, ref, S, b, c)
+    
+    CFs      = @view aero_coeffs[1:3]
+    CMs      = @view aero_coeffs[4:end]
     F_A, M_A = aero_stability(CFs, CMs, q, S, b, c)
 
-    # Propulsion
+    # Propulsion (Gliding for now)
     F_T      = zeros(3) # thrust_force(fs.V)
 
     # Force equilibrium
     F = F_T - F_A
 
     g_b = earth_to_body(φ) * g
+
+    acc = F / mass - (Ω × U - g_b)
+    rot = I^(-1) * (M_A - Ω × (I * Ω + h))
 
     # free = cartesian_to_freestream(velocity(fs))
     # rates = rate_coefficient(Ω, V, b, c)
@@ -198,37 +179,38 @@ function params(t, U, φ, Ω, mass, g, inertia, h, ac, ρ, ref, S, b, c)
     # println("Force coefficients: $CFs")
     # println("Moment coefficients: $CMs")
 
-    mass, g_b, F, M_A, inertia, h
+    acc, rot
 end
-
-cuck(t, U, φs, Ω) = params(t, U, φs, Ω, mass, g, inertia, zeros(3), aircraft, ρ, ref, S, b, c)
 
 ## Test
 mass = 250      # Mass
-inertia = @SMatrix [ 1. 0. 0. ;
-                     0. 1. 0. ;
-                     0. 0. 1. ]  # Inertia matrix
+inertia = mass * @SMatrix [ 1. 0. 0. ;
+                            0. 1. 0. ;
+                            0. 0. 1. ]  # Inertia matrix
 
-O = zeros(3,3)
-M = @SMatrix [ I O O    O    ;
-               O I O    O    ;
-               O O I    O    ;
-               O O O inertia ]
+O   = zeros(3, 3)
+M   = @SMatrix [ I O O    O    ;
+                 O I O    O    ;
+                 O O I    O    ;
+                 O O O inertia ]
 
 φs  = @SVector [0., 0., 0.] # Euler angles
-α   = @SVector [0., 0., 0.]   # Angular rates
-R_o = @SVector [1., 1., 1.]    # Position vector of aircraft, Earth frame
-g   = @SVector [0., 0., 1.]    # Gravitational acceleration, Earth frame
-U   = velocity(fs)             # Freestream velocity
-
-@time cocker = cuck(1.0, U, φs, Ω)
+α   = @SVector [0., 0., 0.] # Angular rates
+R_o = @SVector [1., 1., 1.] # Position vector of aircraft, Earth frame
+g   = @SVector [0., 0., 1.] # Gravitational acceleration, Earth frame
+U   = velocity(fs)          # Freestream velocity
 
 ## DifferentialEquations setup
-state       = StateVector(R_o, φs, U, Ω)
-x0          = (collect ∘ vector)(state)
-tspan       = (0., 0.5)
+state  = StateVector(R_o, φs, U, Ω)
+x0     = (collect ∘ vector)(state)
+ps     = (aircraft, mass, g, inertia, zeros(3), ρ, ref, S, b, c)
+
+# @time cocker = cuck(1.0, x0) # Test
+
+##
+tspan       = (0., 1.0)
 run         = ODEFunction(aircraft_eom!, syms = [:xₑ, :yₑ, :zₑ, :φ, :θ, :ψ, :u, :v, :w, :p, :q, :r])
-prob        = ODEProblem(run, x0, tspan, cuck) # , mass_matrix = M)
+prob        = ODEProblem(run, x0, tspan, (t, x) -> compute_6DOF_dynamics(t, x, ps)) # , mass_matrix = M)
 
 
 # using ModelingToolkit
@@ -239,10 +221,12 @@ prob        = ODEProblem(run, x0, tspan, cuck) # , mass_matrix = M)
 # prob_jac = ODEProblem(f, x0, tspan, cuck)
 
 ##
-@time sol = solve(prob, RK4(), reltol = 1e-6, abstol = 1e-6);
+@time sol = solve(prob, reltol = 1e-6, abstol = 1e-6);
 
 ##
 df   = DataFrame(sol)
+
+##
 log  = get_log(sol)
 
 ##
@@ -252,5 +236,4 @@ plot(sol, tspan = tspan, layout = (4,3), size = (900, 600))
 plot!()
 
 ##
-coeffs = [ reduce(hcat, log.CFs)' reduce(hcat, log.CMs)' ]
-plot(sol.t, coeffs, layout = (2, 3), labels = ["CD" "CY" "CL" "Cl Cm Cn"])
+plot(log.t, reduce(hcat, log.aero_coeffs)', layout = (2, 3), labels = ["CD" "CY" "CL" "Cl" "Cm" "Cn"])

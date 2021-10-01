@@ -21,7 +21,10 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweep_LEs = [6.39])
+             sweep_LEs = [6.39],
+             position  = [4., 0, 0],
+             angle     = 0.,
+             axis      = [0., 1., 0.])
 
 # Vertical tail
 vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
@@ -29,20 +32,15 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97]);
+                 sweep_LEs = [7.97],
+                 position  = [4., 0, 0],
+                 angle     = 90.,
+                 axis      = [1., 0., 0.]);
 
 ## Meshing and assembly
-wing_panels,  wing_normals  = panel_wing(wing,  20, 13;)
-htail_panels, htail_normals = panel_wing(htail, 6, 6;
-                                         position = [4., 0, 0],
-                                         angle    = deg2rad(-2.),
-                                         axis     = [0., 1., 0.]
-                                        )
-vtail_panels, vtail_normals = panel_wing(vtail, 6, 5;
-                                         position = [4., 0, 0],
-                                         angle    = π/2,
-                                         axis     = [1., 0., 0.]
-                                        )
+wing_panels,  wing_normals  = panel_wing(wing,  8, 6)
+htail_panels, htail_normals = panel_wing(htail, 6, 6)
+vtail_panels, vtail_normals = panel_wing(vtail, 6, 5)
 
 # Aircraft assembly
 aircraft = Dict(
