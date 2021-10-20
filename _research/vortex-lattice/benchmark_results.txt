@@ -48,40 +48,37 @@ BenchmarkTools.Trial: 15 samples with 1 evaluation.
 2. Desktop i7-8700, 3.2 GHz:
 
 AeroMDAO Aircraft Functional -
-BenchmarkTools.Trial: 
-  memory estimate:  29.23 MiB
-  allocs estimate:  66553
-  --------------
-  minimum time:     142.115 ms (0.00% GC)
-  median time:      145.739 ms (0.00% GC)
-  mean time:        148.391 ms (1.85% GC)
-  maximum time:     161.067 ms (7.28% GC)
-  --------------
-  samples:          34
-  evals/sample:     1
+BenchmarkTools.Trial: 36 samples with 1 evaluation.
+ Range (min … max):  131.865 ms … 155.376 ms  ┊ GC (min … max): 3.38% … 3.21%
+ Time  (median):     137.518 ms               ┊ GC (median):    2.33%
+ Time  (mean ± σ):   139.260 ms ±   5.478 ms  ┊ GC (mean ± σ):  3.26% ± 1.24%
+
+                                 █ 
+  ▄▁▁▁▁▁▁▁▁▁▁▁▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ▁
+  136 ms           Histogram: frequency by time          148 ms <
+
+ Memory estimate: 59.85 MiB, allocs estimate: 34643.
 
 AeroMDAO Aircraft Stateful -
-BenchmarkTools.Trial: 
-  memory estimate:  29.23 MiB
-  allocs estimate:  67455
-  --------------
-  minimum time:     143.469 ms (0.00% GC)
-  median time:      148.195 ms (0.00% GC)
-  mean time:        149.281 ms (1.84% GC)
-  maximum time:     162.487 ms (6.00% GC)
-  --------------
-  samples:          34
-  evals/sample:     1
+BenchmarkTools.Trial: 35 samples with 1 evaluation.
+ Range (min … max):  133.574 ms … 211.043 ms  ┊ GC (min … max): 2.32% … 8.29%
+ Time  (median):     140.707 ms               ┊ GC (median):    3.57%
+ Time  (mean ± σ):   145.173 ms ±  15.863 ms  ┊ GC (mean ± σ):  3.61% ± 1.43%
+
+  █
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ▁
+  134 ms           Histogram: frequency by time          136 ms <
+
+ Memory estimate: 71.67 MiB, allocs estimate: 35530.
 
 BYU FLOW Lab VortexLattice.jl - 
-BenchmarkTools.Trial: 
-  memory estimate:  32.47 MiB
-  allocs estimate:  147444
-  --------------
-  minimum time:     218.026 ms (0.00% GC)
-  median time:      227.592 ms (0.00% GC)
-  mean time:        232.875 ms (1.97% GC)
-  maximum time:     288.597 ms (9.00% GC)
-  --------------
-  samples:          22
-  evals/sample:     1
+BenchmarkTools.Trial: 23 samples with 1 evaluation.
+ Range (min … max):  213.699 ms … 230.406 ms  ┊ GC (min … max): 0.00% … 2.16%
+ Time  (median):     221.794 ms               ┊ GC (median):    2.15%
+ Time  (mean ± σ):   222.224 ms ±   4.495 ms  ┊ GC (mean ± σ):  1.74% ± 1.34%
+
+               █                                            
+  ▃▁▁▁▁▁▁▁▁▁▁▁▁█▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▅▁▁▁▁▁▁▁▁▁▁▁▃ ▁
+  216 ms           Histogram: frequency by time          226 ms <
+
+ Memory estimate: 32.47 MiB, allocs estimate: 147446.
