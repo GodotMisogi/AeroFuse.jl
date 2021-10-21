@@ -57,7 +57,7 @@ end
 ## "Pure" versions - AD compatible (for now)
 #==========================================================================================#
 
-# Residual setup for single surface
+# Residual setup for single aerostructural surface
 function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fem_mesh, stiffness_matrix, weight, load_factor)
     # Unpack aerodynamic and structural variables
     Γ = x.aerodynamics
@@ -100,7 +100,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
     return R
 end
 
-# Residual setup for multiple aerodynamic surfaces
+# Residual setup for single aerostructural surface and multiple aerodynamic surfaces
 function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, other_horsies, fem_mesh, stiffness_matrix, weight, load_factor)
     # Unpack aerodynamic and structural variables
     Γ = x.aerodynamics
@@ -149,7 +149,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, ot
     return R
 end
 
-# Residual setup for multiple structural and aerodynamic surfaces
+# Residual setup for multiple aerostructural surfaces and multiple aerodynamic surfaces
 function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}, vlm_meshes, cam_meshes, fem_meshes, other_horsies, stiffness_matrix, weight, load_factor)
     # Unpack aerodynamic and structural variables
     Γs = x.aerodynamics
@@ -186,6 +186,54 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
 
     # Compute lift
     L = sum([ reduce(vcat, vec.(new_forces)); other_forces[:] ])[3]
+
+    # Build force vector with constraint for structures
+    @timeit "FEM Loads" fem_loads = reduce(vcat, fem_load_vector.(new_acs, new_forces, fem_meshes))
+
+    # Aerodynamic residuals
+    @timeit "Aerodynamic Residuals" aerodynamic_residual!(R_A, all_horsies, horseshoe_point.(all_horsies), horseshoe_normal.(all_horsies), Γs / speed, U / speed, Ω / speed)
+
+    # Structural residuals
+    @timeit "Structural Residuals" linear_residual!(R_S, stiffness_matrix, δs, fem_loads)
+
+    # Weight residual
+    linear_residual!(R_W, weight, load_factor, L * cos(α))
+
+    return R
+end
+
+# Residual setup for multiple aerostructural surfaces (NEED TO REDUCE REDUNDANCIES)
+function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}, vlm_meshes, cam_meshes, fem_meshes, stiffness_matrix, weight, load_factor)
+    # Unpack aerodynamic and structural variables
+    Γs = x.aerodynamics
+    δs = x.structures
+    α  = x.load_factor
+
+    # Get residual vector views
+    R_A = R.aerodynamics
+    R_S = R.structures
+    R_W = @view R[end]
+
+    # Compute velocity with new angle of attack
+    U = freestream_to_cartesian(-speed, α, β)
+    
+    # Compute displacements
+    Δs    = map((key, n) -> reshape(δs[key][7:end], 6, n), valkeys(δs), length.(fem_meshes))
+    dx_Ts = translations_and_rotations.(Δs)
+    dxs   = getindex.(dx_Ts, 1)
+    Ts    = getindex.(dx_Ts, 2)
+
+    # New VLM variables
+    new_horsies  = new_horseshoes.(dxs, Ts, vlm_meshes, cam_meshes, fem_meshes)
+    all_horsies  = reduce(vcat, vec.(new_horsies))
+
+    # Compute component forces for structural residual
+    new_Γs       = getindex.(Ref(Γs), syms) 
+    new_acs      = map(horsies -> bound_leg_center.(horsies), new_horsies)
+    @timeit "New Forces" new_forces   = nearfield_forces.(new_Γs, new_horsies, Ref(Γs), Ref(all_horsies), Ref(U), Ref(Ω), Ref(ρ))
+
+    # Compute lift
+    L = sum(reduce(vcat, vec.(new_forces)))[3]
 
     # Build force vector with constraint for structures
     @timeit "FEM Loads" fem_loads = reduce(vcat, fem_load_vector.(new_acs, new_forces, fem_meshes))

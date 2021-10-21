@@ -25,3 +25,12 @@ who(emily)
 
 ##
 whom(emily)
+
+## Generated functions
+@generated function Base.+:(a :: T, b :: T) where {T}
+    if isempty(fieldnames(T))
+        Expr(:call, T, :(a + b))
+    else
+        Expr(:call, T, map(field -> :(a.$field + b.$field), fieldnames(t))...)
+    end
+end
