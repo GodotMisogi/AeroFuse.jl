@@ -1,22 +1,22 @@
 struct VLMResults
-    nf_coeffs
-    ff_coeffs
-    CFs
-    CMs
+    nearfield
+    farfield
+    surface_forces
+    surface_moments
     horseshoes
     circulations
     name
 end
 
-horseshoes(vlm :: VLMResults) = vlm.horseshoes
-circulations(vlm :: VLMResults) = vlm.circulations
-nearfield_coefficients(vlm :: VLMResults) = vlm.nf_coeffs
-farfield_coefficients(vlm :: VLMResults) = vlm.ff_coeffs
-surface_force_coefficients(vlm :: VLMResults) = vlm.CFs
-surface_moment_coefficients(vlm :: VLMResults) = vlm.CMs
-name(vlm :: VLMResults) = vlm.name
+VLMResults(nf, ff, sf, sm, hs, Γs, name = "") =  VLMResults(nf, ff, sf, sm, hs, Γs, name)
 
-coeffs = reduce(hcat, let comps = data[name]; [ nearfield_coefficients(comps); farfield_coefficients(comps) ] end for name in names)
+horseshoes(vlm :: VLMResults)       = vlm.horseshoes
+circulations(vlm :: VLMResults)     = vlm.circulations
+nearfield(vlm :: VLMResults)        = vlm.nearfield
+farfield(vlm :: VLMResults)         = vlm.farfield
+surface_forces(vlm :: VLMResults)   = vlm.surface_forces
+surface_moments(vlm :: VLMResults)  = vlm.surface_moments
+name(vlm :: VLMResults)             = vlm.name
 
 
 ##

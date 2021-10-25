@@ -109,7 +109,7 @@ fs       = Freestream(V, α, β, Ω)
 
 ## Data collection
 Γs = data[ac_name][end]
-CFs_wing, CMs_wing, hs_wing, Γ0_wing = data["Wing"][3:end];
+CFs_wing,  CMs_wing,  hs_wing,  Γ0_wing  = data["Wing"][3:end];
 CFs_htail, CMs_htail, hs_htail, Γ0_htail = data["Horizontal Tail"][3:end];
 CFs_vtail, CMs_vtail, hs_vtail, Γ0_vtail = data["Vertical Tail"][3:end];
 
@@ -334,8 +334,8 @@ using LaTeXStrings
 
 # gr()
 # plotlyjs(dpi = 300, size = (1280, 720))
-# pyplot(dpi = 300)
-pgfplotsx(size = (900, 600))
+pyplot(dpi = 150)
+# pgfplotsx(size = (900, 600))
 
 aircraft_plot =
     plot(xaxis = "x", yaxis = "y", zaxis = "z",
@@ -349,8 +349,8 @@ aircraft_plot =
         )
 
 # Panels
-[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
-[ plot!(pans, color = :lightblue, label = ifelse(i == 1, "Deflected Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
+# [ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
+# [ plot!(pans, color = :lightblue, label = ifelse(i == 1, "Deflected Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
 
 # Planforms
 plot!(wing_plan, color = :gray, label = "Original Wing", linestyle = :solid)
@@ -373,8 +373,9 @@ r_norms = @. normer([ r_wing, r_htail, r_vtail ]) * thickness
 
 # Forces
 [ quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
-        quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.05,
-        label = ifelse(i == 1, "Panel Forces", :none), color = :orange) for (i, ac_plot, force_plot) in zip(1:length(ac_plots), ac_plots, force_plots) ]
+          quiver=(force_plot[1,:], force_plot[2,:], force_plot[3,:]) .* 0.05,
+          label = ifelse(i == 1, "Panel Forces", :none), color = :orange) 
+          for (i, ac_plot, force_plot) in zip(1:length(ac_plots), ac_plots, force_plots) ]
 # [ scatter!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:], label = ifelse(i == 1, "Aerodynamic Centers", :none)) for ac_plot in ac_plots ]
 # [ quiver!(fem_plots[1,:], fem_plots[2,:], fem_plots[3,:],
 #         quiver=(loads_plots[1,:], loads_plots[2,:], loads_plots[3,:] ) .* 0.1,

@@ -19,7 +19,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              dihedrals = [0.],
              sweep_LEs = [6.39],
              position  = [4., 0, 0],
-             angle 	   = -2.,
+             angle     = -2.,
              axis      = [0., 1., 0.])
 
 # Vertical tail
@@ -71,19 +71,19 @@ fs      = Freestream(V, α, β, Ω)
 
 @time data =
     solve_case(aircraft, fs;
-               rho_ref     = ρ, 		# Reference density
-               r_ref       = ref, 		# Reference point for moments
-               area_ref    = S, 		# Reference area
-               span_ref    = b, 		# Reference span
-               chord_ref   = c, 		# Reference chord
-               name        = ac_name,	# Aircraft name
-               print       = true,		# Prints the results for the entire aircraft
-               print_components = true,	# Prints the results for each component
+               rho_ref     = ρ,         # Reference density
+               r_ref       = ref,       # Reference point for moments
+               area_ref    = S,         # Reference area
+               span_ref    = b,         # Reference span
+               chord_ref   = c,         # Reference chord
+               name        = ac_name,   # Aircraft name
+               print       = true,      # Prints the results for the entire aircraft
+               print_components = true, # Prints the results for each component
               );
 
 ## Data collection
 comp_names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
-comp  = comp_names[1]			    # Pick your component
+comp  = comp_names[1]               # Pick your component
 nf_coeffs, ff_coeffs, CFs, CMs, horses, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
 print_coefficients(nf_coeffs, ff_coeffs, comp)
 
@@ -155,7 +155,7 @@ plot!()
 # Forces
 wind_CFs = body_to_wind_axes.(CFs, fs.alpha, fs.beta)
 CDis     = @. getindex(wind_CFs, 1)
-CYs	     = @. getindex(wind_CFs, 2)
+CYs      = @. getindex(wind_CFs, 2)
 CLs      = @. getindex(wind_CFs, 3)
 
 hs_pts = Tuple.(bound_leg_center.(horses))[:]
