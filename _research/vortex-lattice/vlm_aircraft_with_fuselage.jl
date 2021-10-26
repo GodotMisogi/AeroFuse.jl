@@ -18,7 +18,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              spans     = [1.25],
              dihedrals = [0.],
              sweep_LEs = [6.39],
-             position  = [4., 0, 0],
+             position  = [4., 0, 0.2],
              angle     = -2.,
              axis      = [0., 1., 0.])
 
@@ -29,7 +29,7 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  spans     = [1.0],
                  dihedrals = [0.],
                  sweep_LEs = [7.97],
-                 position  = [4., 0, 0],
+                 position  = [4., 0, 0.2],
                  angle     = 90.,
                  axis      = [1., 0., 0.])
 
@@ -65,7 +65,7 @@ ac_name = "My Aircraft"
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 1.225
 ref     = [ x_w, 0., 0.]
-V, α, β = 1.0, 1.0, 0.0
+V, α, β = 1.0, 5.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 
@@ -129,23 +129,23 @@ num_stream_points = 200
 streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 
 ## Fuselage definition
-rads = range(0, 0.2, length = 5)
-lens = range(0, 4. / 4, length = 9)
-fuse = Fuselage(lens, [ rads; reverse(rads) ] )
+lens = [0.0, 0.05,0.02,  0.3, 0.6, 0.8, 1.0]
+rads = [0.0, 0.3, 0.25, 0.4, 0.2, 0.1, 0.00]
+fuse = Fuselage(5.5, lens, rads, [-1, 0.,0.2])
 
-lens_rads = cosine_spacing(fuse, 40)
+lens_rads = coordinates(fuse, 40)
 
 ## Circles for plotting
 n_pts          = 20
 circle3D(r, n) = let arcs = 0:2π/n:2π; [ zeros(length(arcs)) r * cos.(arcs) r * sin.(arcs) ] end
 
 xs = lens_rads[:,1]
-circs = [ reduce(hcat, eachrow(circ) .+ Ref([x; 0; 0]))' for (x, circ) in zip(xs, circle3D.(lens_rads[:,2], n_pts)) ]
+circs = [ reduce(hcat, eachrow(circ) .+ Ref([x; 0; 0] + fuse.position))' for (x, circ) in zip(xs, circle3D.(lens_rads[:,2], n_pts)) ]
 
 ##
 using Plots
-gr(size = (1280, 720), dpi = 300)
-# pyplot(dpi = 150)
+# gr(size = (1280, 720), dpi = 300)
+pyplot(dpi = 150)
 
 ##
 aircraft_panels  = [ wing_panels[:]; htail_panels[:]; vtail_panels[:] ]
@@ -156,7 +156,7 @@ z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      camera = (30, 60),
     #  xlim = (-z_limit/2, z_limit/2),
-     aspect_ratio = 1,
+    #  aspect_ratio = 1,
      zlim = (-z_limit/2, z_limit/2),
      size = (1280, 720)
     )
@@ -165,7 +165,7 @@ scatter!(horseshoe_points, marker = 1, color = :black, label = :none)
 plot!.(streams, color = :green, label = :none)
 plot!()
 
-[ plot!(circ[:,1], circ[:,2], circ[:,3], color = :blue, label = :none) for circ in circs ] 
+[ plot!(circ[:,1], circ[:,2], circ[:,3], color = :gray, label = :none) for circ in circs ] 
 plot!()
 
 ## Exaggerated CF distribution for plot, only works with GR and not Plotly
