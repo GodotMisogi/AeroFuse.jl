@@ -95,10 +95,10 @@ fs      = Freestream(V, α, β, Ω)
 
 ## Data collection
 Γs = data[ac_name][end]
-CFs, CMs, horsies, Γ0_wing = data["Wing"][3:end];
+CFs, CMs, Γ0_wing = data["Wing"][3:end];
 
 ## Aerodynamic forces and center locations
-vlm_acs    = bound_leg_center.(horsies)
+vlm_acs    = bound_leg_center.(wing_horsies)
 vlm_forces = force.(CFs, dynamic_pressure(ρ, V), S)
 
 # FEM mesh
@@ -279,9 +279,9 @@ using Plots
 using LaTeXStrings
 
 # gr()
-# plotlyjs(dpi = 300)
+plotlyjs(dpi = 300)
 # pyplot(dpi = 300, size = (900, 600))
-pgfplotsx(size = (900, 600))
+# pgfplotsx(size = (900, 600))
 
 aircraft_plot =
     plot(xaxis = "x", yaxis = "y", zaxis = "z",

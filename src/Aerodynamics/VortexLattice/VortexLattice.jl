@@ -117,6 +117,7 @@ include("streamlines.jl")
 # System setups
 #==========================================================================================#
 
+include("mutating_system.jl")
 include("system.jl")
 
 end
