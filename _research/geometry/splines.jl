@@ -1,7 +1,7 @@
 using StaticArrays
 
 struct BSpline{T <: Real, S <: Integer}
-    t :: Vector{T}  # Knot vector
+    ts :: Vector{T}  # Knot vector
     k :: S          # Spline multiplicity
 end
 
@@ -27,7 +27,7 @@ function knot_basis(x, T, i, k)
     else
         w1 = spline_weight(x, T, i, k - 1) 
         w2 = spline_weight(x, T, i + 1, k - 1)
-        w1 * knot_basis(x, T, i, k - 1) +  (1 - w2) * knot_basis(x, T, i + 1, k - 1)
+        w1 * knot_basis(x, T, i, k - 1) + (1 - w2) * knot_basis(x, T, i + 1, k - 1)
     end
 end
 
@@ -45,6 +45,11 @@ end
 
 function bspline(t, Ps, Ts, k = 2) 
     basis = knot_basis.(t, Ref(Ts), 1:length(Ps), k)
+    sum(p_i .* N_ik for (p_i, N_ik) in zip(Ps, basis))
+end
+
+function (p :: BSpline{T,S})(x) where {T <: Real, S <: Integer}
+    basis = knot_basis.(x, Ref(p.ts), 1:length(Ps), k)
     sum(p_i .* N_ik for (p_i, N_ik) in zip(Ps, basis))
 end
 
