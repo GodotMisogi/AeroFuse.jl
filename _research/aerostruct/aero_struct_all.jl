@@ -109,12 +109,12 @@ fs       = Freestream(V, α, β, Ω)
 
 ## Data collection
 Γs = data[ac_name][end]
-CFs_wing,  CMs_wing,  hs_wing,  Γ0_wing  = data["Wing"][3:end];
-CFs_htail, CMs_htail, hs_htail, Γ0_htail = data["Horizontal Tail"][3:end];
-CFs_vtail, CMs_vtail, hs_vtail, Γ0_vtail = data["Vertical Tail"][3:end];
+CFs_wing,  CMs_wing,  Γ0_wing  = data["Wing"][3:end];
+CFs_htail, CMs_htail, Γ0_htail = data["Horizontal Tail"][3:end];
+CFs_vtail, CMs_vtail, Γ0_vtail = data["Vertical Tail"][3:end];
 
 ## Wing FEM setup
-vlm_acs_wing    = bound_leg_center.(hs_wing)
+vlm_acs_wing    = bound_leg_center.(wing_horsies)
 vlm_forces_wing = force.(CFs_wing, dynamic_pressure(ρ, V), S)
 
 fem_weight_wing = 0.40
@@ -143,7 +143,7 @@ dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 Δx_wing = [ zeros(6); dx_wing[:] ]
 
 ## Horizontal tail FEM setup
-vlm_acs_htail    = bound_leg_center.(hs_htail)
+vlm_acs_htail    = bound_leg_center.(htail_horsies)
 vlm_forces_htail = force.(CFs_htail, dynamic_pressure(ρ, V), S)
 
 fem_weight_htail = 0.35
@@ -166,7 +166,7 @@ dx_htail = solve_cantilever_beam(Ks_htail, fem_loads_htail, cons_htail)
 Δx_htail = [ zeros(6); dx_htail[:] ]
 
 ## Vertical tail FEM setup
-vlm_acs_vtail    = bound_leg_center.(hs_vtail)
+vlm_acs_vtail    = bound_leg_center.(vtail_horsies)
 vlm_forces_vtail = force.(CFs_vtail, dynamic_pressure(ρ, V), S)
 
 fem_weight_vtail = 0.35
@@ -334,8 +334,8 @@ using LaTeXStrings
 
 # gr()
 # plotlyjs(dpi = 300, size = (1280, 720))
-pyplot(dpi = 150)
-# pgfplotsx(size = (900, 600))
+# pyplot(dpi = 150)
+pgfplotsx(size = (900, 600))
 
 aircraft_plot =
     plot(xaxis = "x", yaxis = "y", zaxis = "z",

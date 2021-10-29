@@ -53,12 +53,21 @@ vtail_panels, vtail_normals = panel_wing(vtail, [6], 5;
                                          spacing  = "uniform"
                                         )
 
-aircraft = Dict("Wing"             => Horseshoe.(wing_panels,  wing_normals),
-                "Horizontal Tail"  => Horseshoe.(htail_panels, htail_normals),
-                "Vertical Tail"    => Horseshoe.(vtail_panels, vtail_normals))
+wing_horses  = Horseshoe.(wing_panels,  wing_normals)
+htail_horses = Horseshoe.(htail_panels, htail_normals)
+vtail_horses = Horseshoe.(vtail_panels, vtail_normals)
+
+aircraft_panels = [ wing_panels[:]; htail_panels[:]; vtail_panels[:] ]
+horses          = [ wing_horses[:]; htail_horses[:]; vtail_horses[:] ]
+
+aircraft = Dict(
+                "Wing"             => wing_horses,
+                "Horizontal Tail"  => htail_horses,
+                "Vertical Tail"    => vtail_horses
+                )
 
 wing_mac = mean_aerodynamic_center(wing)
-x_w     = wing_mac[1]
+x_w      = wing_mac[1]
 
 ## Case
 ac_name = "My Aircraft"
@@ -84,28 +93,8 @@ fs      = Freestream(V, α, β, Ω)
 ## Data collection
 comp_names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
 comp  = comp_names[1]               # Pick your component
-nf_coeffs, ff_coeffs, CFs, CMs, horses, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
+nf_coeffs, ff_coeffs, CFs, CMs, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
 print_coefficients(nf_coeffs, ff_coeffs, comp)
-
-## Stability case
-@time dv_data =
-    solve_stability_case(aircraft, fs;
-                         rho_ref     = ρ,
-                         r_ref       = ref,
-                         area_ref    = S,
-                         span_ref    = b,
-                         chord_ref   = c,
-                         name        = ac_name,
-                         print       = true,
-                         print_components = true,
-                        );
-
-## Data collection
-names = (collect ∘ keys)(dv_data)
-comp  = names[1]
-nf, ff, dvs = dv_data[comp];
-print_coefficients(nf, ff, comp)
-print_derivatives(dvs, comp)
 
 ## Streamlines
 
@@ -148,7 +137,6 @@ using Plots
 pyplot(dpi = 150)
 
 ##
-aircraft_panels  = [ wing_panels[:]; htail_panels[:]; vtail_panels[:] ]
 horseshoe_coords = plot_panels(aircraft_panels)
 horseshoe_points = Tuple.(horseshoe_point.(aircraft_panels))[:];
 
