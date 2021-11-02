@@ -37,7 +37,7 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 end
 
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
-HalfWing(; chords, twists, spans, dihedrals, sweep_LEs, foils = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = HalfWing(foils, chords, twists, spans, dihedrals, sweep_LEs, position, angle, axis)
+HalfWing(; chords, twists, spans, dihedrals, LE_sweeps, foils = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = HalfWing(foils, chords, twists, spans, dihedrals, LE_sweeps, position, angle, axis)
 
 HalfWingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = [1.,0.,0.]) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [sweep_LE], position, angle, axis)
 

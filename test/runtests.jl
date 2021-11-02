@@ -63,7 +63,7 @@ end
                           twists    = [2.0, 0.0, -0.2],
                           spans     = [5.0, 0.5],
                           dihedrals = [5., 5.],
-                          sweep_LEs = [5., 5.]);
+                          LE_sweeps = [5., 5.]);
 
     # Get wing info
     b, S, c, AR = info(wing_right)
@@ -85,7 +85,7 @@ end
                 twists    = [0., 0.],
                 spans     = [0.5,],
                 dihedrals = [5.],
-                sweep_LEs = [1.14])
+                LE_sweeps = [1.14])
 
     # Define reference values
     ρ   = 1.225
@@ -123,7 +123,7 @@ end
                 twists    = [0.0, 0.0],
                 spans     = [5.0],
                 dihedrals = [11.39],
-                sweep_LEs = [0.]);
+                LE_sweeps = [0.]);
 
     # Horizontal tail
     htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
@@ -131,7 +131,7 @@ end
                  twists    = [0.0, 0.0],
                  spans     = [1.25],
                  dihedrals = [0.],
-                 sweep_LEs = [6.39],
+                 LE_sweeps = [6.39],
                  position  = [4., 0, 0],
                  angle     = -2.,
                  axis      = [0., 1., 0.])
@@ -142,7 +142,7 @@ end
                      twists    = [0.0, 0.0],
                      spans     = [1.0],
                      dihedrals = [0.],
-                     sweep_LEs = [7.97],
+                     LE_sweeps = [7.97],
                      position  = [4., 0, 0],
                      angle     = 90.,
                      axis      = [1., 0., 0.])

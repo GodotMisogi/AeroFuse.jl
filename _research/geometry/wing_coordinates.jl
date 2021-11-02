@@ -37,7 +37,7 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
             twists    = [0.0, 0.0],
             spans     = [1.25],
             dihedrals = [0.],
-            sweep_LEs = [6.39])
+            LE_sweeps = [6.39])
 
 wing_vlm = WingCoordinates(wing,
                            position = SVector(4., 0, 0.),

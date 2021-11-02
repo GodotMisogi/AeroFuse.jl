@@ -9,7 +9,7 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
             twists    = [2.0, 0.0, -2.0],
             spans     = [4.0, 0.2],
             dihedrals = [5., 30.],
-            sweep_LEs = [5., 30.]);
+            LE_sweeps = [5., 30.]);
 
 # Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
@@ -17,7 +17,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweep_LEs = [6.39],
+             LE_sweeps = [6.39],
              position  = [4., 0, 0.2],
              angle     = -2.,
              axis      = [0., 1., 0.])
@@ -28,7 +28,7 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97],
+                 LE_sweeps = [7.97],
                  position  = [4., 0, 0.2],
                  angle     = 90.,
                  axis      = [1., 0., 0.])
@@ -137,8 +137,12 @@ using Plots
 pyplot(dpi = 150)
 
 ##
-horseshoe_coords = plot_panels(aircraft_panels)
+panel_coords = plot_panels(aircraft_panels)
 horseshoe_points = Tuple.(horseshoe_point.(aircraft_panels))[:];
+
+wing_coords  = plot_wing(wing)
+htail_coords = plot_wing(htail)
+vtail_coords = plot_wing(vtail)
 
 z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
@@ -148,8 +152,11 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      zlim = (-z_limit/2, z_limit/2),
      size = (1280, 720)
     )
-plot!.(horseshoe_coords, color = :gray, label = :none)
-scatter!(horseshoe_points, marker = 1, color = :black, label = :none)
+# plot!.(panel_coords, color = :gray, label = :none)
+plot!(wing_coords, label = "Wing")
+plot!(htail_coords, label = "Horizontal Tail")
+plot!(vtail_coords, label = "Vertical Tail")
+# scatter!(horseshoe_points, marker = 1, color = :black, label = :none)
 plot!.(streams, color = :green, label = :none)
 plot!()
 

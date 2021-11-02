@@ -9,7 +9,7 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
             twists    = [0.0, 0.0],
             spans     = [5.0],
             dihedrals = [5.],
-            sweep_LEs = [5.]);
+            LE_sweeps = [5.]);
 print_info(wing, "Wing")
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 

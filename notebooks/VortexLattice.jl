@@ -68,7 +68,7 @@ HalfWing(foils  	:: Vector{Foil}, 	# Foil profiles
 		 twists 	:: Vector{Real}, 	# Twist angles
 		 spans  	:: Vector{Real}, 	# Section span lengths
 		 dihedrals  :: Vector{Real}, 	# Dihedral angles
-		 sweep_LEs 	:: Vector{Real})	# Leading-edge sweep angles
+		 LE_sweeps 	:: Vector{Real})	# Leading-edge sweep angles
 ```
 """
 
@@ -87,7 +87,7 @@ wing_right = HalfWing(foils     = foils,
 					  twists    = [0., 0., 0.],
 					  spans     = [3.0, 0.5],
 					  dihedrals = [0., 11.3],
-					  sweep_LEs = [0., 2.29]);
+					  LE_sweeps = [0., 2.29]);
 
 # ╔═╡ 80c6de10-819c-11eb-15b5-6fb90139ca04
 md"We can create a `Wing` by feeding two `HalfWing`s to it:

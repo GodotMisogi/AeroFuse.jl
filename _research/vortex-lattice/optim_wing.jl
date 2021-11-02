@@ -45,7 +45,7 @@ wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),
             dihedrals = fill(0., n-1),
-            sweep_LEs = fill(0., n-1))
+            LE_sweeps = fill(0., n-1))
 
 x0 = [(chords ∘ right)(wing); α]
 
@@ -54,7 +54,7 @@ make_wing(x) = Wing(chords    = x,
                     spans     = spans(right(wing)),
                     twists    = rad2deg.(twists(right(wing))),
                     dihedrals = rad2deg.(dihedrals(right(wing))),
-                    sweep_LEs = rad2deg.(sweeps(right(wing))))
+                    LE_sweeps = rad2deg.(sweeps(right(wing))))
 
 
 # wing = WingSection(root_foil  = naca4((2,4,1,2)),
