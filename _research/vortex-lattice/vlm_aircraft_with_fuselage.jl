@@ -133,8 +133,8 @@ circs = [ reduce(hcat, eachrow(circ) .+ Ref([x; 0; 0] + fuse.position))' for (x,
 
 ##
 using Plots
-# gr(size = (1280, 720), dpi = 300)
-pyplot(dpi = 150)
+gr(size = (1280, 720), dpi = 300)
+# plotlyjs(dpi = 150)
 
 ##
 panel_coords = plot_panels(aircraft_panels)
@@ -152,7 +152,7 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      zlim = (-z_limit/2, z_limit/2),
      size = (1280, 720)
     )
-# plot!.(panel_coords, color = :gray, label = :none)
+plot!.(panel_coords, color = :gray, label = :none)
 plot!(wing_coords, label = "Wing")
 plot!(htail_coords, label = "Horizontal Tail")
 plot!(vtail_coords, label = "Vertical Tail")

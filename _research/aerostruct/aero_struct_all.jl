@@ -339,7 +339,7 @@ pgfplotsx(size = (900, 600))
 
 aircraft_plot =
     plot(xaxis = "x", yaxis = "y", zaxis = "z",
-         camera = (-75, 20),
+         camera = (-85, 20),
          xlim = (-b/4, 3b/4),
      #     ylim = (-b/2, b/2),
          zlim = (-b/8, 3b/4),
@@ -381,5 +381,5 @@ r_norms = @. normer([ r_wing, r_htail, r_vtail ]) * thickness
 #         quiver=(loads_plots[1,:], loads_plots[2,:], loads_plots[3,:] ) .* 0.1,
 #         label = ifelse(i == 1, "Beam Forces", :none)) for (fem_plots, loads_plots) in zip(fem_plot, loads_plot) ]
 
-# savefig(aircraft_plot, "plots/AerostructWingTail.html")
+savefig(aircraft_plot, "plots/AerostructWingTails.pdf")
 plot!()
