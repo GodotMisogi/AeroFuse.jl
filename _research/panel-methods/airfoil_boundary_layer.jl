@@ -26,10 +26,10 @@ solve_case(airfoil,
             wake_panels = num_wake,
             num_panels = num_pans)
 
-println("   Cl: $cl")
-println("Σᵢ Clᵢ: $(sum(cls))")
-println("Σᵢ Cmᵢ: $(sum(cms))")
-println("Reynolds number: $(reynolds_number(1.225, V, 1.0, 1.7894e-5))")
+@show cl
+@show sum(cls)
+@show sum(cms)
+@show re = reynolds_number(1.225, V, 1.0, 1.7894e-5)
 
 ## Panel method setup
 airfoil = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = true))
@@ -38,7 +38,7 @@ wake    = wake_panel(panels, 1e5, deg2rad(α))
 wakes   = wake_panels(panels, 1.0, 1., num_wake);
 
 ## Evaluate case
-results = solve_bl_case(panels, wakes, uniform)
+results = solve_viscous_case(panels, wakes, uniform)
 
 ##
 

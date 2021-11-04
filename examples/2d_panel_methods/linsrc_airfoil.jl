@@ -25,7 +25,7 @@ pts = panel_points(panels)[1:end-1];
 panel_vels = [ velocity(uniform) .+ sum(source_velocity.(σs[1:end-1], σs[2:end], panels, x, y)) for (x, y) in pts ]
 
 qts = @. dot(panel_vels, panel_tangent(panels))
-cps = @. 1 - qts^2 / uniform.mag^2
+cps = @. 1 - qts^2 / uniform.magnitude^2
 
 ##
 upper, lower = get_surface_values(panels, cps)
@@ -49,7 +49,7 @@ pts = panel_points(panels);
 source_vels = [ velocity(uniform) .+ sum(source_velocity.(σs[1:end-1], σs[2:end], panels, x, y)) for (x, y) in grid ]
 
 speeds = @. sqrt(first(source_vels)^2 + last(source_vels)^2)
-cps = @. 1 - speeds^2 / uniform.mag^2
+cps = @. 1 - speeds^2 / uniform.magnitude^2
 
 contourf(first.(grid), last.(grid), cps)
 CB1 = colorbar(label = "Pressure Coefficient (Cp)")

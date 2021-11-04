@@ -1,6 +1,14 @@
 module ViscFoil
 
-using ..AeroMDAO: midpair_map, panel_dist, doublet_matrix, source_matrix, source_strengths, boundary_vector, velocity, panel_length, panel_angle, panel_tangent, panel_points, panel_location, fwddiff, fwdsum, tangential_velocities, solve_strengths, weighted_vector, collocation_point, eval_coefficients, lift_coefficient, AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, vortex_influence_matrix, source_influence_matrix, linear_vortex_matrix, linear_source_matrix, neumann_boundary_condition
+import ..MathTools: midpair_map, fwddiff, fwdsum, weighted_vector
+
+import ..Laplace: Uniform2D, velocity
+
+import ..PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, panel_dist, panel_length, panel_angle, panel_tangent, panel_points, panel_location, collocation_point
+
+import ..DoubletSource: doublet_matrix, source_matrix, source_strengths, boundary_vector, tangential_velocities, solve_strengths, lift_coefficient, eval_coefficients
+
+import ..LinearVortexSource: vortex_influence_matrix, source_influence_matrix, linear_vortex_matrix, linear_source_matrix, neumann_boundary_condition
 
 using NLsolve
 using LineSearches: BackTracking
@@ -47,7 +55,7 @@ end
 function solve_inviscid_vortices(panels, wakes, u)
     # Inviscid solution
     all_panels      = [ panels; wakes ]
-    foil_vortices   = vortex_influence_matrix(panels, panels)
+    foil_vortices   = vortex_influence_matrix(panels)
     all_sources     = source_influence_matrix(panels, all_panels)
     A_inv           = foil_vortices^(-1)
     P               = -A_inv * all_sources
@@ -112,7 +120,7 @@ function solve_system(x_in, tags, all_lengths, C, U_invs, n_crit)
     [ R1; R2; R3 ]
 end
 
-function solve_bl_case(panels, wakes, uniform)
+function solve_viscous_case(panels, wakes, uniform :: Uniform2D)
     u = velocity(uniform)
     α = uniform.angle
 
@@ -120,13 +128,12 @@ function solve_bl_case(panels, wakes, uniform)
     #======================================================#
 
     ## Doublet-source panel method schema
-    # U_invs, D, all_lengths = solve_inviscid_doublets(panels, wakes, u)
+    U_invs, D, all_lengths = solve_inviscid_doublets(panels, wakes, u)
 
     ## Linear vortex-source panel method schema
-    U_invs, D, all_lengths = solve_inviscid_vortices(panels, wakes, u)
+    # U_invs, D, all_lengths = solve_inviscid_vortices(panels, wakes, u)
 
-    println("Inviscid edge velocities:")
-    display(U_invs)
+    @show U_invs
 
     # Ugly tagging and setup
     #======================================================#

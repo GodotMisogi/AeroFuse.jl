@@ -66,9 +66,9 @@ export doublet_matrix, source_matrix, boundary_vector, wake_panels, source_stren
 ## Linear-strength source and vorticity panel method
 
 include("Aerodynamics/LinearVortexSource/LinearVortexSource.jl")
-import .LinearVortexSource: total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition
+import .LinearVortexSource: total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition
 
-export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition
+export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition
 
 ## Vortex lattice
 
@@ -83,6 +83,14 @@ VLMState, VLMSystem, VLMSurface, compute_influence_matrix!, compute_boundary_con
 include("Aerodynamics/profile_drag.jl")
 
 export wetted_area_drag, profile_drag_coefficient
+
+## Viscous airfoil analysis
+
+include("Aerodynamics/ViscFoil/ViscFoil.jl")
+
+import .ViscFoil: solve_inviscid_doublets, solve_inviscid_vortices, defect_block, edge_velocities, solve_viscous_case
+
+export solve_inviscid_doublets, solve_inviscid_vortices, defect_block, edge_velocities, solve_viscous_case
 
 ## Cases
 
