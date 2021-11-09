@@ -19,14 +19,14 @@ coordinates(wing :: Union{HalfWing, Wing}, span_num, chord_num; span_spacing = [
 
 Compute the chord coordinates of a `HalfWing` consisting of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
 """
-chord_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing), flip = false) = chop_wing(coordinates(wing, flip), span_num, chord_num; span_spacing = spacings, flip = flip)
+chord_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false) = chop_wing(coordinates(wing, flip), span_num, chord_num; span_spacing = spacings, flip = flip)
 
 """
     surface_coordinates(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
 
 Compute the surface coordinates of a `HalfWing` consisting of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
 """
-function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing), flip = false)
+function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false)
     leading_xyz  = leading_edge(wing, flip)
     scaled_foils = @. wing.chords * (extend_yz ∘ cosine_foil)(wing.foils, chord_num)
     affine_transformation(wing).(chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip))
@@ -37,7 +37,7 @@ end
 
 Compute the camber coordinates of a `HalfWing` consisting of camber distributions of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
 """
-function camber_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing), flip = false)
+function camber_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false)
     leading_xyz  = leading_edge(wing, flip)
     scaled_foils = @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num)
     affine_transformation(wing).(chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip))
@@ -46,21 +46,21 @@ end
 ## Wing variants
 #==========================================================================================#
 
-function chord_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing))
+function chord_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
     left_coord  = chord_coordinates(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
     right_coord = chord_coordinates(right(wing), span_num, chord_num; spacings = spacings)
 
     [ left_coord[:,1:end-1] right_coord ]
 end
 
-function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing), flip = false)
+function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
     left_coord  = camber_coordinates(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
     right_coord = camber_coordinates(right(wing), span_num, chord_num; spacings = spacings)
 
     [ left_coord[:,1:end-1] right_coord ]
 end
 
-function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing))
+function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
     left_coord  = surface_coordinates(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
     right_coord = surface_coordinates(right(wing), span_num, chord_num; spacings = spacings)
 
@@ -75,22 +75,22 @@ number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, sp
 number_of_spanwise_panels(wing :: Wing,     span_num :: Integer) = number_of_spanwise_panels(right(wing), span_num ÷ 2)
 
 function number_of_spanwise_panels(wing :: HalfWing, span_num :: Vector{<: Integer})
-    @assert (length ∘ spans)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
+    @assert (length ∘ spans)(wing) > 1 "Provide a positive integer of spanwise panels for 1 wing section."
     span_num
 end
 
 function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer})
-    @assert (length ∘ spans ∘ right)(wing) > 1 "Provide an integer number of spanwise panels for 1 wing section."
+    @assert (length ∘ spans ∘ right)(wing) > 1 "Provide a positive integer of spanwise panels for 1 wing section."
     span_num .÷ 2
 end
 
 # Spacing
-spanwise_spacing(wing :: HalfWing) = [ "sine"; fill("cosine", (length ∘ spans)(wing)         - 1) ]
-spanwise_spacing(wing :: Wing)     = [ "sine"; fill("cosine", (length ∘ spans ∘ right)(wing) - 1) ]
+symmetric_spacing(wing :: HalfWing) = [ "sine"; fill("cosine", (length ∘ spans)(wing)         - 1) ]
+symmetric_spacing(wing :: Wing)     = [ "sine"; fill("cosine", (length ∘ spans ∘ right)(wing) - 1) ]
 
 # Coordinates
-chord_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = spanwise_spacing(wing)) = chord_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
-camber_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = spanwise_spacing(wing)) = camber_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
+chord_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = chord_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
+camber_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = camber_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
 
 ## Panelling
 #==========================================================================================#
@@ -100,21 +100,21 @@ camber_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spac
 
 Mesh a `HalfWing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
 """
-mesh_horseshoes(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing), flip = false) = make_panels(chord_coordinates(wing, span_num, chord_num; spacings = spacings, flip = flip))
+mesh_horseshoes(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false) = make_panels(chord_coordinates(wing, span_num, chord_num; spacings = spacings, flip = flip))
 
 """
     mesh_wing(wing :: HalfWing, n_s :: Integer, n_c :: Integer; flip = false)
 
 Mesh a `HalfWing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for 3D analyses using doublet-source elements or equivalent formulations. TODO: Tip meshing.
 """
-mesh_wing(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing), flip = false) = make_panels(surface_coordinates(wing, span_num, chord_num, spacings = spacings, flip = flip))
+mesh_wing(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false) = make_panels(surface_coordinates(wing, span_num, chord_num, spacings = spacings, flip = flip))
 
 """
     mesh_cambers(wing :: HalfWing, n_s :: Integer, n_c :: Integer; flip = false)
 
 Mesh the camber distribution of a `HalfWing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for vortex lattice analyses.
 """
-mesh_cambers(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing), flip = false) = make_panels(camber_coordinates(wing, span_num, chord_num; spacings = spacings, flip = flip))
+mesh_cambers(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false) = make_panels(camber_coordinates(wing, span_num, chord_num; spacings = spacings, flip = flip))
 
 
 """
@@ -122,7 +122,7 @@ mesh_cambers(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Inte
 
 Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for lifting-line/vortex lattice analyses using horseshoe elements.
 """
-function mesh_horseshoes(wing :: Wing, span_num, chord_num; spacings = spanwise_spacing(wing))
+function mesh_horseshoes(wing :: Wing, span_num, chord_num; spacings = symmetric_spacing(wing))
     left_panels  = mesh_horseshoes(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
     right_panels = mesh_horseshoes(right(wing), span_num, chord_num; spacings = spacings)
 
@@ -134,7 +134,7 @@ end
 
 Mesh a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for 3D analyses using doublet-source elements or equivalent formulations. TODO: Tip meshing.
 """
-function mesh_wing(wing :: Wing, span_num, chord_num; spacings = spanwise_spacing(wing))
+function mesh_wing(wing :: Wing, span_num, chord_num; spacings = symmetric_spacing(wing))
     left_panels  = mesh_wing(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
     right_panels = mesh_wing(right(wing), span_num, chord_num; spacings = spacings)
 
@@ -146,23 +146,23 @@ end
 
 Mesh the camber distribution of a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions meant for vortex lattice analyses.
 """
-function mesh_cambers(wing :: Wing, span_num, chord_num; spacings = spanwise_spacing(wing))
+function mesh_cambers(wing :: Wing, span_num, chord_num; spacings = symmetric_spacing(wing))
     left_panels  = mesh_cambers(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
     right_panels = mesh_cambers(right(wing), span_num, chord_num; spacings = spacings)
 
     [ left_panels right_panels ]
 end
 
-function paneller(wing :: Union{HalfWing, Wing}, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = spanwise_spacing(wing))
+function paneller(wing :: Union{HalfWing, Wing}, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
     horseshoe_panels = mesh_horseshoes(wing, span_num, chord_num; spacings = spacings)
     camber_panels    = mesh_cambers(wing, span_num, chord_num; spacings = spacings)
     horseshoe_panels, panel_normal.(camber_panels)
 end
 
-function paneller(wing :: Union{HalfWing, Wing}, span_num :: Integer, chord_num :: Integer; spacings = spanwise_spacing(wing))
+function paneller(wing :: Union{HalfWing, Wing}, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing))
     horseshoe_panels = mesh_horseshoes(wing, [span_num], chord_num; spacings = spacings)
     camber_panels    = mesh_cambers(wing, [span_num], chord_num; spacings = spacings)
     horseshoe_panels, panel_normal.(camber_panels)
 end
 
-panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = spanwise_spacing(comp)) = paneller(comp, span_panels, chord_panels, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))
+panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = symmetric_spacing(comp)) = paneller(comp, span_panels, chord_panels, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))

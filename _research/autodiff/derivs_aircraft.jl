@@ -44,9 +44,11 @@ foiler(x) = arc_length(TestFoils(fill(TestFoil(x), 5)))
     spans     :: Vector{T}
     dihedrals :: Vector{T}
     sweeps    :: Vector{T}
-    HalfWingTest(chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where T <: Real = new{T}(chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
 end
 
+HalfWingTest(chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}) where {T <: Real} = HalfWingTest{T}(chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps))
+
+##
 AeroMDAO.AircraftGeometry.mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
 section_macs(wing :: HalfWingTest) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], fwddiv(wing.chords))
 section_projected_areas(wing :: HalfWingTest) = wing.spans .* fwdsum(wing.chords) / 2
@@ -82,17 +84,18 @@ Zygote.gradient(x -> winger(x, length(cs)), xs)
 
 ## Composed wing-foil
 @proto struct FoilerWing{T <: Real}
-    foils  :: Vector{Foil{T}}
+    foils  :: Vector{TestFoil{T}}
     chords :: Vector{T}
-    FoilerWing(fs :: AbstractVector{Foil{T}}, cs :: AbstractVector{T}) where T <: Real = new{T}(fs, cs)
 end
+
+# FoilerWing(fs :: AbstractVector{Foil{T}}, cs :: AbstractVector{T}) where T <: Real = FoilerWing{T}(fs, cs)
 
 # FoilerWing(fs :: AbstractArray{Foil{<: Real}}, cs :: AbstractArray{<: Real}) = FoilerWing(fs, cs)
 
 AeroMDAO.arc_length(fw :: FoilerWing) = sum(arc_length, fw.foils)
 
 # Test
-foiler_wing(x1, x2) = arc_length(FoilerWing(fill(Foil(x1), length(x2)), x2))
+foiler_wing(x1, x2) = arc_length(FoilerWing(fill(TestFoil(x1), length(x2)), x2))
 
 foilwing = foiler_wing(x_coords, cs)
 

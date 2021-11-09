@@ -6,12 +6,9 @@
 
 Evaluate a vortex lattice case given an array of `Panel3D`s with associated normal vectors (not necessarily the same as the panels' normals), freestream speed `U`, angles of attack `α` and sideslip `β`,  reference density ``\\rho``, reference point ``r_\\text{ref}`` for moments, and reference values for area, chord, and span lengths.
 """
-function evaluate_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
-    # Make horseshoes and collocation points
-    horseshoes = Horseshoe.(horseshoe_panels, normals)
-
+function evaluate_case(horseshoes, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
     # Solve system
-    Γs = reshape(solve_system(horseshoes[:], U, Ω), size(horseshoe_panels))
+    Γs = reshape(solve_system(horseshoes[:], U, Ω), size(horseshoes))
 
     # Compute forces and moments
     surface_forces, surface_moments, trefftz_force = case_dynamics(Γs, horseshoes, U, α, β, Ω, rho_ref, r_ref)
@@ -60,7 +57,7 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     name_data = (nf_coeffs, ff_coeffs, name_CFs, name_CMs, Γs)
     comp_data = tuple.(nf_comp_coeffs, ff_comp_coeffs, CFs, CMs, Γs_arr)
 
-    names   = [ name     ; # Aircraft name
+    names   = [ name       ; # Aircraft name
                 comp_names ] # Component names
     data    = [ name_data  ; # Aircraft data
                 comp_data  ] # Component data

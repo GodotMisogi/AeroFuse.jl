@@ -1,4 +1,4 @@
-## TOTALLY not a ripoff of MIT's Dawn solar HALE aircraft
+## TOTALLY not a ripoff of MIT's Dawn Solar HALE aircraft
 using Revise
 using AeroMDAO
 using LinearAlgebra
@@ -42,7 +42,7 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  spans     = [1.0],
                  dihedrals = [0.],
                  LE_sweeps = [7.97],
-                 position  = [4., 0, 0],
+                 position  = [4.7, 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.]);
 
@@ -135,7 +135,7 @@ wing_mac = mean_aerodynamic_center(wing);
 S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ        = 0.98
 ref      = [wing_mac[1], 0., 0.]
-V, α, β  = 25.0, 5.0, 0.0
+V, α, β  = 25.0, 0.0, 0.0
 Ω        = zeros(3)
 fs       = Freestream(V, α, β, Ω)
 
@@ -175,7 +175,7 @@ aluminum = Material(       # Aluminum properties
                     )
 
 Ls_wing = norm.(diff(fem_mesh_wing))                              # Beam lengths, m
-rs_wing = range(2e-2, stop = 1e-2, length = length(Ls_wing) ÷ 2)  # Outer radius, m
+rs_wing = range(5e-2, stop = 1e-2, length = length(Ls_wing) ÷ 2)  # Outer radius, m
 ts_wing = range(1e-2, stop = 6e-3, length = length(Ls_wing) ÷ 2)  # Thickness, m
 r_wing  = [ reverse(rs_wing); rs_wing ]
 t_wing  = [ reverse(ts_wing); ts_wing ]
@@ -241,7 +241,7 @@ dx_vtail = solve_cantilever_beam(Ks_vtail, fem_loads_vtail, cons_vtail)
 # W_y = fill(W / length(CFs) + 1, length(CFs) + 1)
 # W   = (collect ∘ Iterators.flatten ∘ zip)(W_y, zeros(length(My)))
 # F_W = [ zeros(length(py)); W; zeros(length(px)) ]
-weight      = 60 * 9.81
+weight      = 65 * 9.81
 load_factor = 1.3;
 
 ##
@@ -259,8 +259,18 @@ syms        = [ :wing, :htail, :vtail ]
 other_horsies = [ atail_l_horsies[:]; atail_r_horsies[:] ]
 
 # Initial guess as ComponentArray for the different equations
-x0 = ComponentArray(aerodynamics = (wing = Γ0_wing, htail = Γ0_htail, vtail = Γ0_vtail, atail_l = Γ0_atail_l, atail_r = Γ0_atail_r),
-                    structures   = (wing = Δx_wing, htail = Δx_htail, vtail = Δx_vtail),
+x0 = ComponentArray(aerodynamics = (
+                                    wing    = Γ0_wing, 
+                                    htail   = Γ0_htail, 
+                                    vtail   = Γ0_vtail, 
+                                    atail_l = Γ0_atail_l, 
+                                    atail_r = Γ0_atail_r
+                                    ),
+                    structures   = (
+                                    wing  = Δx_wing, 
+                                    htail = Δx_htail, 
+                                    vtail = Δx_vtail
+                                    ),
                     load_factor  = deg2rad(α))
 
 # Set up initial guess and function
@@ -268,7 +278,8 @@ solve_aerostructural_residual!(R, x) =
     solve_coupled_residual!(R, x,
                             V, deg2rad(β), ρ, Ω,
                             syms, vlm_meshes, cam_meshes, fem_meshes,
-                            other_horsies, stiffy, weight, load_factor)
+                            other_horsies,
+                            stiffy, weight, load_factor)
 
 ## Solve nonlinear system
 reset_timer!()
@@ -301,7 +312,7 @@ new_cam_meshes = transfer_displacements.(dxs, Ts, cam_meshes, fem_meshes)
 new_cam_panels = make_panels.(new_cam_meshes)
 
 new_horsies = new_horseshoes.(dxs, Ts, vlm_meshes, cam_meshes, fem_meshes)
-all_horsies = reduce(vcat, vec.(new_horsies));
+all_horsies = [ reduce(vcat, vec.(new_horsies)); other_horsies ];
 
 ## Aerodynamic forces and center locations
 U_opt      = freestream_to_cartesian(-V, α_opt, deg2rad(β))
@@ -346,9 +357,11 @@ loads_plot   = fem_loads
 σ_norms      = [ [ σ_norm; σ_norm[end] ] for σ_norm in σs_norm ]
 
 ## Panels
-wing_panel_plot  = plot_panels(wing_panels[:])
-htail_panel_plot = plot_panels(htail_panels[:])
-vtail_panel_plot = plot_panels(vtail_panels[:])
+wing_panel_plot    = plot_panels(wing_panels[:])
+htail_panel_plot   = plot_panels(htail_panels[:])
+vtail_panel_plot   = plot_panels(vtail_panels[:])
+atail_l_panel_plot = plot_panels(atail_l_panels[:])
+atail_r_panel_plot = plot_panels(atail_r_panels[:])
 
 # Aerodynamic centers and forces
 ac_plots    = @. reduce(hcat, new_acs)
@@ -376,25 +389,25 @@ nhtail_plan = plot_wing(new_cam_meshes[2])
 nvtail_plan = plot_wing(new_cam_meshes[3])
 
 # Streamlines
-seed    = chop_coordinates(new_cam_meshes[1][end,:], 4)
-streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
+seed    = chop_coordinates(new_cam_meshes[1][end,:], 4)[1:2:end]
+streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 20);
 
 ## Plot
 using Plots
 using LaTeXStrings
 
-# gr()
-plotlyjs(dpi = 300, size = (1280, 720))
+gr()
+# plotlyjs(size = (1280, 720))
 # pyplot(dpi = 150)
 # pgfplotsx(size = (900, 600))
 
 b = span(wing)
 aircraft_plot =
     plot(xaxis = "x", yaxis = "y", zaxis = "z",
-         camera = (-85, 20),
+         camera = (45, 45),
          xlim = (-b/4, 3b/4),
      #     ylim = (-b/2, b/2),
-         zlim = (-b/8, 3b/4),
+         zlim = (-b/8, b/4),
         #  bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
          legend = :topright,
          title = "Coupled Aerostructural Analysis"
@@ -406,24 +419,24 @@ aircraft_plot =
 
 # Planforms
 plot!(wing_plan, color = :gray, label = "Original Wing", linestyle = :solid)
-# plot!(nwing_plan, color = :blue, label = "Deflected Wing")
+plot!(nwing_plan, color = :blue, label = "Deflected Wing")
 plot!(htail_plan, color = :gray, label = "Horizontal Tail")
-# plot!(nhtail_plan, color = :blue, label = "Deflected Horizontal Tail")
+plot!(nhtail_plan, color = :blue, label = "Deflected Horizontal Tail")
 plot!(vtail_plan, color = :gray, label = "Vertical Tail")
-# plot!(nvtail_plan, color = :blue, label = "Deflected Vertical Tail")
+plot!(nvtail_plan, color = :blue, label = "Deflected Vertical Tail")
 plot!(atail_l_plan, color = :gray, label = "Left Taileron")
 plot!(atail_r_plan, color = :gray, label = "Right Taileron")
 
 # # Beams
-# thickness = 2.5
-# normer(rs) = [ rs; rs[end] ] / maximum(rs)
-# r_norms = @. normer([ r_wing, r_htail, r_vtail ]) * thickness
-# [ plot!(fem[1,:], fem[2,:], fem[3,:], color = :black, label = "Original Beam", linestyle = :solid, linewidth = r_ns) for (fem, r_ns) in zip(fem_plot, r_norms) ]
+thickness = 2.5
+normer(rs) = [ rs; rs[end] ] / maximum(rs)
+r_norms = @. normer([ r_wing, r_htail, r_vtail ]) * thickness
+[ plot!(fem[1,:], fem[2,:], fem[3,:], color = :black, label = "Original Beam", linestyle = :solid, linewidth = r_ns) for (fem, r_ns) in zip(fem_plot, r_norms) ]
 
-# [ plot!(new_fem[1,:], new_fem[2,:], new_fem[3,:], m = (thickness, 0.8, :heat, Plots.stroke(0)), zcolor = σ_ns, cbar = true, label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_ns) for (new_fem, σ_ns, r_ns) in zip(new_fem_plot, σ_norms, r_norms) ]
+[ plot!(new_fem[1,:], new_fem[2,:], new_fem[3,:], m = (thickness, 0.8, :heat, Plots.stroke(0)), zcolor = σ_ns, cbar = true, label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_ns) for (new_fem, σ_ns, r_ns) in zip(new_fem_plot, σ_norms, r_norms) ]
 
 # Streamlines
-# [ plot!(stream, color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
+[ plot!(stream, color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
 
 # Forces
 # [ quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],

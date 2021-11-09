@@ -24,7 +24,7 @@ end
 
 Evaluate a vortex lattice case given a `Wing` or `HalfWing` with a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments, ``n_s`` span-wise panels and ``n_c`` chord-wise panels.
 """
-function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [0.25 * chord_ref, 0., 0.], span_ref = span(wing), mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3, spacing = spanwise_spacing(wing))
+function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [0.25 * chord_ref, 0., 0.], span_ref = span(wing), mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3, spacing = symmetric_spacing(wing))
     # Unpack Freestream
     U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
@@ -37,8 +37,11 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho
     camber_panels    = mesh_cambers(wing, span_nums, chord_num; spacings = space)
     normals          = panel_normal.(camber_panels)
 
+    # Make horseshoes and collocation points
+    horseshoes = Horseshoe.(horseshoe_panels, normals)
+
     # Compute forces and moments
-    nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs = evaluate_case(horseshoe_panels, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
+    nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs = evaluate_case(horseshoes, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
 
     # Viscous drag evaluation
     if viscous

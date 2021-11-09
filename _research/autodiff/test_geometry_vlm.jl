@@ -6,7 +6,7 @@ using ForwardDiff
 using StaticArrays
 
 ## Wing
-TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip) = HalfWing([c_root, λ * c_root], [τ_root, τ_tip], [b], [δ], [Λ])
+TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip) = HalfWing(fill((Foil ∘ naca4)(0,0,1,2), 2), [c_root, λ * c_root], [τ_root, τ_tip], [b], [δ], [Λ])
 
 xs = [4.0, 0.0, 15.0, 0.4, 2.0, 0.0, -2.0]
 wing_right  = TrapezoidalWing(xs...)
@@ -30,7 +30,7 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
                        print     = print
                       );
         
-    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, horseshoes, Γs = data["Aircraft"]
+    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, camber_panels, Γs = data["Aircraft"]
                
     [ ff_coeffs[1:3]; nf_coeffs[4:6] ]
 end
