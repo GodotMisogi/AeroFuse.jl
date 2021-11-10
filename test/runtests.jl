@@ -1,5 +1,6 @@
 using AeroMDAO
 using Test
+using ComponentArrays
 
 @testset "NACA-4 Doublet-Source Panel Method" begin
     # Define airfoil
@@ -152,9 +153,11 @@ end
     htail_panels, htail_normals = panel_wing(htail, 6,  6; spacing = "cosine")
     vtail_panels, vtail_normals = panel_wing(vtail, 5,  6; spacing = "cosine")
 
-    aircraft = Dict("Wing"            => Horseshoe.(wing_panels , wing_normals),
-                    "Horizontal Tail" => Horseshoe.(htail_panels, htail_normals),
-                    "Vertical Tail"   => Horseshoe.(vtail_panels, vtail_normals))
+    aircraft = ComponentArray(
+                              wing  = Horseshoe.(wing_panels , wing_normals),
+                              htail = Horseshoe.(htail_panels, htail_normals),
+                              vtail = Horseshoe.(vtail_panels, vtail_normals)
+                             )
 
     ## Reference quantities
     ac_name = "My Aircraft"

@@ -59,22 +59,24 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho
     nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs
 end
 
-function solve_case(components, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false) where T <: Real
+function solve_case(components, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false)
     # Unpack Freestream
     U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Evaluate case
-    results = evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref, name)
+    results = evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
 
-    # # Printing if needed
-    # if print_components
-    #     vals = [ dict[key][1:2] for key in keys(dict) ]
-    #     nf_comp_coeffs, ff_comp_coeffs = getindex.(vals, 1), getindex.(vals, 2)
-    #     print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(dict))
-    # elseif print
-    #     nf_coeffs, ff_coeffs = dict[name][1:2]
-    #     print_coefficients(nf_coeffs, ff_coeffs, name)
-    # end
+    # Summation of coefficients
+    nf_comp_coeffs = map(comp -> nearfield_coefficients(results[comp]), keys(results))
+    ff_comp_coeffs = map(comp -> farfield_coefficients(results[comp]), keys(results))
+
+    # Printing if needed
+    if print_components
+        print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
+        print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(results))
+    elseif print
+        print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
+    end
 
     results
 end

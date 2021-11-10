@@ -72,32 +72,34 @@ V_v = S_v * l_v / (S * b)
 println("Vertical TVC        V_v: $V_v")
 
 ## Panelling and assembly
-wing_panels, wing_normals   = panel_wing(wing, [20], 10)
-htail_panels, htail_normals = panel_wing(htail, [10], 5)
-vtail_panels, vtail_normals = panel_wing(vtail, [10], 5)
+wing_panels, wing_normals   = panel_wing(wing,  [20], 10)
+htail_panels, htail_normals = panel_wing(htail, [10],  5)
+vtail_panels, vtail_normals = panel_wing(vtail, [10],  5)
 
-aircraft = Dict("Wing"            => Horseshoe.(wing_panels,  wing_normals ),
-                "Horizontal Tail" => Horseshoe.(htail_panels, htail_normals),
-                "Vertical Tail"   => Horseshoe.(vtail_panels, vtail_normals))
+aircraft = ComponentArray(
+                          wing  = Horseshoe.(wing_panels,  wing_normals ),
+                          htail = Horseshoe.(htail_panels, htail_normals),
+                          vtail = Horseshoe.(vtail_panels, vtail_normals)
+                         )
 
 ## Evaluate case
 ac_name = "My Aircraft"
-ρ 		= 1.225
+ρ       = 1.225
 ref     = x_w
 V, α, β = 1.0, 3.0, 0.0
-Ω 		= [0.0, 0.0, 0.0]
+Ω       = [0.0, 0.0, 0.0]
 fs 	    = Freestream(V, α, β, Ω)
 
 @time dv_data =
 solve_stability_case(aircraft, fs;
-                     rho_ref     = ρ,           # Reference density
-                     r_ref       = ref,         # Reference point for moments
-                     area_ref    = S,           # Reference area
-                     span_ref    = b,           # Reference span
-                     chord_ref   = c,           # Reference chord
-                     name        = ac_name,     # Aircraft name
-                     print       = true,        # Prints the results for the entire aircraft
-                     print_components = true,   # Prints the results for each component
+                     rho_ref          = ρ,       # Reference density
+                     r_ref            = ref,     # Reference point for moments
+                     area_ref         = S,       # Reference area
+                     span_ref         = b,       # Reference span
+                     chord_ref        = c,       # Reference chord
+                     name             = ac_name, # Aircraft name
+                     print            = true,    # Prints the results for the entire aircraft
+                     print_components = true,    # Prints the results for each component
                     );
 
 ## Process data
@@ -140,7 +142,7 @@ println("Spiral Stability      γ: $γ")
 using Plots
 pyplot()
 
-wing_plan = plot_wing(wing)
+wing_plan  = plot_wing(wing)
 htail_plan = plot_wing(htail)
 vtail_plan = plot_wing(vtail)
 
@@ -156,12 +158,12 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
     #  legend = false
     )
 
-plot!(wing_plan, label = "Wing")
+plot!(wing_plan,  label = "Wing")
 plot!(htail_plan, label = "Horizontal Tail")
 plot!(vtail_plan, label = "Vertical Tail")
 
-scatter!(Tuple(wing_mac), color = :blue, label = "Wing MAC")
-scatter!(Tuple(htail_mac), color = :red, label = "Horizontal Tail MAC")
+scatter!(Tuple(wing_mac),  color = :blue,  label = "Wing MAC")
+scatter!(Tuple(htail_mac), color = :red,   label = "Horizontal Tail MAC")
 scatter!(Tuple(vtail_mac), color = :green, label = "Vertical Tail MAC")
 
 scatter!(Tuple(x_np), color = :orange, label = "Neutral Point")

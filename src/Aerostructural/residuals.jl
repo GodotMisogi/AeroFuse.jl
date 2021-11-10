@@ -174,20 +174,15 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
     new_horsies  = new_horseshoes.(dxs, Ts, vlm_meshes, cam_meshes, fem_meshes)
     all_horsies  = [ reduce(vcat, vec.(new_horsies)); other_horsies ]
 
-    # Compute component forces for structural residual
-    new_Γs       = getindex.(Ref(Γs), syms) 
-    new_acs      = map(horsies -> bound_leg_center.(horsies), new_horsies)
-    @timeit "New Forces" new_forces   = nearfield_forces.(new_Γs, new_horsies, Ref(Γs), Ref(all_horsies), Ref(U), Ref(Ω), Ref(ρ))
-
-    # Compute other forces for load factor residual
-    other_syms   = filter(sym -> !(sym ∈ syms), keys(Γs))
-    other_Γs     = reduce(vcat, vec.(getindex.(Ref(Γs), other_syms)))
-    @timeit "Other Forces" other_forces = nearfield_forces(other_Γs, other_horsies, Γs, all_horsies, U, Ω, ρ)[:]
+    # Compute forces
+    @timeit "All Forces" all_forces = nearfield_forces(Γs, all_horsies, Γs, all_horsies, U, Ω, ρ)
 
     # Compute lift
-    L = sum([ reduce(vcat, vec.(new_forces)); other_forces[:] ])[3]
+    L = sum(all_forces)[3] #  body_to_wind_axes(sum(all_forces), α, β)[3] 
 
-    # Build force vector with constraint for structures
+    # Build force vector with constraint for structural components
+    new_forces = getproperty.(Ref(all_forces), syms) 
+    new_acs    = map(horsies -> bound_leg_center.(horsies), new_horsies)
     @timeit "FEM Loads" fem_loads = reduce(vcat, fem_load_vector.(new_acs, new_forces, fem_meshes))
 
     # Aerodynamic residuals

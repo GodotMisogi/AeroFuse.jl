@@ -62,7 +62,7 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
     nf, ff, dvs
 end
 
-function solve_stability_case(aircraft :: Dict{String, Matrix{Horseshoe{T}}}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false) where T <: Real
+function solve_stability_case(aircraft, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false)
     # Reference values and scaling inputs
     S, b, c = area_ref, span_ref, chord_ref
     x, scale = scale_inputs(freestream, b , c)
@@ -76,10 +76,11 @@ function solve_stability_case(aircraft :: Dict{String, Matrix{Horseshoe{T}}}, fr
                           area_ref  = S,
                           span_ref  = b,
                           chord_ref = c,
-                          name  = name)
+                          name      = name)
 
         # Creates array of nearfield and farfield coefficients for each component as a row vector.
-        coeffs = reduce(hcat, let comps = data[name]; [ comps[1]; comps[2] ] end for name in names)
+        comp_coeffs = [ [ sum(data[name].CFs); sum(data[name].CMs); data[name].farfield ] for name in keys(data) ]
+        coeffs = reduce(hcat, append!(comp_coeffs, [sum(comp_coeffs)]))
     end
 
     names     = [ reduce(vcat, keys(aircraft)); name ]

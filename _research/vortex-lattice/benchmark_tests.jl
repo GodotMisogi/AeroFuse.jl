@@ -52,10 +52,10 @@ println("AeroMDAO Aircraft Functional -")
 
     # Aircraft assembly
     aircraft = ComponentArray(
-                    wing = Horseshoe.(wing_panels,  wing_normals),
-                    htail = Horseshoe.(htail_panels,  htail_normals),
-                    vtail = Horseshoe.(vtail_panels,  vtail_normals),
-                   );
+                              wing  = Horseshoe.(wing_panels,   wing_normals),
+                              htail = Horseshoe.(htail_panels,  htail_normals),
+                              vtail = Horseshoe.(vtail_panels,  vtail_normals),
+                             );
 
 
     # display(size.([ wing_panels[1], htail_panels[1], vtail_panels[1] ])) # Checking sizes
@@ -74,7 +74,7 @@ println("AeroMDAO Aircraft Functional -")
                       span_ref  = b,
                       chord_ref = c)
 
-    nf, ff = data.wing.nearfield, data.wing.farfield
+    nf, ff = [ sum(data.wing.CFs); sum(data.wing.CMs) ], data.wing.farfield
 
     nf[1:3], nf[4:6], ff[1]
 end

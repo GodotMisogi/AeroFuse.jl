@@ -185,17 +185,17 @@ function build_stiffness_matrix(Ks, constraint_indices)
 
     # Build sparse matrix
     stiffness = spzeros(6 * (num_Ks + 2), 6 * (num_Ks + 2))
-    stiffness[7:12,7:12]           = D_start
-    stiffness[end-5:end,end-5:end] = D_end
+    @views stiffness[7:12,7:12]           = D_start
+    @views stiffness[end-5:end,end-5:end] = D_end
 
     for m in 1:num_Ks
         mid_inds = 6(m+1)+1:6(m+1)+6
         off_inds = 6(m)+1:6(m)+6
         if m < num_Ks
-            stiffness[mid_inds,mid_inds] = D_mid[:,:,m]
+            @views stiffness[mid_inds,mid_inds] = D_mid[:,:,m]
         end
-        stiffness[off_inds,mid_inds] = D_12[:,:,m]
-        stiffness[mid_inds,off_inds] = D_21[:,:,m]
+        @views stiffness[off_inds,mid_inds] = D_12[:,:,m]
+        @views stiffness[mid_inds,off_inds] = D_21[:,:,m]
     end
 
     # Fixed boundary condition by constraining the locations.
@@ -205,8 +205,8 @@ function build_stiffness_matrix(Ks, constraint_indices)
     col = arr
     row = reduce(hcat, con .+ arr for con in cons)
 
-    stiffness[CartesianIndex.(col, row)] .= 1e9
-    stiffness[CartesianIndex.(row, col)] .= 1e9
+    @views stiffness[CartesianIndex.(col, row)] .= 1e9
+    @views stiffness[CartesianIndex.(row, col)] .= 1e9
 
     stiffness
 end

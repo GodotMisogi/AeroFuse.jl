@@ -71,7 +71,7 @@ atail_r = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 
 # Wing
 wing_n_span    = [8, 6]
-wing_n_chord   = 2
+wing_n_chord   = 4
 wing_vlm_mesh  = chord_coordinates(wing, wing_n_span, wing_n_chord)
 wing_cam_mesh  = camber_coordinates(wing, wing_n_span, wing_n_chord)
 wing_panels    = make_panels(wing_vlm_mesh)
@@ -138,6 +138,7 @@ ref      = [wing_mac[1], 0., 0.]
 V, α, β  = 25.0, 0.0, 0.0
 Ω        = zeros(3)
 fs       = Freestream(V, α, β, Ω)
+q        = dynamic_pressure(ρ, V)
 
 ## Solve aerodynamic case for initial vector
 @time data =
@@ -148,21 +149,13 @@ fs       = Freestream(V, α, β, Ω)
                span_ref         = b,        # Reference span
                chord_ref        = c,        # Reference chord
                name             = ac_name,  # Aircraft name
+               print            = true,     # Print results
                print_components = true,     # Prints the results for each component
               );
 
-## Data collection
-# Γs = data[ac_name][end]
-CFs_wing,  CMs_wing,  Γ0_wing  = data.wing.CFs, data.wing.CMs, data.wing.circulations
-CFs_htail, CMs_htail, Γ0_htail = data.htail.CFs, data.htail.CMs, data.htail.circulations
-CFs_vtail, CMs_vtail, Γ0_vtail = data.vtail.CFs, data.vtail.CMs, data.vtail.circulations
-
-CFs_atail_l, CMs_atail_l, Γ0_atail_l = data.atail_l.CFs, data.atail_l.CMs, data.atail_l.circulations
-CFs_atail_r, CMs_atail_r, Γ0_atail_r = data.atail_r.CFs, data.atail_r.CMs, data.atail_r.circulations
-
 ## Wing FEM setup
 vlm_acs_wing    = bound_leg_center.(wing_horsies)
-vlm_forces_wing = force.(CFs_wing, dynamic_pressure(ρ, V), S)
+vlm_forces_wing = force.(data.wing.CFs, q, S)
 
 fem_weight_wing = 0.40
 fem_mesh_wing   = make_beam_mesh(wing_vlm_mesh, fem_weight_wing)
@@ -191,7 +184,7 @@ dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 
 ## Horizontal tail FEM setup
 vlm_acs_htail    = bound_leg_center.(htail_horsies)
-vlm_forces_htail = force.(CFs_htail, dynamic_pressure(ρ, V), S)
+vlm_forces_htail = force.(data.htail.CFs, q, S)
 
 fem_weight_htail = 0.35
 fem_mesh_htail   = make_beam_mesh(htail_vlm_mesh, fem_weight_htail)
@@ -214,7 +207,7 @@ dx_htail = solve_cantilever_beam(Ks_htail, fem_loads_htail, cons_htail)
 
 ## Vertical tail FEM setup
 vlm_acs_vtail    = bound_leg_center.(vtail_horsies)
-vlm_forces_vtail = force.(CFs_vtail, dynamic_pressure(ρ, V), S)
+vlm_forces_vtail = force.(data.vtail.CFs, q, S)
 
 fem_weight_vtail = 0.35
 fem_mesh_vtail   = make_beam_mesh(vtail_vlm_mesh, fem_weight_vtail)
@@ -260,17 +253,17 @@ other_horsies = [ atail_l_horsies[:]; atail_r_horsies[:] ]
 
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = (
-                                    wing    = Γ0_wing, 
-                                    htail   = Γ0_htail, 
-                                    vtail   = Γ0_vtail, 
-                                    atail_l = Γ0_atail_l, 
-                                    atail_r = Γ0_atail_r
-                                    ),
+                                    wing    = data.wing.circulations, 
+                                    htail   = data.htail.circulations, 
+                                    vtail   = data.vtail.circulations, 
+                                    atail_l = data.atail_l.circulations, 
+                                    atail_r = data.atail_r.circulations
+                                   ),
                     structures   = (
                                     wing  = Δx_wing, 
                                     htail = Δx_htail, 
                                     vtail = Δx_vtail
-                                    ),
+                                   ),
                     load_factor  = deg2rad(α))
 
 # Set up initial guess and function
@@ -288,6 +281,7 @@ reset_timer!()
             method         = :newton,
             show_trace     = true,
             # extended_trace = true,
+            store_trace    = true,
             autodiff       = :forward,
            );
 print_timer()
