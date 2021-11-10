@@ -79,6 +79,8 @@ struct Horseshoe{T <: Real} <: AbstractVortexArray
     chord             :: T
 end
 
+Base.length(::Horseshoe{T}) where T <: Real = 1
+
 """
     bound_leg(horseshoe :: Horseshoe)
 

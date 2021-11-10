@@ -5,7 +5,6 @@ struct VLMResults
     surface_moments
     horseshoes
     circulations
-    name
 end
 
 VLMResults(nf, ff, sf, sm, hs, Γs, name = "") =  VLMResults(nf, ff, sf, sm, hs, Γs, name)

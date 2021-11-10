@@ -1,6 +1,6 @@
 ## Aircraft analysis benchmarking
 using BenchmarkTools
-using StaticArrays
+using ComponentArrays
 
 # All subsequent analyses use no symmetry tricks for performance as AeroMDAO hasn't implemented them and apples must be compared to apples.
 
@@ -51,10 +51,10 @@ println("AeroMDAO Aircraft Functional -")
                                             )
 
     # Aircraft assembly
-    aircraft = Dict(
-                    "Wing"            => Horseshoe.(wing_panels,  wing_normals),
-                    "Horizontal Tail" => Horseshoe.(htail_panels,  htail_normals),
-                    "Vertical Tail"   => Horseshoe.(vtail_panels,  vtail_normals),
+    aircraft = ComponentArray(
+                    wing = Horseshoe.(wing_panels,  wing_normals),
+                    htail = Horseshoe.(htail_panels,  htail_normals),
+                    vtail = Horseshoe.(vtail_panels,  vtail_normals),
                    );
 
 
@@ -74,7 +74,7 @@ println("AeroMDAO Aircraft Functional -")
                       span_ref  = b,
                       chord_ref = c)
 
-    nf, ff = data["Aircraft"][1:2]
+    nf, ff = data.wing.nearfield, data.wing.farfield
 
     nf[1:3], nf[4:6], ff[1]
 end

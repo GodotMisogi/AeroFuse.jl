@@ -20,7 +20,7 @@ wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
             twists    = [0.0, 0.0, 0.0],
             spans     = [4.0, 3.0],
             dihedrals = [0., 0.],
-            LE_sweeps = [0., 8.]);
+            LE_sweeps = [0., 5.]);
 
 print_info(wing, "Lawn Polar Wing")
 
@@ -70,18 +70,18 @@ atail_r = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 ## Meshing and assembly
 
 # Wing
-wing_n_span   = [8, 6]
-wing_n_chord  = 8
-wing_vlm_mesh = chord_coordinates(wing, wing_n_span, wing_n_chord)
-wing_cam_mesh = camber_coordinates(wing, wing_n_span, wing_n_chord)
-wing_panels   = make_panels(wing_vlm_mesh)
-wing_cambers  = make_panels(wing_cam_mesh)
-wing_normals  = panel_normal.(wing_cambers)
-wing_horsies  = Horseshoe.(wing_panels, wing_normals)
+wing_n_span    = [8, 6]
+wing_n_chord   = 2
+wing_vlm_mesh  = chord_coordinates(wing, wing_n_span, wing_n_chord)
+wing_cam_mesh  = camber_coordinates(wing, wing_n_span, wing_n_chord)
+wing_panels    = make_panels(wing_vlm_mesh)
+wing_cambers   = make_panels(wing_cam_mesh)
+wing_normals   = panel_normal.(wing_cambers)
+wing_horsies   = Horseshoe.(wing_panels, wing_normals)
 
 # Horizontal tail
 htail_n_span   = [6]
-htail_n_chord  = 6
+htail_n_chord  = 2
 htail_vlm_mesh = chord_coordinates(htail, htail_n_span, htail_n_chord)
 htail_cam_mesh = camber_coordinates(htail, htail_n_span, htail_n_chord)
 htail_panels   = make_panels(htail_vlm_mesh)
@@ -91,7 +91,7 @@ htail_horsies  = Horseshoe.(htail_panels, htail_normals)
 
 # Vertical tail
 vtail_n_span   = [6]
-vtail_n_chord  = 6
+vtail_n_chord  = 2
 vtail_vlm_mesh = chord_coordinates(vtail, vtail_n_span, vtail_n_chord)
 vtail_cam_mesh = camber_coordinates(vtail, vtail_n_span, vtail_n_chord)
 vtail_panels   = make_panels(vtail_vlm_mesh)
@@ -101,7 +101,7 @@ vtail_horsies  = Horseshoe.(vtail_panels, vtail_normals)
 
 # Tailerons
 atail_n_span     = [4]
-atail_n_chord    = 4
+atail_n_chord    = 2
 
 atail_l_vlm_mesh = chord_coordinates(atail_l, atail_n_span, atail_n_chord)
 atail_l_cam_mesh = camber_coordinates(atail_l, atail_n_span, atail_n_chord)
@@ -118,15 +118,15 @@ atail_r_normals  = panel_normal.(atail_r_cambers)
 atail_r_horsies  = Horseshoe.(atail_r_panels, atail_r_normals)
 
 # Aircraft assembly
-aircraft = Dict(
-                "Wing"            => wing_horsies,
-                "Horizontal Tail" => htail_horsies,
-                "Vertical Tail"   => vtail_horsies,
-                "Left Taileron"   => atail_l_horsies,
-                "Right Taileron"  => atail_r_horsies,
-               );
+aircraft = ComponentArray(
+                          wing    = wing_horsies,
+                          htail   = htail_horsies,
+                          vtail   = vtail_horsies,
+                          atail_l = atail_l_horsies,
+                          atail_r = atail_r_horsies,
+                         );
 
-# Aerodynamic analsis
+## Aerodynamic analsis
 #==========================================================================================#
 
 # Reference values
@@ -152,13 +152,13 @@ fs       = Freestream(V, α, β, Ω)
               );
 
 ## Data collection
-Γs = data[ac_name][end]
-CFs_wing,  CMs_wing,  Γ0_wing  = data["Wing"][3:end];
-CFs_htail, CMs_htail, Γ0_htail = data["Horizontal Tail"][3:end];
-CFs_vtail, CMs_vtail, Γ0_vtail = data["Vertical Tail"][3:end];
+# Γs = data[ac_name][end]
+CFs_wing,  CMs_wing,  Γ0_wing  = data.wing.CFs, data.wing.CMs, data.wing.circulations
+CFs_htail, CMs_htail, Γ0_htail = data.htail.CFs, data.htail.CMs, data.htail.circulations
+CFs_vtail, CMs_vtail, Γ0_vtail = data.vtail.CFs, data.vtail.CMs, data.vtail.circulations
 
-CFs_atail_l, CMs_atail_l, Γ0_atail_l = data["Left Taileron"][3:end];
-CFs_atail_r, CMs_atail_r, Γ0_atail_r = data["Right Taileron"][3:end];
+CFs_atail_l, CMs_atail_l, Γ0_atail_l = data.atail_l.CFs, data.atail_l.CMs, data.atail_l.circulations
+CFs_atail_r, CMs_atail_r, Γ0_atail_r = data.atail_r.CFs, data.atail_r.CMs, data.atail_r.circulations
 
 ## Wing FEM setup
 vlm_acs_wing    = bound_leg_center.(wing_horsies)
@@ -389,15 +389,16 @@ nhtail_plan = plot_wing(new_cam_meshes[2])
 nvtail_plan = plot_wing(new_cam_meshes[3])
 
 # Streamlines
-seed    = chop_coordinates(new_cam_meshes[1][end,:], 4)[1:2:end]
+seed    = [ chop_coordinates(new_cam_meshes[1][1,:], 4)[1:2:end]; 
+            chop_coordinates(atail_l_cam_mesh[1,:], 4)[1:2:end] ]
 streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 20);
 
 ## Plot
 using Plots
 using LaTeXStrings
 
-gr()
-# plotlyjs(size = (1280, 720))
+# gr()
+plotlyjs(size = (1280, 720))
 # pyplot(dpi = 150)
 # pgfplotsx(size = (900, 600))
 
@@ -407,15 +408,15 @@ aircraft_plot =
          camera = (45, 45),
          xlim = (-b/4, 3b/4),
      #     ylim = (-b/2, b/2),
-         zlim = (-b/8, b/4),
-        #  bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
+         zlim = (-b/4, 3b/4),
+         bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
          legend = :topright,
          title = "Coupled Aerostructural Analysis"
         )
 
 # Panels
-# [ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
-# [ plot!(pans, color = :lightblue, label = ifelse(i == 1, "Deflected Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
+[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
+[ plot!(pans, color = :lightblue, label = ifelse(i == 1, "Deflected Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
 
 # Planforms
 plot!(wing_plan, color = :gray, label = "Original Wing", linestyle = :solid)

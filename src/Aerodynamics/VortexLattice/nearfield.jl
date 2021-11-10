@@ -27,11 +27,11 @@ nearfield_drag(force, U) = -dot(force, normalize(U))
 
 horseshoe_moment(horseshoe :: Horseshoe, force, r_ref) = (bound_leg_center(horseshoe) - r_ref) × force
 
-moments(horseshoes, forces, r_ref) = horseshoe_moment.(horseshoes, forces, Ref(r_ref))
+nearfield_moments(horseshoes, forces, r_ref) = horseshoe_moment.(horseshoes, forces, Ref(r_ref))
 
 function nearfield_dynamics(Γ_focus, hs_focus, Γs, horseshoes, U, Ω, ρ, r_ref)
     geom_forces  = nearfield_forces(Γ_focus, hs_focus, Γs, horseshoes, U, Ω, ρ)
-    geom_moments = moments(hs_focus, geom_forces, r_ref)
+    geom_moments = nearfield_moments(hs_focus, geom_forces, r_ref)
 
     geom_forces, geom_moments
 end

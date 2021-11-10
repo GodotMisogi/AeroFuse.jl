@@ -1,6 +1,15 @@
 ## Cases
 #==========================================================================================#
 
+struct VLMResults
+    nearfield
+    farfield
+    surface_forces
+    surface_moments
+    horseshoes
+    circulations
+end
+
 """
     solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
 
@@ -11,7 +20,7 @@ function evaluate_case(horseshoes, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     Γs = reshape(solve_system(horseshoes[:], U, Ω), size(horseshoes))
 
     # Compute forces and moments
-    surface_forces, surface_moments, trefftz_force = case_dynamics(Γs, horseshoes, U, α, β, Ω, rho_ref, r_ref)
+    surface_forces, surface_moments, trefftz_force = evaluate_dynamics(Γs, horseshoes, U, α, β, Ω, rho_ref, r_ref)
 
     # Compute aerodynamic coefficients
     nearfield_coeffs, farfield_coeffs, CFs, CMs = evaluate_coefficients(surface_forces, surface_moments, trefftz_force, U, α, β, rho_ref, area_ref, chord_ref, span_ref)
@@ -21,46 +30,59 @@ end
 
 function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref, name) 
     # Get dictionary keys and values, i.e. names and horseshoes
-    comp_names     = (collect ∘ keys)(components)
-    horseshoes_arr = values(components)
-    horseshoes     = @views reduce(vcat, vec.(horseshoes_arr)) # Flattening for VLM system solution
+    # comp_names     = keys(components)
+    # horseshoes_arr = values(components)
+    # horseshoes     = @views reduce(vcat, vec.(horseshoes_arr)) # Flattening for VLM system solution
 
-    # Solve system
-    Γs = solve_system(horseshoes, U, Ω)
+    # Solve vortex lattice system.
+    # Thanks to the magic of ComponentArrays, the components are automatically treated as one big vector.
+    Γs = solve_system(components, U, Ω)
 
-    # Reshaping
-    panel_sizes = size.(horseshoes_arr)
-    panel_inds  = [ 0; cumsum(prod.(panel_sizes)) ]
-    Γs_arr      = reshape_array(Γs, panel_inds, panel_sizes)
+    hs_comp = getproperty.(Ref(components), keys(components))
+    Γs_comp = getproperty.(Ref(Γs), keys(components))
 
-    # Compute forces and moments
-    results = case_dynamics.(Γs_arr, horseshoes_arr, Ref(Γs), Ref(horseshoes), Ref(U), α, β, Ref(Ω), rho_ref, Ref(r_ref))
-    forces  = getindex.(results, 1)
-    moments = getindex.(results, 2) 
-    trefftz = getindex.(results, 3)
+    # case_dynamics.(Γs_comp, hs_comp, Ref(Γs), Ref(horseshoes), Ref(U), α, β, Ref(Ω), rho_ref, Ref(r_ref))
+
+    # Compute nearfield forces, moments and farfield forces in Trefftz plane
+    forces = nearfield_forces(Γs, components, Γs, components, U, Ω, rho_ref) 
+    # @views map(comp -> evaluate_dynamics(Γs[comp], components[comp], Γs, components, U, α, β, Ω, rho_ref, r_ref), keys(components))
+    moments = nearfield_moments(components, forces, r_ref)
+    trefftz = @views map(comp -> trefftz_forces(Γs[comp], components[comp], norm(U), α, β, rho_ref), keys(components))
+
+    @show forces
+    @show trefftz
 
     # Components' non-dimensional forces and moments
-    data = evaluate_coefficients.(forces, moments, trefftz, Ref(U), α, β, rho_ref, area_ref, chord_ref, span_ref)
+    # data = evaluate_coefficients.(forces, moments, trefftz, Ref(U), α, β, rho_ref, area_ref, chord_ref, span_ref)
+    
+    # nf_coeffs_comp = @views getindex.(data, 1) # Nearfield coefficients
+    # ff_coeffs_comp = @views getindex.(data, 2) # Farfield coefficients
+    # CFs_comp       = @views getindex.(data, 3) # Surface force coefficients
+    # CMs_comp       = @views getindex.(data, 4) # Surface moment coefficients
 
-    nf_comp_coeffs = getindex.(data, 1)
-    ff_comp_coeffs = getindex.(data, 2)
-    CFs            = getindex.(data, 3)
-    CMs            = getindex.(data, 4)
+    # # Aircraft's non-dimensional forces and moments
+    # nf_coeffs = reduce((x, y) -> x .+ y, nf_coeffs_comp) # Sum nearfield coefficients
+    # ff_coeffs = reduce((x, y) -> x .+ y, ff_coeffs_comp) # Sum farfield coefficients
+    # name_CFs  = reduce(vcat, vec.(CFs))                  # Collect surface force coefficients
+    # name_CMs  = reduce(vcat, vec.(CMs))                  # Collect surface moment coefficients
+
+    # # Set up named tuples
+    # properties = (:nearfield, :farfield, :CFs, :CMs, :horseshoes, :circulations)
+    # full_data  = NamedTuple{properties}(nf_coeffs_comp, ff_coeffs_comp, CFs, CMs, components, Γs)
+    # comp_data  = NamedTuple{properties}.(tuple.(nf_coeffs_comp, ff_coeffs_comp, CFs, CMs, hs_comp, Γs_comp))
+    # results    = NamedTuple{(:full, keys(components)...)}(comp_data)
+
+
+end
+
+function aircraft_data(data)
 
     # Aircraft's non-dimensional forces and moments
-    nf_coeffs = reduce((x, y) -> x .+ y, nf_comp_coeffs) # Sum nearfield coefficients
-    ff_coeffs = reduce((x, y) -> x .+ y, ff_comp_coeffs) # Sum farfield coefficients
-    name_CFs  = reduce(vcat, vec.(CFs))                  # Collect surface force coefficients
-    name_CMs  = reduce(vcat, vec.(CMs))                  # Collect surface moment coefficients
+    # nf_coeffs = reduce((x, y) -> x .+ y, nf_comp_coeffs) # Sum nearfield coefficients
+    # ff_coeffs = reduce((x, y) -> x .+ y, ff_comp_coeffs) # Sum farfield coefficients
+    # name_CFs  = reduce(vcat, vec.(CFs))                  # Collect surface force coefficients
+    # name_CMs  = reduce(vcat, vec.(CMs))                  # Collect surface moment coefficients
 
-    # Dictionary assembly
-    name_data = (nf_coeffs, ff_coeffs, name_CFs, name_CMs, Γs)
-    comp_data = tuple.(nf_comp_coeffs, ff_comp_coeffs, CFs, CMs, Γs_arr)
-
-    names   = [ name       ; # Aircraft name
-                comp_names ] # Component names
-    data    = [ name_data  ; # Aircraft data
-                comp_data  ] # Component data
-
-    OrderedDict(names .=> data)
+    # # Dictionary assembly
+    # name_data = VLMResults(nf_coeffs, ff_coeffs, name_CFs, name_CMs, horseshoes, Γs)
 end
