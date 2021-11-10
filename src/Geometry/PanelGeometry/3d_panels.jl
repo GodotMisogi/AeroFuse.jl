@@ -30,6 +30,8 @@ Panel3D(p1 :: FieldVector{3,T}, p2 :: FieldVector{3,T}, p3 :: FieldVector{3,T}, 
 
 Panel3D((p1, p2, p3, p4)) = Panel3D(p1, p2, p3, p4)
 
+Base.length(:: Panel3D) = 1
+
 average_chord(panel :: Panel3D) = (p2(panel) - p1(panel) + p3(panel) - p4(panel)) / 2
 average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)) / 2
 

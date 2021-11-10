@@ -9,7 +9,7 @@ using ComponentArrays
 using AeroMDAO
 
 println("AeroMDAO Aircraft Functional -")
-@benchmark begin
+@time begin
     # Wing
     wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
                 chords    = [1.0, 0.6],
@@ -40,13 +40,13 @@ println("AeroMDAO Aircraft Functional -")
                      angle     = 90,
                      axis      = [1., 0., 0.],)
 
-    wing_panels, wing_normals   = panel_wing(wing, 20, 20, spacing = "cosine")
+    wing_panels, wing_normals   = panel_wing(wing, 20, 10, spacing = "cosine")
 
-    htail_panels, htail_normals = panel_wing(htail, 12, 12;
+    htail_panels, htail_normals = panel_wing(htail, 12, 6;
                                              spacing  = "cosine"
                                             )
 
-    vtail_panels, vtail_normals = panel_wing(vtail, 12, 10;
+    vtail_panels, vtail_normals = panel_wing(vtail, 10, 5;
                                              spacing  = "cosine"
                                             )
 
@@ -74,9 +74,9 @@ println("AeroMDAO Aircraft Functional -")
                       span_ref  = b,
                       chord_ref = c)
 
-    nf, ff = [ sum(data.wing.CFs); sum(data.wing.CMs) ], data.wing.farfield
+    nf, ff = sum(nearfield_coefficients(data)), sum(farfield_coefficients(data))
 
-    nf[1:3], nf[4:6], ff[1]
+    nf[1:3], nf[4:6], ff[1:3]
 end
 
 ##
@@ -112,13 +112,13 @@ println("AeroMDAO Aircraft Stateful -")
                      angle     = 90,
                      axis      = [1., 0., 0.],)
 
-    wing_panels, wing_normals   = panel_wing(wing, 20, 20, spacing = "cosine")
+    wing_panels, wing_normals   = panel_wing(wing, 20, 10, spacing = "cosine")
 
-    htail_panels, htail_normals = panel_wing(htail, 12, 12;
+    htail_panels, htail_normals = panel_wing(htail, 12, 6;
                                              spacing  = "cosine"
                                             )
 
-    vtail_panels, vtail_normals = panel_wing(vtail, 12, 10;
+    vtail_panels, vtail_normals = panel_wing(vtail, 10, 5;
                                              spacing  = "cosine"
                                             )
 
@@ -167,7 +167,7 @@ fc_v = fill((xc) -> 0, 2) # camberline function for each section
 using VortexLattice
 
 println("BYU FLOW Lab VortexLattice.jl - ")
-@benchmark begin
+@time begin
     # wing
     xle = [0.0, 0.2]
     yle = [0.0, 5.0]
@@ -176,7 +176,7 @@ println("BYU FLOW Lab VortexLattice.jl - ")
     theta = [2.0*pi/180, 2.0*pi/180]
     phi = [0.0, 0.0]
     ns = 20
-    nc = 20
+    nc = 10
     spacing_s = Cosine()
     spacing_c = Cosine()
     mirror = true
@@ -189,7 +189,7 @@ println("BYU FLOW Lab VortexLattice.jl - ")
     theta_h = [0.0, 0.0]
     phi_h = [0.0, 0.0]
     ns_h = 12
-    nc_h = 12
+    nc_h = 6
     spacing_s_h = Cosine()
     spacing_c_h = Cosine()
     mirror_h = true
@@ -201,8 +201,8 @@ println("BYU FLOW Lab VortexLattice.jl - ")
     chord_v = [0.7, 0.42]
     theta_v = [0.0, 0.0]
     phi_v = [0.0, 0.0]
-    ns_v = 12
-    nc_v = 10
+    ns_v = 10
+    nc_v = 5
     spacing_s_v = Cosine()
     spacing_c_v = Cosine()
     mirror_v = false

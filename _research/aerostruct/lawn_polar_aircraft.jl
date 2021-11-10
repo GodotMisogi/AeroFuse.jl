@@ -150,7 +150,7 @@ q        = dynamic_pressure(ρ, V)
                chord_ref        = c,        # Reference chord
                name             = ac_name,  # Aircraft name
                print            = true,     # Print results
-               print_components = true,     # Prints the results for each component
+            #    print_components = true,     # Prints the results for each component
               );
 
 ## Wing FEM setup

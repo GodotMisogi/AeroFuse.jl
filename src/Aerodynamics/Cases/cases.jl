@@ -66,15 +66,15 @@ function solve_case(components, freestream :: Freestream; rho_ref = 1.225, r_ref
     # Evaluate case
     results = evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
 
-    # Summation of coefficients
-    nf_comp_coeffs = map(comp -> nearfield_coefficients(results[comp]), keys(results))
-    ff_comp_coeffs = map(comp -> farfield_coefficients(results[comp]), keys(results))
-
     # Printing if needed
     if print_components
+        nf_comp_coeffs = nearfield_coefficients(results)
+        ff_comp_coeffs = farfield_coefficients(results) 
         print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
         print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(results))
     elseif print
+        nf_comp_coeffs = nearfield_coefficients(results)
+        ff_comp_coeffs = farfield_coefficients(results) 
         print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
     end
 

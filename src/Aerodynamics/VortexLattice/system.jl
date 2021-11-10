@@ -58,8 +58,12 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     NamedTuple{comp_names}(comp_data)
 end
 
-nearfield_coefficients(comp) = [ sum(comp.CFs); sum(comp.CMs) ]
-farfield_coefficients(comp) = comp.farfield 
+nearfield(comp) = [ sum(comp.CFs); sum(comp.CMs) ]
+farfield(comp) = comp.farfield
+
+circulations(data) = reduce(vcat, map(comp -> vec(data[comp].circulations), keys(data)))
+nearfield_coefficients(data) = map(comp -> nearfield(data[comp]), keys(data))
+farfield_coefficients(data) = map(comp -> farfield(data[comp]), keys(data))
 
 function aircraft_data(data)
     # # Dictionary assembly
