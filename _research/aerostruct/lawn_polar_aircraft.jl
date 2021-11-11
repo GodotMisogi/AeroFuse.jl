@@ -84,8 +84,8 @@ atail_r = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 # Wing
 wing_n_span    = [6, 6]
 wing_n_chord   = 6
-wing_vlm_mesh  = chord_coordinates(wing, wing_n_span, wing_n_chord; 
-                                #    spacings = "cosine"
+wing_vlm_mesh  = chord_coordinates(wing, wing_n_span, wing_n_chord;
+                                    # spacings = "cosine"
                                   )
 wing_cam_mesh  = camber_coordinates(wing, wing_n_span, wing_n_chord;
                                     # spacings = "cosine"

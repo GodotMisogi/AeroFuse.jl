@@ -48,12 +48,14 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     CMs_comp = moment_coefficient.(wind_moments, q, area_ref, span_ref, chord_ref) 
     FF_comp  = force_coefficient.(trefftz, q, area_ref)
 
-    # Set up named tuples (somewhat inelegant, but understandable)
+    # Collect data for each component
+    data_comp  = map((ff, comp) -> (ff, CFs_comp[comp], CMs_comp[comp], components[comp], Γs[comp]), FF_comp, valkeys(components))
 
+    # Set up named tuples (somewhat inelegant, but understandable)
     properties = (:farfield, :CFs, :CMs, :horseshoes, :circulations)
-    comp_data  = NamedTuple{properties}.(map((ff, comp) -> tuple(ff, CFs_comp[comp], CMs_comp[comp], components[comp], Γs[comp]), FF_comp, valkeys(components)))
+    tuple_comp = @views NamedTuple{properties}.(data_comp)
     
-    NamedTuple{comp_names}(comp_data)
+    NamedTuple{comp_names}(tuple_comp)
 end
 
 nearfield(comp) = [ sum(comp.CFs); sum(comp.CMs) ]
