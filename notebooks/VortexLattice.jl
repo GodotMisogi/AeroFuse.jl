@@ -283,7 +283,7 @@ AeroMDAO provides convenient functions to get quick plots of wings and their sol
 
 # ╔═╡ 811ee91e-819c-11eb-3dad-0708c43b3003
 begin
-	horseshoe_coords = plot_panels(horseshoe_panels[:])
+	horseshoe_coords = plot_panels(horseshoe_panels)
 	# wing_coords = plot_surface(wing);
 end;
 

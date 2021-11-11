@@ -308,7 +308,7 @@ begin
 			 camera = (φ, ψ),
 			 zlim = (-0.1, z_limit),
 			 )
-		horseshoe_coords = plot_panels(horseshoe_panels[:])
+		horseshoe_coords = plot_panels(horseshoe_panels)
 		plot!.(horseshoe_coords, color = :black, label = :none)
 		if stream
 			plot!.(streams, color = :green, label = :none)

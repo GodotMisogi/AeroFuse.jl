@@ -81,7 +81,7 @@ num_stream_points = 100
 streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 
 ## Display
-horseshoe_coords = plot_panels(horseshoe_panels[:])
+horseshoe_coords = plot_panels(horseshoe_panels)
 wing_coords      = plot_wing(wing);
 horseshoe_points = Tuple.(horseshoe_point.(horseshoe_panels))
 ys               = getindex.(horseshoe_points[1,:], 2)
