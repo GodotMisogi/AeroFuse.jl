@@ -117,8 +117,8 @@ CFs_htail, CMs_htail, hs_htail, Γ0_htail = data["Horizontal Tail"][3:end];
 vlm_acs_wing    = bound_leg_center.(hs_wing)
 vlm_forces_wing = force.(CFs_wing, dynamic_pressure(ρ, V), S)
 
-fem_weight_wing = 0.40
-fem_mesh_wing   = make_beam_mesh(wing_vlm_mesh, fem_weight_wing)
+wing_beam_ratio = 0.40
+wing_fem_mesh   = make_beam_mesh(wing_vlm_mesh, wing_beam_ratio)
 
 aluminum = Material(       # Aluminum properties
                     85e9,  # Elastic modulus, N/m²
@@ -127,17 +127,17 @@ aluminum = Material(       # Aluminum properties
                     1.6e3, # Density, kg/m³
                     )
 
-Ls_wing = norm.(diff(fem_mesh_wing))                              # Beam lengths, m
+Ls_wing = norm.(diff(wing_fem_mesh))                              # Beam lengths, m
 rs_wing = range(2e-2, stop = 1e-2, length = length(Ls_wing) ÷ 2)  # Outer radius, m
 ts_wing = range(1e-2, stop = 6e-3, length = length(Ls_wing) ÷ 2)  # Thickness, m
 r_wing  = [ reverse(rs_wing); rs_wing ]
 t_wing  = [ reverse(ts_wing); ts_wing ]
 
 tubes_wing     = Tube.(Ref(aluminum), Ls_wing, r_wing, t_wing)
-Ks_wing        = build_big_stiffy(tubes_wing, fem_mesh_wing, wing_vlm_mesh)
-cons_wing      = [length(fem_mesh_wing) ÷ 2]
+Ks_wing        = build_big_stiffy(tubes_wing, wing_fem_mesh, wing_vlm_mesh)
+cons_wing      = [length(wing_fem_mesh) ÷ 2]
 stiffy_wing    = build_stiffness_matrix(Ks_wing, cons_wing)
-fem_loads_wing = compute_loads(vlm_acs_wing, vlm_forces_wing, fem_mesh_wing)
+fem_loads_wing = compute_loads(vlm_acs_wing, vlm_forces_wing, wing_fem_mesh)
 
 dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 Δx_wing = [ zeros(6); dx_wing[:] ]
@@ -146,21 +146,21 @@ dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 vlm_acs_htail    = bound_leg_center.(hs_htail)
 vlm_forces_htail = force.(CFs_htail, dynamic_pressure(ρ, V), S)
 
-fem_weight_htail = 0.35
-fem_mesh_htail   = make_beam_mesh(htail_vlm_mesh, fem_weight_htail)
+htail_beam_ratio = 0.35
+htail_fem_mesh   = make_beam_mesh(htail_vlm_mesh, htail_beam_ratio)
 
 # Beam properties
-Ls_htail = norm.(diff(fem_mesh_htail))                              # Beam lengths, m
+Ls_htail = norm.(diff(htail_fem_mesh))                              # Beam lengths, m
 rs_htail = range(8e-3, stop = 2e-3, length = length(Ls_htail) ÷ 2)  # Outer radius, m
 ts_htail = range(6e-4, stop = 2e-4, length = length(Ls_htail) ÷ 2)  # Thickness, m
 r_htail  = [ reverse(rs_htail); rs_htail ]
 t_htail  = [ reverse(ts_htail); ts_htail ]
 
 tubes_htail     = Tube.(Ref(aluminum), Ls_htail, r_htail, t_htail)
-Ks_htail        = build_big_stiffy(tubes_htail, fem_mesh_htail, htail_vlm_mesh)
-cons_htail      = [length(fem_mesh_htail) ÷ 2]
+Ks_htail        = build_big_stiffy(tubes_htail, htail_fem_mesh, htail_vlm_mesh)
+cons_htail      = [length(htail_fem_mesh) ÷ 2]
 stiffy_htail    = build_stiffness_matrix(Ks_htail, cons_htail)
-fem_loads_htail = compute_loads(vlm_acs_htail, vlm_forces_htail, fem_mesh_htail)
+fem_loads_htail = compute_loads(vlm_acs_htail, vlm_forces_htail, htail_fem_mesh)
 
 dx_htail = solve_cantilever_beam(Ks_htail, fem_loads_htail, cons_htail)
 Δx_htail = [ zeros(6); dx_htail[:] ]
@@ -180,12 +180,12 @@ stiffy = blockdiag(stiffy_wing, stiffy_htail)
 ## Aerostructural residual
 #==========================================================================================#
 
-other_horsies = Horseshoe.(vtail_panels[:], vtail_normals[:])
+other_horsies = Horseshoe.(vtail_panels, vtail_normals[:])
 
 vlm_meshes  = [ wing_vlm_mesh, htail_vlm_mesh ]
 cam_meshes  = [ wing_cam_mesh, htail_cam_mesh ]
-fem_meshes  = [ fem_mesh_wing, fem_mesh_htail ]
-fem_weights = [ fem_weight_wing, fem_weight_htail ]
+fem_meshes  = [ wing_fem_mesh, htail_fem_mesh ]
+fem_weights = [ wing_beam_ratio, htail_beam_ratio ]
 syms        = [ :wing, :htail ]
 
 # Initial guess as ComponentArray for the different equations
@@ -276,9 +276,9 @@ loads_plot   = fem_loads
 σ_norms      = [ [ σ_norm; σ_norm[end] ] for σ_norm in σs_norm ]
 
 ## Panels
-wing_panel_plot  = plot_panels(wing_panels[:])
-htail_panel_plot = plot_panels(htail_panels[:])
-vtail_panel_plot = plot_panels(vtail_panels[:])
+wing_panel_plot  = plot_panels(wing_panels)
+htail_panel_plot = plot_panels(htail_panels)
+vtail_panel_plot = plot_panels(vtail_panels)
 
 # Aerodynamic centers and forces
 ac_plot    = @. reduce(hcat, new_acs)

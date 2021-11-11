@@ -79,8 +79,8 @@ function solve_stability_case(aircraft, freestream :: Freestream; rho_ref = 1.22
                           name      = name)
 
         # Creates array of nearfield and farfield coefficients for each component as a row vector.
-        comp_coeffs = [ [ sum(data[name].CFs); sum(data[name].CMs); data[name].farfield ] for name in keys(data) ]
-        coeffs = reduce(hcat, append!(comp_coeffs, [sum(comp_coeffs)]))
+        comp_coeffs = reduce(hcat, map(name -> [ nearfield(data[name]); farfield(data[name]) ], propertynames(data)))
+        all_coeffs  = [ comp_coeffs sum(comp_coeffs, dims = 2) ] # Append sum of all forces for aircraft
     end
 
     names     = [ reduce(vcat, keys(aircraft)); name ]
@@ -99,8 +99,11 @@ function solve_stability_case(aircraft, freestream :: Freestream; rho_ref = 1.22
     data    = OrderedDict(name => (vars[1:6, i], vars[7:end, i], derivs[first(inds):last(inds)-3,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds))
 
     # Printing
-    if print;            print_case(data, name)        end
-    if print_components; print_case.(Ref(data), names) end
+    if print_components
+        print_case.(Ref(data), names)
+    elseif print
+        print_case(data, name)
+    end
 
     data
 end

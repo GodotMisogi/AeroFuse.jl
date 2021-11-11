@@ -49,11 +49,9 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     FF_comp  = force_coefficient.(trefftz, q, area_ref)
 
     # Set up named tuples (somewhat inelegant, but understandable)
-    NFs_comp   = getproperty.(Ref(CFs_comp), comp_names)
-    NMs_comp   = getproperty.(Ref(CMs_comp), comp_names)
 
     properties = (:farfield, :CFs, :CMs, :horseshoes, :circulations)
-    comp_data  = NamedTuple{properties}.(tuple.(FF_comp, NFs_comp, NMs_comp, hs_comp, Γs_comp))
+    comp_data  = NamedTuple{properties}.(map((ff, comp) -> tuple(ff, CFs_comp[comp], CMs_comp[comp], components[comp], Γs[comp]), FF_comp, valkeys(components)))
     
     NamedTuple{comp_names}(comp_data)
 end

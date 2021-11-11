@@ -9,7 +9,7 @@ using ComponentArrays
 using AeroMDAO
 
 println("AeroMDAO Aircraft Functional -")
-@time begin
+@benchmark begin
     # Wing
     wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
                 chords    = [1.0, 0.6],
@@ -167,7 +167,7 @@ fc_v = fill((xc) -> 0, 2) # camberline function for each section
 using VortexLattice
 
 println("BYU FLOW Lab VortexLattice.jl - ")
-@time begin
+@benchmark begin
     # wing
     xle = [0.0, 0.2]
     yle = [0.0, 5.0]
@@ -249,5 +249,8 @@ println("BYU FLOW Lab VortexLattice.jl - ")
 
     CDiff = far_field_drag(system)
 
-    CF, CM, CDiff
+    # dCF_b, dCM_b = body_derivatives(system)
+    # dCF_s, dCM_s = stability_derivatives(system)
+
+    CF, CM, CDiff #, dCF_b, dCM_b, dCF_s, dCM_s
 end
