@@ -221,17 +221,17 @@ loads_plot   = fem_loads
 
 # Aerodynamic centers and forces
 cam_panels = make_panels(cam_mesh)
-panel_plot = plot_panels(panels[:])
+panel_plot = plot_panels(panels)
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
 # Cambers
-cam_plot     = plot_panels(cam_panels[:])
-new_cam_plot = plot_panels(new_cam_panels[:])
+cam_plot     = plot_panels(cam_panels)
+new_cam_plot = plot_panels(new_cam_panels)
 
 # Displacements
 new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
-new_panel_plot    = plot_panels(new_panels[:])
+new_panel_plot    = plot_panels(new_panels)
 
 # Axes
 xs_plot   = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)

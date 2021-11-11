@@ -236,9 +236,9 @@ loads_plot   = fem_loads
 σ_norms      = [ σs_norm; σs_norm[end] ]
 
 # Panels
-wing_panel_plot  = plot_panels(wing_panels[:])
-htail_panel_plot = plot_panels(htail_panels[:])
-vtail_panel_plot = plot_panels(vtail_panels[:])
+wing_panel_plot  = plot_panels(wing_panels)
+htail_panel_plot = plot_panels(htail_panels)
+vtail_panel_plot = plot_panels(vtail_panels)
 
 # Aerodynamic centers and forces
 ac_plot    = reduce(hcat, vlm_acs)
@@ -246,11 +246,11 @@ force_plot = reduce(hcat, vlm_forces)
 
 # Cambers
 cam_plot     = plot_panels(wing_cambers[:])
-new_cam_plot = plot_panels(new_cam_panels[:])
+new_cam_plot = plot_panels(new_cam_panels)
 
 # Displacements
 new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
-new_panel_plot    = plot_panels(new_panels[:])
+new_panel_plot    = plot_panels(new_panels)
 
 # Axes
 xs_plot   = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)

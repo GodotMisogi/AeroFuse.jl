@@ -214,7 +214,7 @@ fem_plot   = reduce(hcat, fem_mesh)
 loads_plot = fem_loads
 
 # Aerodynamic centers and forces
-panel_plot = plot_panels(panels[:])
+panel_plot = plot_panels(panels)
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 
