@@ -16,11 +16,9 @@ end
 
 plot_wing(wing :: Union{HalfWing, Wing}) = plot_wing(coordinates(wing))
 
-# plot_wing(wing :: Union{HalfWing, Wing}) where T <: Real = plot_wing(wing, AngleAxis{T}(wing.angle_axis...), wing.position)
-
 plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = map(x -> Tuple.(x)[:], streamlines(freestream, points, horseshoes, Γs, length, num_steps))
 
-plot_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30; rotation = one(RotMatrix{3, Float64}), translation = SVector(0, 0, 0)) = plot_panels(transform(panel, rotation, translation) for panel in mesh_wing(wing, span_num, chord_num)[:])
+plot_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30) = plot_panels(mesh_wing(wing, span_num, chord_num))
 
 
 ## Doublet-source

@@ -179,7 +179,7 @@ rename!(df, [:Fx, :Fy, :Fz, :Mx, :My, :Mz, :dx, :dy, :dz, :θx, :θy, :θz])
 #==========================================================================================#
 
 # Aircraft assembly
-aircraft = Dict("Wing" => Horseshoe.(new_panels, new_normals))
+aircraft = ComponentArray(wing = Horseshoe.(new_panels, new_normals))
 
 ## Evaluate case
 @time data = solve_case(aircraft, fs;
@@ -192,14 +192,13 @@ aircraft = Dict("Wing" => Horseshoe.(new_panels, new_normals))
                        );
 
 ## Get coefficients
-nf_coeffs = data["Wing"][1]
+nf_coeffs = nearfield(data.wing)
 CD, CL    = nf_coeffs[[1,3]]
 
 ## Compute fuel burn using Bréguet equation
 fuel_fractions(ffs) = 1 - prod(ffs)
 breguet_fuel_fraction(R, V, SFC, CD, CL) = exp(-R * SFC / (V * (CL / CD)))
 breguet_fuel_burn(W, args...) = W * (1 - breguet_fuel_fraction(args...))
-
 
 SFC = 0.001
 R  = 50000
