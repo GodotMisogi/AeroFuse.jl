@@ -112,7 +112,7 @@ camber_thickness(wing :: HalfWing, num) = camber_thickness.(wing.foils, num)
 
 max_thickness_to_chord_ratio_location(wing :: HalfWing, num) = max_thickness_to_chord_ratio_location.(camber_thickness(wing, num))
 
-function max_tbyc_sweeps(wing :: HalfWing, num)
+function max_thickness_to_chord_ratio_sweeps(wing :: HalfWing, num)
     xs_max_tbyc = max_thickness_to_chord_ratio_location(wing, num)
     max_tbyc    = last.(xs_max_tbyc)
     xs_temp     = first.(xs_max_tbyc)

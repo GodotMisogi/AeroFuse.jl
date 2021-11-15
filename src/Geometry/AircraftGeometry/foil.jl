@@ -35,9 +35,9 @@ cosine_foil(foil :: Foil, num :: Integer) = cosine_foil(coordinates(foil), num)
 """
     camber_thickness(foil :: Foil, num :: Integer)
 
-Compute the camber-thickness distribution of a Foil with cosine spacing..
+Compute the camber-thickness distribution of a Foil with cosine spacing.
 """
-camber_thickness(foil :: Foil, num :: Integer) = foil_camthick(cosine_foil(coordinates(foil)), num + 1)
+camber_thickness(foil :: Foil, num :: Integer = 40) = foil_camthick(cosine_foil(coordinates(foil)), num + 1)
 
 function max_thickness_to_chord_ratio_location(coords)
     xs, thiccs = coords[:,1], coords[:,3]
@@ -116,7 +116,7 @@ bernstein_basis(x, n, k)   = binomial(n, k) * bernstein_class(x, k, n - k)
 
 Define a cosine-spaced airfoil with ``2n`` points using the Class Shape Transformation method on a Bernstein polynomial basis with arrays of coefficients ``(\\alpha_u,~ \\alpha_l)`` for the upper and lower surfaces, trailing-edge spacing values ``(\\Delta z_u,~ \\Delta z_l)``, and support for leading edge modifications.
 """
-function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l), (LE_u, LE_l) = (0., 0.), n :: Integer = 40, N1 = 0.5, N2 = 1.)
+function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l) = (0., 0.), (LE_u, LE_l) = (0., 0.), n :: Integer = 40, N1 = 0.5, N2 = 1.)
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_spacing(0.5, 1, n)
 
@@ -132,27 +132,24 @@ function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l), (LE_u, LE_l) = (0., 0.), n :
              xs           lower_surf           ]
 end
 
-function camber_CST(alpha_cam, alpha_thicc, (dz_cam, dz_thicc), coeff_LE = 0, n :: Integer = 40, N1 = 0.5, N2 = 1.)
+function camber_CST(alpha_cam, alpha_thicc, dz_thicc = 0., coeff_LE = 0, n :: Integer = 40, N1 = 0.5, N2 = 1.)
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_spacing(0.5, 1, n)
 
     # λ-function for Bernstein polynomials
-    bernie(x, alphas, dz) = cst_coords(y -> bernstein_class(y, N1, N2), bernstein_basis, x, alphas, dz, coeff_LE)
+    bernie(x, alphas, dz = 0.) = cst_coords(y -> bernstein_class(y, N1, N2), bernstein_basis, x, alphas, dz, coeff_LE)
 
     # Upper and lower surface generation
-    cam   = [ bernie(x, alpha_cam, dz_cam) for x ∈ xs ]
+    cam   = [ bernie(x, alpha_cam) for x ∈ xs ]
     thicc = [ bernie(x, alpha_thicc, dz_thicc) for x ∈ xs ]
 
-    camthick_foil(xs, cam, thicc)
+    camber_thickness_to_coordinates(xs, cam, thicc)
 end
 
 function coords_to_CST(coords, num_dvs)
     xs       = coords[:,1]
     S_matrix = reduce(hcat, @. bernstein_class(xs, 0.5, 1.0) * bernstein_basis(xs, num_dvs - 1, i) for i in 0:num_dvs - 1)
-
     alphas   = S_matrix \ coords[:,2]
-
-    return alphas
 end
 
 function camthick_to_CST(coords, num_dvs)
@@ -183,17 +180,17 @@ function foil_camthick(coords, num :: Integer = 40)
 end
 
 """
-    camthick_foil(xs, camber, thickness)
+    camber_thickness_to_coordinates(xs, camber, thickness)
 
 Converts the camber-thickness representation to coordinates given the ``x``-locations and their corresponding camber and thickness values.
 """
-function camthick_foil(xs, camber, thickness)
+function camber_thickness_to_coordinates(xs, camber, thickness)
     coords = [ [xs camber + thickness / 2][end:-1:2,:];
                 xs camber - thickness / 2             ]
     # @views SVector.(coords[:,1], coords[:,2])
 end
 
-camthick_foil(coords) = @views camthick_foil(coords[:,1], coords[:,2], coords[:,3])
+camber_thickness_to_coordinates(coords) = @views camber_thickness_to_coordinates(coords[:,1], coords[:,2], coords[:,3])
 
 """
     camber_coordinates(coords :: Array{2, <: Real})

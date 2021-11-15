@@ -74,12 +74,12 @@ xcamthick = foil_camthick(airfoil, 60)
 md"You can do the inverse by feeding the abscissa, camber, and thickness distributions to:
 
 ```julia
-camthick_foil(xs, camber, thickness)
+camber_thickness_to_coordinates(xs, camber, thickness)
 ```
 "
 
 # ╔═╡ 7599c310-819a-11eb-2600-bd3ad40dd086
-coords = camthick_foil(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3]);
+coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3]);
 
 # ╔═╡ 75a97a80-819a-11eb-18a7-cd074f39e623
 md"You can split the coordinates into their upper and lower surfaces by calling:"

@@ -1,5 +1,6 @@
 ## Aircraft analysis case
 using AeroMDAO
+using ComponentArrays
 
 ## Lifting surfaces
 
@@ -89,8 +90,8 @@ fs      = Freestream(V, α, β, Ω)
                span_ref    = b,         # Reference span
                chord_ref   = c,         # Reference chord
                name        = ac_name,   # Aircraft name
-               print       = true,      # Prints the results for the entire aircraft
-               print_components = true, # Prints the results for each component
+            #    print       = true,      # Prints the results for the entire aircraft
+            #    print_components = true, # Prints the results for each component
               );
 
 ## Data access

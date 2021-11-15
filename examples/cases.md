@@ -40,13 +40,13 @@ foil_camthick(coords	  :: Array{2, Real},  # 2D coordinates
 ```
 
 ```julia
-foilpath  = "path/to/your/airfoil.dat"    # Airfoil coordinates file path
-coords    = read_foil(foilpath)           # Read coordinates file
-cos_foil  = cosine_foil(coords, 51)       # Cosine spacing with 51 points on upper and lower surfaces
-xcamthick = foil_camthick(cos_foil)       # Convert to camber-thickness representation
-foiler    = camthick_foil(xcamthick[:,1], # x-components
-                          xcamthick[:,2], # Camber distribution
-                          xcamthick[:,3]) # Thickness distribution
+foilpath  = "path/to/your/airfoil.dat"       # Airfoil coordinates file path
+coords    = read_foil(foilpath)              # Read coordinates file
+cos_foil  = cosine_foil(coords, 51)          # Cosine spacing with 51 points on upper and lower surfaces
+xcamthick = camber_thickness(Foil(cos_foil)) # Convert to camber-thickness representation
+foiler    = camber_thickness_to_coordinates(xcamthick[:,1], # x-components
+                          xcamthick[:,2],    # Camber distribution
+                          xcamthick[:,3])    # Thickness distribution
 ```
 
 ## Doublet-Source Panel Method

@@ -1,6 +1,7 @@
 ## Aircraft stability analysis example
 using AeroMDAO
 using LinearAlgebra # For norm()
+using ComponentArrays
 
 ## Lifting surfaces
 

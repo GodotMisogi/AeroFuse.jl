@@ -86,8 +86,8 @@ Base.length(::Horseshoe{T}) where T <: Real = 1
 
 Getter for bound leg field of a `Horseshoe`.
 """
-bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
-horseshoe_point(horseshoe :: Horseshoe) = horseshoe.collocation_point
+bound_leg(horseshoe :: Horseshoe)        = horseshoe.bound_leg
+horseshoe_point(horseshoe :: Horseshoe)  = horseshoe.collocation_point
 horseshoe_normal(horseshoe :: Horseshoe) = horseshoe.normal
 
 r1(r, horseshoe :: Horseshoe) = r1(r, bound_leg(horseshoe))
