@@ -71,7 +71,7 @@ aircraft = ComponentArray(
                          )
 
 wing_mac = mean_aerodynamic_center(wing)
-x_w     = wing_mac[1]
+x_w      = wing_mac[1]
 
 ## Case
 ac_name = "My Aircraft"
@@ -90,8 +90,8 @@ fs      = Freestream(V, α, β, Ω)
                span_ref    = b,         # Reference span
                chord_ref   = c,         # Reference chord
                name        = ac_name,   # Aircraft name
-            #    print       = true,      # Prints the results for the entire aircraft
-            #    print_components = true, # Prints the results for each component
+               print       = true,      # Prints the results for the entire aircraft
+               print_components = true, # Prints the results for each component
               );
 
 ## Data access

@@ -40,15 +40,9 @@ function evaluate_case(horseshoes :: Matrix{Horseshoe{T}}, U, α, β, Ω, rho_re
 end
 
 function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref) 
-    # Get component names
-    comp_names = keys(components)
-
     # Solve vortex lattice system.
     # Thanks to the magic of ComponentArrays, the components are automatically treated as one big vector.
     Γs = solve_system(components, U, Ω)
-
-    hs_comp = getproperty.(Ref(components), comp_names)
-    Γs_comp = getproperty.(Ref(Γs), comp_names)
 
     # Compute nearfield forces and moments
     surface_forces  = nearfield_forces(Γs, components, U, Ω, rho_ref) 
@@ -57,10 +51,10 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     # Transform to wind axes
     wind_forces  = body_to_wind_axes.(surface_forces, α, β)
     wind_moments = body_to_wind_axes.(stability_flip.(surface_moments), α, β)
-    drags        = nearfield_drag.(surface_forces, Ref(U))
+    # drags        = nearfield_drag.(surface_forces, Ref(U))
 
     # Compute farfield forces in Trefftz plane
-    trefftz  = trefftz_forces.(Γs_comp, hs_comp, norm(U), α, β, rho_ref)
+    trefftz  = map(comp -> trefftz_forces(Γs[comp], components[comp], norm(U), α, β, rho_ref), valkeys(components))
     
     # Surface force, moment, and farfield coefficients
     q        = dynamic_pressure(rho_ref, norm(U))
@@ -69,13 +63,13 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     FF_comp  = force_coefficient.(trefftz, q, area_ref)
 
     # Collect data for each component
-    data_comp  = map((ff, comp) -> [ff, CFs_comp[comp], CMs_comp[comp], components[comp], Γs[comp]], FF_comp, valkeys(components))
+    data_comp  = map((ff, comp) -> (ff, CFs_comp[comp], CMs_comp[comp], components[comp], Γs[comp]), FF_comp, valkeys(components))
 
     # Set up named tuples (somewhat inelegant, but understandable)
     properties = (:farfield, :CFs, :CMs, :horseshoes, :circulations)
     tuple_comp = @views NamedTuple{properties}.(data_comp)
     
-    NamedTuple{comp_names}(tuple_comp)
+    NamedTuple{keys(components)}(tuple_comp)
 end
 
 nearfield(comp) = [ sum(comp.CFs); sum(comp.CMs) ]
