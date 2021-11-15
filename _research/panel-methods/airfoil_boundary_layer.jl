@@ -35,7 +35,7 @@ solve_case(airfoil,
 airfoil = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = true))
 panels  = paneller(airfoil, num_pans);
 wake    = wake_panel(panels, 1e5, deg2rad(α))
-wakes   = wake_panels(panels, 1.0, 1., num_wake);
+wakes   = wake_panels(panels, 1.0, 1., num_wake)
 
 ## Evaluate case
 results = solve_viscous_case(panels, wakes, uniform)

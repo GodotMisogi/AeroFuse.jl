@@ -17,19 +17,19 @@
 # , U_s)
 
 # Momentum equation
-momentum_fd(dlogθ, dlogU, ΔX, θ, H, CF, M_e_sq) = dlogθ + (H + 2 - M_e_sq) * dlogU - CF * ΔX / 2θ # Check Mₑ² term later
+momentum_finite_difference(dlogθ, dlogU, ΔX, θ, H, CF, M_e_sq) = dlogθ + (H + 2 - M_e_sq) * dlogU - CF * ΔX / 2θ # Check Mₑ² term later
 
 # Shape parameter equation
-shape_fd(dlogH_star, dlogU, ΔX, θ, H, H_star, H_star_star, CF, CD) = dlogH_star + (2H_star_star / H_star + 1 - H) * dlogU + (CF / 2 - 2CD / H_star) * ΔX / θ
+shape_finite_difference(dlogH_star, dlogU, ΔX, θ, H, H_star, H_star_star, CF, CD) = dlogH_star + (2H_star_star / H_star + 1 - H) * dlogU + (CF / 2 - 2CD / H_star) * ΔX / θ
 
 ## Turbulence closure equations using finite differences
 #============================================#
 
 # Rate equation for maximum shear stress coefficient, c_τ (Green)
-stress_transport_fd(c_τ, dlogc_τ, dlogU, Δx, δ, δ_star, CF, c_τ_EQ, H_k) = dlogc_τ / Δx - 2 * (4. / 3δ_star * (CF / 2 - ((H_k - 1) / 6.7H_k)^2)) - dlogU / Δx - 5.6(√c_τ_EQ - √c_τ) / δ
+stress_transport_finite_difference(c_τ, dlogc_τ, dlogU, Δx, δ, δ_star, CF, c_τ_EQ, H_k) = dlogc_τ / Δx - 2 * (4. / 3δ_star * (CF / 2 - ((H_k - 1) / 6.7H_k)^2)) - dlogU / Δx - 5.6(√c_τ_EQ - √c_τ) / δ
 
 # Amplification ratio equation for Tollmien-Schlichting waves using envelope eⁿ, ñ
-amplification_fd(Δn, Δx, H_k, θ) = Δn/Δx - dñdReθ(H_k) * (m(H_k) + 1) / 2 * l(H_k) / θ
+amplification_finite_difference(Δn, Δx, H_k, θ) = Δn/Δx - dñdReθ(H_k) * (m(H_k) + 1) / 2 * l(H_k) / θ
 
 ## Helper functions
 #============================================#
@@ -56,17 +56,7 @@ function turbulent_body_quantities(H_k, H, M_e, Re_θ)
     H_star, H_star_star, CF, CD, c_τ_EQ, U_s
 end
 
-function evaluate_residuals(U1, U2, θ1, θ2, p1, p2, x1, x2, δ_star_1, δ_star_2, H_1, H_2, H_k_1, H_k_2, M_e_1, M_e_2, Re_θ_1, Re_θ_2, n_crit)
-    dlogθ = log(θ2 / θ1)
-    dlogU = log(U2 / U1)
-
-    ΔX     = x2 - x1
-    M_e_sq = M_e_2^2 - M_e_1^2
-
-    # Points
-    θ     = (θ1 + θ2) / 2
-    H     = (H_1 + H_2) / 2
-    H_k   = (H_k_1 + H_k_2) / 2
+function check_transition(panel1, panel2, θ, p1, p2, δ_star_1, δ_star_2, H_1, H_2, H_k_1, H_k_2, M_e_1, M_e_2, Re_θ_1, Re_θ_2, n_crit)
 
     p_a   = (p1 + p2) / 2
 
@@ -83,28 +73,49 @@ function evaluate_residuals(U1, U2, θ1, θ2, p1, p2, x1, x2, δ_star_1, δ_star
 
         Δn = p2 - p1
 
-        R3 = amplification_fd(Δn, ΔX, H, θ)
+        R3 = amplification_finite_difference(Δn, ΔX, H, θ)
     else
         # println("Turbulent")
+        H     = (H_1 + H_2) / 2
+        H_k   = (H_k_1 + H_k_2) / 2
+
         f1 = turbulent_body_quantities(H_k, H_1, M_e_1, Re_θ_1)
         f2 = turbulent_body_quantities(H_k, H_2, M_e_2, Re_θ_2)
 
-        dlogf   = @. log(f2 / f1)
-        fa      = weighted_vector(f1, f2, 0.5)
+        dlogf   = @. log(f2 / f1)[1:end-2]
+        fa      = weighted_vector(f1, f2, 0.5)[1:end-1]
 
-        dlogH_star, dlogH_star_star, dlogCF, dlogCD, dlogc_τ_EQ, dlogU_s = dlogf
-        H_star, H_star_star, CF, CD, c_τ_EQ, U_s = fa
+        dlogH_star, dlogH_star_star, dlogCF, dlogCD = dlogf
+        H_star, H_star_star, CF, CD, c_τ_EQ         = fa
 
         dlogc_τ = log(p2 / p1)
         c_τ     = p_a # ???
         δ_star  = (δ_star_1 + δ_star_2) / 2
         δ       = δ_thick(H, θ, δ_star)
 
-        R3 = stress_transport_fd(c_τ, dlogc_τ, dlogU, ΔX, δ, δ_star, CF, c_τ_EQ, H)
+        R3 = stress_transport_finite_difference(c_τ, dlogc_τ, dlogU, ΔX, δ, δ_star, CF, c_τ_EQ, H)
     end
 
-    R1 = momentum_fd(dlogθ, dlogU, ΔX, θ, H_k, CF, M_e_sq)
-    R2 = shape_fd(dlogH_star, dlogU, ΔX, θ, H_k, H_star, H_star_star, CF, CD)
+    return R3
+end
+
+
+function evaluate_residuals(panel1, panel2, U1, U2, θ1, θ2, p1, p2, x1, x2, δ_star_1, δ_star_2, H_1, H_2, H_k_1, H_k_2, M_e_1, M_e_2, Re_θ_1, Re_θ_2, n_crit)
+
+    # Differences
+    dlogθ = log(θ2 / θ1)
+    dlogU = log(U2 / U1)
+
+    ΔX     = x2 - x1
+    M_e_sq = M_e_2^2 - M_e_1^2
+
+    # Points
+    θ     = (θ1 + θ2) / 2
+    H_k   = (H_k_1 + H_k_2) / 2
+
+    R1 = momentum_finite_difference(dlogθ, dlogU, ΔX, θ, H_k, CF, M_e_sq)
+    R2 = shape_finite_difference(dlogH_star, dlogU, ΔX, θ, H_k, H_star, H_star_star, CF, CD)
+    R3 = check_transition(panel1, panel2, θ, p1, p2, δ_star_1, δ_star_2, H_1, H_2, H_k_1, H_k_2, M_e_1, M_e_2, Re_θ_1, Re_θ_2, n_crit)
 
     R1, R2, R3
 end
@@ -112,7 +123,7 @@ end
 ## Boundary layer system
 #============================================#
 
-function boundary_layer_fd(Us, δ_stars, θs, Ts, ΔXs, tags, n_crit, a, ν)
+function boundary_layer_finite_difference(Us, δ_stars, θs, Ts, ΔXs, panels, n_crit, a, ν)
     # Auxillary variables
     M_es    = Us ./ a
     Hs      = δ_stars ./ θs
@@ -122,7 +133,8 @@ function boundary_layer_fd(Us, δ_stars, θs, Ts, ΔXs, tags, n_crit, a, ν)
 
     # println(length.([ Us, θs, Ts, ΔXs, δ_stars, Hs, H_ks, M_es, Re_θs]))
 
-    Rs = evaluate_residuals.(Us[1:end-1], Us[2:end],             # Edge velocities
+    Rs = evaluate_residuals.(panels[1:end-1], panels[2:end],     # Foil panels and wake panels
+                             Us[1:end-1], Us[2:end],             # Edge velocities
                              θs[1:end-1], θs[2:end],             # Momentum thicknesses
                              Ts[1:end-1], Ts[2:end],             # Amplification ratio or shear stress coefficeint
                              ΔXs[1:end-1], ΔXs[2:end],           # Panel arc lengths
