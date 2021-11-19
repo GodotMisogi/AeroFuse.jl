@@ -7,7 +7,10 @@ using ForwardDiff, ReverseDiff, Zygote
 using ProtoStructs
 
 ## Foil tests
-@proto struct TestFoil{T <: Real}
+#===================================================================#
+
+# @proto 
+struct TestFoil{T <: Real}
     coords :: Matrix{T}
 end
 
@@ -18,10 +21,20 @@ AeroMDAO.arc_length(foil :: TestFoil) = let c = foil.coords; norm(c[2:end] .- c[
 
 x_coords = naca4(0,0,1,2)
 
+## ForwardDiff (PASSES)
+ForwardDiff.gradient(arc_length ∘ TestFoil, x_coords)
+
+## ReverseDiff (FAILS)
+ReverseDiff.gradient(arc_length ∘ TestFoil, x_coords)
+
+## Zygote (FAILS)
 Zygote.gradient(arc_length ∘ TestFoil, x_coords) # PASSES FOR MATRIX
 
-##
-@proto struct TestFoils{T <: Real}
+## Vector of Foil testss
+#===================================================================#
+
+# @proto 
+struct TestFoils{T <: Real}
     foils :: Vector{TestFoil{T}}
 end
 
@@ -30,6 +43,10 @@ AeroMDAO.arc_length(fs :: TestFoils) = sum(arc_length, fs.foils)
 foiler(x) = arc_length(TestFoils(fill(TestFoil(x), 5)))
 # airfoils = TestFoils(fill(TestFoil(x_coords), 5))
 
+## ForwardDiff (PASSES)
+ForwardDiff.gradient(foiler, x_coords)
+
+## Zygote
 # Zygote.gradient(arc_length ∘ TestFoils ∘ (x -> fill(x, 5)), TestFoil(x_coords)) # PASSES
 # Zygote.gradient(foiler, x_coords) # FAILS
 
@@ -38,7 +55,8 @@ foiler(x) = arc_length(TestFoils(fill(TestFoil(x), 5)))
 # Great success!
 
 ## Wing tests
-@proto struct HalfWingTest{T <: Real}
+# @proto 
+struct HalfWingTest{T <: Real}
     chords    :: Vector{T}
     twists    :: Vector{T}
     spans     :: Vector{T}
@@ -53,11 +71,6 @@ AeroMDAO.AircraftGeometry.mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3
 section_macs(wing :: HalfWingTest) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], fwddiv(wing.chords))
 section_projected_areas(wing :: HalfWingTest) = wing.spans .* fwdsum(wing.chords) / 2
 
-"""
-    mean_aerodynamic_chord(half_wing :: HalfWing)
-
-Compute the mean aerodynamic chord of a `HalfWing`.
-"""
 function AeroMDAO.AircraftGeometry.mean_aerodynamic_chord(wing :: HalfWingTest)
     areas = section_projected_areas(wing)
     macs  = section_macs(wing)
@@ -78,12 +91,17 @@ sws = [2.29, 30.]
 xs = [cs; ts; sps; dis; sws]
 wing = winger(xs, length(cs))
 
+## ForwardDiff (PASSES)
+ForwardDiff.gradient(x -> winger(x, length(cs)), xs)
+
+## Zygote (FAILS)
 Zygote.gradient(x -> winger(x, length(cs)), xs)
 
 # Great success!
 
 ## Composed wing-foil
-@proto struct FoilerWing{T <: Real}
+# @proto 
+struct FoilerWing{T <: Real}
     foils  :: Vector{TestFoil{T}}
     chords :: Vector{T}
 end
@@ -101,9 +119,13 @@ foilwing = foiler_wing(x_coords, cs)
 
 diff_foiler_wing(x) = foiler_wing(reshape(x[1:end-length(cs)], size(x_coords)), x[end-length(cs):end])
 diff_foiler_wing([ x_coords[:]; cs ])
+
+## ForwardDiff (PASSES)
+ForwardDiff.gradient(diff_foiler_wing, [ x_coords[:]; cs])
+
+## Zygote (FAILS)
 ∂f∂x(x, y) = Zygote.gradient(x -> foiler_wing(x, y), x)
 ∂f∂y(x, y) = Zygote.gradient(y -> foiler_wing(x, y), y)
-ForwardDiff.gradient(diff_foiler_wing, [ x_coords[:]; cs])
 ∂f∂x(x_coords, cs)
 # ∂f∂y(x_coords, cs)
 
@@ -117,6 +139,7 @@ winglord(x, n) = Wing(foils = fill(Foil(naca4(2,4,1,2)), n), chords = x[1:n], tw
 
 winglord(xs, length(cs))
 
+## ForwardDiff (FAILS)
 df = ForwardDiff.gradient(arc_length ∘ (x -> winglord(x, length(cs))), xs)
 
 ## VLM
