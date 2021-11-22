@@ -157,7 +157,7 @@ function solve_viscous_case(panels, wakes, uniform :: Uniform2D)
     state       = nlsolve(cuck,
                           x0,
                           iterations = 20,
-                          autodiff = :forward,
+                        #   autodiff = :forward,
                           show_trace = true,
                           # extended_trace = true,
                           store_trace = true,

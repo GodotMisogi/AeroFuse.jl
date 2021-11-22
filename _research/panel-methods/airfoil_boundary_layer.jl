@@ -19,12 +19,12 @@ u        = velocity(uniform)
 ## Doublet-source panel method evaluation
 @time cl, cls, cms, cps, panels =
 solve_case(airfoil,
-            uniform;
-            viscous = false,
-            sources = false,
-            wake_length = 1e5,
-            wake_panels = num_wake,
-            num_panels = num_pans)
+           uniform;
+           viscous     = false,
+           sources     = false,
+           wake_length = 1e5,
+           wake_panels = num_wake,
+           num_panels  = num_pans)
 
 @show cl
 @show sum(cls)
@@ -37,8 +37,11 @@ panels  = paneller(airfoil, num_pans);
 wake    = wake_panel(panels, 1e5, deg2rad(α))
 wakes   = wake_panels(panels, 1.0, 1., num_wake)
 
-## Evaluate case
-results = solve_viscous_case(panels, wakes, uniform)
+## Evaluate inviscid flow
+inv_res  = solve_inviscid_vortices(panels, wakes, velocity(uniform))
+
+## Evaluate viscous flow
+visc_res = solve_viscous_case(panels, wakes, uniform)
 
 ##
 
