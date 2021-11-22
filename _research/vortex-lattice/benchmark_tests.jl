@@ -8,8 +8,10 @@ using ComponentArrays
 #=======================================================#
 using AeroMDAO
 
+reset_timer!()
+
 println("AeroMDAO Aircraft Functional -")
-@benchmark begin
+@time begin
     # Wing
     wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
                 chords    = [1.0, 0.6],
@@ -37,7 +39,7 @@ println("AeroMDAO Aircraft Functional -")
                      dihedrals = [0.],
                      LE_sweeps = [7.97],
                      position  = [4., 0, 0],
-                     angle     = 90,
+                     angle     = 90.,
                      axis      = [1., 0., 0.],)
 
     wing_panels, wing_normals   = panel_wing(wing, 20, 10, spacing = "cosine")
@@ -67,17 +69,17 @@ println("AeroMDAO Aircraft Functional -")
     fs      = AeroMDAO.Freestream(V, α, β, Ω)
     S, b, c = 9.0, 10.0, 0.9
 
-    data = solve_case(aircraft, fs;
+    @timeit "Solving Case" data = solve_case(aircraft, fs;
                       rho_ref   = ρ,
                       r_ref     = x_ref,
                       area_ref  = S,
                       span_ref  = b,
                       chord_ref = c)
-
     nf, ff = sum(nearfield_coefficients(data)), sum(farfield_coefficients(data))
 
     nf[1:3], nf[4:6], ff[1:3]
 end
+print_timer()
 
 ##
 println("AeroMDAO Aircraft Stateful -")
@@ -109,7 +111,7 @@ println("AeroMDAO Aircraft Stateful -")
                      dihedrals = [0.],
                      LE_sweeps = [7.97],
                      position  = [4., 0, 0],
-                     angle     = 90,
+                     angle     = 90.,
                      axis      = [1., 0., 0.],)
 
     wing_panels, wing_normals   = panel_wing(wing, 20, 10, spacing = "cosine")

@@ -8,21 +8,23 @@
 
 Definition for a `HalfWing` consisting of ``N+1`` airfoils and their associated chord lengths ``c``, twist angles ``\\iota``, for ``N`` sections with span lengths ``b``, dihedrals ``\\delta`` and sweep angles ``\\Lambda``, with all angles in degrees.
 """
-struct HalfWing{T <: Real} <: Aircraft
-    foils      :: Vector{Foil{T}}
-    chords     :: Vector{T}
-    twists     :: Vector{T}
-    spans      :: Vector{T}
-    dihedrals  :: Vector{T}
-    sweeps     :: Vector{T}
-    position   :: SVector{3,T}
-    orientation :: SMatrix{3,3,T}
-    function HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}, position = zeros(3), angle = 0., axis = [0.,1.,0.]) where T <: Real
-        # Error handling
-        check_wing(foils, chords, twists, spans, dihedrals, sweeps)
-        # Convert angles to radians, with adjusting twists to leading edge, and generate HalfWing
-        new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), position, AngleAxis{T}(deg2rad(angle), axis...))
-    end
+struct HalfWing{M,N,P,Q,R,S,T} <: Aircraft
+    foils      :: Vector{M}
+    chords     :: Vector{N}
+    twists     :: Vector{P}
+    spans      :: Vector{Q}
+    dihedrals  :: Vector{R}
+    sweeps     :: Vector{S}
+    affine     :: T
+    # position   :: SVector{3,T}
+    # orientation :: SMatrix{3,3,U}
+end
+
+function HalfWing(foils :: AbstractVector{M}, chords :: AbstractVector{N}, twists :: AbstractVector{P}, spans :: AbstractVector{Q}, dihedrals :: AbstractVector{R}, sweeps :: AbstractVector{S}, position = zeros(3), angle :: T = 0., axis = [0.,1.,0.], affine = AffineMap(AngleAxis{T}(deg2rad(angle), axis...), position)) where {M <: AbstractFoil, N <: Real, P <: Real, Q <: Real, R <: Real, S <: Real, T <: Real} 
+    # Error handling
+    check_wing(foils, chords, twists, spans, dihedrals, sweeps)
+    # Convert angles to radians, with adjusting twists to leading edge, and generate HalfWing
+    HalfWing{M,N,P,Q,R,S,typeof(affine)}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), affine)
 end
 
 # HalfWing(foils :: AbstractVector{<: Foil}, chords :: AbstractVector{<: Real}, twists :: AbstractVector{<: Real}, spans :: AbstractVector{<: Real}, dihedrals :: AbstractVector{<: Real}, sweeps :: AbstractVector{<: Real}) = HalfWing(foils, chords, twists, spans, dihedrals, sweeps)
@@ -50,9 +52,9 @@ dihedrals(wing :: HalfWing) = wing.dihedrals
 sweeps(wing    :: HalfWing) = wing.sweeps
 
 # Affine transformation
-Base.position(wing :: HalfWing) = wing.position
-orientation(wing :: HalfWing) = wing.orientation
-affine_transformation(wing :: HalfWing{T}) where T <: Real = Translation(position(wing)) ∘ LinearMap(orientation(wing))
+Base.position(wing :: HalfWing) = wing.affine.transformation
+orientation(wing :: HalfWing) = wing.affine.linear
+affine_transformation(wing :: HalfWing) = wing.affine
 
 """
     span(half_wing :: HalfWing)

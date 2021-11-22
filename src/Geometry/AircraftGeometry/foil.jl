@@ -1,20 +1,23 @@
 ## Foil type
 #==========================================================================================#
 
+abstract type AbstractFoil end
+
 """
     Foil(coords)
 
 Airfoil structure consisting of foil coordinates as an array of points. Should be in Selig format for compatibility with other AeroMDAO tools.
 """
-struct Foil{T <: Real}
-    coordinates :: Matrix{T}
+struct Foil{T <: Real} <: AbstractFoil
+    x      :: Vector{T}
+    y      :: Vector{T}
     name   :: String
 end
 
-coordinates(foil :: Foil) = foil.coordinates
+coordinates(foil :: Foil) = [ foil.x foil.y ]
 
-Foil(coords :: AbstractVector{SVector{2,T}}, name = "Unnamed") where T <: Real = Foil{T}([ getindex.(coords, 1) getindex.(coords, 2) ], name)
-Foil(coords :: AbstractMatrix{T}, name = "Unnamed") where T <: Real = Foil{T}(coords, name)
+Foil(coords, name = "Unnamed") where T <: Real = Foil{T}(getindex.(coords, 1), getindex.(coords, 2), name)
+Foil(coords :: AbstractMatrix{T}, name = "Unnamed") where T <: Real = Foil{T}(coords[:,1], coords[:,2], name)
 
 arc_length(foil :: Foil) = let c = coordinates(foil); norm(c[2:end,:] .- c[1:end-1,:]) end
 
@@ -79,10 +82,10 @@ Discretises a foil profile into panels by projecting the x-coordinates of a circ
 """
 function cosine_foil(coords, n :: Integer = 40)
     upper, lower = split_foil(coords)
-    n_upper = [ upper       ;
-                lower[1,:]' ] # Append leading edge point from lower to upper
+    n_upper = @views [ upper       ;
+                       lower[1,:]' ] # Append leading edge point from lower to upper
 
-    upper_cos = cosine_interp(n_upper[end:-1:1,:], n)
+    upper_cos = @views cosine_interp(n_upper[end:-1:1,:], n)
     lower_cos = cosine_interp(lower, n)
 
     @views [ upper_cos[end:-1:2,:] ;
@@ -185,8 +188,8 @@ end
 Converts the camber-thickness representation to coordinates given the ``x``-locations and their corresponding camber and thickness values.
 """
 function camber_thickness_to_coordinates(xs, camber, thickness)
-    coords = [ [xs camber + thickness / 2][end:-1:2,:];
-                xs camber - thickness / 2             ]
+    coords = @views [ [xs camber + thickness / 2][end:-1:2,:];
+                       xs camber - thickness / 2             ]
     # @views SVector.(coords[:,1], coords[:,2])
 end
 

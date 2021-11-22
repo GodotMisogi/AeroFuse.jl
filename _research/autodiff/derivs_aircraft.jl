@@ -6,55 +6,28 @@ using LinearAlgebra
 using ForwardDiff, ReverseDiff, Zygote
 using ProtoStructs
 
-## Foil tests
+## Foil case
 #===================================================================#
 
-# @proto 
-struct TestFoil{T <: Real}
-    coords :: Matrix{T}
-end
-
-# a :: TestFoil + b :: TestFoil = TestFoil(a.coords .+ b.coords)
-TestFoil(coords :: AbstractMatrix{T}) where T <: Real = TestFoil{T}(SVector.(coords[:,1], coords[:,2]))
-
-AeroMDAO.arc_length(foil :: TestFoil) = let c = foil.coords; norm(c[2:end] .- c[1:end-1]) end
-
-x_coords = naca4(0,0,1,2)
+x_coords = [ 1.0  0.0
+             0.5  0.5
+             0.0  0.0
+             0.5 -0.5
+             1.0  0.0 ]
 
 ## ForwardDiff (PASSES)
-ForwardDiff.gradient(arc_length ∘ TestFoil, x_coords)
+ForwardDiff.gradient(arc_length ∘ Foil, x_coords)
 
-## ReverseDiff (FAILS)
-ReverseDiff.gradient(arc_length ∘ TestFoil, x_coords)
+## ReverseDiff (PASSES)
+ReverseDiff.gradient(arc_length ∘ Foil, x_coords)
 
-## Zygote (FAILS)
-Zygote.gradient(arc_length ∘ TestFoil, x_coords) # PASSES FOR MATRIX
+## Zygote (PASSES)
+Zygote.gradient(arc_length ∘ Foil, x_coords)
 
-## Vector of Foil testss
+
+## HalfWingTest
 #===================================================================#
 
-# @proto 
-struct TestFoils{T <: Real}
-    foils :: Vector{TestFoil{T}}
-end
-
-AeroMDAO.arc_length(fs :: TestFoils) = sum(arc_length, fs.foils)
-
-foiler(x) = arc_length(TestFoils(fill(TestFoil(x), 5)))
-# airfoils = TestFoils(fill(TestFoil(x_coords), 5))
-
-## ForwardDiff (PASSES)
-ForwardDiff.gradient(foiler, x_coords)
-
-## Zygote
-# Zygote.gradient(arc_length ∘ TestFoils ∘ (x -> fill(x, 5)), TestFoil(x_coords)) # PASSES
-# Zygote.gradient(foiler, x_coords) # FAILS
-
-# x = Zygote.gradient(sum ∘ (x -> reduce(vcat, fill(x, 5))), [1,2,3])
-
-# Great success!
-
-## Wing tests
 # @proto 
 struct HalfWingTest{T <: Real}
     chords    :: Vector{T}
@@ -94,26 +67,27 @@ wing = winger(xs, length(cs))
 ## ForwardDiff (PASSES)
 ForwardDiff.gradient(x -> winger(x, length(cs)), xs)
 
-## Zygote (FAILS)
-Zygote.gradient(x -> winger(x, length(cs)), xs)
+## ReverseDiff (PASSES)
+ReverseDiff.gradient(x -> winger(x, length(cs)), xs)
 
-# Great success!
+## Zygote (PASSES)
+Zygote.gradient(mean_aerodynamic_chord, HalfWingTest(cs, ts, sps, dis, sws))
 
-## Composed wing-foil
+## FoilerWing
+#===================================================================#
+
 # @proto 
-struct FoilerWing{T <: Real}
-    foils  :: Vector{TestFoil{T}}
+struct FoilerWing{T <: Real, N <: AbstractFoil}
+    foils  :: Vector{N}
     chords :: Vector{T}
 end
 
-# FoilerWing(fs :: AbstractVector{Foil{T}}, cs :: AbstractVector{T}) where T <: Real = FoilerWing{T}(fs, cs)
-
-# FoilerWing(fs :: AbstractArray{Foil{<: Real}}, cs :: AbstractArray{<: Real}) = FoilerWing(fs, cs)
+FoilerWing(fs :: AbstractVector{N}, cs :: AbstractVector{T}) where {T <: Real, N <: AbstractFoil} = FoilerWing{T,N}(fs, cs)
 
 AeroMDAO.arc_length(fw :: FoilerWing) = sum(arc_length, fw.foils)
 
 # Test
-foiler_wing(x1, x2) = arc_length(FoilerWing(fill(TestFoil(x1), length(x2)), x2))
+foiler_wing(x1, x2) = arc_length(FoilerWing(fill(Foil(x1), length(x2)), x2))
 
 foilwing = foiler_wing(x_coords, cs)
 
@@ -121,28 +95,84 @@ diff_foiler_wing(x) = foiler_wing(reshape(x[1:end-length(cs)], size(x_coords)), 
 diff_foiler_wing([ x_coords[:]; cs ])
 
 ## ForwardDiff (PASSES)
-ForwardDiff.gradient(diff_foiler_wing, [ x_coords[:]; cs])
+ForwardDiff.gradient(diff_foiler_wing, [ x_coords[:]; cs ])
+ForwardDiff.gradient(x -> arc_length(FoilerWing(fill(Foil(x), length(cs)), cs)), x_coords)
+ForwardDiff.gradient(x -> arc_length(FoilerWing(fill(Foil(x_coords), length(x)), x)), cs)
+
+## ReverseDiff (PASSES)
+ReverseDiff.gradient(diff_foiler_wing, [ x_coords[:]; cs ])
+ReverseDiff.gradient(x -> arc_length(FoilerWing(fill(Foil(x), length(cs)), cs)), x_coords)
+ReverseDiff.gradient(x -> arc_length(FoilerWing(fill(Foil(x_coords), length(x)), x)), cs)
+
 
 ## Zygote (FAILS)
-∂f∂x(x, y) = Zygote.gradient(x -> foiler_wing(x, y), x)
-∂f∂y(x, y) = Zygote.gradient(y -> foiler_wing(x, y), y)
-∂f∂x(x_coords, cs)
+# ∂f∂x(x, y) = Zygote.gradient(x -> foiler_wing(x, y), x)
+# ∂f∂y(x, y) = Zygote.gradient(y -> foiler_wing(x, y), y)
+# ∂f∂x(x_coords, cs)
 # ∂f∂y(x_coords, cs)
 
-# Great success!
+## FoilerWinger
+#===================================================================#
+
+# @proto 
+struct FoilerWinger{T <: Real, M <: Real, N <: AbstractFoil}
+    foils  :: Vector{N}
+    chords :: Vector{T}
+    twists :: Vector{M}
+end
+
+FoilerWing(fs :: AbstractVector{N}, cs :: AbstractVector{T}, ts :: AbstractVector{M}) where {T <: Real, M <: Real, N <: AbstractFoil} = FoilerWing{T,N}(fs, cs, ts)
+
+AeroMDAO.arc_length(fw :: FoilerWinger) = sum(arc_length, fw.foils) + sum(fw.twists)
+
+# Test
+foiler_wing(x1, x2, x3) = arc_length(FoilerWinger(fill(Foil(x1), length(x2)), x2, x3))
+
+foilwing = foiler_wing(x_coords, cs, ts)
+
+diff_foiler_wing(x) = foiler_wing(reshape(x[1:end-length(cs)-length(ts)], size(x_coords)), x[end-length(cs)-length(ts):end-length(ts)], x[end-length(ts):end])
+diff_foiler_wing([ x_coords[:]; cs; ts ])
+
+## ForwardDiff (PASSES)
+ForwardDiff.gradient(diff_foiler_wing, [ x_coords[:]; cs; ts ])
+ForwardDiff.gradient(x -> arc_length(FoilerWinger(fill(Foil(x), length(cs)), cs, ts)), x_coords)
+ForwardDiff.gradient(x -> arc_length(FoilerWinger(fill(Foil(x_coords), length(x)), x, ts)), cs)
+ForwardDiff.gradient(x -> arc_length(FoilerWinger(fill(Foil(x_coords), length(x)), cs, x)), ts)
+
+## ReverseDiff (FAILS)
+# ReverseDiff.gradient(diff_foiler_wing, [ x_coords[:]; cs; ts ])
+# ReverseDiff.gradient(x -> arc_length(FoilerWinger(fill(Foil(x), length(cs)), cs, ts)), x_coords)
+# ReverseDiff.gradient(x -> arc_length(FoilerWinger(fill(Foil(x_coords), length(x)), x, ts)), cs)
 
 ## Wing
+#===================================================================#
+
 AeroMDAO.arc_length(fw :: HalfWing) = sum(arc_length, fw.foils)
 AeroMDAO.arc_length(wing :: Wing) = arc_length(wing.left) + arc_length(wing.right)
 
-winglord(x, n) = Wing(foils = fill(Foil(naca4(2,4,1,2)), n), chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], LE_sweeps = x[4n-1:end])
+winglord(x, n) = HalfWing(foils = fill(Foil(x_coords), n), chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], LE_sweeps = x[4n-1:end])
 
-winglord(xs, length(cs))
+wing = winglord(xs, length(cs))
 
-## ForwardDiff (FAILS)
-df = ForwardDiff.gradient(arc_length ∘ (x -> winglord(x, length(cs))), xs)
+## ForwardDiff (PASSES)
+ForwardDiff.gradient(x -> arc_length(winglord(x, length(cs))), xs)
+ForwardDiff.gradient(x -> arc_length(HalfWing(fill(Foil(x), length(cs)), cs, ts, sps, dis, sws)), x_coords)
+ForwardDiff.gradient(x -> arc_length(HalfWing(fill(Foil(x_coords), length(x)), x, ts, sps, dis, sws)), cs)
+ForwardDiff.gradient(x -> arc_length(HalfWing(fill(Foil(x_coords), length(x)), cs, x, sps, dis, sws)), ts)
+ForwardDiff.gradient(x -> arc_length(HalfWing(fill(Foil(x_coords), length(x)-1), cs, ts, x, dis, sws)), sps)
+
+## ReverseDiff (PASSES)
+ReverseDiff.gradient(x -> arc_length(winglord(x, length(cs))), xs)
+ReverseDiff.gradient(x -> arc_length(HalfWing(fill(Foil(x), length(cs)), cs, ts, sps, dis, sws)), x_coords)
+ReverseDiff.gradient(x -> arc_length(HalfWing(fill(Foil(x_coords), length(x)), x, ts, sps, dis, sws)), cs)
+ReverseDiff.gradient(x -> arc_length(HalfWing(fill(Foil(x_coords), length(x)), cs, x, sps, dis, sws)), ts)
+# ReverseDiff.gradient(x -> arc_length(HalfWing(fill(Foil(x_coords), length(x)-1), cs, ts, x, dis, sws)), sps)
 
 ## VLM
+#===================================================================#
+
+using ComponentArrays
+
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
     # Evaluate case
     data =  solve_case(aircraft, fs;
@@ -154,7 +184,8 @@ function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
                        print     = print
                       );
 
-    nf_coeffs, ff_coeffs = data["Aircraft"][1:2]
+    nf_coeffs = sum(nearfield_coefficients(data))
+    ff_coeffs = sum(farfield_coefficients(data))
 
     [ ff_coeffs[1:3]; nf_coeffs[4:6] ]
 end
@@ -168,11 +199,11 @@ function vlmer(x)
     fs          = Freestream(V, α, β, Ω)
     S, b, c     = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
     wing_panels = panel_wing(wing, [20], 10);
-    aircraft    = Dict("Wing" => wing_panels)
+    aircraft    = ComponentArray(wing = Horseshoe.(wing_panels...))
     results     = vlm_analysis(aircraft, fs, ρ, ref, S, b, c)
 end
 
 vlmer(xs)
 
-## ForwardDiff
+## ForwardDiff (PASSES)
 ForwardDiff.jacobian(vlmer, xs)

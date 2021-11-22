@@ -1,7 +1,7 @@
 ## Aircraft analysis case
 using AeroMDAO
 using ComponentArrays
-
+using TimerOutputs
 ## Lifting surfaces
 
 # Wing

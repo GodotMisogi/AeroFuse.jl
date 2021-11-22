@@ -7,21 +7,32 @@ Vertical Tail:   (5, 10)
 
 1. Laptop i7-7700HQ, 1.9 GHz?:
 
+AeroMDAO Aircraft Functional -
+BenchmarkTools.Trial: 72 samples with 1 evaluation.
+ Range (min … max):  46.437 ms … 276.820 ms  ┊ GC (min … max): 0.00% … 2.45%
+ Time  (median):     58.834 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   70.115 ms ±  38.861 ms  ┊ GC (mean ± σ):  4.16% ± 5.38%
+
+  ▂▂█▄▃▃▅                                                       
+  ████████▃▁▃▃▃▅▁▁▁▁▃▁▁▁▁▁▁▁▁▁▁▃▁▁▁▁▁▃▁▁▁▁▁▁▃▁▁▁▁▁▁▁▁▁▁▃▁▁▁▁▁▃ ▁
+  46.4 ms         Histogram: frequency by time          210 ms <
+
+ Memory estimate: 25.99 MiB, allocs estimate: 29736.
+
+BYU FLOW Lab VortexLattice.jl - 
+BenchmarkTools.Trial: 54 samples with 1 evaluation.
+ Range (min … max):  74.725 ms … 532.581 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     79.743 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   93.197 ms ±  64.188 ms  ┊ GC (mean ± σ):  1.91% ± 4.49%
+
+  ▃█       
+  ███▆▅▄▆▃▃▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃ ▁
+  74.7 ms         Histogram: frequency by time          207 ms <
+
+ Memory estimate: 10.44 MiB, allocs estimate: 72583.
 
 
 2. Desktop i7-8700, 3.2 GHz:
-
-AeroMDAO Aircraft Functional -
-BenchmarkTools.Trial: 111 samples with 1 evaluation.
- Range (min … max):  36.861 ms … 66.054 ms  ┊ GC (min … max): 0.00% … 10.09%
- Time  (median):     42.444 ms              ┊ GC (median):    0.00%
- Time  (mean ± σ):   45.283 ms ±  6.597 ms  ┊ GC (mean ± σ):  5.25% ±  6.45%
-
-      █▇▃                       ▂
-  ▃█▃▆████▇█▆▅▃▅▃▃▅▃▃▃▃▃▅▁▁▁▆▅▅▆█▆█▇▅▆▆▁▁▃▁▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃ ▃
-  36.9 ms         Histogram: frequency by time        65.5 ms <
-
- Memory estimate: 34.00 MiB, allocs estimate: 30445.
 
 BYU FLOW Lab VortexLattice.jl - 
 BenchmarkTools.Trial: 79 samples with 1 evaluation.

@@ -3,9 +3,9 @@
 
 A composite type consisting of two `HalfWing`s with fields `left` and `right` for constructing a wing.
 """
-struct Wing{T <: Real} <: Aircraft
-    left :: HalfWing{T}
-    right :: HalfWing{T}
+struct Wing{M,N,P,Q,R,S,T} <: Aircraft
+    left :: HalfWing{M,N,P,Q,R,S,T}
+    right :: HalfWing{M,N,P,Q,R,S,T}
 end
 
 # function Wing(left :: HalfWing{T}, right :: HalfWing{T}) where T <: Real
@@ -23,8 +23,8 @@ spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)     ; (spa
 dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dihedrals ∘ right)(wing) ]
 sweeps(wing :: Wing)    = @views [ (reverse ∘ sweeps ∘ left)(wing)    ; (sweeps ∘ right)(wing)    ]
 
-Base.position(wing :: Wing)     = (position ∘ right)(wing)
-orientation(wing :: Wing)  = (orientation ∘ right)(wing)
+Base.position(wing :: Wing) = right(wing).affline.translation
+orientation(wing :: Wing)   = right(wing).affine.linear
 
 affine_transformation(wing :: Wing) = affine_transformation(right(wing))
 
