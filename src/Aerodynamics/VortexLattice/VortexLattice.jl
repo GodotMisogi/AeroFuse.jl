@@ -3,8 +3,6 @@ module VortexLattice
 using LinearAlgebra
 using StaticArrays
 using Rotations
-using OrderedCollections
-using TimerOutputs
 using ComponentArrays
 
 ## Package imports

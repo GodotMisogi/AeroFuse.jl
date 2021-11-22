@@ -26,7 +26,7 @@ evaluate_CDi(wing, V, α, ρ, span_num, chord_num) = run_case(wing, V, α, ρ, s
 function evaluate_cons(wing, V, α, ρ, span_num, chord_num)
     area = projected_area(wing)
     ff   = run_case(wing, V, α, ρ, span_num, chord_num)
-    lift = dynamic_pressure(ρ, V) * S * ff[5]
+    lift = dynamic_pressure(ρ, V) * area * ff[5]
     CDi  = ff[1]
 
     lift, area, CDi

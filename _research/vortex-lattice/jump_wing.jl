@@ -1,10 +1,9 @@
 ##
-using Revise
 using JuMP
 using Ipopt
 using StaticArrays
 using AeroMDAO
-using PlotlyJS
+# using PlotlyJS
 using ForwardDiff
 
 
@@ -13,84 +12,89 @@ using ForwardDiff
 
 ## Helper functions
 function make_wing(x)
-    wing_right = HalfWing(Foil.(naca4((0,0,1,2)) for i ∈ 1:5),
+    wing_right = HalfWing(Foil.(naca4((0,0,1,2)) for i = 1:5),
                          [ x[1:5]... ],
                          [0., 0., 0., 0., 0.],
                          [0.2, 0.2, 0.2, 0.2],
                          [0., 0., 0., 0.],
                          [ x[6:end]... ])
-    span(Wing(wing_right, wing_right))
+    Wing(wing_right, wing_right)
 end
 
-wing_chords = [0.18, 0.16, 0.08, 0.04, 0.02]
-wing_sweeps = [20, 15, 10, 5.]
-x0 = [ wing_chords; wing_sweeps ]
+## FUNCTIONAL TEST
+#==========================================================================================#
 
-ForwardDiff.gradient(make_wing, x0)
+# Helper functions
+#============================================#
 
-##
-function run_case(wing, V, α, β)
-    ρ = 1.225
-    Ω = SVector(0.0, 0.0, 0.0)
-    fs = Freestream(V, α, β, Ω)
-    c = mean_aerodynamic_chord(wing)
-    ref = SVector(0.25 * c, 0., 0.)
-    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = solve_case(wing, fs; rho_ref = ρ, r_ref = ref, area_ref = projected_area(wing), span_ref = span(wing), chord_ref = c, span_num = 80, chord_num = 20);
+function run_case(wing, V, α, ρ, span_num, chord_num)
+    uniform = Freestream(V, α, 0.0, zeros(3))
+    coeffs  = solve_case(wing, uniform,
+                         rho_ref = ρ,
+                         span_num = span_num,
+                         chord_num = chord_num,
+                         viscous = true)[2]
 end
 
 # Objective function
-function optimize_cdi_chords(x...)
-    wing = make_wing(x)
-    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, 10., 0., 0.)
+evaluate_CDi(wing, V, α, ρ, span_num, chord_num) = run_case(wing, V, α, ρ, span_num, chord_num)[1]
 
-    cdi = ff_coeffs[1]
-end
+# Lift and area constraint function
+function evaluate_cons(wing, V, α, ρ, span_num, chord_num)
+    area = projected_area(wing)
+    ff   = run_case(wing, V, α, ρ, span_num, chord_num)
+    lift = dynamic_pressure(ρ, V) * area * ff[5]
 
-function optimize_cdi_naca4(m, p, t, c)
-    wing = naca4_wing(m, p, t, c)
-    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, 10., 0., 0.)
-
-    cdi = ff_coeffs[1]
-end
-
-# Lift constraint function
-function chords_lift(x...)
-    ρ, speed = 1.225, 10.
-    wing = make_wing(x)
-    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, speed, 0., 0.)
-
-    cl = ff_coeffs[3]
-    lift = 1/2 * ρ * speed^2 * projected_area(wing) * cl
-end
-
-function naca4_lift(m, p, t, c)
-    ρ, speed = 1.225, 10.
-    wing = naca4_wing(m, p, t, c)
-    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, speed, 0., 0.)
-
-    cl = ff_coeffs[3]
-    lift = 1/2 * ρ * speed^2 * projected_area(wing) * cl
+    lift
 end
 
 ## Test runs
 #============================================#
 
-wing_chords = [0.18, 0.16, 0.08, 0.04, 0.02]
-wing_sweeps = [20, 15, 10, 5.]
-x0 = [ wing_chords; wing_sweeps ]
-wing = make_wing(x0)
-cdi = optimize_cdi_chords(x0...)
-lifter = chords_lift(x0...)
-println("CDi: $cdi")
-println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, 10.), projected_area(wing)))")
+
+# Parameters
+V, α, ρ  = 29., 5., 1.225
+
+# Design variables
+n    = 4
+wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
+            chords    = fill(0.314, n),
+            twists    = fill(0.0, n),
+            spans     = fill(1.3/(n-1), n-1),
+            dihedrals = fill(0., n-1),
+            LE_sweeps = fill(0., n-1))
+
+# Meshing and assembly
+wing_mac = mean_aerodynamic_center(wing);
+b, S, c  = info(wing)[1:end-1]
+
+span_num  = 10
+chord_num = 1
+
+x0 = [(chords ∘ right)(wing); α]
+
+make_wing(x) = Wing(chords    = x[1:4],
+                    foils     = foils(right(wing)),
+                    spans     = spans(right(wing)),
+                    twists    = rad2deg.(twists(right(wing))),
+                    dihedrals = rad2deg.(dihedrals(right(wing))),
+                    LE_sweeps = x[5:end])
+
+# Closures
+evaluate_CDi(x) = evaluate_CDi(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
+cons!(cs, x) = cs = evaluate_cons(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
 
 ##
-naca_test = (2,4,1,2)
-wing = naca4_wing(naca_test...)
-cdi = optimize_cdi_naca4(naca_test...)
-lifter = naca4_lift(naca_test...)
-println("CDi: $cdi")
-println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, 10.), projected_area(wing)))")
+wing_chords = [0.18, 0.16, 0.08, 0.04]
+wing_sweeps = [20, 15, 10]
+x0 = [ wing_chords; wing_sweeps; α ]
+wing = make_wing(x0[1:end-1])
+
+##
+cdi = evaluate_CDi(x0)
+lifter = cons!(0, x0)
+# println("CDi: $cdi")
+# println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, 10.), projected_area(wing)))")
 
 ## Chord optimization
 #============================================#

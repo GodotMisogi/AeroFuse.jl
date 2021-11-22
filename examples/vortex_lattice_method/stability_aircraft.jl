@@ -81,7 +81,7 @@ aircraft = ComponentArray(
                           wing  = Horseshoe.(wing_panels,  wing_normals ),
                           htail = Horseshoe.(htail_panels, htail_normals),
                           vtail = Horseshoe.(vtail_panels, vtail_normals)
-                         )
+                         );
 
 ## Evaluate case
 ac_name = "My Aircraft"
@@ -128,7 +128,7 @@ Cl_r = dvs_plane[4,5]
 Cn_r = dvs_plane[6,5]
 Cn_β = dvs_plane[6,2]
 
-γ = Cl_β * Cn_r / (Cl_r * Cn_β) # Check degree-radian issue
+γ    = Cl_β * Cn_r / (Cl_r * Cn_β) # Check degree-radian issue
 
 # Locations
 x_np = [ ref[1] .+ np; zeros(2) ]	# Neutral point

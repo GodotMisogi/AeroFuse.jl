@@ -16,8 +16,6 @@ struct HalfWing{M,N,P,Q,R,S,T} <: Aircraft
     dihedrals  :: Vector{R}
     sweeps     :: Vector{S}
     affine     :: T
-    # position   :: SVector{3,T}
-    # orientation :: SMatrix{3,3,U}
 end
 
 function HalfWing(foils :: AbstractVector{M}, chords :: AbstractVector{N}, twists :: AbstractVector{P}, spans :: AbstractVector{Q}, dihedrals :: AbstractVector{R}, sweeps :: AbstractVector{S}, position = zeros(3), angle :: T = 0., axis = [0.,1.,0.], affine = AffineMap(AngleAxis{T}(deg2rad(angle), axis...), position)) where {M <: AbstractFoil, N <: Real, P <: Real, Q <: Real, R <: Real, S <: Real, T <: Real} 
@@ -27,10 +25,8 @@ function HalfWing(foils :: AbstractVector{M}, chords :: AbstractVector{N}, twist
     HalfWing{M,N,P,Q,R,S,typeof(affine)}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), affine)
 end
 
-# HalfWing(foils :: AbstractVector{<: Foil}, chords :: AbstractVector{<: Real}, twists :: AbstractVector{<: Real}, spans :: AbstractVector{<: Real}, dihedrals :: AbstractVector{<: Real}, sweeps :: AbstractVector{<: Real}) = HalfWing(foils, chords, twists, spans, dihedrals, sweeps)
-
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
-    # Check if number of sections match up with number of edges
+    # Check if number of sections match up with number of edges (NEEDS WORK)
     @assert (length ∘ zip)(foils, chords, twists) == (length ∘ zip)(spans, dihedrals, sweeps) + 1 "N+1 foil sections, chords and twists are required for N section(s)."
     # Check if lengths are positive
     @assert any(x -> x >= 0., chords) || any(x -> x >= 0., spans) "Chord and span lengths must be positive."

@@ -4,7 +4,7 @@
 A composite type consisting of two `HalfWing`s with fields `left` and `right` for constructing a wing.
 """
 struct Wing{M,N,P,Q,R,S,T} <: Aircraft
-    left :: HalfWing{M,N,P,Q,R,S,T}
+    left  :: HalfWing{M,N,P,Q,R,S,T}
     right :: HalfWing{M,N,P,Q,R,S,T}
 end
 
