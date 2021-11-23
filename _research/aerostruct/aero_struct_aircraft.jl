@@ -64,11 +64,11 @@ htail_horsies = Horseshoe.(htail_panels,  htail_normals)
 vtail_horsies = Horseshoe.(vtail_panels,  vtail_normals)
 
 # Aircraft assembly
-aircraft = Dict(
-                "Wing"            => wing_horsies,
-                "Horizontal Tail" => htail_horsies,
-                "Vertical Tail"   => vtail_horsies,
-               );
+aircraft = ComponentArray(
+                          wing    = wing_horsies,
+                          htail   = htail_horsies,
+                          vtail   = vtail_horsies,
+                        );
 
 wing_mac = mean_aerodynamic_center(wing);
 
@@ -94,12 +94,11 @@ fs      = Freestream(V, α, β, Ω)
               );
 
 ## Data collection
-Γs = data[ac_name][end]
-CFs, CMs, Γ0_wing = data["Wing"][3:end];
+Γs = circulations(data)
 
 ## Aerodynamic forces and center locations
 vlm_acs    = bound_leg_center.(wing_horsies)
-vlm_forces = force.(CFs, dynamic_pressure(ρ, V), S)
+vlm_forces = force.(data.wing.CFs, dynamic_pressure(ρ, V), S)
 
 # FEM mesh
 fem_w    = 0.40

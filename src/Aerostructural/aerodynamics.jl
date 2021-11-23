@@ -18,7 +18,7 @@ function solve_aerodynamics!(Γ, system :: VLMSystem, state :: VLMState)
 end
 
 # Induced velocities
-induced_velocity(r, hs, Γs, U_hat) = sum(velocity.(Ref(r), hs, Γs, Ref(U_hat)))
+induced_velocity(r, horseshoes, Γs, U_hat) = sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
 
 velocity(hs, Γs, r, n, U_hat, Ω_hat) = dot(induced_velocity(r, hs, Γs, -U_hat) - (U_hat + Ω_hat × r), n)
 
