@@ -7,7 +7,7 @@ using LinearAlgebra
 using StaticArrays
 using CoordinateTransformations, Rotations
 using ForwardDiff, DiffResults
-using PrettyTables, OrderedCollections, TimerOutputs
+using PrettyTables, OrderedCollections
 
 ## Math tools
 #==========================================================================================#

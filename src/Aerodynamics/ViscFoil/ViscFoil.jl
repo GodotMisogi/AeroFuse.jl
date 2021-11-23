@@ -115,9 +115,11 @@ function solve_system(x_in, panels, all_lengths, C, U_invs, n_crit)
     # c_τ_wake = c_τ
 
     # Evaluate residuals
-    R1, R2, R3 = boundary_layer_finite_difference(Us[1:end-1], δ_stars, θs, Ts, ΔXs, panels, n_crit, a, ν)
+    # R1, R2, R3 = 
+    
+    R = boundary_layer_finite_difference(Us[1:end-1], δ_stars, θs, Ts, ΔXs, panels, n_crit, a, ν)[:]
 
-    [ R1; R2; R3 ]
+    # [ R1; R2; R3 ]
 end
 
 function solve_viscous_case(panels, wakes, uniform :: Uniform2D)
