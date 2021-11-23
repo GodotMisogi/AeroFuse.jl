@@ -44,9 +44,9 @@ quasi_steady_freestream(horseshoes, U, Ω) = map(hs -> U + Ω × horseshoe_point
 Evaluate and return the vortex strengths ``\\Gamma``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``\\Omega``.
 """
 function solve_system(horseshoes, U, Ω, finite_core = false)
-    AIC  = @timeit "Influence Matrix" influence_matrix(horseshoes, -normalize(U), finite_core)
-    boco = @timeit "Boundary Condition" boundary_condition(quasi_steady_freestream(horseshoes, U, Ω), horseshoe_normal.(horseshoes))
-    Γs   = @timeit "Inversion" AIC \ boco 
+    AIC  = influence_matrix(horseshoes, -normalize(U), finite_core)
+    boco = boundary_condition(quasi_steady_freestream(horseshoes, U, Ω), horseshoe_normal.(horseshoes))
+    Γs   = AIC \ boco 
 end
 
 ## Force evaluations

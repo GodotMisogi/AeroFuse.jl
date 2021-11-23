@@ -8,10 +8,8 @@ using ComponentArrays
 #=======================================================#
 using AeroMDAO
 
-reset_timer!()
-
 println("AeroMDAO Aircraft Functional -")
-@time begin
+@benchmark begin
     # Wing
     wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
                 chords    = [1.0, 0.6],
@@ -69,7 +67,7 @@ println("AeroMDAO Aircraft Functional -")
     fs      = AeroMDAO.Freestream(V, α, β, Ω)
     S, b, c = 9.0, 10.0, 0.9
 
-    @timeit "Solving Case" data = solve_case(aircraft, fs;
+    data = solve_case(aircraft, fs;
                       rho_ref   = ρ,
                       r_ref     = x_ref,
                       area_ref  = S,
@@ -79,7 +77,6 @@ println("AeroMDAO Aircraft Functional -")
 
     nf[1:3], nf[4:6], ff[1:3]
 end
-print_timer()
 
 ##
 println("AeroMDAO Aircraft Stateful -")
