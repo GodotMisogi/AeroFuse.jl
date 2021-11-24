@@ -34,6 +34,18 @@ BenchmarkTools.Trial: 54 samples with 1 evaluation.
 
 2. Desktop i7-8700, 3.2 GHz:
 
+AeroMDAO Aircraft Functional -
+BenchmarkTools.Trial: 114 samples with 1 evaluation.
+ Range (min … max):  36.297 ms … 59.756 ms  ┊ GC (min … max): 0.00% … 20.79%
+ Time  (median):     43.316 ms              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   43.880 ms ±  5.138 ms  ┊ GC (mean ± σ):  5.20% ±  7.94%
+
+    ▂ ▄▂ ▂▆▆          █▆
+  ▆▄█▆███████▁█▆▆███▆███▆▆█▆▁█▄▆▁▄▆█▄▁▄▄██▄▄█▆▁▁▁▁▁▄▁▁▁▁▁▁▁▁▄ ▄
+  36.3 ms         Histogram: frequency by time        58.9 ms <
+
+ Memory estimate: 25.99 MiB, allocs estimate: 29736.
+
 BYU FLOW Lab VortexLattice.jl - 
 BenchmarkTools.Trial: 79 samples with 1 evaluation.
  Range (min … max):  59.868 ms … 77.957 ms  ┊ GC (min … max): 0.00% … 19.84%
