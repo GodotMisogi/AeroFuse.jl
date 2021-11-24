@@ -1,21 +1,21 @@
-function solve_aerodynamics!(Γ, system :: VLMSystem, state :: VLMState)
-    # Assemble matrix system
-    # @timeit "Influence Matrix" compute_influence_matrix!(system, state.velocity)
-    # @timeit "Boundary Condition" compute_boundary_condition!(system, state.velocity, state.omega)
-    @timeit "Generating AIC and RHS" generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
+# function solve_aerodynamics!(Γ, system :: VLMSystem, state :: VLMState)
+#     # Assemble matrix system
+#     # @timeit "Influence Matrix" compute_influence_matrix!(system, state.velocity)
+#     # @timeit "Boundary Condition" compute_boundary_condition!(system, state.velocity, state.omega)
+#     @timeit "Generating AIC and RHS" generate_system!(system, state.velocity, state.omega) # Pre-allocated version for efficiency
 
-    # Update circulations of system and surfaces
-    @timeit "System Circulations"  system.circulations = Γ
-    @timeit "Surface Circulations" update_circulations!(system)
+#     # Update circulations of system and surfaces
+#     @timeit "System Circulations"  system.circulations = Γ
+#     @timeit "Surface Circulations" update_circulations!(system)
 
-    # Compute forces
-    surfs = surfaces(system)
-    @timeit "Surface Forces"  map(surf -> compute_surface_forces!(surf, system, state.velocity, state.omega, state.rho_ref), surfs)
-    @timeit "Surface Moments" map(surf -> compute_surface_moments!(surf, state.r_ref), surfs)
-    @timeit "Farfield Forces" map(surf -> compute_farfield_forces!(surf, state.speed, state.alpha, state.beta, state.rho_ref), surfs)
+#     # Compute forces
+#     surfs = surfaces(system)
+#     @timeit "Surface Forces"  map(surf -> compute_surface_forces!(surf, system, state.velocity, state.omega, state.rho_ref), surfs)
+#     @timeit "Surface Moments" map(surf -> compute_surface_moments!(surf, state.r_ref), surfs)
+#     @timeit "Farfield Forces" map(surf -> compute_farfield_forces!(surf, state.speed, state.alpha, state.beta, state.rho_ref), surfs)
 
-    nothing
-end
+#     nothing
+# end
 
 # Induced velocities
 induced_velocity(r, horseshoes, Γs, U_hat) = sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))

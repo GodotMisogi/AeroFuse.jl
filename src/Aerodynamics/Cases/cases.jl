@@ -66,17 +66,31 @@ function solve_case(components, freestream :: Freestream; rho_ref = 1.225, r_ref
     # Evaluate case
     results = evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
 
+    # Compute farfield forces in Trefftz plane
+    # trefftz  = map(comp -> trefftz_forces(Γs[comp], components[comp], norm(U), α, β, rho_ref), valkeys(components))
+    # FF_comp  = force_coefficient.(trefftz, q, area_ref)
+
+    # Collect data for each component
+    # data_comp  = map((ff, comp) -> (ff, CFs_comp[comp], CMs_comp[comp], components[comp], Γs[comp]), FF_comp, valkeys(components))
+
+    
+    # Set up named tuples (somewhat inelegant, but understandable)
+    # properties = (:farfield, :CFs, :CMs, :horseshoes, :circulations)
+    # tuple_comp = @views NamedTuple{properties}.(data_comp)
+    
+    # NamedTuple{keys(components)}(tuple_comp)
+
     # Printing if needed
-    if print_components
-        nf_comp_coeffs = nearfield_coefficients(results)
-        ff_comp_coeffs = farfield_coefficients(results) 
-        print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
-        print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(results))
-    elseif print
-        nf_comp_coeffs = nearfield_coefficients(results)
-        ff_comp_coeffs = farfield_coefficients(results) 
-        print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
-    end
+    # if print_components
+    #     nf_comp_coeffs = nearfield_coefficients(results)
+    #     ff_comp_coeffs = farfield_coefficients(results) 
+    #     print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
+    #     print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(results))
+    # elseif print
+    #     nf_comp_coeffs = nearfield_coefficients(results)
+    #     ff_comp_coeffs = farfield_coefficients(results) 
+    #     print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
+    # end
 
     results
 end
@@ -88,22 +102,22 @@ end
 # solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) = evaluate_case(components, state.speed, state.alpha, state.beta, state.omega, rho_ref = state.rho_ref, r_ref = state.r_ref, area_ref = state.area_ref, chord_ref = state.chord_ref, span_ref = state.span_ref, name)
 
 # Mutating version
-function solve_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
-    # Build surfaces and systems
-    system = build_system(aircraft)
+# function solve_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
+#     # Build surfaces and systems
+#     system = build_system(aircraft)
 
-    # Solve case for given state
-    evaluate_case!(system, state)
+#     # Solve case for given state
+#     evaluate_case!(system, state)
 
-    system
-end
+#     system
+# end
 
 ## Method extensions from submodules
 #==========================================================================================#
 
 streamlines(freestream :: Freestream, points, horseshoes, Γs, length, num_steps :: Integer) = VortexLattice.streamlines.(points, Ref(velocity(freestream)), Ref(freestream.omega), Ref(horseshoes), Ref(Γs), Ref(length), Ref(num_steps))
 
-VortexLattice.VLMState(fs :: Freestream{<: Real}; r_ref = zeros(3), rho_ref = 1.225, area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, r_ref = r_ref, rho_ref = rho_ref, area_ref = area_ref, chord_ref = chord_ref, span_ref = span_ref, name = name)
+# VortexLattice.VLMState(fs :: Freestream{<: Real}; r_ref = zeros(3), rho_ref = 1.225, area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, r_ref = r_ref, rho_ref = rho_ref, area_ref = area_ref, chord_ref = chord_ref, span_ref = span_ref, name = name)
 
 ## Printing
 #==========================================================================================#
@@ -132,12 +146,12 @@ function print_derivatives(derivs, name = ""; browser = false)
     end
 end
 
-function print_coefficients(surfs, state :: VLMState{T}) where T <: Real
-    coeffs = aerodynamic_coefficients(surfs, state)
-    print_coefficients.(first.(values(coeffs)), last.(values(coeffs)), (collect ∘ keys)(coeffs))
-end
+# function print_coefficients(surfs, state :: VLMState{T}) where T <: Real
+#     coeffs = aerodynamic_coefficients(surfs, state)
+#     print_coefficients.(first.(values(coeffs)), last.(values(coeffs)), (collect ∘ keys)(coeffs))
+# end
 
-function print_coefficients(surf :: VLMSurface{T}, state :: VLMState{T}) where T <: Real
-    nf, ff = aerodynamic_coefficients(surf, state)
-    print_coefficients(nf, ff, name(surf))
-end
+# function print_coefficients(surf :: VLMSurface{T}, state :: VLMState{T}) where T <: Real
+#     nf, ff = aerodynamic_coefficients(surf, state)
+#     print_coefficients(nf, ff, name(surf))
+# end

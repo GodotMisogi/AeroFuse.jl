@@ -52,24 +52,13 @@ function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chor
     wind_forces  = body_to_wind_axes.(surface_forces, α, β)
     wind_moments = body_to_wind_axes.(stability_flip.(surface_moments), α, β)
     # drags        = nearfield_drag.(surface_forces, Ref(U))
-
-    # Compute farfield forces in Trefftz plane
-    trefftz  = map(comp -> trefftz_forces(Γs[comp], components[comp], norm(U), α, β, rho_ref), valkeys(components))
     
     # Surface force, moment, and farfield coefficients
     q        = dynamic_pressure(rho_ref, norm(U))
     CFs_comp = force_coefficient.(wind_forces, q, area_ref)
-    CMs_comp = moment_coefficient.(wind_moments, q, area_ref, span_ref, chord_ref) 
-    FF_comp  = force_coefficient.(trefftz, q, area_ref)
+    CMs_comp = moment_coefficient.(wind_moments, q, area_ref, span_ref, chord_ref)
 
-    # Collect data for each component
-    data_comp  = map((ff, comp) -> (ff, CFs_comp[comp], CMs_comp[comp], components[comp], Γs[comp]), FF_comp, valkeys(components))
-
-    # Set up named tuples (somewhat inelegant, but understandable)
-    properties = (:farfield, :CFs, :CMs, :horseshoes, :circulations)
-    tuple_comp = @views NamedTuple{properties}.(data_comp)
-    
-    NamedTuple{keys(components)}(tuple_comp)
+    (CFs = CFs_comp, CMs = CMs_comp, horseshoes = components, circulations = Γs)
 end
 
 nearfield(comp) = [ sum(comp.CFs); sum(comp.CMs) ]
