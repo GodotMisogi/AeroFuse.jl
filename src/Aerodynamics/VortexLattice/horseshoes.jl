@@ -28,17 +28,19 @@ Compute the collocation point of a `Panel3D` for horseshoes/vortex rings, which 
 """
 horseshoe_point(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, panel.p3, panel.p4)
 
+abstract type AbstractLine end
+
 """
     Line(r1 :: SVector{3,<: Real}, r2 :: SVector{3,<: Real})
 
 A composite type consisting of two vectors to define a line.
 """
-struct Line{T <: Real}
+struct Line{T <: Real} <: AbstractLine
     r1 :: SVector{3,T}
     r2 :: SVector{3,T}
 end
 
-Line(r1 :: FieldVector{3,T}, r2 :: FieldVector{3,T}) where T <: Real = Line{T}(r1, r2)
+Line(r1 :: AbstractVector{T}, r2 :: AbstractVector{T}) where T <: Real = Line{T}(r1, r2)
 Line((r1, r2)) = Line(r1, r2)
 
 r1(line :: Line) = line.r1
