@@ -18,7 +18,7 @@ import ..PanelGeometry: Panel3D, panel_area, panel_coords, midpoint, panel_norma
 import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
 
 # Tools regarding solutions to Laplace's equation
-import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
+import ..Laplace: AbstractFreestream, Freestream, aircraft_velocity,cartesian_to_freestream, freestream_to_cartesian
 
 ## Horseshoe setup
 #==========================================================================================#

@@ -105,21 +105,23 @@ ac_name = "My Aircraft"
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 1.225
 ref     = [ x_w, 0., 0.]
-V, α, β = 15.0, 1.0, 3.0
+V, α, β = 15.0, 0.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
+refs    = References(S, b, c, ρ, ref)
 
-@time data =
-    solve_case(aircraft, fs;
-               rho_ref     = ρ,         # Reference density
-               r_ref       = ref,       # Reference point for moments
-               area_ref    = S,         # Reference area
-               span_ref    = b,         # Reference span
-               chord_ref   = c,         # Reference chord
-               name        = ac_name,   # Aircraft name
-               print       = true,      # Prints the results for the entire aircraft
-               print_components = true, # Prints the results for each component
-              );
+##
+@time begin 
+    data = solve_case(aircraft, fs, refs;
+                    #   print            = true, # Prints the results for only the aircraft
+                    #   print_components = true, # Prints the results for all components
+                     );
+
+    # CFs, CMs = surface_coefficients(data; axes = Wind())
+    # FFs = farfield_coefficients(data)
+
+    # print_coefficients(CFs, CMs)
+end;
 
 ## Spanwise forces
 function span_loading(panels, CFs, Γs, V, alpha, beta, c)
@@ -139,14 +141,14 @@ end
 
 span_loading(panels, CFs, Γs, fs, c) = span_loading(panels, CFs, Γs, fs.V, fs.alpha, fs.beta, c)
 
-hs_pts   = horseshoe_point.(aircraft)
+hs_pts   = horseshoe_point.(data.horseshoes)
 wing_ys  = getindex.(hs_pts.wing[1,:], 2)
 htail_ys = getindex.(hs_pts.htail[1,:], 2)
 vtail_ys = getindex.(hs_pts.vtail[1,:], 2)
 
-wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings = span_loading(wing_panels, data.CFs.wing, data.circulations.wing, fs, c)
-htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings = span_loading(htail_panels, data.CFs.htail, data.circulations.htail, fs, c)
-vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = span_loading(vtail_panels, data.CFs.vtail, data.circulations.vtail, fs, c);
+wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings = span_loading(wing_panels, CFs.wing, data.circulations.wing, fs, c)
+htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings = span_loading(htail_panels, CFs.htail, data.circulations.htail, fs, c)
+vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = span_loading(vtail_panels, CFs.vtail, data.circulations.vtail, fs, c);
 
 ## Plotting
 using GLMakie
@@ -186,7 +188,7 @@ function extrapolate_point_mesh(mesh)
 end
 
 ## Surfave velocities
-vels = panel_velocities(data.horseshoes, data.circulations, data.horseshoes, velocity(fs), Ω);
+vels = surface_velocities(data);
 sps  = norm.(vels)
 
 wing_sp_points  = extrapolate_point_mesh(sps.wing)
@@ -194,7 +196,7 @@ htail_sp_points = extrapolate_point_mesh(sps.htail)
 vtail_sp_points = extrapolate_point_mesh(sps.vtail)
 
 ## Surface pressure coefficients
-cps  = norm.(data.CFs) * S
+cps  = norm.(CFs) * S
 
 wing_cp_points  = extrapolate_point_mesh(cps.wing)
 htail_cp_points = extrapolate_point_mesh(cps.htail)

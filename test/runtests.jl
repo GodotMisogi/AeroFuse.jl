@@ -167,14 +167,15 @@ end
     V, α, β = 1.0, 1.0, 1.0
     Ω       = [0.0, 0.0, 0.0]
     fs      = Freestream(V, α, β, Ω)
+    refs    = References(S, b, c, ρ, ref)
 
     ## Stability case
-    dv_data = solve_stability_case(aircraft, fs;
-                                   rho_ref   = ρ,
-                                   r_ref     = ref,
-                                   area_ref  = S,
-                                   span_ref  = b,
-                                   chord_ref = c,
+    dv_data = solve_stability_case(aircraft, fs, refs;
+                                #    rho_ref   = ρ,
+                                #    r_ref     = ref,
+                                #    area_ref  = S,
+                                #    span_ref  = b,
+                                #    chord_ref = c,
                                    name      = ac_name);
 
     nfs, ffs, dvs = dv_data[ac_name]

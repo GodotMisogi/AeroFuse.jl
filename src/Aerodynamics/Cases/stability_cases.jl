@@ -62,24 +62,27 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
     nf, ff, dvs
 end
 
-function solve_stability_case(aircraft, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false)
+function solve_stability_case(aircraft, freestream :: Freestream, ref :: References; name = :aircraft, print = false, print_components = false)
     # Reference values and scaling inputs
-    S, b, c = area_ref, span_ref, chord_ref
+    b, c = ref.span, ref.chord
     x, scale = scale_inputs(freestream, b , c)
 
     # Closure to generate results with input vector
     function stab(x)
         fs   = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
-        data = solve_case(aircraft, fs,
-                          rho_ref   = rho_ref,
-                          r_ref     = r_ref,
-                          area_ref  = S,
-                          span_ref  = b,
-                          chord_ref = c,
+        data = solve_case(aircraft, fs, ref,
+                        #   rho_ref   = rho_ref,
+                        #   r_ref     = r_ref,
+                        #   area_ref  = S,
+                        #   span_ref  = b,
+                        #   chord_ref = c,
                           name      = name)
 
+        NFs = nearfield_coefficients(data)
+        FFs = farfield_coefficients(data)
+
         # Creates array of nearfield and farfield coefficients for each component as a row vector.
-        comp_coeffs = reduce(hcat, map(name -> [ nearfield(data[name]); farfield(data[name]) ], propertynames(data)))
+        comp_coeffs = mapreduce(name -> [ NFs[name]; FFs[name] ], hcat, valkeys(data.horseshoes))
         all_coeffs  = [ comp_coeffs sum(comp_coeffs, dims = 2) ] # Append sum of all forces for aircraft
     end
 

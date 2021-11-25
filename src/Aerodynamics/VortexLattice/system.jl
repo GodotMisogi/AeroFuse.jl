@@ -39,47 +39,125 @@ function evaluate_case(horseshoes :: Matrix{Horseshoe{T}}, U, α, β, Ω, rho_re
     nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs
 end
 
-function evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref) 
-    # Solve vortex lattice system.
-    # Thanks to the magic of ComponentArrays, the components are automatically treated as one big vector.
-    Γs = solve_system(components, U, Ω)
+abstract type AbstractReferences end
+
+struct References{T} <: AbstractReferences
+    area     :: T
+    span     :: T
+    chord    :: T
+    density  :: T
+    location :: SVector{3,T}
+end
+
+References(S :: T, b :: T, c :: T, ρ :: T, ref :: AbstractVector{T}) where {T<: Real} = References{T}(S, b, c, ρ, ref)
+
+struct VLMSystem{M,N,P <: AbstractFreestream, Q <: AbstractReferences}
+    horseshoes   :: M
+    circulations :: N 
+    freestream   :: P
+    reference    :: Q
+end
+
+abstract type AircraftAxes end
+
+struct Stability <: AircraftAxes end
+struct Wind      <: AircraftAxes end
+struct Body      <: AircraftAxes end
+
+surface_velocities(system :: VLMSystem) = surface_velocities(system.horseshoes, system.circulations, system.horseshoes, aircraft_velocity(system.freestream), system.freestream.omega)
+
+function surface_forces(system :: VLMSystem)
+    hs = system.horseshoes
+    Γs = system.circulations
+    U  = aircraft_velocity(system.freestream)
+    Ω  = system.freestream.omega
+    ρ  = system.reference.density
+    
+    nearfield_forces(Γs, hs, U, Ω, ρ) 
+end
+
+function surface_dynamics(system :: VLMSystem)
+    hs = system.horseshoes
+    r  = system.reference.location
 
     # Compute nearfield forces and moments
-    surface_forces  = nearfield_forces(Γs, components, U, Ω, rho_ref) 
-    surface_moments = nearfield_moments(components, surface_forces, r_ref)
+    surf_forces  = surface_forces(system)
+    surf_moments = nearfield_moments(hs, surf_forces, r)
+
+    surf_forces, surf_moments
+end
+
+# Body axes
+surface_dynamics(system :: VLMSystem, ::Body) = surface_dynamics(system)
+
+# Stability axes
+function surface_dynamics(system :: VLMSystem, ::Stability)
+    # Get angle of attack
+    α = system.freestream.alpha
+
+    # Compute nearfield forces and moments
+    surface_forces, surface_moments = surface_dynamics(system)
+
+    # Transform to stability axes
+    stability_forces  = body_to_stability_axes.(surface_forces, α)
+    stability_moments = body_to_stability_axes.(stability_flip.(surface_moments), α)
+
+    stability_forces, stability_moments
+end
+
+# Wind axes
+function surface_dynamics(system :: VLMSystem, ::Wind)
+    # Get angles of attack and sideslip
+    α = system.freestream.alpha
+    β = system.freestream.beta
+
+    # Compute nearfield forces and moments
+    surface_forces, surface_moments = surface_dynamics(system)
 
     # Transform to wind axes
     wind_forces  = body_to_wind_axes.(surface_forces, α, β)
     wind_moments = body_to_wind_axes.(stability_flip.(surface_moments), α, β)
-    # drags        = nearfield_drag.(surface_forces, Ref(U))
+
+    wind_forces, wind_moments
+end
+
+function surface_coefficients(system :: VLMSystem; axes :: AircraftAxes = Wind()) 
+    V = system.freestream.V
+    ρ = system.reference.density
+    S = system.reference.area
+    b = system.reference.span
+    c = system.reference.chord
+
+    # Compute nearfield forces in whichever axes
+    forces, moments = surface_dynamics(system, axes)
+
+    # Compute coefficients
+    q   = dynamic_pressure(ρ, V)
+    CFs = force_coefficient.(forces, q, S)
+    CMs = moment_coefficient.(moments, q, S, b, c)
+
+    CFs, CMs
+end
+
+
+# # Compute farfield forces in Trefftz plane
+function farfield_forces(system :: VLMSystem)
+    hs = system.horseshoes 
+    Γs = system.circulations
+    V  = system.freestream.V
+    α  = system.freestream.alpha
+    β  = system.freestream.beta
+    ρ  = system.reference.density
     
-    # Surface force, moment, and farfield coefficients
-    q        = dynamic_pressure(rho_ref, norm(U))
-    CFs_comp = force_coefficient.(wind_forces, q, area_ref)
-    CMs_comp = moment_coefficient.(wind_moments, q, area_ref, span_ref, chord_ref)
-
-    (CFs = CFs_comp, CMs = CMs_comp, horseshoes = components, circulations = Γs)
+    ComponentVector(NamedTuple{keys(hs)}(trefftz_forces(Γs[comp], hs[comp], V, α, β, ρ) for comp in valkeys(hs)))
 end
 
-nearfield(comp) = [ sum(comp.CFs); sum(comp.CMs) ]
-farfield(comp) = comp.farfield
-
-circulations(data) = @views reduce(vcat, map(comp -> vec(data[comp].circulations), keys(data)))
-nearfield_coefficients(data) =  @views map(comp -> nearfield(data[comp]), keys(data))
-farfield_coefficients(data) = @views map(comp -> farfield(data[comp]), keys(data))
-
-function aircraft_data(data)
-    # # Dictionary assembly
-    # name_data = VLMResults(nf_coeffs, ff_coeffs, name_CFs, name_CMs, horseshoes, Γs)
+function nearfield_coefficients(system :: VLMSystem) 
+    CFs, CMs = surface_coefficients(system; axes = Wind())
+    ComponentVector(NamedTuple{keys(CFs)}([sum(CFs[key]); sum(CMs[key])] for key in valkeys(CFs)))
 end
 
-# Components' non-dimensional forces and moments
-# data = @views map((comp, tref) -> evaluate_coefficients(forces[comp], moments[comp], tref, U, α, β, rho_ref, area_ref, chord_ref, span_ref), keys(components), trefftz)
-# nf_coeffs_comp = @views getindex.(data, 1) # Nearfield coefficients
-# ff_coeffs_comp = @views getindex.(data, 2) # Farfield coefficients
+farfield_coefficients(system :: VLMSystem) = force_coefficient.(farfield_forces(system), dynamic_pressure(system.reference.density, system.freestream.V), system.reference.area)
 
-# Aircraft's non-dimensional forces and moments
-# nf_coeffs = reduce((x, y) -> x .+ y, nf_coeffs_comp) # Sum nearfield coefficients
-# ff_coeffs = reduce((x, y) -> x .+ y, ff_coeffs_comp) # Sum farfield coefficients
-# CFs       = reduce(vcat, vec.(CFs_comp))             # Collect surface force coefficients
-# CMs       = reduce(vcat, vec.(CMs_comp))             # Collect surface moment coefficients
+nearfield(system :: VLMSystem) = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
+farfield(system :: VLMSystem)  = let ff = farfield_coefficients(system); vec(sum(reshape(ff, 3, length(ff) ÷ 3), dims = 2)) end

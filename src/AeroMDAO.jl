@@ -8,6 +8,7 @@ using StaticArrays
 using CoordinateTransformations, Rotations
 using ForwardDiff, DiffResults
 using PrettyTables, OrderedCollections
+using ComponentArrays
 
 ## Math tools
 #==========================================================================================#
@@ -73,9 +74,9 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, panel_velocities, nearfield_forces, nearfield_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, nearfield_coefficients, farfield_coefficients
+import .VortexLattice: Horseshoe, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, nearfield_forces, nearfield_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, farfield_forces, nearfield_coefficients, farfield_coefficients, Stability, Wind, Body, VLMSystem, References, surface_dynamics, surface_velocities, surface_coefficients
 
-export Horseshoe, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, panel_velocities, nearfield_forces, nearfield_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, nearfield_coefficients, farfield_coefficients
+export Horseshoe, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, nearfield_forces, nearfield_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, farfield_forces, nearfield_coefficients, farfield_coefficients, Stability, Wind, Body, VLMSystem, References, surface_dynamics, surface_velocities, surface_coefficients
 
 ## Profile drag estimation
 

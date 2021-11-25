@@ -83,7 +83,9 @@ stream(uni :: Uniform2D, x, y)    = uni.magnitude * (y * cos(uni.angle) - x * si
 ## Freestream
 #============================================#
 
-struct Freestream{M,N,P,Q} <: AbstractLaplace
+abstract type AbstractFreestream <: AbstractLaplace end
+
+struct Freestream{M,N,P,Q} <: AbstractFreestream
     V     :: M
     alpha :: N
     beta  :: P

@@ -59,40 +59,31 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho
     nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs
 end
 
-function solve_case(components, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false)
+# rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1,
+
+function solve_case(components, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false)
     # Unpack Freestream
-    U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
+    # U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Evaluate case
-    results = evaluate_case(components, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
+    results = solve_system(components, aircraft_velocity(freestream), freestream.omega)
 
-    # Compute farfield forces in Trefftz plane
-    # trefftz  = map(comp -> trefftz_forces(Γs[comp], components[comp], norm(U), α, β, rho_ref), valkeys(components))
-    # FF_comp  = force_coefficient.(trefftz, q, area_ref)
+    system = VLMSystem(components, results, freestream, refs)
 
-    # Collect data for each component
-    # data_comp  = map((ff, comp) -> (ff, CFs_comp[comp], CMs_comp[comp], components[comp], Γs[comp]), FF_comp, valkeys(components))
-
-    
-    # Set up named tuples (somewhat inelegant, but understandable)
-    # properties = (:farfield, :CFs, :CMs, :horseshoes, :circulations)
-    # tuple_comp = @views NamedTuple{properties}.(data_comp)
     
     # NamedTuple{keys(components)}(tuple_comp)
 
     # Printing if needed
-    # if print_components
-    #     nf_comp_coeffs = nearfield_coefficients(results)
-    #     ff_comp_coeffs = farfield_coefficients(results) 
-    #     print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
-    #     print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(results))
-    # elseif print
-    #     nf_comp_coeffs = nearfield_coefficients(results)
-    #     ff_comp_coeffs = farfield_coefficients(results) 
-    #     print_coefficients(sum(nf_comp_coeffs), sum(ff_comp_coeffs), name)
-    # end
+    if print_components
+        nf_c = nearfield_coefficients(system)
+        ff_c = farfield_coefficients(system) 
+        print_coefficients(nearfield(system), farfield(system), name)
+        [ print_coefficients(nf_c[key], ff_c[key], key) for key in keys(components) ]
+    elseif print
+        print_coefficients(nearfield(system), farfield(system), name)
+    end
 
-    results
+    system
 end
 
 ## State cases
