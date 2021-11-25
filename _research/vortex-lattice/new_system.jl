@@ -53,13 +53,13 @@ wing_cambers  = make_panels(wing_cam_mesh)
 wing_normals  = panel_normal.(wing_cambers)
 wing_horsies  = Horseshoe.(wing_panels,  wing_normals)
 
-# struct WingMesh{T <: Real, N <: Integer, M <: Integer}
-#     surf    :: Union{Wing{T,T,T,T,T,T,T}, HalfWing{T,T,T,T,T,T,T}}
-#     n_span  :: Vector{M}
-#     n_chord :: N
-# end
+struct WingMesh{M <: AbstractWing, N <: Integer, P} <: AbstractWing
+    surf    :: M
+    n_span  :: N
+    n_chord :: P
+end
 
-# WingMesh(surf :: Union{Wing{T}, HalfWing{T}}, n_span :: AbstractVector{M}, n_chord :: N) where {T <: Real, N <: Integer, M <: Integer} = VLMWing{T,N,M}(surf, n_span, n_chord) 
+WingMesh(surf :: Union{Wing{T}, HalfWing{T}}, n_span :: AbstractVector{M}, n_chord :: N) where {T <: Real, N <: Integer, M <: Integer} = VLMWing{T,N,M}(surf, n_span, n_chord) 
 
 # AeroMDAO.AircraftGeometry.chord_coordinates(wing :: VLMWing) = chord_coordinates(wing.surf, wing.n_span, wing.n_chord)
 
@@ -113,14 +113,12 @@ refs    = References(S, b, c, ρ, ref)
 ##
 @time begin 
     data = solve_case(aircraft, fs, refs;
-                    #   print            = true, # Prints the results for only the aircraft
-                    #   print_components = true, # Prints the results for all components
+                      print            = true, # Prints the results for only the aircraft
+                      print_components = true, # Prints the results for all components
                      );
 
-    # CFs, CMs = surface_coefficients(data; axes = Wind())
-    # FFs = farfield_coefficients(data)
-
-    # print_coefficients(CFs, CMs)
+    CFs, CMs = surface_coefficients(data; axes = Wind())
+    FFs = farfield_coefficients(data)
 end;
 
 ## Spanwise forces
@@ -152,6 +150,9 @@ vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = span_loading(vtail_panels,
 
 ## Plotting
 using GLMakie
+using LaTeXStrings
+
+const LS = LaTeXString
 
 ## Streamlines
 # Spanwise distribution
@@ -203,12 +204,12 @@ htail_cp_points = extrapolate_point_mesh(cps.htail)
 vtail_cp_points = extrapolate_point_mesh(cps.vtail)
 
 ## Coordinates
-fig1  = Figure()
+fig  = Figure()
 
-scene = LScene(fig1[1:4,1])
-ax1   = fig1[1,2] = GLMakie.Axis(fig1, ylabel = "CDi",)
-ax2   = fig1[2,2] = GLMakie.Axis(fig1, ylabel = "CY",)
-ax3   = fig1[3,2] = GLMakie.Axis(fig1, xlabel = "y/b", ylabel = "CL")
+scene = LScene(fig[1:4,1])
+ax1   = fig[1,2] = GLMakie.Axis(fig, ylabel = L"C_{D_i}", title = LS("Spanload Distributions"))
+ax2   = fig[2,2] = GLMakie.Axis(fig, ylabel = L"C_Y",)
+ax3   = fig[3,2] = GLMakie.Axis(fig, xlabel = L"y", ylabel = L"C_L")
 
 # Meshes
 m1 = poly!(scene, wing_cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
@@ -231,15 +232,16 @@ function plot_spanload!(fig, ys, CDis, CYs, CLs, CL_loadings, name = "Wing")
     nothing
 end
 
-plot_spanload!(fig1, wing_ys, wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings, "Wing")
-plot_spanload!(fig1, htail_ys, htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings, "Horizontal Tail")
-plot_spanload!(fig1, vtail_ys, vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings, "Vertical Tail")
+plot_spanload!(fig, wing_ys, wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings, LS("Wing"))
+plot_spanload!(fig, htail_ys, htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings, LS("Horizontal Tail"))
+plot_spanload!(fig, vtail_ys, vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings, LS("Vertical Tail"))
 
 # Legend
-axl = fig1[4,2] = GridLayout()
-Legend(fig1[4,1:2], ax3)
+axl = fig[4,2] = GridLayout()
+Legend(fig[4,1:2], ax3)
+fig[0, :] = Label(fig, LS("Vortex Lattice Analyses"))
 
-fig1.scene
+fig.scene
 
 ##
 # hs_pts = Tuple.(bound_leg_center.(horses))[:]

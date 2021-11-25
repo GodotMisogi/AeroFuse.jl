@@ -20,9 +20,9 @@ import ..PanelGeometry: Panel2D, Panel3D, panel_area, panel_normal, transform, m
 ## Types
 #==========================================================================================#
 
-abstract type Aircraft end
+abstract type AbstractAircraft end
 
-export Aircraft
+abstract type AbstractWing <: AbstractAircraft end
 
 ## Foil geometry
 #==========================================================================================#

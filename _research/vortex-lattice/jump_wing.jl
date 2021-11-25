@@ -69,13 +69,13 @@ b, S, c  = info(wing)[1:end-1]
 span_num  = 12
 chord_num = 6
 
-x0 = [(chords ∘ right)(wing); α]
+x0 = [chords(wing.right); sweeps(wing.right); α]
 
 make_wing(x) = Wing(chords    = collect(x[1:n]),
-                    foils     = foils(right(wing)),
-                    spans     = spans(right(wing)),
-                    twists    = rad2deg.(twists(right(wing))),
-                    dihedrals = rad2deg.(dihedrals(right(wing))),
+                    foils     = foils(wing.right),
+                    spans     = spans(wing.right),
+                    twists    = rad2deg.(twists(wing.right)),
+                    dihedrals = rad2deg.(dihedrals(wing.right)),
                     LE_sweeps = collect(x[n+1:end]))
 
 # Closures

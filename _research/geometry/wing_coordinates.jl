@@ -16,7 +16,7 @@ using AeroMDAO
 
 
 ## Define type
-struct WingCoordinates{T <: Real} <: Aircraft
+struct WingCoordinates{T <: Real} <: AbstractAircraft
     wing        :: Union{HalfWing{T}, Wing{T}}
     position    :: SVector{3,T}
     orientation :: AngleAxis{T}
