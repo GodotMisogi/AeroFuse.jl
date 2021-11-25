@@ -166,3 +166,31 @@ function paneller(wing :: Union{HalfWing, Wing}, span_num :: Integer, chord_num 
 end
 
 panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = symmetric_spacing(comp)) = paneller(comp, span_panels, chord_panels, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))
+
+## Meshing type for convenience
+#==========================================================================================#
+
+mutable struct WingMesh{M <: AbstractWing, N <: Integer, P <: Integer, Q, R} <: AbstractWing
+    surf     :: M
+    n_span   :: Vector{N}
+    n_chord  :: P
+    vlm_mesh :: Q
+    cam_mesh :: R
+end
+
+function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: P) where {M <: AbstractWing, N <: Integer, P <: Integer} 
+    vlm_mesh = chord_coordinates(surf, n_span, n_chord)
+    cam_mesh = camber_coordinates(surf, n_span, n_chord)
+    WingMesh{M,N,P,typeof(vlm_mesh),typeof(cam_mesh)}(surf, n_span, n_chord, vlm_mesh, cam_mesh)
+end
+
+##
+chord_coordinates(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord) = chord_coordinates(wing.surf, n_span, n_chord)
+camber_coordinates(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord) = camber_coordinates(wing.surf, n_span, n_chord)
+surface_coordinates(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord) = surface_coordinates(wing.surf, n_span, n_chord)
+
+surface_panels(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord)  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
+
+chord_panels(wing :: WingMesh)    = make_panels(wing.vlm_mesh)
+camber_panels(wing :: WingMesh)   = make_panels(wing.cam_mesh)
+normal_vectors(wing :: WingMesh)  = panel_normal.(camber_panels(wing))
