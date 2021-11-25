@@ -44,8 +44,6 @@ print_info(wing, "Wing")
 print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
-## Meshing
-
 ## WingMesh type
 mutable struct WingMesh{M <: AbstractWing, N <: Integer, P <: Integer, Q, R} <: AbstractWing
     surf     :: M
@@ -56,8 +54,8 @@ mutable struct WingMesh{M <: AbstractWing, N <: Integer, P <: Integer, Q, R} <: 
 end
 
 function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: P) where {M <: AbstractWing, N <: Integer, P <: Integer} 
-    vlm_mesh = chord_coordinates(wing, n_span, n_chord)
-    cam_mesh = camber_coordinates(wing, n_span, n_chord)
+    vlm_mesh = chord_coordinates(surf, n_span, n_chord)
+    cam_mesh = camber_coordinates(surf, n_span, n_chord)
     WingMesh{M,N,P,typeof(vlm_mesh),typeof(cam_mesh)}(surf, n_span, n_chord, vlm_mesh, cam_mesh)
 end
 
@@ -138,11 +136,15 @@ vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = span_loading(panels.vtail,
 using GLMakie
 using LaTeXStrings
 
+set_theme!(
+            #theme_black()
+          )
+
 const LS = LaTeXString
 
 ## Streamlines
 # Spanwise distribution
-span_points = 20
+span_points = 30
 init        = chop_leading_edge(wing, span_points)
 dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy,  dz])
@@ -150,15 +152,15 @@ seed        = [ init .+ Ref([dx, dy,  dz])
 
 distance = 5
 num_stream_points = 100
-streams = plot_streams(fs, seed, data.horseshoes, data.circulations, distance, num_stream_points);
+streams = Point3f.(plot_streams(fs, seed, data.horseshoes, data.circulations, distance, num_stream_points));
 
 ## Mesh connectivities
 triangle_connectivities(inds) = @views [ inds[1:end-1,1:end-1][:] inds[1:end-1,2:end][:]   inds[2:end,2:end][:]   ;
                                            inds[2:end,2:end][:]   inds[2:end,1:end-1][:] inds[1:end-1,1:end-1][:] ]
 
-wing_cam_connec  = triangle_connectivities(LinearIndices(wing_cam_mesh))
-htail_cam_connec = triangle_connectivities(LinearIndices(htail_cam_mesh))
-vtail_cam_connec = triangle_connectivities(LinearIndices(vtail_cam_mesh));
+wing_cam_connec  = triangle_connectivities(LinearIndices(wing_m.cam_mesh))
+htail_cam_connec = triangle_connectivities(LinearIndices(htail_m.cam_mesh))
+vtail_cam_connec = triangle_connectivities(LinearIndices(vtail_m.cam_mesh));
 
 ## Extrapolating surface values to neighbouring points
 function extrapolate_point_mesh(mesh)
@@ -189,24 +191,13 @@ wing_cp_points  = extrapolate_point_mesh(cps.wing)
 htail_cp_points = extrapolate_point_mesh(cps.htail)
 vtail_cp_points = extrapolate_point_mesh(cps.vtail)
 
-## Coordinates
-fig  = Figure()
+## Figure plot
+fig  = Figure(resolution = (1280, 720))
 
 scene = LScene(fig[1:4,1])
 ax1   = fig[1,2] = GLMakie.Axis(fig, ylabel = L"C_{D_i}", title = LS("Spanload Distributions"))
 ax2   = fig[2,2] = GLMakie.Axis(fig, ylabel = L"C_Y",)
 ax3   = fig[3,2] = GLMakie.Axis(fig, xlabel = L"y", ylabel = L"C_L")
-
-# Meshes
-m1 = poly!(scene, wing_m.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
-m2 = poly!(scene, htail_m.cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
-m3 = poly!(scene, vtail_m.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
-l1 = lines!.(scene, streams, color = :green)
-
-# wing_surf = surface_coordinates(wing, [30], 60)
-# surf_connec = square_connectivities(LinearIndices(wing_surf))
-# wing_surf_mesh = mesh(wing_surf[:], surf_connec)
-# w1 = wireframe!(scene, wing_surf_mesh.plot[1][], color = :grey, alpha = 0.1)
 
 # Spanload plot
 function plot_spanload!(fig, ys, CDis, CYs, CLs, CL_loadings, name = "Wing")
@@ -225,11 +216,42 @@ plot_spanload!(fig, vtail_ys, vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loading
 # Legend
 axl = fig[4,2] = GridLayout()
 Legend(fig[4,1:2], ax3)
-fig[0, :] = Label(fig, LS("Vortex Lattice Analyses"))
+fig[0, :] = Label(fig, LS("Vortex Lattice Analysis"), textsize = 20)
+
+# Meshes
+m1 = poly!(scene, wing_m.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
+m2 = poly!(scene, htail_m.cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
+m3 = poly!(scene, vtail_m.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
+
+# Surface mesh
+# wing_surf = surface_coordinates(wing_m, wing_m.n_span, 60)
+# surf_connec = triangle_connectivities(LinearIndices(wing_surf))
+# wing_surf_mesh = mesh(wing_surf[:], surf_connec)
+# w1 = wireframe!(scene, wing_surf_mesh.plot[1][], color = :grey, alpha = 0.1)
+
+# Streamlines
+[ lines!(scene, stream[:], color = :green) for stream in streams ]
 
 fig.scene
 
-##
+## Animation settings
+pts = [ Node(Point3f[stream]) for stream in streams[1,:] ]
+
+[ lines!(scene, pts[i], color = :green, axis = (; type = Axis3)) for i in eachindex(pts) ]
+
+# Recording
+fps     = 30
+nframes = length(streams[:,1])
+
+record(fig, "plots/vlm_animation.mp4", 1:nframes) do i 
+    for j in eachindex(streams[1,:])
+        pts[j][] = push!(pts[j][], streams[i,j])
+    end
+    sleep(1/fps) # refreshes the display!
+    notify(pts[i])
+end
+
+## Arrows
 # hs_pts = Tuple.(bound_leg_center.(horses))[:]
 # arrows!(scene, getindex.(hs_pts, 1), getindex.(hs_pts, 2), getindex.(hs_pts, 3), 
 #                 CDis[:], CYs[:], CLs[:], 
