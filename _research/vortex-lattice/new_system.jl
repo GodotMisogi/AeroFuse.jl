@@ -188,24 +188,32 @@ axl = fig[4,2] = GridLayout()
 Legend(fig[4,1:2], ax3)
 fig[0, :] = Label(fig, LS("Vortex Lattice Analysis"), textsize = 20)
 
-# Meshes
-m1 = poly!(scene, wing_mesh.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
-m2 = poly!(scene, htail_mesh.cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
-m3 = poly!(scene, vtail_mesh.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
+# Surface pressure meshes
+# m1 = poly!(scene, wing_mesh.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
+# m2 = poly!(scene, htail_mesh.cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
+# m3 = poly!(scene, vtail_mesh.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
 
-# Surface mesh
+# Airfoil meshes
 # wing_surf = surface_coordinates(wing_m, wing_mesh.n_span, 60)
 # surf_connec = triangle_connectivities(LinearIndices(wing_surf))
 # wing_surf_mesh = mesh(wing_surf[:], surf_connec)
 # w1 = wireframe!(scene, wing_surf_mesh.plot[1][], color = :grey, alpha = 0.1)
 
+# Borders
+lines!(scene, plot_wing(wing))
+lines!(scene, plot_wing(htail))
+lines!(scene, plot_wing(vtail))
+
 # Streamlines
-[ lines!(scene, stream[:], color = :green) for stream in streams ]
+# [ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]
 
 fig.scene
 
+## Save figure
+save("plots/VortexLattice.png", fig, px_per_unit = 1.5)
+
 ## Animation settings
-pts = [ Node(Point3f[stream]) for stream in streams[1,:] ]
+pts = [ Node(Point3f0[stream]) for stream in streams[1,:] ]
 
 [ lines!(scene, pts[i], color = :green, axis = (; type = Axis3)) for i in eachindex(pts) ]
 
@@ -215,7 +223,7 @@ nframes = length(streams[:,1])
 
 record(fig, "plots/vlm_animation.mp4", 1:nframes) do i 
     for j in eachindex(streams[1,:])
-        pts[j][] = push!(pts[j][], streams[i,j])
+        pts[j][] = push!(pts[j][], Point3f0(streams[i,j]))
     end
     sleep(1/fps) # refreshes the display!
     notify(pts[i])
