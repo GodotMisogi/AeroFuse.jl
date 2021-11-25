@@ -3,7 +3,7 @@
 
 A composite type consisting of two `HalfWing`s with fields `left` and `right` for constructing a wing.
 """
-struct Wing{M <: AbstractWing} <: AbstractAircraft
+struct Wing{M <: AbstractWing} <: AbstractWing
     left  :: M
     right :: M
 end

@@ -14,6 +14,9 @@ wing = Wing(foils     = Foil.(fill(naca4(2,4,1,2), 2)),
             dihedrals = [5.],
             LE_sweeps = [5.]);
 
+wing_mac = mean_aerodynamic_center(wing)
+S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+
 # Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
              chords    = [0.7, 0.42],
@@ -43,67 +46,53 @@ print_info(vtail, "Vertical Tail")
 
 ## Meshing
 
-## Wing
-wing_n_span   = [12]
-wing_n_chord  = 6
-wing_vlm_mesh = chord_coordinates(wing, wing_n_span, wing_n_chord)
-wing_cam_mesh = camber_coordinates(wing, wing_n_span, wing_n_chord)
-wing_panels   = make_panels(wing_vlm_mesh)
-wing_cambers  = make_panels(wing_cam_mesh)
-wing_normals  = panel_normal.(wing_cambers)
-wing_horsies  = Horseshoe.(wing_panels,  wing_normals)
-
-struct WingMesh{M <: AbstractWing, N <: Integer, P} <: AbstractWing
-    surf    :: M
-    n_span  :: N
-    n_chord :: P
+## WingMesh type
+mutable struct WingMesh{M <: AbstractWing, N <: Integer, P <: Integer, Q, R} <: AbstractWing
+    surf     :: M
+    n_span   :: Vector{N}
+    n_chord  :: P
+    vlm_mesh :: Q
+    cam_mesh :: R
 end
 
-WingMesh(surf :: Union{Wing{T}, HalfWing{T}}, n_span :: AbstractVector{M}, n_chord :: N) where {T <: Real, N <: Integer, M <: Integer} = VLMWing{T,N,M}(surf, n_span, n_chord) 
+function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: P) where {M <: AbstractWing, N <: Integer, P <: Integer} 
+    vlm_mesh = chord_coordinates(wing, n_span, n_chord)
+    cam_mesh = camber_coordinates(wing, n_span, n_chord)
+    WingMesh{M,N,P,typeof(vlm_mesh),typeof(cam_mesh)}(surf, n_span, n_chord, vlm_mesh, cam_mesh)
+end
 
-# AeroMDAO.AircraftGeometry.chord_coordinates(wing :: VLMWing) = chord_coordinates(wing.surf, wing.n_span, wing.n_chord)
+##
+AeroMDAO.AircraftGeometry.chord_coordinates(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord) = chord_coordinates(wing.surf, n_span, n_chord)
+AeroMDAO.AircraftGeometry.camber_coordinates(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord) = camber_coordinates(wing.surf, n_span, n_chord)
+AeroMDAO.AircraftGeometry.surface_coordinates(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord) = surface_coordinates(wing.surf, n_span, n_chord)
+surface_panels(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord)  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
 
-# vlm_wing = WingMesh(wing, wing_n_span, wing_n_chord)
+chord_panels(wing :: WingMesh)    = make_panels(wing.vlm_mesh)
+camber_panels(wing :: WingMesh)   = make_panels(wing.cam_mesh)
+normal_vectors(wing :: WingMesh)  = panel_normal.(camber_panels(wing))
+make_horseshoes(wing :: WingMesh) = Horseshoe.(chord_panels(wing), normal_vectors(wing))
 
-# Horizontal tail
-htail_n_span   = [6]
-htail_n_chord  = 6
-htail_vlm_mesh = chord_coordinates(htail, htail_n_span, htail_n_chord)
-htail_cam_mesh = camber_coordinates(htail, htail_n_span, htail_n_chord)
-htail_panels   = make_panels(htail_vlm_mesh)
-htail_cambers  = make_panels(htail_cam_mesh)
-htail_normals  = panel_normal.(htail_cambers)
-htail_horsies  = Horseshoe.(htail_panels, htail_normals)
+wing_m  = WingMesh(wing, [12], 6)
+htail_m = WingMesh(htail, [6], 6)
+vtail_m = WingMesh(vtail, [6], 6)
 
-# Vertical tail
-vtail_n_span   = [6]
-vtail_n_chord  = 6
-vtail_vlm_mesh = chord_coordinates(vtail, vtail_n_span, vtail_n_chord)
-vtail_cam_mesh = camber_coordinates(vtail, vtail_n_span, vtail_n_chord)
-vtail_panels   = make_panels(vtail_vlm_mesh)
-vtail_cambers  = make_panels(vtail_cam_mesh)
-vtail_normals  = panel_normal.(vtail_cambers)
-vtail_horsies  = Horseshoe.(vtail_panels, vtail_normals)
-
-aircraft_panels = ComponentArray(
-                                 wing  = wing_panels,
-                                 htail = htail_panels, 
-                                 vtail = vtail_panels
-                                )
+panels = ComponentArray(
+                         wing  = chord_panels(wing_m),
+                         htail = chord_panels(htail_m), 
+                         vtail = chord_panels(vtail_m)
+                       )
 
 aircraft = ComponentArray(
-                          wing  = wing_horsies,
-                          htail = htail_horsies,
-                          vtail = vtail_horsies
+                          wing  = make_horseshoes(wing_m),
+                          htail = make_horseshoes(htail_m),
+                          vtail = make_horseshoes(vtail_m)
                          )
 
-wing_mac = mean_aerodynamic_center(wing)
-x_w      = wing_mac[1]
 
 ## Case
 ac_name = "My Aircraft"
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 1.225
+x_w     = wing_mac[1]
 ref     = [ x_w, 0., 0.]
 V, α, β = 15.0, 0.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
@@ -122,8 +111,7 @@ refs    = References(S, b, c, ρ, ref)
 end;
 
 ## Spanwise forces
-function span_loading(panels, CFs, Γs, V, alpha, beta, c)
-    CFs  = body_to_wind_axes.(CFs, alpha, beta)
+function span_loading(panels, CFs, Γs, V, c)
     CDis = @. getindex(CFs, 1)
     CYs  = @. getindex(CFs, 2)
     CLs  = @. getindex(CFs, 3)
@@ -137,16 +125,14 @@ function span_loading(panels, CFs, Γs, V, alpha, beta, c)
     span_CDis, span_CYs, span_CLs, CL_loadings
 end
 
-span_loading(panels, CFs, Γs, fs, c) = span_loading(panels, CFs, Γs, fs.V, fs.alpha, fs.beta, c)
-
 hs_pts   = horseshoe_point.(data.horseshoes)
 wing_ys  = getindex.(hs_pts.wing[1,:], 2)
 htail_ys = getindex.(hs_pts.htail[1,:], 2)
 vtail_ys = getindex.(hs_pts.vtail[1,:], 2)
 
-wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings = span_loading(wing_panels, CFs.wing, data.circulations.wing, fs, c)
-htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings = span_loading(htail_panels, CFs.htail, data.circulations.htail, fs, c)
-vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = span_loading(vtail_panels, CFs.vtail, data.circulations.vtail, fs, c);
+wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings = span_loading(panels.wing, CFs.wing, data.circulations.wing, V, c)
+htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings = span_loading(panels.htail, CFs.htail, data.circulations.htail, V, c)
+vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = span_loading(panels.vtail, CFs.vtail, data.circulations.vtail, V, c);
 
 ## Plotting
 using GLMakie
@@ -212,9 +198,9 @@ ax2   = fig[2,2] = GLMakie.Axis(fig, ylabel = L"C_Y",)
 ax3   = fig[3,2] = GLMakie.Axis(fig, xlabel = L"y", ylabel = L"C_L")
 
 # Meshes
-m1 = poly!(scene, wing_cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
-m2 = poly!(scene, htail_cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
-m3 = poly!(scene, vtail_cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
+m1 = poly!(scene, wing_m.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
+m2 = poly!(scene, htail_m.cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
+m3 = poly!(scene, vtail_m.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
 l1 = lines!.(scene, streams, color = :green)
 
 # wing_surf = surface_coordinates(wing, [30], 60)
