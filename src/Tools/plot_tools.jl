@@ -16,7 +16,7 @@ end
 
 plot_wing(wing :: Union{HalfWing, Wing}) = plot_wing(coordinates(wing))
 
-plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = map(x -> Tuple.(x)[:], streamlines(freestream, points, horseshoes, Γs, length, num_steps))
+plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = reduce(hcat, streamlines(freestream, points, horseshoes, Γs, length, num_steps))
 
 plot_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30) = plot_panels(mesh_wing(wing, span_num, chord_num))
 
