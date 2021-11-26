@@ -189,9 +189,9 @@ Legend(fig[4,1:2], ax3)
 fig[0, :] = Label(fig, LS("Vortex Lattice Analysis"), textsize = 20)
 
 # Surface pressure meshes
-# m1 = poly!(scene, wing_mesh.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
-# m2 = poly!(scene, htail_mesh.cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
-# m3 = poly!(scene, vtail_mesh.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
+m1 = poly!(scene, wing_mesh.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
+m2 = poly!(scene, htail_mesh.cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
+m3 = poly!(scene, vtail_mesh.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
 
 # Airfoil meshes
 # wing_surf = surface_coordinates(wing_m, wing_mesh.n_span, 60)
@@ -210,7 +210,7 @@ lines!(scene, plot_wing(vtail))
 fig.scene
 
 ## Save figure
-save("plots/VortexLattice.png", fig, px_per_unit = 1.5)
+# save("plots/VortexLattice.png", fig, px_per_unit = 1.5)
 
 ## Animation settings
 pts = [ Node(Point3f0[stream]) for stream in streams[1,:] ]
