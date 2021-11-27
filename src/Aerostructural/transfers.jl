@@ -36,7 +36,7 @@ rotation_matrix(Ωx, Ωy, Ωz) = @SMatrix [  0  -Ωz  Ωy ;
 
 rotation_matrix(θs) = rotation_matrix.(θs[1,:], θs[2,:], θs[3,:])
 
-# Transfer states by summing the displacements and the cross product of the rotations with the .
+# Transfer states by summing the displacements including rotations.
 transfer_displacement(xyz, dx, rot, r) = xyz + dx + rot * (xyz - r)
 transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh) = permutedims(reduce(hcat, map(xyz -> transfer_displacement.(xyz, dxs, Ts, fem_mesh), eachrow(vlm_mesh))))
 

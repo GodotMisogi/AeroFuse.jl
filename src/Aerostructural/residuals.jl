@@ -1,60 +1,7 @@
 # Residual equation for linear systems
 linear_residual!(R, A, x, b) = R .= A * x - b
 
-# Residual setup for stateful style (seems pretty retarded right now...)
-# function solve_coupled_residual!(R, x, aero_system :: VLMSystem, aero_state :: VLMState, surf_index, vlm_mesh, cam_mesh, fem_mesh, stiffness_matrix, weight, load_factor)
-#     n = (length ∘ horseshoes)(aero_system) # VLMSystem size
-
-#     # Unpack aerodynamic and structural variables
-#     Γ = @view x[1:n] 
-#     δ = @view x[n+1:end-1]
-#     α = x[end]
-
-#     # Get residual vector views
-#     R_A = @view R[1:n]
-#     R_S = @view R[n+1:end-1]
-#     R_W = @view R[end]
-    
-#     # Compute displacements
-#     δs      = @views reshape(δ[7:end], 6, length(fem_mesh))
-#     dxs, Ts = translations_and_rotations(δs)
-
-#     # New VLM variables
-#     new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
-
-#     # Update states
-#     @timeit "New Horseshoes" aero_system.surfaces[surf_index].horseshoes = new_horsies
-#     aero_state.alpha = α
-
-#     # Update state velocity
-#     update_velocity!(aero_state)
-
-#     # Solve VLM system and update forces    
-#     @timeit "Aerodynamics Setup" solve_aerodynamics!(Γ, aero_system, aero_state)
-
-#     # Compute loads
-#     @timeit "Surface Aerodynamic Forces"  vlm_forces = surface_forces(aero_system.surfaces[surf_index])
-    
-#     # Build force vector with constraint
-#     fem_loads = fem_load_vector(bound_leg_center.(new_horsies), vlm_forces, fem_mesh)
-
-#     # Compute lift
-#     L = total_force(aero_system, aero_state)[3]
-
-#     # Aerodynamic residuals
-#     horsies = horseshoes(aero_system)
-#     @timeit "Aerodynamic Residual" aerodynamic_residual!(R_A, horsies, horseshoe_point.(horsies), horseshoe_normal.(horsies), Γ / aero_state.speed, aero_state.velocity / aero_state.speed, aero_state.omega / aero_state.speed)
-
-#     # Structural residuals
-#     linear_residual!(R_S, stiffness_matrix, δ, fem_loads)
-
-#     # Weight residual
-#     linear_residual!(R_W, weight, load_factor, L * cos(α))
-
-#     return R
-# end
-
-## "Pure" versions - AD compatible (for now)
+## Pure versions - AD compatible (for now)
 #==========================================================================================#
 
 # Residual setup for single aerostructural surface
