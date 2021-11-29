@@ -80,66 +80,19 @@ atail_r = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                axis      = [0., 1., 0.]);
 
 ## Meshing and assembly
-
-# Wing
-wing_n_span    = [6, 6]
-wing_n_chord   = 6
-wing_vlm_mesh  = chord_coordinates(wing, wing_n_span, wing_n_chord;
-                                    # spacings = "cosine"
-                                  )
-wing_cam_mesh  = camber_coordinates(wing, wing_n_span, wing_n_chord;
-                                    # spacings = "cosine"
-                                   )
-wing_panels    = make_panels(wing_vlm_mesh)
-wing_cambers   = make_panels(wing_cam_mesh)
-wing_normals   = panel_normal.(wing_cambers)
-wing_horsies   = Horseshoe.(wing_panels, wing_normals)
-
-# Horizontal tail
-htail_n_span   = [6]
-htail_n_chord  = 4
-htail_vlm_mesh = chord_coordinates(htail, htail_n_span, htail_n_chord)
-htail_cam_mesh = camber_coordinates(htail, htail_n_span, htail_n_chord)
-htail_panels   = make_panels(htail_vlm_mesh)
-htail_cambers  = make_panels(htail_cam_mesh)
-htail_normals  = panel_normal.(htail_cambers)
-htail_horsies  = Horseshoe.(htail_panels, htail_normals)
-
-# Vertical tail
-vtail_n_span   = [6]
-vtail_n_chord  = 4
-vtail_vlm_mesh = chord_coordinates(vtail, vtail_n_span, vtail_n_chord)
-vtail_cam_mesh = camber_coordinates(vtail, vtail_n_span, vtail_n_chord)
-vtail_panels   = make_panels(vtail_vlm_mesh)
-vtail_cambers  = make_panels(vtail_cam_mesh)
-vtail_normals  = panel_normal.(vtail_cambers)
-vtail_horsies  = Horseshoe.(vtail_panels, vtail_normals)
-
-# Tailerons
-atail_n_span     = [4]
-atail_n_chord    = 2
-
-atail_l_vlm_mesh = chord_coordinates(atail_l, atail_n_span, atail_n_chord)
-atail_l_cam_mesh = camber_coordinates(atail_l, atail_n_span, atail_n_chord)
-atail_l_panels   = make_panels(atail_l_vlm_mesh)
-atail_l_cambers  = make_panels(atail_l_cam_mesh)
-atail_l_normals  = panel_normal.(atail_l_cambers)
-atail_l_horsies  = Horseshoe.(atail_l_panels, atail_l_normals)
-
-atail_r_vlm_mesh = chord_coordinates(atail_r, atail_n_span, atail_n_chord)
-atail_r_cam_mesh = camber_coordinates(atail_r, atail_n_span, atail_n_chord)
-atail_r_panels   = make_panels(atail_r_vlm_mesh)
-atail_r_cambers  = make_panels(atail_r_cam_mesh)
-atail_r_normals  = panel_normal.(atail_r_cambers)
-atail_r_horsies  = Horseshoe.(atail_r_panels, atail_r_normals)
+wing_mesh    = WingMesh(wing, [6,6], 6)
+htail_mesh   = WingMesh(htail, [6], 4)
+vtail_mesh   = WingMesh(vtail, [6], 4)
+atail_l_mesh = WingMesh(atail_l, [4], 2)
+atail_r_mesh = WingMesh(atail_r, [4], 2)
 
 # Aircraft assembly
 aircraft = ComponentArray(
-                          wing    = wing_horsies,
-                          htail   = htail_horsies,
-                          vtail   = vtail_horsies,
-                          atail_l = atail_l_horsies,
-                          atail_r = atail_r_horsies,
+                          wing    = make_horseshoes(wing_mesh),
+                          htail   = make_horseshoes(htail_mesh),
+                          vtail   = make_horseshoes(vtail_mesh),
+                          atail_l = make_horseshoes(atail_l_mesh),
+                          atail_r = make_horseshoes(atail_r_mesh),
                          );
 
 ## Aerodynamic analsis
@@ -154,27 +107,23 @@ ref      = [wing_mac[1], 0., 0.]
 V, α, β  = 25.0, 0.0, 0.0
 Ω        = zeros(3)
 fs       = Freestream(V, α, β, Ω)
-q        = dynamic_pressure(ρ, V)
+refs     = References(S, b, c, ρ, ref)
 
 ## Solve aerodynamic case for initial vector
-@time data =
-    solve_case(aircraft, fs;
-               rho_ref          = ρ,        # Reference density
-               r_ref            = ref,      # Reference point for moments
-               area_ref         = S,        # Reference area
-               span_ref         = b,        # Reference span
-               chord_ref        = c,        # Reference chord
-               name             = ac_name,  # Aircraft name
-               print            = true,     # Print results
-               print_components = true,     # Prints the results for each component
+@time system =
+    solve_case(aircraft, fs, refs;
+            #    print_components = true,      # Prints the results for each component
               );
 
+## Data collection
+@time CFs, CMs = surface_coefficients(system);
+
 ## Wing FEM setup
-vlm_acs_wing    = bound_leg_center.(data.wing.horseshoes)
-vlm_forces_wing = force.(data.wing.CFs, q, S)
+vlm_acs_wing    = bound_leg_center.(system.horseshoes.wing)
+vlm_forces_wing = force.(CFs.wing, q, S)
 
 wing_beam_ratio = 0.40
-wing_fem_mesh   = make_beam_mesh(wing_vlm_mesh, wing_beam_ratio)
+wing_fem_mesh   = make_beam_mesh(wing_mesh.vlm_mesh, wing_beam_ratio)
 
 aluminum = Material(       # Aluminum properties
                     85e9,  # Elastic modulus, N/m²
@@ -190,7 +139,7 @@ r_wing  = [ reverse(rs_wing); rs_wing ]
 t_wing  = [ reverse(ts_wing); ts_wing ]
 
 tubes_wing     = Tube.(Ref(aluminum), Ls_wing, r_wing, t_wing)
-Ks_wing        = build_big_stiffy(tubes_wing, wing_fem_mesh, wing_vlm_mesh)
+Ks_wing        = build_big_stiffy(tubes_wing, wing_fem_mesh, wing_mesh.vlm_mesh)
 cons_wing      = [length(wing_fem_mesh) ÷ 2]
 stiffy_wing    = build_stiffness_matrix(Ks_wing, cons_wing)
 fem_loads_wing = compute_loads(vlm_acs_wing, vlm_forces_wing, wing_fem_mesh)
@@ -199,11 +148,11 @@ dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 Δx_wing = [ zeros(6); dx_wing[:] ]
 
 ## Horizontal tail FEM setup
-vlm_acs_htail    = bound_leg_center.(data.htail.horseshoes)
-vlm_forces_htail = force.(data.htail.CFs, q, S)
+vlm_acs_htail    = bound_leg_center.(system.htail.horseshoes)
+vlm_forces_htail = force.(CFs.htail, q, S)
 
 htail_beam_ratio = 0.35
-htail_fem_mesh   = make_beam_mesh(htail_vlm_mesh, htail_beam_ratio)
+htail_fem_mesh   = make_beam_mesh(htail_mesh.vlm_mesh, htail_beam_ratio)
 
 # Beam properties
 Ls_htail = norm.(diff(htail_fem_mesh))                              # Beam lengths, m
@@ -213,7 +162,7 @@ r_htail  = [ reverse(rs_htail); rs_htail ]
 t_htail  = [ reverse(ts_htail); ts_htail ]
 
 tubes_htail     = Tube.(Ref(aluminum), Ls_htail, r_htail, t_htail)
-Ks_htail        = build_big_stiffy(tubes_htail, htail_fem_mesh, htail_vlm_mesh)
+Ks_htail        = build_big_stiffy(tubes_htail, htail_fem_mesh, htail_mesh.vlm_mesh)
 cons_htail      = [length(htail_fem_mesh) ÷ 2]
 stiffy_htail    = build_stiffness_matrix(Ks_htail, cons_htail)
 fem_loads_htail = compute_loads(vlm_acs_htail, vlm_forces_htail, htail_fem_mesh)
@@ -222,11 +171,11 @@ dx_htail = solve_cantilever_beam(Ks_htail, fem_loads_htail, cons_htail)
 Δx_htail = [ zeros(6); dx_htail[:] ]
 
 ## Vertical tail FEM setup
-vlm_acs_vtail    = bound_leg_center.(data.vtail.horseshoes)
-vlm_forces_vtail = force.(data.vtail.CFs, q, S)
+vlm_acs_vtail    = bound_leg_center.(system.vtail.horseshoes)
+vlm_forces_vtail = force.(system.vtail.CFs, q, S)
 
 vtail_beam_ratio = 0.35
-vtail_fem_mesh   = make_beam_mesh(vtail_vlm_mesh, vtail_beam_ratio)
+vtail_fem_mesh   = make_beam_mesh(vtail_mesh.vlm_mesh, vtail_beam_ratio)
 
 # Beam properties
 Ls_vtail = norm.(diff(vtail_fem_mesh))                          # Beam lengths, m
@@ -236,7 +185,7 @@ r_vtail  = rs_vtail
 t_vtail  = ts_vtail
 
 tubes_vtail     = Tube.(Ref(aluminum), Ls_vtail, r_vtail, t_vtail)
-Ks_vtail        = build_big_stiffy(tubes_vtail, vtail_fem_mesh, vtail_vlm_mesh)
+Ks_vtail        = build_big_stiffy(tubes_vtail, vtail_fem_mesh, vtail_mesh.vlm_mesh)
 cons_vtail      = [1]
 stiffy_vtail    = build_stiffness_matrix(Ks_vtail, cons_vtail)
 fem_loads_vtail = compute_loads(vlm_acs_vtail, vlm_forces_vtail, vtail_fem_mesh)
@@ -259,7 +208,11 @@ stiffy = blockdiag(stiffy_wing, stiffy_htail, stiffy_vtail)
 ## Aerostructural residual
 #==========================================================================================#
 
-vlm_meshes  = [ wing_vlm_mesh, htail_vlm_mesh, vtail_vlm_mesh ]
+vlm_meshes  = ComponentArray(
+                             wing  = wing_mesh.vlm_mesh,
+                             htail = htail_mesh.vlm_mesh,
+                             vtail = vtail_mesh.vlm_mesh
+                            )
 cam_meshes  = [ wing_cam_mesh, htail_cam_mesh, vtail_cam_mesh ]
 fem_meshes  = [ wing_fem_mesh, htail_fem_mesh, vtail_fem_mesh ]
 fem_weights = [ wing_beam_ratio, htail_beam_ratio, vtail_beam_ratio ]
@@ -269,11 +222,11 @@ other_horsies = [ atail_l_horsies[:]; atail_r_horsies[:] ]
 
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = (
-                                    wing    = data.wing.circulations, 
-                                    htail   = data.htail.circulations, 
-                                    vtail   = data.vtail.circulations, 
-                                    atail_l = data.atail_l.circulations, 
-                                    atail_r = data.atail_r.circulations
+                                    wing    = system.wing.circulations, 
+                                    htail   = system.htail.circulations, 
+                                    vtail   = system.vtail.circulations, 
+                                    atail_l = system.atail_l.circulations, 
+                                    atail_r = system.atail_r.circulations
                                    ),
                     structures   = (
                                     wing  = Δx_wing, 
@@ -315,8 +268,8 @@ dxs   = getindex.(dx_Ts, 1)
 Ts    = getindex.(dx_Ts, 2)
 
 ## New VLM variables
-new_vlm_meshes = transfer_displacements.(dxs, Ts, vlm_meshes, fem_meshes)
-new_panels     = make_panels.(new_vlm_meshes)
+new_mesh.vlm_meshes = transfer_displacements.(dxs, Ts, vlm_meshes, fem_meshes)
+new_panels     = make_panels.(new_mesh.vlm_meshes)
 
 new_cam_meshes = transfer_displacements.(dxs, Ts, cam_meshes, fem_meshes)
 new_cam_panels = make_panels.(new_cam_meshes)
@@ -333,7 +286,7 @@ new_Γs     = getindex.(Ref(Γ_opt), syms)
 new_forces = getindex.(Ref(all_forces), syms)
 
 ## New beams and loads
-new_fem_meshes = make_beam_mesh.(new_vlm_meshes, fem_weights)
+new_fem_meshes = make_beam_mesh.(new_mesh.vlm_meshes, fem_weights)
 fem_loads      = compute_loads.(new_acs, new_forces, new_fem_meshes);
 
 ## Compute stresses
@@ -387,8 +340,8 @@ cam_plot     = plot_panels(reduce(vcat, vec.(cam_panels)))
 new_cam_plot = plot_panels(reduce(vcat, vec.(new_cam_panels)))
 
 # Displacements
-new_vlm_mesh_plot = @. reduce(hcat, new_vlm_meshes)
-new_panel_plot    = plot_panels(reduce(vcat, vec.(make_panels.(new_vlm_meshes))))
+new_mesh.vlm_mesh_plot = @. reduce(hcat, new_mesh.vlm_meshes)
+new_panel_plot    = plot_panels(reduce(vcat, vec.(make_panels.(new_mesh.vlm_meshes))))
 
 ## Planforms
 wing_plan     = plot_wing(wing)
