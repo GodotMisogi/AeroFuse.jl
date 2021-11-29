@@ -44,8 +44,6 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  axis      = [1., 0., 0.]);
 
 ## Meshing and assembly
-
-# Wing
 wing_mesh  = WingMesh(wing, [8,3], 6)
 htail_mesh = WingMesh(htail, [6], 6)
 vtail_mesh = WingMesh(vtail, [6], 6)
