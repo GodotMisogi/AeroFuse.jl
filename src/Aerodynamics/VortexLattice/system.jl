@@ -139,8 +139,7 @@ function surface_coefficients(system :: VLMSystem; axes :: AircraftAxes = Wind()
     CFs, CMs
 end
 
-
-# # Compute farfield forces in Trefftz plane
+# Compute farfield forces in Trefftz plane
 function farfield_forces(system :: VLMSystem)
     hs = system.horseshoes 
     Γs = system.circulations
