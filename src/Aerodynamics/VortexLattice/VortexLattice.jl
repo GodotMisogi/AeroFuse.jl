@@ -47,6 +47,8 @@ function solve_system(horseshoes, U, Ω, finite_core = false)
     AIC  = influence_matrix(horseshoes, -normalize(U), finite_core)
     boco = boundary_condition(quasi_steady_freestream(horseshoes, U, Ω), horseshoe_normal.(horseshoes))
     Γs   = AIC \ boco 
+
+    Γs, AIC, boco
 end
 
 ## Force evaluations

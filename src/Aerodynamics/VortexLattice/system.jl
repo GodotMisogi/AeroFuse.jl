@@ -2,7 +2,7 @@
 #==========================================================================================#
 
 """
-    solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
+    evaluate_case(horseshoe_panels :: Matrix{Panel3D}, normals, U, α, β, Ω, rho_ref, r_ref, area_ref, chord_ref, span_ref)
 
 Evaluate a vortex lattice case given an array of `Panel3D`s with associated normal vectors (not necessarily the same as the panels' normals), freestream speed `U`, angles of attack `α` and sideslip `β`,  reference density ``\\rho``, reference point ``r_\\text{ref}`` for moments, and reference values for area, chord, and span lengths.
 """
@@ -51,11 +51,13 @@ end
 
 References(S :: T, b :: T, c :: T, ρ :: T, ref :: AbstractVector{T}) where {T<: Real} = References{T}(S, b, c, ρ, ref)
 
-struct VLMSystem{M,N,P <: AbstractFreestream, Q <: AbstractReferences}
-    horseshoes   :: M
-    circulations :: N 
-    freestream   :: P
-    reference    :: Q
+struct VLMSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
+    horseshoes          :: M
+    circulations        :: N 
+    influence_matrix    :: R
+    boundary_vector     :: S
+    freestream          :: P
+    reference           :: Q
 end
 
 abstract type AircraftAxes end

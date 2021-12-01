@@ -66,12 +66,9 @@ function solve_case(components, freestream :: Freestream, refs :: References; na
     # U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Evaluate case
-    results = solve_system(components, aircraft_velocity(freestream), freestream.omega)
+    Γs, AIC, boco = solve_system(components, aircraft_velocity(freestream), freestream.omega)
 
-    system = VLMSystem(components, results, freestream, refs)
-
-    
-    # NamedTuple{keys(components)}(tuple_comp)
+    system = VLMSystem(components, Γs, AIC, boco, freestream, refs)
 
     # Printing if needed
     if print_components
