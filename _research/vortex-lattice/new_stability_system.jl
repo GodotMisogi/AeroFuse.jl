@@ -1,6 +1,5 @@
 ## Aircraft stability analysis example
 using AeroMDAO
-using LinearAlgebra # For norm()
 using ComponentArrays
 
 ## Lifting surfaces
@@ -51,24 +50,21 @@ print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
 ## Static stability
-wing_mac  = mean_aerodynamic_center(wing)
-htail_mac = mean_aerodynamic_center(htail)
-vtail_mac = mean_aerodynamic_center(vtail)
+x_w, y_w, z_w = wing_mac  = mean_aerodynamic_center(wing)
+x_h, y_h, z_h = htail_mac = mean_aerodynamic_center(htail)
+x_v, y_v, z_v = vtail_mac = mean_aerodynamic_center(vtail)
 
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
-x_w = [ wing_mac[1], 0, 0 ]
 
 # Horizontal tail volume coefficient
 S_h = projected_area(htail)
-x_h = [ htail_mac[1], 0, 0 ]
-l_h = norm(x_h - x_w)
+l_h = x_h - x_w
 V_h = S_h * l_h / (S * c)
 println("Horizontal TVC      V_h: $V_h")
 
 # Vertical tail volume coefficient
 S_v = projected_area(vtail)
-x_v = [ vtail_mac[1], 0, 0 ]
-l_v = norm(x_v - x_w)
+l_v = x_v - x_w
 V_v = S_v * l_v / (S * b)
 println("Vertical TVC        V_v: $V_v")
 
@@ -86,10 +82,10 @@ aircraft = ComponentArray(
 ## Evaluate case
 ac_name = :aircraft
 ρ       = 1.225
-ref     = x_w
+ref     = [ x_w, 0., 0. ]
 V, α, β = 1.0, 0.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
-fs 	    = Freestream(V, α, β, Ω)
+fs      = Freestream(V, α, β, Ω)
 refs    = References(S, b, c, ρ, ref)
 
 @time dv_data =
@@ -104,8 +100,8 @@ ff_plane  = dv_data.aircraft.NF
 dvs_plane = dv_data.aircraft.dNF
 
 # Center of pressure
-Cm   = nf_plane[5]	# Moment coefficient
-CL   = nf_plane[3]	# Lift coefficient
+Cm   = nf_plane[5]  # Moment coefficient
+CL   = nf_plane[3]  # Lift coefficient
 cp   = -c * Cm / CL
 
 # Neutral point
@@ -122,8 +118,8 @@ Cn_β = dvs_plane[6,2]
 γ    = Cl_β * Cn_r / (Cl_r * Cn_β) # Check degree-radian issue
 
 # Locations
-x_np = [ ref[1] .+ np; zeros(2) ]	# Neutral point
-x_cp = [ ref[1] .+ cp; zeros(2) ]	# Center of pressure
+x_np = [ ref[1] .+ np; zeros(2) ]  # Neutral point
+x_cp = [ ref[1] .+ cp; zeros(2) ]  # Center of pressure
 
 println("Aerodynamic Center x_ac: $(x_w[1]) m")
 println("Neutral Point      x_np: $(x_np[1]) m")

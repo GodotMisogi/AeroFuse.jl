@@ -14,7 +14,7 @@ wing = Wing(foils     = Foil.(fill(naca4(2,4,1,2), 2)),
             dihedrals = [5.],
             LE_sweeps = [5.]);
 
-wing_mac = mean_aerodynamic_center(wing)
+x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 
 # Horizontal tail
@@ -58,7 +58,6 @@ aircraft = ComponentArray(
 ## Case
 ac_name = :aircraft
 ρ       = 1.225
-x_w     = wing_mac[1]
 ref     = [ x_w, 0., 0.]
 V, α, β = 15.0, 0.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
@@ -87,7 +86,7 @@ refs    = References(S, b, c, ρ, ref)
 end;
 
 ## Spanwise forces
- function lifting_line_loads(panels, CFs, Γs, V, c)
+function lifting_line_loads(panels, CFs, Γs, V, c)
     CDis = @. getindex(CFs, 1)
     CYs  = @. getindex(CFs, 2)
     CLs  = @. getindex(CFs, 3)
@@ -106,7 +105,7 @@ wing_ys  = getindex.(hs_pts.wing[1,:], 2)
 htail_ys = getindex.(hs_pts.htail[1,:], 2)
 vtail_ys = getindex.(hs_pts.vtail[1,:], 2)
 
-wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, data.circulations.wing, V, c)
+wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings     = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, data.circulations.wing, V, c)
 htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings = lifting_line_loads(chord_panels(htail_mesh), CFs.htail, data.circulations.htail, V, c)
 vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = lifting_line_loads(chord_panels(vtail_mesh), CFs.vtail, data.circulations.vtail, V, c);
 
