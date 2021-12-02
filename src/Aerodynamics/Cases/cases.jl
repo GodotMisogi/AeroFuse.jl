@@ -59,14 +59,12 @@ function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho
     nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs
 end
 
-# rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1,
-
-function solve_case(components, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false)
+function solve_case(components, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false, finite_core = false)
     # Unpack Freestream
     # U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Evaluate case
-    Γs, AIC, boco = solve_system(components, aircraft_velocity(freestream), freestream.omega)
+    Γs, AIC, boco = solve_system(components, aircraft_velocity(freestream), freestream.omega, finite_core)
 
     system = VLMSystem(components, Γs, AIC, boco, freestream, refs)
 
@@ -83,29 +81,10 @@ function solve_case(components, freestream :: Freestream, refs :: References; na
     system
 end
 
-## State cases
-
-# solve_case(horseshoe_panels :: Array{<: Panel3D}, normals, state :: VLMState) = solve_case(horseshoe_panels, normals, state.speed, state.alpha, state.beta, state.omega, rho_ref = state.rho_ref, r_ref = state.r_ref, area_ref = state.area_ref, chord_ref = state.chord_ref, span_ref = state.span_ref)
-
-# solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) = evaluate_case(components, state.speed, state.alpha, state.beta, state.omega, rho_ref = state.rho_ref, r_ref = state.r_ref, area_ref = state.area_ref, chord_ref = state.chord_ref, span_ref = state.span_ref, name)
-
-# Mutating version
-# function solve_case(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
-#     # Build surfaces and systems
-#     system = build_system(aircraft)
-
-#     # Solve case for given state
-#     evaluate_case!(system, state)
-
-#     system
-# end
-
 ## Method extensions from submodules
 #==========================================================================================#
 
 streamlines(freestream :: Freestream, points, horseshoes, Γs, length, num_steps :: Integer) = VortexLattice.streamlines.(points, Ref(velocity(freestream)), Ref(freestream.omega), Ref(horseshoes), Ref(Γs), Ref(length), Ref(num_steps))
-
-# VortexLattice.VLMState(fs :: Freestream{<: Real}; r_ref = zeros(3), rho_ref = 1.225, area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, r_ref = r_ref, rho_ref = rho_ref, area_ref = area_ref, chord_ref = chord_ref, span_ref = span_ref, name = name)
 
 ## Printing
 #==========================================================================================#
@@ -123,9 +102,9 @@ function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: Abstrac
 end
 
 function print_derivatives(derivs, name = ""; browser = false)
-    coeffs = ["∂CD", "∂CY", "∂CL", "∂Cl", "∂Cm", "∂Cn"]
-    nf_vars = [ "$name" "" "Nearfield" "Stability" "Derivatives" "" ; "" "∂α, 1/rad" "∂β, 1/rad" "∂p̄" "∂q̄" "∂r̄" ]
-    nf_rows = [ coeffs derivs ]
+    coeffs = ["CD", "CY", "CL", "Cl", "Cm", "Cn", "CD_ff", "CY_ff", "CL_ff"]
+    nf_vars = [ "$name" "Values" "" "" "Derivatives" "" "" ; "" "" "∂α, 1/rad" "∂β, 1/rad" "∂p̄" "∂q̄" "∂r̄" ]
+    nf_rows = [ coeffs reshape(derivs, 9, 6) ]
 
     if browser
         pretty_table(String, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
@@ -133,13 +112,3 @@ function print_derivatives(derivs, name = ""; browser = false)
         pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true), vlines = :none, formatters = ft_round(8))
     end
 end
-
-# function print_coefficients(surfs, state :: VLMState{T}) where T <: Real
-#     coeffs = aerodynamic_coefficients(surfs, state)
-#     print_coefficients.(first.(values(coeffs)), last.(values(coeffs)), (collect ∘ keys)(coeffs))
-# end
-
-# function print_coefficients(surf :: VLMSurface{T}, state :: VLMState{T}) where T <: Real
-#     nf, ff = aerodynamic_coefficients(surf, state)
-#     print_coefficients(nf, ff, name(surf))
-# end

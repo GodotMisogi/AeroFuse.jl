@@ -280,7 +280,7 @@ all_horsies = [ reduce(vcat, vec.(new_horsies)); other_horsies ];
 ## Aerodynamic forces and center locations
 U_opt      = freestream_to_cartesian(-V, α_opt, deg2rad(β))
 new_acs    = new_horsies .|> horsies -> bound_leg_center.(horsies)
-all_forces = nearfield_forces(Γ_opt, all_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
+all_forces = surface_forces(Γ_opt, all_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
 
 new_Γs     = getindex.(Ref(Γ_opt), syms)
 new_forces = getindex.(Ref(all_forces), syms)

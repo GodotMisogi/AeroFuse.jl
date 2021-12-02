@@ -27,7 +27,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
     new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
 
     # Compute loads
-    @timeit "Surface Forces" vlm_forces = nearfield_forces(Γ, new_horsies, Γ, new_horsies, U, Ω, ρ)
+    @timeit "Surface Forces" vlm_forces = surface_forces(Γ, new_horsies, Γ, new_horsies, U, Ω, ρ)
     
     # Compute lift for load factor residual
     L = sum(vlm_forces)[3]
@@ -72,11 +72,11 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, ot
 
     # Compute component forces for structural residual
     new_Γs   = @views reshape(Γ[1:length(new_horsies)], size(new_horsies))
-    @timeit "Surface Forces" new_forces = nearfield_forces(new_Γs, new_horsies, Γ, all_horsies, U, Ω, ρ)
+    @timeit "Surface Forces" new_forces = surface_forces(new_Γs, new_horsies, Γ, all_horsies, U, Ω, ρ)
 
     # Compute other forces for load factor residual
     other_Γs = @views Γ[length(new_horsies)+1:end]
-    @timeit "Other Forces" other_forces = nearfield_forces(other_Γs, other_horsies, Γ, all_horsies, U, Ω, ρ)[:]
+    @timeit "Other Forces" other_forces = surface_forces(other_Γs, other_horsies, Γ, all_horsies, U, Ω, ρ)[:]
 
     # Compute lift
     L = sum([ new_forces[:]; other_forces[:] ])[3]
@@ -122,7 +122,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
     all_horsies  = [ reduce(vcat, vec.(new_horsies)); other_horsies ]
 
     # Compute forces
-    @timeit "All Forces" all_forces = nearfield_forces(Γs, all_horsies, Γs, all_horsies, U, Ω, ρ)
+    @timeit "All Forces" all_forces = surface_forces(Γs, all_horsies, Γs, all_horsies, U, Ω, ρ)
 
     # Compute lift
     L = sum(all_forces)[3] #  body_to_wind_axes(sum(all_forces), α, β)[3] 
@@ -172,7 +172,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
     # Compute component forces for structural residual
     new_Γs       = getindex.(Ref(Γs), syms) 
     new_acs      = map(horsies -> bound_leg_center.(horsies), new_horsies)
-    @timeit "New Forces" new_forces   = nearfield_forces.(new_Γs, new_horsies, Ref(Γs), Ref(all_horsies), Ref(U), Ref(Ω), Ref(ρ))
+    @timeit "New Forces" new_forces   = surface_forces.(new_Γs, new_horsies, Ref(Γs), Ref(all_horsies), Ref(U), Ref(Ω), Ref(ρ))
 
     # Compute lift
     L = sum(reduce(vcat, vec.(new_forces)))[3]

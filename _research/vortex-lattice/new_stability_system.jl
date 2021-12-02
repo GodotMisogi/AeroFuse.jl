@@ -81,31 +81,27 @@ aircraft = ComponentArray(
                           wing  = make_horseshoes(wing_mesh),
                           htail = make_horseshoes(htail_mesh),
                           vtail = make_horseshoes(vtail_mesh)
-                         )
+                         );
 
 ## Evaluate case
-ac_name = "My Aircraft"
+ac_name = :aircraft
 ρ       = 1.225
 ref     = x_w
-V, α, β = 1.0, 3.0, 0.0
+V, α, β = 1.0, 0.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs 	    = Freestream(V, α, β, Ω)
 refs    = References(S, b, c, ρ, ref)
 
 @time dv_data =
 solve_stability_case(aircraft, fs, refs;
-                    #  print            = true,    # Prints the results for the entire aircraft
-                    #  print_components = true,    # Prints the results for each component
+                     print            = true,    # Prints the results for only the aircraft
+                     print_components = true,    # Prints the results for all components
                     );
 
-## Process data
-labels = (collect ∘ keys)(dv_data) # Get aircraft component names from analysis
-comp = labels[1]                   # Pick your component
-nf, ff, dvs = dv_data[comp];       # Get the nearfield, farfield, and stablity derivative coefficients
-print_case(dv_data, comp)          # Pretty-print the results
-
 ## Aerodynamic quantities of aircraft
-nf_plane, ff_plane, dvs_plane = dv_data[labels[1]]
+nf_plane  = dv_data.aircraft.NF
+ff_plane  = dv_data.aircraft.NF
+dvs_plane = dv_data.aircraft.dNF
 
 # Center of pressure
 Cm   = nf_plane[5]	# Moment coefficient
@@ -136,7 +132,6 @@ println("Spiral Stability      γ: $γ")
 
 ## Plotting everything
 using Plots
-pyplot()
 
 wing_plan  = plot_wing(wing)
 htail_plan = plot_wing(htail)

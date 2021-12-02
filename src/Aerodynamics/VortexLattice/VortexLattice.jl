@@ -1,6 +1,7 @@
 module VortexLattice
 
-using LinearAlgebra
+# using LinearAlgebra
+import LinearAlgebra: norm, normalize, dot, ×
 using StaticArrays
 using Rotations
 using ComponentArrays
@@ -69,7 +70,6 @@ include("streamlines.jl")
 # System setups
 #==========================================================================================#
 
-# include("mutating_system.jl")
 include("system.jl")
 
 end

@@ -53,11 +53,10 @@ aircraft = ComponentArray(
                           wing  = make_horseshoes(wing_mesh),
                           htail = make_horseshoes(htail_mesh),
                           vtail = make_horseshoes(vtail_mesh)
-                         )
-
+                         );
 
 ## Case
-ac_name = "My Aircraft"
+ac_name = :aircraft
 ρ       = 1.225
 x_w     = wing_mac[1]
 ref     = [ x_w, 0., 0.]
@@ -71,14 +70,24 @@ refs    = References(S, b, c, ρ, ref)
     data = solve_case(aircraft, fs, refs;
                       print            = true, # Prints the results for only the aircraft
                       print_components = true, # Prints the results for all components
+                    #   finite_core      = true
                      );
 
-    CFs, CMs = surface_coefficients(data; axes = Wind())
-    FFs = farfield_coefficients(data)
+    # Compute dynamics
+    ax       = Stability()
+    Fs       = surface_forces(data)
+    Fs, Ms   = surface_dynamics(data; axes = ax) 
+    CFs, CMs = surface_coefficients(data; axes = ax)
+
+    nfs = nearfield_coefficients(data)
+    ffs = farfield_coefficients(data)
+
+    nf  = nearfield(data) 
+    ff  = farfield(data)
 end;
 
 ## Spanwise forces
-function span_loading(panels, CFs, Γs, V, c)
+ function lifting_line_loads(panels, CFs, Γs, V, c)
     CDis = @. getindex(CFs, 1)
     CYs  = @. getindex(CFs, 2)
     CLs  = @. getindex(CFs, 3)
@@ -97,9 +106,9 @@ wing_ys  = getindex.(hs_pts.wing[1,:], 2)
 htail_ys = getindex.(hs_pts.htail[1,:], 2)
 vtail_ys = getindex.(hs_pts.vtail[1,:], 2)
 
-wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings = span_loading(chord_panels(wing_mesh), CFs.wing, data.circulations.wing, V, c)
-htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings = span_loading(chord_panels(htail_mesh), CFs.htail, data.circulations.htail, V, c)
-vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = span_loading(chord_panels(vtail_mesh), CFs.vtail, data.circulations.vtail, V, c);
+wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, data.circulations.wing, V, c)
+htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings = lifting_line_loads(chord_panels(htail_mesh), CFs.htail, data.circulations.htail, V, c)
+vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = lifting_line_loads(chord_panels(vtail_mesh), CFs.vtail, data.circulations.vtail, V, c);
 
 ## Plotting
 using GLMakie
@@ -165,7 +174,7 @@ vtail_cp_points = extrapolate_point_mesh(cps.vtail)
 fig  = Figure(resolution = (1280, 720))
 
 scene = LScene(fig[1:4,1])
-ax1   = fig[1,2] = GLMakie.Axis(fig, ylabel = L"C_{D_i}", title = LS("Spanload Distributions"))
+ax1   = fig[1,2] = GLMakie.Axis(fig, ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
 ax2   = fig[2,2] = GLMakie.Axis(fig, ylabel = L"C_Y",)
 ax3   = fig[3,2] = GLMakie.Axis(fig, xlabel = L"y", ylabel = L"C_L")
 
@@ -194,7 +203,7 @@ m2 = poly!(scene, htail_mesh.cam_mesh[:], htail_cam_connec, color = htail_cp_poi
 m3 = poly!(scene, vtail_mesh.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
 
 # Airfoil meshes
-# wing_surf = surface_coordinates(wing_m, wing_mesh.n_span, 60)
+# wing_surf = surface_coordinates(wing_mesh, wing_mesh.n_span, 60)
 # surf_connec = triangle_connectivities(LinearIndices(wing_surf))
 # wing_surf_mesh = mesh(wing_surf[:], surf_connec)
 # w1 = wireframe!(scene, wing_surf_mesh.plot[1][], color = :grey, alpha = 0.1)
@@ -205,7 +214,7 @@ lines!(scene, plot_wing(htail))
 lines!(scene, plot_wing(vtail))
 
 # Streamlines
-# [ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]
+[ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]
 
 fig.scene
 

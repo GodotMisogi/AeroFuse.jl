@@ -201,8 +201,8 @@ all_horsies = [ new_horsies[:]; other_horsies[:] ]
 ## Aerodynamic forces and center locations
 U_opt      = freestream_to_cartesian(-V, α_opt, deg2rad(β))
 vlm_acs    = bound_leg_center.(new_horsies)
-vlm_forces = nearfield_forces(Γ_wing, new_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
-all_forces = nearfield_forces(Γ_opt, all_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
+vlm_forces = surface_forces(Γ_wing, new_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
+all_forces = surface_forces(Γ_opt, all_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
 
 ## New beams and loads
 new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)

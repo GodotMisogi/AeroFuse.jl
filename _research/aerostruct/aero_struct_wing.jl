@@ -150,7 +150,7 @@ new_normals    = panel_normal.(new_cam_panels)
 U_opt       = freestream_to_cartesian(-V, α_opt, deg2rad(β))
 new_horsies = Horseshoe.(new_panels, new_normals)
 vlm_acs     = bound_leg_center.(new_horsies)
-vlm_forces  = nearfield_forces(Γ_opts, new_horsies, Γ_opts, new_horsies, U_opt, Ω, ρ)
+vlm_forces  = surface_forces(Γ_opts, new_horsies, Γ_opts, new_horsies, U_opt, Ω, ρ)
 
 ## New beams and loads
 new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)

@@ -160,7 +160,7 @@ end
                              )
 
     ## Reference quantities
-    ac_name = "My Aircraft"
+    ac_name = :aircraft
     S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
     ρ       = 1.225
     ref     = [0.25c, 0., 0.]
@@ -171,14 +171,12 @@ end
 
     ## Stability case
     dv_data = solve_stability_case(aircraft, fs, refs;
-                                #    rho_ref   = ρ,
-                                #    r_ref     = ref,
-                                #    area_ref  = S,
-                                #    span_ref  = b,
-                                #    chord_ref = c,
-                                   name      = ac_name);
+                                   name = ac_name);
 
-    nfs, ffs, dvs = dv_data[ac_name]
+    dcf = dv_data[ac_name]
+    nfs = dcf.CFs[1:6]
+    ffs = dcf.CFs[7:end]
+    dvs = dcf.dCFs[1:6,:]
 
     nf_tests = [0.000258, -0.006642, 0.074301, -0.003435, 0.075511, 0.001563]
     ff_tests = [0.000375, -0.006685, 0.074281]

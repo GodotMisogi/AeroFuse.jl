@@ -27,7 +27,7 @@
 
 # if symmetry
 #   reflect_hs = reflect_xz.(horseshoes)
-#   geom_forces = [ nearfield_forces(Γs, reflect_hs, U, Ω, ρ)[end:-1:1];
-#   nearfield_forces(Γs, horseshoes, U, Ω, ρ) ]
+#   geom_forces = [ surface_forces(Γs, reflect_hs, U, Ω, ρ)[end:-1:1];
+#   surface_forces(Γs, horseshoes, U, Ω, ρ) ]
 #   geom_moments = moments([ reflect_hs[end:-1:1]; horseshoes ], geom_forces, r_ref)
 # else

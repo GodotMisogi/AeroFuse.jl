@@ -71,11 +71,6 @@ function solve_stability_case(aircraft, freestream :: Freestream, ref :: Referen
     function stab(x)
         fs   = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
         data = solve_case(aircraft, fs, ref,
-                        #   rho_ref   = rho_ref,
-                        #   r_ref     = r_ref,
-                        #   area_ref  = S,
-                        #   span_ref  = b,
-                        #   chord_ref = c,
                           name      = name)
 
         NFs = nearfield_coefficients(data)
@@ -89,26 +84,29 @@ function solve_stability_case(aircraft, freestream :: Freestream, ref :: Referen
     names     = [ reduce(vcat, keys(aircraft)); name ]
     num_comps = length(names)
 
-    y   = zeros(9, num_comps)
+    y       = zeros(9, num_comps)
     result  = DiffResults.JacobianResult(y, x)
     result  = ForwardDiff.jacobian!(result, stab, x)
 
     vars    = DiffResults.value(result)
     derivs  = DiffResults.jacobian(result)
 
-    # Dictionary assembly
-    ranges  = (1:num_comps) .* 9                      # Painful hacking
-    bounds  = zip([ 1; ranges[1:end-1] .+ 1], ranges) # Painful hacking
-    data    = OrderedDict(name => (vars[1:6, i], vars[7:end, i], derivs[first(inds):last(inds)-3,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds))
+    # Reshaping
+    data  = cat(vars, reshape(derivs, 9, num_comps, 5), dims = 3)
+    comps = @views NamedTuple(names[i] => ComponentArray(NF  = data[1:6,i,1],
+                                                         dNF = data[1:6,i,2:end], 
+                                                         FF  = data[7:end,i,1], 
+                                                         dFF = data[7:end,i,2:end]) 
+                              for i in axes(data, 2))
 
     # Printing
     if print_components
-        print_case.(Ref(data), names)
+        @views [ print_derivatives(comps[comp], comp) for comp in keys(comps) ]
     elseif print
-        print_case(data, name)
+        @views print_derivatives(comps[name], name)
     end
 
-    data
+    comps
 end
 
 
