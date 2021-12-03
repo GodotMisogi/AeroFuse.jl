@@ -7,7 +7,14 @@ kutta_joukowsky(ρ, Γ, V, l) = ρ * Γ * V × l
 
 Evaluate the induced velocity at a given location ``r``, by summing over the trailing legs' velocities of Horseshoes with vortex strengths ``\\Gamma``s pointing in the direction ``\\hat U``.
 """
-induced_trailing_velocity(r, horseshoes, Γs, U_hat) = sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+function induced_trailing_velocity(r, horseshoes, Γs, U_hat) 
+    # sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+    F = zeros(eltype(r), 3)
+    for (hs, Γ) in zip(horseshoes, Γs)
+        F += trailing_velocity(r, hs, Γ, U_hat)
+    end
+    F
+end
 
 """
     midpoint_velocity(r, Ω, horseshoes, Γs, U)
@@ -16,7 +23,7 @@ Evaluate the total velocity at a given location ``r`` by summing over the veloci
 """
 midpoint_velocity(r, horseshoes, Γs, U, Ω) = induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
 
-surface_velocity(hs, Γs, horseshoes, U, Ω) = @timeit "Surface Velocity" @views midpoint_velocity(bound_leg_center(hs), horseshoes, Γs, U, Ω)
+surface_velocity(hs, Γs, horseshoes, U, Ω) = midpoint_velocity(bound_leg_center(hs), horseshoes, Γs, U, Ω)
 
 surface_velocities(hs_comp, Γs, horseshoes, U, Ω) = map(hs -> surface_velocity(hs, Γs, horseshoes, U, Ω), hs_comp)
 

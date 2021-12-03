@@ -69,17 +69,19 @@ function aeromdao_steady_vlm()
     S, b, c = 9.0, 10.0, 0.9
     refs    = References(S, b, c, ρ, x_ref)
 
-    reset_timer!()
-    @timeit "Solving Case" data = solve_case(aircraft, fs, refs;)
+    # reset_timer!()
+    # @timeit "Solving Case" 
+    data = solve_case(aircraft, fs, refs;)
 
-    # CFs, CMs = surface_coefficients(data)
-    # FFs      = farfield_coefficients(data)
+    # @timeit "Computing Forces" Fs = surface_forces(data)
+    CFs, CMs = surface_coefficients(data)
+    FFs      = farfield_coefficients(data)
 
-    # nearfield(data), farfield(data)
-    print_timer()
+    nearfield(data), farfield(data)
+    # print_timer()
 end
 
-t1 = aeromdao_steady_vlm()
+t1 = @benchmark aeromdao_steady_vlm()
 
 ## BYU FLOW Lab tests: https://github.com/byuflowlab/VortexLattice.jl
 #=======================================================#

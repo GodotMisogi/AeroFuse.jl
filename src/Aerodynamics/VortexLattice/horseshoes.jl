@@ -122,7 +122,7 @@ function velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat, finite_core = fa
         ε = 0.1 * max(horseshoe.chord, width) # Wrong core size? Consider options...
         horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat, ε)
     else
-        @timeit "Velocity" horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
+        horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
     end
 end
 

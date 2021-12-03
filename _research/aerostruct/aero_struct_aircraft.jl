@@ -86,7 +86,7 @@ vlm_forces = Fs.wing
 
 # FEM mesh
 fem_w    = 0.40
-fem_mesh = make_beam_mesh(vlm_mesh, fem_w)
+fem_mesh = make_beam_mesh(wing_mesh.vlm_mesh, fem_w)
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -118,7 +118,7 @@ t     = [ reverse(ts); ts ]
 tubes    = Tube.(Ref(aluminum), Ls, r, t)
 
 ## Stiffness matrices, loads and constraints
-Ks        = build_big_stiffy(tubes, fem_mesh, vlm_mesh)
+Ks        = build_big_stiffy(tubes, fem_mesh, wing_mesh.vlm_mesh)
 cons      = [length(fem_mesh) ÷ 2]
 stiffy    = build_stiffness_matrix(Ks, cons)
 fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
@@ -130,13 +130,17 @@ dx = solve_cantilever_beam(Ks, fem_loads, cons)
 ## Aerostructural residual
 #==========================================================================================#
 
-other_horsies = [ htail_horsies[:]; vtail_horsies[:] ]
+other_horsies = ComponentVector(
+                                htail = data.horseshoes.htail,
+                                vtail = data.horseshoes.vtail
+                               )
 
 # Set up initial guess and function
 solve_aerostructural_residual!(R, x) =
     solve_coupled_residual!(R, x,
                             V, deg2rad(β), ρ, Ω, # Aerodynamic state
-                            vlm_mesh, cam_mesh,  # Aerodynamic variables
+                            wing_mesh.vlm_mesh,  # VLM mesh
+                            wing_mesh.cam_mesh,  # Camber mesh
                             other_horsies,       # Other aerodynamic parameters
                             fem_mesh, stiffy,    # Structural variables
                             weight, load_factor) # Load factor variables
@@ -154,7 +158,7 @@ reset_timer!()
             method         = :newton,
             show_trace     = true,
             # extended_trace = true,
-            autodiff       = :forward,
+            # autodiff       = :forward,
            );
 print_timer()
 
