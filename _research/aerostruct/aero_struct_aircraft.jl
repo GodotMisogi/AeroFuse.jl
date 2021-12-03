@@ -46,59 +46,43 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 ## Meshing and assembly
 
 # Wing
-wing_n_span   = [8, 3]
-wing_n_chord  = 6
-vlm_mesh      = chord_coordinates(wing, wing_n_span, wing_n_chord)
-cam_mesh      = camber_coordinates(wing, wing_n_span, wing_n_chord)
-wing_panels   = make_panels(vlm_mesh)
-wing_cambers  = make_panels(cam_mesh)
-wing_normals  = panel_normal.(wing_cambers)
-
-# Other panels
-htail_panels, htail_normals = panel_wing(htail, 6, 6)
-vtail_panels, vtail_normals = panel_wing(vtail, 6, 6)
-
-# Horseshoes
-wing_horsies  = Horseshoe.(wing_panels,  wing_normals)
-htail_horsies = Horseshoe.(htail_panels,  htail_normals)
-vtail_horsies = Horseshoe.(vtail_panels,  vtail_normals)
+wing_mesh  = WingMesh(wing, [8,3], 6)
+htail_mesh = WingMesh(htail, [6], 6)
+vtail_mesh = WingMesh(vtail, [6], 6)
 
 # Aircraft assembly
 aircraft = ComponentArray(
-                          wing    = wing_horsies,
-                          htail   = htail_horsies,
-                          vtail   = vtail_horsies,
+                          wing    = make_horseshoes(wing_mesh),
+                          htail   = make_horseshoes(htail_mesh),
+                          vtail   = make_horseshoes(vtail_mesh)
                         );
 
-wing_mac = mean_aerodynamic_center(wing);
+x_w, y_w, z_w = swing_mac = mean_aerodynamic_center(wing);
 
 ## Aerodynamic case
-ac_name = "My Aircraft"
+ac_name = :aircraft
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 0.98
-ref     = [wing_mac[1], 0., 0.]
+ref     = [ x_w, 0., 0.]
 V, α, β = 25.0, 3.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
+refs    = References(S, b, c, ρ, ref)
 
 ## Solve aerodynamic case for initial vector
 @time data =
-    solve_case(aircraft, fs;
-               rho_ref          = ρ,         # Reference density
-               r_ref            = ref,       # Reference point for moments
-               area_ref         = S,         # Reference area
-               span_ref         = b,         # Reference span
-               chord_ref        = c,         # Reference chord
+    solve_case(aircraft, fs, refs;
                name             = ac_name,   # Aircraft name
                print_components = true,      # Prints the results for each component
               );
 
 ## Data collection
-Γs = circulations(data)
+Γs = data.circulations
+Fs = surface_forces(data)
 
 ## Aerodynamic forces and center locations
-vlm_acs    = bound_leg_center.(wing_horsies)
-vlm_forces = force.(data.wing.CFs, dynamic_pressure(ρ, V), S)
+vlm_acs    = bound_leg_center.(data.horseshoes.wing)
+vlm_forces = Fs.wing
 
 # FEM mesh
 fem_w    = 0.40
