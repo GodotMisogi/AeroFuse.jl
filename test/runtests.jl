@@ -174,9 +174,9 @@ end
                                    name = ac_name);
 
     dcf = dv_data[ac_name]
-    nfs = dcf.CFs[1:6]
-    ffs = dcf.CFs[7:end]
-    dvs = dcf.dCFs[1:6,:]
+    nfs = dcf.NF
+    ffs = dcf.FF
+    dvs = dcf.dNF
 
     nf_tests = [0.000258, -0.006642, 0.074301, -0.003435, 0.075511, 0.001563]
     ff_tests = [0.000375, -0.006685, 0.074281]
