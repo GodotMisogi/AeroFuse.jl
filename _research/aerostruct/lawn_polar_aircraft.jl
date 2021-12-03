@@ -116,11 +116,12 @@ refs     = References(S, b, c, ρ, ref)
               );
 
 ## Data collection
-@time CFs, CMs = surface_coefficients(system);
+# @time CFs, CMs = surface_coefficients(system);
+Fs = surface_forces(system)
 
 ## Wing FEM setup
 vlm_acs_wing    = bound_leg_center.(system.horseshoes.wing)
-vlm_forces_wing = force.(CFs.wing, q, S)
+vlm_forces_wing = Fs.wing
 
 wing_beam_ratio = 0.40
 wing_fem_mesh   = make_beam_mesh(wing_mesh.vlm_mesh, wing_beam_ratio)
@@ -148,8 +149,8 @@ dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 Δx_wing = [ zeros(6); dx_wing[:] ]
 
 ## Horizontal tail FEM setup
-vlm_acs_htail    = bound_leg_center.(system.htail.horseshoes)
-vlm_forces_htail = force.(CFs.htail, q, S)
+vlm_acs_htail    = bound_leg_center.(system.horseshoes.htail)
+vlm_forces_htail = Fs.htail
 
 htail_beam_ratio = 0.35
 htail_fem_mesh   = make_beam_mesh(htail_mesh.vlm_mesh, htail_beam_ratio)
@@ -171,8 +172,8 @@ dx_htail = solve_cantilever_beam(Ks_htail, fem_loads_htail, cons_htail)
 Δx_htail = [ zeros(6); dx_htail[:] ]
 
 ## Vertical tail FEM setup
-vlm_acs_vtail    = bound_leg_center.(system.vtail.horseshoes)
-vlm_forces_vtail = force.(system.vtail.CFs, q, S)
+vlm_acs_vtail    = bound_leg_center.(system.horseshoes.vtail)
+vlm_forces_vtail = Fs.vtail
 
 vtail_beam_ratio = 0.35
 vtail_fem_mesh   = make_beam_mesh(vtail_mesh.vlm_mesh, vtail_beam_ratio)
@@ -208,25 +209,21 @@ stiffy = blockdiag(stiffy_wing, stiffy_htail, stiffy_vtail)
 ## Aerostructural residual
 #==========================================================================================#
 
-vlm_meshes  = ComponentArray(
-                             wing  = wing_mesh.vlm_mesh,
-                             htail = htail_mesh.vlm_mesh,
-                             vtail = vtail_mesh.vlm_mesh
-                            )
-cam_meshes  = [ wing_cam_mesh, htail_cam_mesh, vtail_cam_mesh ]
+vlm_meshes  = [ wing_mesh.vlm_mesh, htail_mesh.vlm_mesh, vtail_mesh.vlm_mesh ]
+cam_meshes  = [ wing_mesh.cam_mesh, htail_mesh.cam_mesh, vtail_mesh.cam_mesh ]
 fem_meshes  = [ wing_fem_mesh, htail_fem_mesh, vtail_fem_mesh ]
 fem_weights = [ wing_beam_ratio, htail_beam_ratio, vtail_beam_ratio ]
 syms        = [ :wing, :htail, :vtail ]
 
-other_horsies = [ atail_l_horsies[:]; atail_r_horsies[:] ]
+other_horsies = [ system.horseshoes.atail_l[:]; system.horseshoes.atail_r[:] ]
 
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = (
-                                    wing    = system.wing.circulations, 
-                                    htail   = system.htail.circulations, 
-                                    vtail   = system.vtail.circulations, 
-                                    atail_l = system.atail_l.circulations, 
-                                    atail_r = system.atail_r.circulations
+                                    wing    = system.circulations.wing,
+                                    htail   = system.circulations.htail,
+                                    vtail   = system.circulations.vtail,
+                                    atail_l = system.circulations.atail_l,
+                                    atail_r = system.circulations.atail_r
                                    ),
                     structures   = (
                                     wing  = Δx_wing, 
@@ -251,7 +248,7 @@ reset_timer!()
             show_trace     = true,
             # extended_trace = true,
             store_trace    = true,
-            autodiff       = :forward,
+            # autodiff       = :forward,
            );
 print_timer()
 
