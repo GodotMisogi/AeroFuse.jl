@@ -5,6 +5,7 @@ import LinearAlgebra: norm, normalize, dot, ×
 using StaticArrays
 using Rotations
 using ComponentArrays
+using TimerOutputs
 
 ## Package imports
 #==========================================================================================#

@@ -16,7 +16,7 @@ Evaluate the total velocity at a given location ``r`` by summing over the veloci
 """
 midpoint_velocity(r, horseshoes, Γs, U, Ω) = induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
 
-surface_velocity(hs, Γs, horseshoes, U, Ω) = @views midpoint_velocity(bound_leg_center(hs), horseshoes, Γs, U, Ω)
+surface_velocity(hs, Γs, horseshoes, U, Ω) = @timeit "Surface Velocity" @views midpoint_velocity(bound_leg_center(hs), horseshoes, Γs, U, Ω)
 
 surface_velocities(hs_comp, Γs, horseshoes, U, Ω) = map(hs -> surface_velocity(hs, Γs, horseshoes, U, Ω), hs_comp)
 
@@ -27,8 +27,6 @@ Compute the surface forces via the local Kutta-Jowkowski theorem given an array 
 """
 
 surface_forces(Γ_comp, hs_comp, Γs, horseshoes, U, Ω, ρ) = kutta_joukowsky.(ρ, Γ_comp, surface_velocity.(hs_comp, Ref(Γs), Ref(horseshoes), Ref(U), Ref(Ω)), bound_leg_vector.(hs_comp))
-
-#map((Γ, hs, v) -> kutta_joukowsky(ρ, Γ, v, bound_leg_vector(hs)), Γ_comp, horseshoes, surface_velocities(hs_comp, Γs, horseshoes, U, Ω))
 
 surface_forces(Γs, horseshoes, U, Ω, ρ) = surface_forces(Γs, horseshoes, Γs, horseshoes, U, Ω, ρ)
 

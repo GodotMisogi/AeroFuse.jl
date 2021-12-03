@@ -1,6 +1,7 @@
 ## Aircraft analysis benchmarking
 using BenchmarkTools
 using ComponentArrays
+using TimerOutputs
 
 # All subsequent analyses use no symmetry tricks for performance as AeroMDAO hasn't implemented them and apples must be compared to apples.
 
@@ -68,15 +69,17 @@ function aeromdao_steady_vlm()
     S, b, c = 9.0, 10.0, 0.9
     refs    = References(S, b, c, ρ, x_ref)
 
-    data = solve_case(aircraft, fs, refs;)
+    reset_timer!()
+    @timeit "Solving Case" data = solve_case(aircraft, fs, refs;)
 
-    CFs, CMs = surface_coefficients(data)
-    FFs      = farfield_coefficients(data)
+    # CFs, CMs = surface_coefficients(data)
+    # FFs      = farfield_coefficients(data)
 
-    nearfield(data), farfield(data)
+    # nearfield(data), farfield(data)
+    print_timer()
 end
 
-t1 = @benchmark aeromdao_steady_vlm()
+t1 = aeromdao_steady_vlm()
 
 ## BYU FLOW Lab tests: https://github.com/byuflowlab/VortexLattice.jl
 #=======================================================#
