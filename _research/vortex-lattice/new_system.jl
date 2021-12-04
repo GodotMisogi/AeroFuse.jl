@@ -3,6 +3,7 @@ using Revise
 using AeroMDAO
 using ComponentArrays
 using LinearAlgebra
+using SplitApplyCombine
 
 ## Surfaces
 
@@ -45,9 +46,15 @@ print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
 ## WingMesh type
-wing_mesh  = WingMesh(wing, [12], 6)
-htail_mesh = WingMesh(htail, [6], 6)
-vtail_mesh = WingMesh(vtail, [6], 6)
+wing_mesh  = WingMesh(wing, [12], 6, 
+                    #   span_spacing = Cosine()
+                     )
+htail_mesh = WingMesh(htail, [6], 6, 
+                    #   span_spacing = Cosine()
+                     )
+vtail_mesh = WingMesh(vtail, [6], 6, 
+                    #   span_spacing = Cosine()
+                     )
 
 aircraft = ComponentArray(
                           wing  = make_horseshoes(wing_mesh),
@@ -86,28 +93,32 @@ refs    = References(S, b, c, ρ, ref)
 end;
 
 ## Spanwise forces
-function lifting_line_loads(panels, CFs, Γs, V, c)
-    CDis = @. getindex(CFs, 1)
-    CYs  = @. getindex(CFs, 2)
-    CLs  = @. getindex(CFs, 3)
+using StaticArrays
+function lifting_line_loads(panels, CFs, S)
+    CFs  = combinedimsview(CFs)
+    CDis = @views CFs[1,:,:]
+    CYs  = @views CFs[2,:,:]
+    CLs  = @views CFs[3,:,:]
 
     area_scale  = S ./ sum(panel_area, panels, dims = 1)[:]
     span_CDis   = sum(CDis, dims = 1)[:] .* area_scale
     span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
     span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
-    CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * V * c)
 
-    span_CDis, span_CYs, span_CLs, CL_loadings
+    # ys = sum(x -> getindex(midpoint(x), 2), panels, dims = 1) 
+
+    SVector.(span_CDis, span_CYs, span_CLs)
 end
 
 hs_pts   = horseshoe_point.(data.horseshoes)
-wing_ys  = getindex.(hs_pts.wing[1,:], 2)
-htail_ys = getindex.(hs_pts.htail[1,:], 2)
-vtail_ys = getindex.(hs_pts.vtail[1,:], 2)
+wing_ys  = @views getindex.(hs_pts.wing[1,:],  2)
+htail_ys = @views getindex.(hs_pts.htail[1,:], 2)
+vtail_ys = @views getindex.(hs_pts.vtail[1,:], 2)
 
-wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings     = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, data.circulations.wing, V, c)
-htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings = lifting_line_loads(chord_panels(htail_mesh), CFs.htail, data.circulations.htail, V, c)
-vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings = lifting_line_loads(chord_panels(vtail_mesh), CFs.vtail, data.circulations.vtail, V, c);
+##
+wing_ll  = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, S)
+htail_ll = lifting_line_loads(chord_panels(htail_mesh), CFs.htail, S)
+vtail_ll = lifting_line_loads(chord_panels(vtail_mesh), CFs.vtail, S);
 
 ## Plotting
 using GLMakie
@@ -124,9 +135,9 @@ const LS = LaTeXString
 # Spanwise distribution
 span_points = 30
 init        = chop_leading_edge(wing, span_points)
-dx, dy, dz  = 0, 0, 1e-3
-seed        = [ init .+ Ref([dx, dy,  dz])
-                init .+ Ref([dx, dy, -dz]) ];
+dx, dy, dz  = 0, 0, 1e-1
+seed        = init # [ init .+ Ref([dx, dy,  dz])
+                   #   init .+ Ref([dx, dy, -dz]) ];
 
 distance = 5
 num_stream_points = 100
@@ -173,27 +184,28 @@ vtail_cp_points = extrapolate_point_mesh(cps.vtail)
 fig  = Figure(resolution = (1280, 720))
 
 scene = LScene(fig[1:4,1])
-ax1   = fig[1,2] = GLMakie.Axis(fig, ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
-ax2   = fig[2,2] = GLMakie.Axis(fig, ylabel = L"C_Y",)
-ax3   = fig[3,2] = GLMakie.Axis(fig, xlabel = L"y", ylabel = L"C_L")
+ax    = fig[1:4,2] = GridLayout()
+
+ax_cd = GLMakie.Axis(ax[1,1:2], ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
+ax_cy = GLMakie.Axis(ax[2,1:2], ylabel = L"C_Y",)
+ax_cl = GLMakie.Axis(ax[3,1:2], xlabel = L"y", ylabel = L"C_L")
 
 # Spanload plot
-function plot_spanload!(fig, ys, CDis, CYs, CLs, CL_loadings, name = "Wing")
-    lines!(fig[1,2], ys, CDis, label = name,)
-    lines!(fig[2,2], ys, CYs, label = name,)
-    lines!(fig[3,2], ys, CLs, label = name,)
-    # lines!(fig[3,2], ys, CL_loadings, label = "$name Loading")
+function plot_spanload!(ax, ys, CFs, name = "Wing")
+    CFs  = combinedimsview(CFs)
+    @views lines!(ax[1,1:2], ys, CFs[1,:], label = name,)
+    @views lines!(ax[2,1:2], ys, CFs[2,:], label = name,)
+    @views lines!(ax[3,1:2], ys, CFs[3,:], label = name,)
 
     nothing
 end
 
-plot_spanload!(fig, wing_ys, wing_CDis, wing_CYs, wing_CLs, wing_CL_loadings, LS("Wing"))
-plot_spanload!(fig, htail_ys, htail_CDis, htail_CYs, htail_CLs, htail_CL_loadings, LS("Horizontal Tail"))
-plot_spanload!(fig, vtail_ys, vtail_CDis, vtail_CYs, vtail_CLs, vtail_CL_loadings, LS("Vertical Tail"))
+plot_spanload!(ax, wing_ys, wing_ll, LS("Wing"))
+plot_spanload!(ax, htail_ys, htail_ll, LS("Horizontal Tail"))
+plot_spanload!(ax, vtail_ys, vtail_ll, LS("Vertical Tail"))
 
 # Legend
-axl = fig[4,2] = GridLayout()
-Legend(fig[4,1:2], ax3)
+Legend(ax[4,1:2], ax_cl)
 fig[0, :] = Label(fig, LS("Vortex Lattice Analysis"), textsize = 20)
 
 # Surface pressure meshes
@@ -211,6 +223,10 @@ m3 = poly!(scene, vtail_mesh.cam_mesh[:], vtail_cam_connec, color = vtail_cp_poi
 lines!(scene, plot_wing(wing))
 lines!(scene, plot_wing(htail))
 lines!(scene, plot_wing(vtail))
+
+l1 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(wing_mesh.cam_mesh)) ]
+l2 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(htail_mesh.cam_mesh)) ]
+l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(vtail_mesh.cam_mesh)) ]
 
 # Streamlines
 [ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]

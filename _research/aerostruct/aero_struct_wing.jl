@@ -38,7 +38,7 @@ aircraft = ComponentVector(wing = make_horseshoes(wing_mesh));
 ## Aerodynamic case
 ρ       = 0.98
 ref     = [ x_w, 0., 0. ]
-V, α, β = 25.0, 5.0, 15.0
+V, α, β = 25.0, 5.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 refs    = References(S, b, c, ρ, ref)
@@ -131,9 +131,9 @@ function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
     for i = 1:max_iters
         ForwardDiff.jacobian!(∂R∂x, f!, R, x)
         dx   = ∂R∂x \ -R
-        if ε < tol return x end
+        if ε <= tol return x end
         ε    = LinearAlgebra.norm(dx)
-        # @show (i, ε)
+        @show (i, ε)
         x  .+= dx
         i   += 1
     end
@@ -157,27 +157,30 @@ print_timer()
 ## Get zero
 x_opt = res_aerostruct.zero
 Γ_opt = x_opt.aerodynamics
-δ_opt = x_opt.structures[7:end]
+δ_opt = x_opt.structures.displacement
 α_opt = x_opt.load_factor
 
 ## Compute displacements
-dx  = @views reshape(δ_opt, 6, length(fem_mesh))
+dx  = δ_opt
 dxs = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
 Ts  = rotation_matrix(dx[4:6,:])
 
 ## Perturb VLM and camber meshes
 new_vlm_mesh = transfer_displacements(dxs, Ts, wing_mesh.vlm_mesh, fem_mesh)
-new_panels   = make_panels(new_vlm_mesh)
+new_cam_mesh = transfer_displacements(dxs, Ts, wing_mesh.cam_mesh, fem_mesh)
 
-new_cam_mesh   = transfer_displacements(dxs, Ts, wing_mesh.cam_mesh, fem_mesh)
-new_cam_panels = make_panels(new_cam_mesh)
-new_normals    = panel_normal.(new_cam_panels)
+# new_panels     = make_panels(new_vlm_meh)
+# new_cam_panels = make_panels(new_cam_mesh)
+# new_normals    = panel_normal.(new_cam_panels)
+
+new_aircraft = ComponentArray(wing = Horseshoe.(make_panels(new_vlm_mesh), panel_normal.(make_panels(new_cam_mesh))))
+new_fs       = Freestream(V, rad2deg(α_opt), β, Ω)
+system       = solve_case(new_aircraft, new_fs, refs);
 
 ## Aerodynamic forces and center locations
-U_opt       = freestream_to_cartesian(-V, α_opt, deg2rad(β))
-new_horsies = Horseshoe.(new_panels, new_normals)
-vlm_acs     = bound_leg_center.(new_horsies)
-vlm_forces  = surface_forces(Γ_opt, new_horsies, U_opt, Ω, ρ)
+U_opt       = aircraft_velocity(new_fs)
+vlm_acs     = bound_leg_center.(system.horseshoes.wing)
+vlm_forces  = surface_forces(system).wing
 
 ## New beams and loads
 new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
@@ -206,8 +209,7 @@ rename!(df, [:Fx, :Fy, :Fz, :Mx, :My, :Mz, :dx, :dy, :dz, :θx, :θy, :θz])
 #==========================================================================================#
 
 ## Get coefficients
-nf_coeffs = nearfield(data)
-CD, CL    = nf_coeffs[[1,3]]
+CD, CY, CL, Cl, Cm, Cn = nearfield(system)
 
 ## Compute fuel burn using Bréguet equation
 fuel_fractions(ffs) = 1 - prod(ffs)
@@ -237,16 +239,16 @@ ac_plot    = combinedimsview(vlm_acs[:])
 force_plot = combinedimsview(vlm_forces[:])
 
 # Cambers
-cam_plot     = plot_panels(cam_panels)
-new_cam_plot = plot_panels(new_cam_panels)
+# cam_plot     = plot_panels(cam_panels)
+# new_cam_plot = plot_panels(new_cam_panels)
 
 # Displacements
 new_vlm_mesh_plot = combinedimsview(new_vlm_mesh)
-new_panel_plot    = plot_panels(new_panels)
+# new_panel_plot    = plot_panels(new_panels)
 
 # Axes
 xs_plot   = combinedimsview((fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
-axes      = axis_transformation(fem_mesh, wing_mesh.vlm_mesh)
+axes      = axis_transformation(fem_mesh, new_vlm_mesh)
 axes_plot = combinedimsview(axes)
 cs_plot   = axes_plot[:,1,:]
 ss_plot   = axes_plot[:,2,:]
@@ -257,45 +259,160 @@ wing_plan  = plot_wing(wing)
 nwing_plan = plot_wing(new_cam_mesh)
 
 # Streamlines
-seed    = chop_coordinates(new_cam_mesh[end,:], 10)
-streams = plot_streams(fs, seed, new_horsies, Γ_opt, 2.5, 100);
-
-b = span(wing)
+seed    = chop_coordinates(new_cam_mesh[1,:], 3)
+streams = plot_streams(new_fs, seed, system.horseshoes, Γ_opt, 1, 100);
 
 ## Plot
-using Plots
 using LaTeXStrings
+using GeometryTypes
 
-# pyplot(dpi = 300)
-# pgfplotsx(size = (900, 600))
+using CairoMakie
+CairoMakie.activate!(type = "svg")
+# using GLMakie
+# GLMakie.activate!()
 
-aircraft_plot =
-    plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
-         camera = (-85, 20),
-         xlim = (-b/4, 3b/4),
-     #     ylim = (-b/2, b/2),
-         zlim = (-b/8, b/4),
-         bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
-         legend = :bottomright,
-         title = "Coupled Aerostructural Analysis"
-        )
+const LS = LaTeXString
 
-# Panels
-[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
-[ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7), label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
+## Extrapolating surface values to neighbouring points
+function extrapolate_point_mesh(mesh)
+    m, n   = size(mesh)
+    points = zeros(eltype(mesh), m + 1, n + 1)
 
-# Planform
-plot!(wing_plan,  color = :gray, label = "Original Wing Planform", linestyle = :solid)
-plot!(nwing_plan, color = :blue, label = "Deflected Wing Planform")
+    # The quantities are measured at the bound leg (0.25×)
+    @views points[1:end-1,1:end-1] += 0.75 * mesh / 2
+    @views points[1:end-1,2:end]   += 0.75 * mesh / 2
+    @views points[2:end,1:end-1]   += 0.25 * mesh / 2
+    @views points[2:end,2:end]     += 0.25 * mesh / 2
 
-# Beams
-thickness = 2.5
-r_norm = [ r; r[end]] / maximum(r) * thickness
-plot!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:], color = :black, label = "Original Beam", linestyle = :solid, linewidth = r_norm)
-plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_norms, 0.5, 0.6, 1.0), label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_norm)
+    points
+end
+
+## Surface pressure coefficients
+CFs, CMs         = surface_coefficients(data; axes = Wind())
+new_CFs, new_CMs = surface_coefficients(system; axes = Wind())
+
+cps     = norm.(CFs) * S
+new_cps = norm.(new_CFs) * S
+
+wing_cp_points     = extrapolate_point_mesh(cps.wing)
+new_wing_cp_points = extrapolate_point_mesh(new_cps.wing)
+
+## Spanwise loads
+function lifting_line_loads(panels, CFs, S)
+    CFs  = combinedimsview(CFs)
+    CDis = @views CFs[1,:,:]
+    CYs  = @views CFs[2,:,:]
+    CLs  = @views CFs[3,:,:]
+
+    area_scale  = S ./ sum(panel_area, panels, dims = 1)[:]
+    span_CDis   = sum(CDis, dims = 1)[:] .* area_scale
+    span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
+    span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
+
+    # ys = sum(x -> getindex(midpoint(x), 2), panels, dims = 1) 
+
+    SVector.(span_CDis, span_CYs, span_CLs)
+end
+
+cl_loading(Γs, V, c) = vec(sum(Γs, dims = 1)) / (0.5 * V * c)
+
+hs_pts      = horseshoe_point.(data.horseshoes)
+wing_ys     = @view combinedimsview(hs_pts.wing[1,:])[2,:]
+
+new_hs_pts  = horseshoe_point.(system.horseshoes)
+new_wing_ys = @view combinedimsview(new_hs_pts.wing[1,:])[2,:]
+
+wing_ll     = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, S)
+
+new_wing_ll = lifting_line_loads(make_panels(new_vlm_mesh), new_CFs.wing, S)
+
+## Mesh connectivities
+triangle_connectivities(inds) = @views [ inds[1:end-1,1:end-1][:] inds[1:end-1,2:end][:]   inds[2:end,2:end][:]   ;
+                                           inds[2:end,2:end][:]   inds[2:end,1:end-1][:] inds[1:end-1,1:end-1][:] ]
+
+wing_cam_connec     = triangle_connectivities(LinearIndices(wing_mesh.cam_mesh))
+new_wing_cam_connec = triangle_connectivities(LinearIndices(new_cam_mesh))
+
+## Figure plot
+fig   = Figure(resolution = (1280, 720))
+
+scene = LScene(fig[1:4,1])
+ax    = fig[1:4,2] = GridLayout()
+
+ax_cd = GLMakie.Axis(ax[1,1:2], ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
+ax_cy = GLMakie.Axis(ax[2,1:2], ylabel = L"C_Y",)
+ax_cl = GLMakie.Axis(ax[3,1:2], xlabel = L"y", ylabel = L"C_L")
+
+# Spanload plot
+function plot_spanload!(ax, ys, CFs, name = "Wing")
+    CFs  = combinedimsview(CFs)
+    @views lines!(ax[1,1:2], ys, CFs[1,:], label = name,)
+    @views lines!(ax[2,1:2], ys, CFs[2,:], label = name,)
+    @views lines!(ax[3,1:2], ys, CFs[3,:], label = name,)
+
+    nothing
+end
+
+plot_spanload!(ax, wing_ys, wing_ll, LS("Wing"))
+plot_spanload!(ax, new_wing_ys, new_wing_ll, LS("Deflected Wing"))
+
+# Meshes
+m1 = poly!(scene, wing_mesh.cam_mesh[:], wing_cam_connec, color = wing_cp_points[:], shading = true, transparency = true)
+m2 = poly!(scene, new_cam_mesh[:], new_wing_cam_connec,  color = new_wing_cp_points[:])
+
+# Borders
+# lines!(scene, plot_wing(wing))
+# l1 = [ lines!(scene, pts, color = :grey, transparency = true) for pts in plot_panels(make_panels(wing_mesh.cam_mesh)) ]
+# l2 = [ lines!(scene, pts, color = :grey, transparency = true) for pts in plot_panels(make_panels(new_cam_mesh)) ]
 
 # Streamlines
-[ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(eachcol(streams)) ]
+[ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]
+
+cam = cam3d!(scene.scene)
+
+leg = Legend(ax[4,1:2], ax_cl)
+leg.tellwidth = true
+
+fig[0, :] = Label(fig, LS("Aerostructural Analysis"), textsize = 20)
+
+fig
+##
+save("plots/AerostructWingMakie.pdf", fig)
+
+## Plot
+# using Plots
+# using LaTeXStrings
+
+# # pyplot(dpi = 300)
+# # pgfplotsx(size = (900, 600))
+
+# aircraft_plot =
+#     plot(xaxis = L"$x$", yaxis = L"$y$", zaxis = L"$z$",
+#          camera = (-85, 20),
+#          xlim = (-b/4, 3b/4),
+#      #     ylim = (-b/2, b/2),
+#          zlim = (-b/8, b/4),
+#          bg_inside = RGBA(0.96, 0.96, 0.96, 1.0),
+#          legend = :bottomright,
+#          title = "Coupled Aerostructural Analysis"
+#         )
+
+# # Panels
+# [ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
+# [ plot!(pans, color = RGBA(0.5, 0.5, 0.8, 0.7), label = ifelse(i == 1, "Deflected Wing Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
+
+# # Planform
+# plot!(wing_plan,  color = :gray, label = "Original Wing Planform", linestyle = :solid)
+# plot!(nwing_plan, color = :blue, label = "Deflected Wing Planform")
+
+# # Beams
+# thickness = 2.5
+# r_norm = [ r; r[end]] / maximum(r) * thickness
+# plot!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:], color = :black, label = "Original Beam", linestyle = :solid, linewidth = r_norm)
+# plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_norms, 0.5, 0.6, 1.0), label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_norm)
+
+# # Streamlines
+# [ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(eachcol(streams)) ]
 
 # Forces
 # quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
@@ -318,4 +435,4 @@ plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_
 #         color = :red, label = :none)
 
 # savefig(aircraft_plot, "plots/AerostructWing.pdf")
-plot!()
+# plot!()
