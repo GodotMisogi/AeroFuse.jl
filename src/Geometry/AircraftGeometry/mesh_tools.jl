@@ -40,13 +40,3 @@ function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_num, s
     # Chop up spanwise sections
     chop_spans(foil_coords, span_num, spacings, flip)
 end
-
-function interpolate_grid(mesh, f_interp)
-    
-     mapslices(mesh, dims = 1:2) do 
-
-
-        
-     end
-
-end

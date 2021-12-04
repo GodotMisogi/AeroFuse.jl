@@ -170,26 +170,28 @@ panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer
 ## Meshing type for convenience
 #==========================================================================================#
 
-mutable struct WingMesh{M <: AbstractWing, N <: Integer, P <: Integer, Q, R} <: AbstractWing
-    surf     :: M
-    n_span   :: Vector{N}
-    n_chord  :: P
-    vlm_mesh :: Q
-    cam_mesh :: R
+mutable struct WingMesh{M <: AbstractWing, N <: Integer, O <: Integer, P, Q, R, S} <: AbstractWing
+    surf          :: M
+    num_span      :: Vector{N}
+    num_chord     :: O
+    chord_spacing :: P
+    span_spacing  :: Q
+    vlm_mesh      :: R
+    cam_mesh      :: S
 end
 
-function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: P) where {M <: AbstractWing, N <: Integer, P <: Integer} 
-    vlm_mesh = chord_coordinates(surf, n_span, n_chord)
-    cam_mesh = camber_coordinates(surf, n_span, n_chord)
-    WingMesh{M,N,P,typeof(vlm_mesh),typeof(cam_mesh)}(surf, n_span, n_chord, vlm_mesh, cam_mesh)
+function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: O; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surf)) where {M <: AbstractWing, N <: Integer, O <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}} 
+    vlm_mesh =  chord_coordinates(surf, n_span, n_chord; spacings = span_spacing)
+    cam_mesh = camber_coordinates(surf, n_span, n_chord; spacings = span_spacing)
+    WingMesh{M,N,O,P,Q,typeof(vlm_mesh),typeof(cam_mesh)}(surf, n_span, n_chord, chord_spacing, span_spacing, vlm_mesh, cam_mesh)
 end
 
 ##
-chord_coordinates(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord) = chord_coordinates(wing.surf, n_span, n_chord)
-camber_coordinates(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord) = camber_coordinates(wing.surf, n_span, n_chord)
-surface_coordinates(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord) = surface_coordinates(wing.surf, n_span, n_chord)
+chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = chord_coordinates(wing.surf, n_span, n_chord)
+camber_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = camber_coordinates(wing.surf, n_span, n_chord)
+surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = surface_coordinates(wing.surf, n_span, n_chord)
 
-surface_panels(wing :: WingMesh, n_span = wing.n_span, n_chord = wing.n_chord)  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
+surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
 
 chord_panels(wing :: WingMesh)    = make_panels(wing.vlm_mesh)
 camber_panels(wing :: WingMesh)   = make_panels(wing.cam_mesh)

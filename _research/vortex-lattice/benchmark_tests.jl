@@ -41,7 +41,9 @@ function aeromdao_steady_vlm()
                      angle     = 90.,
                      axis      = [1., 0., 0.])
 
-    wing_panels, wing_normals   = panel_wing(wing, 20, 10, spacing = Cosine())
+    wing_panels, wing_normals   = panel_wing(wing, 20, 10, 
+                                             spacing = Cosine()
+                                            )
 
     htail_panels, htail_normals = panel_wing(htail, 12, 6;
                                              spacing  = Cosine()
@@ -107,8 +109,8 @@ function byu_steady_vlm()
     phi = [0.0, 0.0]
     ns = 20
     nc = 10
-    spacing_s = Cosine()
-    spacing_c = Cosine()
+    spacing_s = VortexLattice.Cosine()
+    spacing_c = VortexLattice.Cosine()
     mirror = true
 
     # horizontal stabilizer
@@ -120,8 +122,8 @@ function byu_steady_vlm()
     phi_h = [0.0, 0.0]
     ns_h = 12
     nc_h = 6
-    spacing_s_h = Cosine()
-    spacing_c_h = Cosine()
+    spacing_s_h = VortexLattice.Cosine()
+    spacing_c_h = VortexLattice.Cosine()
     mirror_h = true
 
     # vertical stabilizer
@@ -133,8 +135,8 @@ function byu_steady_vlm()
     phi_v = [0.0, 0.0]
     ns_v = 10
     nc_v = 5
-    spacing_s_v = Cosine()
-    spacing_c_v = Cosine()
+    spacing_s_v = VortexLattice.Cosine()
+    spacing_c_v = VortexLattice.Cosine()
     mirror_v = false
 
     Sref = 9.0
