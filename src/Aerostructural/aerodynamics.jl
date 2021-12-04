@@ -15,4 +15,4 @@ end
 velocity(hs, Γs, r, n, U_hat, Ω_hat) = @timeit "Velocity" dot(induced_velocity(r, hs, Γs, -U_hat) - (U_hat + Ω_hat × r), n)
 
 # Residual computation
-aerodynamic_residual!(R_A, hs, rs, nms, Γs, U_hat, Ω_hat) = @timeit "Aerodynamic Residual" R_A .= velocity.(Ref(hs), Ref(Γs), rs, nms, Ref(U_hat), Ref(Ω_hat))
+aerodynamic_residual!(R_A, horseshoes, Γs, U_hat, Ω_hat) = @timeit "Aerodynamic Residual" map!(hs -> velocity(horseshoes, Γs, horseshoe_point(hs), horseshoe_normal(hs), U_hat, Ω_hat), R_A, horseshoes)

@@ -77,7 +77,6 @@ refs    = References(S, b, c, ρ, ref)
               );
 
 ## Data collection
-Γs = data.circulations
 Fs = surface_forces(data)
 
 ## Aerodynamic forces and center locations
@@ -147,7 +146,7 @@ solve_aerostructural_residual!(R, x) =
 
 
 # Initial guess as ComponentArray for the different equations
-x0 = ComponentArray(aerodynamics = Γs,
+x0 = ComponentArray(aerodynamics = data.circulations,
                     structures   = Δx,
                     load_factor  = deg2rad(α))
 
