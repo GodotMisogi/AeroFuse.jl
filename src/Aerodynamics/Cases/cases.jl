@@ -2,11 +2,11 @@
 #==========================================================================================#
 
 """
-    print_info(wing :: Union{Wing, HalfWing})
+    print_info(wing :: AbstractWing)
 
 Print the relevant geometric characteristics of a `HalfWing` or `Wing`.
 """
-function print_info(wing :: Union{Wing, HalfWing}, head = ""; browser = false)
+function print_info(wing :: AbstractWing, head = ""; browser = false)
     labels = [ "Span (m)", "Area (m²)", "MAC (m)", "Aspect Ratio"]
     wing_info = [ info(wing)... ]
     data = [ labels wing_info ]
@@ -20,21 +20,20 @@ function print_info(wing :: Union{Wing, HalfWing}, head = ""; browser = false)
 end
 
 """
-    solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, ρ :: Real, r_ref; span_num :: Integer = 5, chord_num :: Integer = 10)
+    solve_case(wing :: AbstractWing, freestream :: Freestream, ρ :: Real, r_ref; span_num :: Integer = 5, chord_num :: Integer = 10)
 
 Evaluate a vortex lattice case given a `Wing` or `HalfWing` with a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments, ``n_s`` span-wise panels and ``n_c`` chord-wise panels.
 """
-function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [0.25 * chord_ref, 0., 0.], span_ref = span(wing), mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3, spacing = symmetric_spacing(wing))
+function solve_case(wing :: AbstractWing, freestream :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [0.25 * chord_ref, 0., 0.], span_ref = span(wing), mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3, spacing = symmetric_spacing(wing))
     # Unpack Freestream
     U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Determine spanwise panel distribution and spacing
-    space     = ifelse(typeof(spacing) <: String, [spacing], spacing)
     span_nums = number_of_spanwise_panels(wing, span_num)
 
     # Compute panels and normals
-    horseshoe_panels = mesh_horseshoes(wing, span_nums, chord_num; spacings = space)
-    camber_panels    = mesh_cambers(wing, span_nums, chord_num; spacings = space)
+    horseshoe_panels = mesh_horseshoes(wing, span_nums, chord_num; spacings = spacing)
+    camber_panels    = mesh_cambers(wing, span_nums, chord_num; spacings = spacing)
     normals          = panel_normal.(camber_panels)
 
     # Make horseshoes and collocation points

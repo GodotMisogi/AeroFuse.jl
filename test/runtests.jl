@@ -149,9 +149,9 @@ end
                      axis      = [1., 0., 0.])
 
     ## Assembly
-    wing_panels , wing_normals  = panel_wing(wing, 16, 10; spacing = "cosine")
-    htail_panels, htail_normals = panel_wing(htail, 6,  6; spacing = "cosine")
-    vtail_panels, vtail_normals = panel_wing(vtail, 5,  6; spacing = "cosine")
+    wing_panels , wing_normals  = panel_wing(wing, 16, 10; spacing = Cosine())
+    htail_panels, htail_normals = panel_wing(htail, 6,  6; spacing = Cosine())
+    vtail_panels, vtail_normals = panel_wing(vtail, 5,  6; spacing = Cosine())
 
     aircraft = ComponentArray(
                               wing  = Horseshoe.(wing_panels , wing_normals),

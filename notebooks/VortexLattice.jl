@@ -107,7 +107,7 @@ md"In this case, we'd like a symmetric wing, so we just feed `wing_right` as bot
 md"Now let's see what the outline of our wing looks like, using the following function to get the coordinates:
 
 ```julia
-plot_wing(some_wing :: Union{Wing, HalfWing})
+plot_wing(some_wing :: AbstractWing)
 ```
 "
 
@@ -202,7 +202,7 @@ alert(md"The vortex lattice method only gives reasonable results for small angle
 # ╔═╡ 810546a0-819c-11eb-0232-efe3ec97fc26
 md"Now we run the case with specifications of the number of spanwise and chordwise panels by calling the `solve_case()` function, which has an associated method:
 ```julia
-solve_case(wing 				:: Union{Wing, HalfWing},
+solve_case(wing 				:: AbstractWing,
 		   freestream 			:: Freestream, 
 		   ρ, 											# Freestream density
 		   r_ref = [0.25, 0, 0]; 						# Reference location

@@ -168,7 +168,7 @@ r_ref = [ mean_aerodynamic_center(wing)[1], 0., 0.]
 Now we run the case with specifications of the number of spanwise and chordwise panels by calling the `solve_case()` function, which has an associated method.
 
 ```julia
-solve_case(wing                   :: Union{Wing, HalfWing},
+solve_case(wing                   :: AbstractWing,
            freestream             :: Freestream;
            r_ref = [0.25, 0., 0.] :: Vector{Real},
            rho_ref = 1.225        :: Real,

@@ -41,14 +41,14 @@ function aeromdao_steady_vlm()
                      angle     = 90.,
                      axis      = [1., 0., 0.])
 
-    wing_panels, wing_normals   = panel_wing(wing, 20, 10, spacing = "cosine")
+    wing_panels, wing_normals   = panel_wing(wing, 20, 10, spacing = Cosine())
 
     htail_panels, htail_normals = panel_wing(htail, 12, 6;
-                                             spacing  = "cosine"
+                                             spacing  = Cosine()
                                             )
 
     vtail_panels, vtail_normals = panel_wing(vtail, 10, 5;
-                                             spacing  = "cosine"
+                                             spacing  = Cosine()
                                             )
 
     # Aircraft assembly

@@ -1,6 +1,6 @@
 
 # SYMMETRIC CASE WRONG RESULTS???
-# symmetric_case_coefficients(wing :: Union{Wing, HalfWing}, force, moment, trans_rates, trefftz_force, trefftz_moment, V, ρ) = case_coefficients(wing, force, moment, trans_rates, trefftz_force, trefftz_moment, V, 2ρ)
+# symmetric_case_coefficients(wing :: AbstractWing, force, moment, trans_rates, trefftz_force, trefftz_moment, V, ρ) = case_coefficients(wing, force, moment, trans_rates, trefftz_force, trefftz_moment, V, 2ρ)
 
 # if typeof(wing) == Wing && wing.left === wing.right && freestream.beta == 0. && freestream.omega == zeros(3)
 #   # Compute panels and normals
