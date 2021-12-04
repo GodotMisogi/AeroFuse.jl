@@ -241,7 +241,7 @@ Aircraft analysis by definition of multiple lifting surfaces using the `HalfWing
 panel_wing(wing                :: Union{HalfWing, Wing},
            span_num,           :: Union{Integer, Vector{<: Integer}},
            chord_num           :: Integer;
-           spacing  = "cosine" :: Union{String, Vector{String}} # Options: "uniform", "sine", "cosine"
+           spacing  = "cosine" :: Union{String, Vector{String}} # Options: Uniform(), Cosine(), "cosine"
           )
 ```
 
@@ -287,13 +287,13 @@ print_info(vtail, "Vertical Tail")
 
 # Assembly
 wing_panels , wing_normals  = panel_wing(wing, [20, 5], 10;
-                                         spacing = "uniform"
+                                         spacing = Uniform()
                                         )
 htail_panels, htail_normals = panel_wing(htail, [6], 6);
-                                         spacing = "uniform"
+                                         spacing = Uniform()
                                         )
 vtail_panels, vtail_normals = panel_wing(vtail, [6], 5;
-                                         spacing = "uniform"
+                                         spacing = Uniform()
                                         )
 ```
 

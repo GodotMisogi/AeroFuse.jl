@@ -30,7 +30,7 @@ print_info(wing)
 
 # Mesh details
 wing_mesh = WingMesh(wing, [12], 6, 
-                    #  spacing   = ["sine"]
+                    #  spacing   = [Cosine()]
                     )
 
 aircraft = ComponentVector(wing = make_horseshoes(wing_mesh));
@@ -257,8 +257,8 @@ wing_plan  = plot_wing(wing)
 nwing_plan = plot_wing(new_cam_mesh)
 
 # Streamlines
-seed    = chop_coordinates(new_cam_mesh[end,:], 2)
-streams = plot_streams(fs, seed, new_horsies, Γ_opts, 2.5, 100);
+seed    = chop_coordinates(new_cam_mesh[end,:], 10)
+streams = plot_streams(fs, seed, new_horsies, Γ_opt, 2.5, 100);
 
 b = span(wing)
 
@@ -266,7 +266,7 @@ b = span(wing)
 using Plots
 using LaTeXStrings
 
-pyplot(dpi = 300)
+# pyplot(dpi = 300)
 # pgfplotsx(size = (900, 600))
 
 aircraft_plot =
@@ -295,7 +295,7 @@ plot!(fem_plot[1,:], fem_plot[2,:], fem_plot[3,:], color = :black, label = "Orig
 plot!(new_fem_plot[1,:], new_fem_plot[2,:], new_fem_plot[3,:], color = RGBA.(σ_norms, 0.5, 0.6, 1.0), label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_norm)
 
 # Streamlines
-# [ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(eachcol(streams)) ]
+[ plot!(stream,  color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(eachcol(streams)) ]
 
 # Forces
 # quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],
