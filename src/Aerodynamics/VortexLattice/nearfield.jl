@@ -7,14 +7,7 @@ kutta_joukowsky(ρ, Γ, V, l) = ρ * Γ * V × l
 
 Evaluate the induced velocity at a given location ``r``, by summing over the trailing legs' velocities of Horseshoes with vortex strengths ``\\Gamma``s pointing in the direction ``\\hat U``.
 """
-function induced_trailing_velocity(r, horseshoes, Γs, U_hat) 
-    # sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
-    F = zeros(eltype(r), 3)
-    for (hs, Γ) in zip(horseshoes, Γs)
-        F += trailing_velocity(r, hs, Γ, U_hat)
-    end
-    F
-end
+induced_trailing_velocity(r, horseshoes, Γs, U_hat) = sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
 
 """
     midpoint_velocity(r, Ω, horseshoes, Γs, U)
