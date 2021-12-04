@@ -157,7 +157,7 @@ reset_timer!()
             method         = :newton,
             show_trace     = true,
             # extended_trace = true,
-            # autodiff       = :forward,
+            autodiff       = :forward,
            );
 print_timer()
 

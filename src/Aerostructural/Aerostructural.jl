@@ -7,6 +7,8 @@ using StaticArrays
 using LinearAlgebra
 using ComponentArrays
 using TimerOutputs
+using SparseArrays
+using SplitApplyCombine
 
 # Structures
 import ..Beams: tube_stiffness_matrix

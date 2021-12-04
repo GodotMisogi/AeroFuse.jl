@@ -9,6 +9,7 @@ using CoordinateTransformations, Rotations
 using ForwardDiff, DiffResults
 using PrettyTables, OrderedCollections
 using ComponentArrays
+using SplitApplyCombine
 
 ## Math tools
 #==========================================================================================#
