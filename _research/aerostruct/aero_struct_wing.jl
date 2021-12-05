@@ -103,7 +103,7 @@ dx = solve_cantilever_beam(Ks, fem_loads, cons)
 # Set up initial guess and function
 
 function aerostructural_problem(V, β, ρ, Ω, wing_mesh, fem_mesh, stiffy, weight, load_factor)
-    solve_aerostructural_residual!(R, x) =
+    f!(R, x) =
         solve_coupled_residual!(R, x,
                                 V, β, ρ, Ω,          # Aerodynamic state
                                 wing_mesh.vlm_mesh,  # VLM mesh

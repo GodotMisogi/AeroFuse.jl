@@ -47,19 +47,19 @@ print_info(vtail, "Vertical Tail")
 
 ## WingMesh type
 wing_mesh  = WingMesh(wing, [12], 6, 
-                    #   span_spacing = Cosine()
+                      span_spacing = Cosine()
                      )
-htail_mesh = WingMesh(htail, [6], 6, 
-                    #   span_spacing = Cosine()
+htail_mesh = WingMesh(htail, [12], 6, 
+                      span_spacing = Cosine()
                      )
-vtail_mesh = WingMesh(vtail, [6], 6, 
-                    #   span_spacing = Cosine()
+vtail_mesh = WingMesh(vtail, [12], 6, 
+                      span_spacing = Cosine()
                      )
 
 aircraft = ComponentArray(
-                          wing  = make_horseshoes(wing_mesh),
-                          htail = make_horseshoes(htail_mesh),
-                          vtail = make_horseshoes(vtail_mesh)
+                          wing  = make_vortex_rings(wing_mesh),
+                          htail = make_vortex_rings(htail_mesh),
+                          vtail = make_vortex_rings(vtail_mesh)
                          );
 
 ## Case
@@ -224,7 +224,7 @@ lines!(scene, plot_wing(wing))
 lines!(scene, plot_wing(htail))
 lines!(scene, plot_wing(vtail))
 
-l1 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(wing_mesh.cam_mesh)) ]
+l1 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(wing_mesh.cam_mesh))  ]
 l2 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(htail_mesh.cam_mesh)) ]
 l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(vtail_mesh.cam_mesh)) ]
 

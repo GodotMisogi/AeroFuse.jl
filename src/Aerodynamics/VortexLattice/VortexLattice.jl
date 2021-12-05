@@ -28,6 +28,8 @@ import ..Laplace: AbstractFreestream, Freestream, aircraft_velocity,cartesian_to
 include("horseshoes.jl")
 include("finite_core.jl")
 
+include("vortex_rings.jl")
+
 ## Reference frames
 #==========================================================================================#
 
