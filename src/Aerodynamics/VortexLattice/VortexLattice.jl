@@ -11,7 +11,7 @@ using TimerOutputs
 #==========================================================================================#
 
 # Math tools
-import ..MathTools: weighted_vector, reshape_array
+import ..MathTools: weighted_vector, structtolist
 
 # Panel geometry
 import ..PanelGeometry: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width

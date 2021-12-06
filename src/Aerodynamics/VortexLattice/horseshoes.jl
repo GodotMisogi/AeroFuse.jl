@@ -63,6 +63,8 @@ total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_
 
 horseshoe_velocity(r, line :: Line, Γ, direction) = total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
 
+bound_velocity(r, line :: Line, Γ) = bound_leg_velocity(r1(r, line), r2(r, line), Γ)
+
 ## Arrays of vortex lines
 #==========================================================================================#
 
