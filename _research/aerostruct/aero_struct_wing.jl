@@ -30,7 +30,7 @@ print_info(wing)
 
 # Mesh details
 wing_mesh = WingMesh(wing, [12], 6, 
-                    #  spacing   = [Cosine()]
+                     span_spacing   = [Cosine()]
                     )
 
 aircraft = ComponentVector(wing = make_horseshoes(wing_mesh));
@@ -141,7 +141,7 @@ function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
 end
 
 ##
-# x = @time newton_raphson(solve_aerostruct!, x0)
+x = @time newton_raphson(solve_aerostruct!, x0)
 
 ##
 reset_timer!()
@@ -266,9 +266,9 @@ streams = plot_streams(new_fs, seed, system.horseshoes, Γ_opt, 1, 100);
 using LaTeXStrings
 using GeometryTypes
 
-using CairoMakie
-CairoMakie.activate!(type = "svg")
-# using GLMakie
+# using CairoMakie
+# CairoMakie.activate!()
+using GLMakie
 # GLMakie.activate!()
 
 const LS = LaTeXString
@@ -358,15 +358,15 @@ plot_spanload!(ax, new_wing_ys, new_wing_ll, LS("Deflected Wing"))
 
 # Meshes
 m1 = poly!(scene, wing_mesh.cam_mesh[:], wing_cam_connec, color = wing_cp_points[:], shading = true, transparency = true)
-m2 = poly!(scene, new_cam_mesh[:], new_wing_cam_connec,  color = new_wing_cp_points[:])
+m2 = poly!(scene, new_cam_mesh[:], new_wing_cam_connec, color = new_wing_cp_points[:])
 
 # Borders
 # lines!(scene, plot_wing(wing))
-# l1 = [ lines!(scene, pts, color = :grey, transparency = true) for pts in plot_panels(make_panels(wing_mesh.cam_mesh)) ]
-# l2 = [ lines!(scene, pts, color = :grey, transparency = true) for pts in plot_panels(make_panels(new_cam_mesh)) ]
+l1 = [ lines!(scene, pts, color = :grey, transparency = true) for pts in plot_panels(make_panels(wing_mesh.cam_mesh)) ]
+l2 = [ lines!(scene, pts, color = :grey, transparency = true) for pts in plot_panels(make_panels(new_cam_mesh)) ]
 
 # Streamlines
-[ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]
+[ lines!(scene, stream[:], color = :lightblue) for stream in eachcol(streams) ]
 
 cam = cam3d!(scene.scene)
 
