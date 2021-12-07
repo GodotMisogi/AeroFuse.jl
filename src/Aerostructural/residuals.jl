@@ -4,13 +4,17 @@ linear_residual!(R, A, x, b) = R .= A * x - b
 ## Nonlinear block Gauss-Seidel
 #==========================================================================================#
 
-function gauss_seidel(x0, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fem_mesh, stiffness_matrix, weight, load_factor; max_iters = 50, tol = 1e-9)
-    x = copy(x0)
-
+function aerostruct_gauss_seidel(x0, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fem_mesh, stiffness_matrix, weight, load_factor; max_iters = 50, tol = 1e-9)
+    x = deepcopy(x0)
+    ε = 1e5
     for i = 1:max_iters
-        Γ = x.aerodynamics
-        δ = x.structures
-        α = x.load_factor
+        xp = deepcopy(x)
+
+        @show xp
+
+        Γ = @views x.aerodynamics
+        δ = @views x.structures
+        α = @views x.load_factor
 
         # Compute velocity with new angle of attack
         U = freestream_to_cartesian(-speed, α, β)
@@ -19,20 +23,43 @@ function gauss_seidel(x0, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fem_mesh, stiff
         δs      = δ.displacement
         dxs, Ts = translations_and_rotations(δs)
 
-        # New VLM variables
+        # New geometric variables
         new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
 
-        all_forces = surface_forces(Γ, all_horsies, U, Ω, ρ)
+        # Solve circulations
+        Γ = reshape(influence_matrix(new_horsies[:], -U / speed) \ boundary_condition(quasi_steady_freestream(new_horsies[:], U, Ω), horseshoe_normal.(new_horsies[:])), size(new_horsies))
 
-        fem_loads = compute_loads(bound_leg_center.(new_horsies), vlm_forces, fem_mesh) 
+        x.aerodynamics = Γ
+
+        @show x
+
+        # Compute VLM forces
+        vlm_forces = surface_forces(Γ, new_horsies, U, Ω, ρ)
+
+        # Compute FEM loads
+        fem_loads = fem_load_vector(bound_leg_center.(new_horsies), vlm_forces, fem_mesh) 
         
-        δ = stiffness_matrix \ fem_loads
+        # Solve displacements
+        δ = reshape(stiffness_matrix \ fem_loads[:], size(fem_loads))
 
-        # Compute lift for load factor residual
+        x.structures = δ
+
+        @show x
+
+        # Compute lift
         D, Y, L = body_to_wind_axes(sum(vlm_forces), α, β)
 
         # Weight residual
-        α = acos(weight * load_factor - L)
+        α = acos(abs(weight * load_factor - L) / (weight * load_factor))
+
+        x.load_factor = α
+
+        @show L
+
+        ε    = LinearAlgebra.norm(x - xp)
+        @show (i, ε)
+
+        if ε <= tol return x end # Needs NAN checks and everything like NLsolve
 
     end
 

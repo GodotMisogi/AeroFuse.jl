@@ -47,6 +47,9 @@ function solve_case(wing :: AbstractWing, freestream :: Freestream; rho_ref = 1.
         # Compute profile drag via wetted-area equivalent skin-friction method
         CDv = profile_drag_coefficient(wing, x_tr, freestream.V, rho_ref, a_ref, area_ref, mu_ref)
 
+        # Compute profile drag using local dissipation based on power-balance method of Sato.
+        CDv = local_dissipation_drag(wing, panel_area.(camber_panels), ρ_es, u_es, x_tr, V, ρ, M, μ)
+
         # Add profile and total drag coefficients
         nf_coeffs = [ nearfield_coeffs[1] + CDv; CDv; nearfield_coeffs ]
         ff_coeffs = [  farfield_coeffs[1] + CDv; CDv; farfield_coeffs  ]

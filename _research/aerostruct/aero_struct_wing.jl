@@ -117,11 +117,11 @@ solve_aerostruct! = aerostructural_problem(V, deg2rad(β), ρ, Ω, wing_mesh, fe
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = data.circulations.wing,
                     structures   = Δx,
-                    load_factor  = deg2rad(α)
-                    )
+                    load_factor  = deg2rad(α))
 
 ##
 using ForwardDiff
+using Zygote
 
 function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
     x = copy(x0)
@@ -145,13 +145,13 @@ end
 # x = @time newton_raphson(solve_aerostruct!, x0)
 
 ##
-x = @time aerostruct_gauss_seidel(x0, V, deg2rad(β), ρ, Ω, wing_mesh.vlm_mesh, wing_mesh.cam_mesh, fem_mesh, stiffy, weight, load_factor; max_iters = 50, tol = 1e-9)
+# x = @time aerostruct_gauss_seidel(x0, V, deg2rad(β), ρ, Ω, wing_mesh.vlm_mesh, wing_mesh.cam_mesh, fem_mesh, stiffy, weight, load_factor; max_iters = 50, tol = 1e-9)
 
 ##
 reset_timer!()
 @timeit "Solving Residuals" res_aerostruct =
-    nlsolve(solve_aerostruct!, x0,
-            # method         = :newton,
+    fixedpoint(solve_aerostruct!, x0,
+            method         = :newton,
             show_trace     = true,
             # extended_trace = true,
             autodiff       = :forward,
