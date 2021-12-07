@@ -25,3 +25,13 @@ transform_stiffy(K, axis) = let trans = kron(I(4), axis); permutedims(permutedim
 
 # Simultaneously compute, permute and transform the stiffness matrices
 build_big_stiffy(tubes, fem_mesh, vlm_mesh) = @views combinedimsview(@. transform_stiffy(tube_stiffness_matrix(tubes), axis_transformation(fem_mesh[2:end] - fem_mesh[1:end-1], (vlm_mesh[end,2:end] - vlm_mesh[1,1:end-1]) × (vlm_mesh[1,2:end] - vlm_mesh[end,1:end-1]))))
+
+function evaluate_structures!(R_S, δ, xs, forces, fem_mesh, stiffness_matrix)
+    # Build force vector with constraint for structures
+    fem_loads = fem_load_vector(xs, forces, fem_mesh)
+
+    # Structural residuals
+    linear_residual!(R_S, stiffness_matrix, δ, fem_loads)
+
+    fem_loads
+end

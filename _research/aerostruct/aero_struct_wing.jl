@@ -117,7 +117,8 @@ solve_aerostruct! = aerostructural_problem(V, deg2rad(β), ρ, Ω, wing_mesh, fe
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = data.circulations.wing,
                     structures   = Δx,
-                    load_factor  = deg2rad(α))
+                    load_factor  = deg2rad(α)
+                    )
 
 ##
 using ForwardDiff
@@ -131,7 +132,7 @@ function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
     for i = 1:max_iters
         ForwardDiff.jacobian!(∂R∂x, f!, R, x)
         dx   = ∂R∂x \ -R
-        if ε <= tol return x end
+        if ε <= tol return x end # Needs NAN checks and everything like NLsolve
         ε    = LinearAlgebra.norm(dx)
         @show (i, ε)
         x  .+= dx
@@ -141,7 +142,10 @@ function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
 end
 
 ##
-x = @time newton_raphson(solve_aerostruct!, x0)
+# x = @time newton_raphson(solve_aerostruct!, x0)
+
+##
+x = @time aerostruct_gauss_seidel(x0, V, deg2rad(β), ρ, Ω, wing_mesh.vlm_mesh, wing_mesh.cam_mesh, fem_mesh, stiffy, weight, load_factor; max_iters = 50, tol = 1e-9)
 
 ##
 reset_timer!()
