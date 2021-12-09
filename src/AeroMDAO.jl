@@ -8,6 +8,8 @@ using StaticArrays
 using CoordinateTransformations, Rotations
 using ForwardDiff, DiffResults
 using PrettyTables, OrderedCollections
+using ComponentArrays
+using SplitApplyCombine
 
 ## Math tools
 #==========================================================================================#
@@ -39,11 +41,17 @@ export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Pa
 #==========================================================================================#
 
 include("Geometry/AircraftGeometry/AircraftGeometry.jl")
-import .AircraftGeometry: Aircraft, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foil_camthick, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_foil, camthick_to_CST, coords_to_CST, max_thickness_to_chord_ratio_location, Fuselage, projected_area, length, cosine_spacing, HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, left, right, position, orientation
+import .AircraftGeometry: AbstractAircraft, AbstractWing, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foil_camthick, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_foil, camthick_to_CST, coords_to_CST, max_thickness_to_chord_ratio_location, Fuselage, projected_area, length, cosine_spacing, HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform
 
-export Aircraft, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foil_camthick, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_foil, camthick_to_CST, coords_to_CST, max_thickness_to_chord_ratio_location, # 2D setups
+export AbstractAircraft, AbstractWing, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foil_camthick, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_foil, camthick_to_CST, coords_to_CST, max_thickness_to_chord_ratio_location, # 2D setups
 Fuselage, projected_area, length, cosine_spacing, # Fuselage
-HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, left, right, position, orientation
+HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform
+
+make_horseshoes(wing :: WingMesh) = Horseshoe.(chord_panels(wing), normal_vectors(wing))
+
+make_vortex_rings(wing :: WingMesh) = VortexRing.(camber_panels(wing))
+
+export make_horseshoes, make_vortex_rings
 
 ## Laplace
 #==========================================================================================#
@@ -73,9 +81,9 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, panel_velocities, nearfield_forces, nearfield_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, nearfield_coefficients, farfield_coefficients
+import .VortexLattice: Horseshoe, VLMSystem, References, AircraftAxes, Stability, Wind, Body, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing
 
-export Horseshoe, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, panel_velocities, nearfield_forces, nearfield_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, nearfield_coefficients, farfield_coefficients
+export Horseshoe, VLMSystem, References, AircraftAxes, Stability, Wind, Body, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing
 
 ## Profile drag estimation
 
@@ -111,9 +119,9 @@ export Material, Tube, radii, area, moment_of_inertia, polar_moment_of_inertia, 
 #==========================================================================================#
 
 include("Aerostructural/Aerostructural.jl")
-import .Aerostructural: make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, translations_and_rotations, new_horseshoes, solve_coupled_residual!
+import .Aerostructural: make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, translations_and_rotations, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
 
-export make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, translations_and_rotations, new_horseshoes, solve_coupled_residual!
+export make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, translations_and_rotations, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
 
 ## Post-processing
 #==========================================================================================#

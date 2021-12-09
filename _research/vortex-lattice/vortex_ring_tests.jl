@@ -57,9 +57,9 @@ vtail_mesh = WingMesh(vtail, [12], 6,
                      )
 
 aircraft = ComponentArray(
-                          wing  = make_horseshoes(wing_mesh),
-                          htail = make_horseshoes(htail_mesh),
-                          vtail = make_horseshoes(vtail_mesh)
+                          wing  = make_vortex_rings(wing_mesh),
+                          htail = make_vortex_rings(htail_mesh),
+                          vtail = make_vortex_rings(vtail_mesh)
                          );
 
 ## Case

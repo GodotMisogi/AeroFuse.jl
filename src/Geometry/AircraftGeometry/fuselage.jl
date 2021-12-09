@@ -1,4 +1,4 @@
-struct Fuselage{T <: Real} <: Aircraft
+struct Fuselage{T <: Real} <: AbstractAircraft
     length   :: T
     weights  :: Vector{T}
     radii    :: Vector{T}

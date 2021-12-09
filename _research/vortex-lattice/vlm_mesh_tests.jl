@@ -31,7 +31,7 @@ panel_case(x, y) = solve_case(wing, fs;
                               chord_num = x,
                               viscous   = false,
                               x_tr      = [0.3, 0.3],
-                              spacing   = "uniform"
+                              spacing   = Uniform()
                              );
 
 ## Distributions

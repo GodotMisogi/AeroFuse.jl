@@ -1,15 +1,17 @@
 module VortexLattice
 
-using LinearAlgebra
+# using LinearAlgebra
+import LinearAlgebra: norm, normalize, dot, ×
 using StaticArrays
 using Rotations
 using ComponentArrays
+using TimerOutputs
 
 ## Package imports
 #==========================================================================================#
 
 # Math tools
-import ..MathTools: weighted_vector, reshape_array
+import ..MathTools: weighted_vector, structtolist
 
 # Panel geometry
 import ..PanelGeometry: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width
@@ -18,13 +20,15 @@ import ..PanelGeometry: Panel3D, panel_area, panel_coords, midpoint, panel_norma
 import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
 
 # Tools regarding solutions to Laplace's equation
-import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
+import ..Laplace: AbstractFreestream, Freestream, aircraft_velocity,cartesian_to_freestream, freestream_to_cartesian
 
 ## Horseshoe setup
 #==========================================================================================#
 
 include("horseshoes.jl")
 include("finite_core.jl")
+
+include("vortex_rings.jl")
 
 ## Reference frames
 #==========================================================================================#
@@ -47,6 +51,8 @@ function solve_system(horseshoes, U, Ω, finite_core = false)
     AIC  = influence_matrix(horseshoes, -normalize(U), finite_core)
     boco = boundary_condition(quasi_steady_freestream(horseshoes, U, Ω), horseshoe_normal.(horseshoes))
     Γs   = AIC \ boco 
+
+    Γs, AIC, boco
 end
 
 ## Force evaluations
@@ -67,7 +73,6 @@ include("streamlines.jl")
 # System setups
 #==========================================================================================#
 
-# include("mutating_system.jl")
 include("system.jl")
 
 end

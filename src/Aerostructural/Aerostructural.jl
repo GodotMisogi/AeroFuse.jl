@@ -7,6 +7,8 @@ using StaticArrays
 using LinearAlgebra
 using ComponentArrays
 using TimerOutputs
+using SparseArrays
+using SplitApplyCombine
 
 # Structures
 import ..Beams: tube_stiffness_matrix
@@ -18,7 +20,7 @@ import ..Laplace: freestream_to_cartesian
 import ..PanelGeometry: make_panels, panel_normal
 
 # VLM Aerodynamics
-import ..VortexLattice: velocity, trailing_velocity, Horseshoe, horseshoe_normal, horseshoe_point, bound_leg_center, quasi_steady_freestream, influence_coefficient, influence_matrix, boundary_condition, nearfield_forces
+import ..VortexLattice: velocity, trailing_velocity, Horseshoe, horseshoe_normal, horseshoe_point, bound_leg_center, quasi_steady_freestream, influence_coefficient, influence_matrix, boundary_condition, surface_forces, body_to_wind_axes
 
 ## Aerodynamic analysis
 #==========================================================================================#

@@ -63,6 +63,8 @@ total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_
 
 horseshoe_velocity(r, line :: Line, Γ, direction) = total_horseshoe_velocity(r1(r, line), r2(r, line), Γ, direction)
 
+bound_velocity(r, line :: Line, Γ) = bound_leg_velocity(r1(r, line), r2(r, line), Γ)
+
 ## Arrays of vortex lines
 #==========================================================================================#
 
@@ -99,7 +101,7 @@ r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
 Create a `Horseshoe` corresponding to a `Panel3D` and normal vector.
 """
 Horseshoe(panel :: Panel3D, normal, drift = SVector(0., 0., 0.)) =
-    Horseshoe(Line(bound_leg(panel)), horseshoe_point(panel) .+ drift, normal, (norm ∘ average_chord)(panel))
+    Horseshoe(Line(bound_leg(panel)), horseshoe_point(panel) + drift, normal, (norm ∘ average_chord)(panel))
 
 """
 Compute the midpoint of the bound leg of a `Horseshoe`.
@@ -119,7 +121,7 @@ Compute the induced velocities at a point ``r`` of a given Horseshoe with consta
 function velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat, finite_core = false) 
     if finite_core
         width = (norm ∘ bound_leg_vector)(horseshoe)
-        ε = max(horseshoe.chord, width) # Wrong core size? Consider options...
+        ε = 0.1 * max(horseshoe.chord, width) # Wrong core size? Consider options...
         horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat, ε)
     else
         horseshoe_velocity(r, bound_leg(horseshoe), Γ, V_hat)
@@ -132,3 +134,5 @@ end
 Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``, excluding the bound leg contribution.
 """
 trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = trailing_legs_velocities(r1(r, horseshoe), r2(r, horseshoe), Γ, V)
+
+trailing_velocity(r, horseshoe :: Horseshoe, Γ, V, ε) = trailing_legs_velocities(r1(r, horseshoe), r2(r, horseshoe), Γ, V, ε)

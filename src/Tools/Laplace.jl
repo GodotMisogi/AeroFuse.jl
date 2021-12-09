@@ -80,10 +80,33 @@ stream(uni :: Uniform2D, x, y)    = uni.magnitude * (y * cos(uni.angle) - x * si
 # source_potential(src :: Source2D, x, y, z) 
 # source_stream(src :: Source2D, x, y, z) 
 
+struct DoubletLine3D{T <: Real} <: AbstractLaplace
+    strength :: T
+    r1       :: SVector{3,T}
+    r2       :: SVector{3,T}
+    eta      :: SVector{3,T}
+end
+
+function doublet_influence(r, φ, η)
+    r_φ = dot(r, φ)
+    r_η = dot(r, η)
+    den = (norm(r)^2 - dot(r, φ)^2 ) * r
+
+    ((r_φ * η + r_η * φ) * den - (den * r / norm(r)^2 + 2 * (r - r_φ * η) * r) * r_φ * r_η) / den^2
+end
+
+function velocity(src :: DoubletLine3D)
+    l = normalize(src.r2 - src.r1)
+    
+    f(x) = src.strength / 4π * (doublet_influence(x - src.r2, l, src.eta) - doublet_influence(x - src.r1, l, src.eta))
+end
+
 ## Freestream
 #============================================#
 
-struct Freestream{M,N,P,Q} <: AbstractLaplace
+abstract type AbstractFreestream <: AbstractLaplace end
+
+struct Freestream{M,N,P,Q} <: AbstractFreestream
     V     :: M
     alpha :: N
     beta  :: P

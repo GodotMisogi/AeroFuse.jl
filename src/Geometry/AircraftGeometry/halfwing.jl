@@ -8,7 +8,7 @@
 
 Definition for a `HalfWing` consisting of ``N+1`` airfoils and their associated chord lengths ``c``, twist angles ``\\iota``, for ``N`` sections with span lengths ``b``, dihedrals ``\\delta`` and sweep angles ``\\Lambda``, with all angles in degrees.
 """
-struct HalfWing{M,N,P,Q,R,S,T} <: Aircraft
+struct HalfWing{M,N,P,Q,R,S,T} <: AbstractWing
     foils      :: Vector{M}
     chords     :: Vector{N}
     twists     :: Vector{P}

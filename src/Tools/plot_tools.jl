@@ -14,11 +14,11 @@ function plot_wing(mesh :: Matrix{SVector{3,T}}) where T <: Real
     wing_coords .|> coords -> tuple(coords...)
 end
 
-plot_wing(wing :: Union{HalfWing, Wing}) = plot_wing(coordinates(wing))
+plot_wing(wing :: AbstractWing) = plot_wing(coordinates(wing))
 
-plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = map(x -> Tuple.(x)[:], streamlines(freestream, points, horseshoes, Γs, length, num_steps))
+plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = reduce(hcat, streamlines(freestream, points, horseshoes, Γs, length, num_steps))
 
-plot_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30) = plot_panels(mesh_wing(wing, span_num, chord_num))
+plot_surface(wing :: AbstractWing, span_num = 5, chord_num = 30) = plot_panels(mesh_wing(wing, span_num, chord_num))
 
 
 ## Doublet-source

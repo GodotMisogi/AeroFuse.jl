@@ -16,7 +16,7 @@ using AeroMDAO
 
 
 ## Define type
-struct WingCoordinates{T <: Real} <: Aircraft
+struct WingCoordinates{T <: Real} <: AbstractAircraft
     wing        :: Union{HalfWing{T}, Wing{T}}
     position    :: SVector{3,T}
     orientation :: AngleAxis{T}
@@ -50,21 +50,21 @@ AeroMDAO.AircraftGeometry.mean_aerodynamic_center(wing :: WingCoordinates) = aff
 mean_aerodynamic_center(wing_vlm)
 
 ## Chordline coordinates
-chord_coordinates(wing :: WingCoordinates, span_num, chord_num; spacings = ["sine"]) = affine_transformation(wing).(AeroMDAO.chord_coordinates(component(wing), span_num, chord_num; spacings = spacings))
+chord_coordinates(wing :: WingCoordinates, span_num, chord_num; spacings = [Cosine()]) = affine_transformation(wing).(AeroMDAO.chord_coordinates(component(wing), span_num, chord_num; spacings = spacings))
 
 chord_coordinates(wing_vlm, [6], 6)
 
 ## Horseshoe mesh
-AeroMDAO.AircraftGeometry.mesh_horseshoes(wing :: WingCoordinates, span_num, chord_num; spacings = ["sine"]) = make_panels(affine_transformation(wing).(chord_coordinates(wing, span_num, chord_num; spacings = spacings)))
+AeroMDAO.AircraftGeometry.mesh_horseshoes(wing :: WingCoordinates, span_num, chord_num; spacings = [Cosine()]) = make_panels(affine_transformation(wing).(chord_coordinates(wing, span_num, chord_num; spacings = spacings)))
 
 mesh_horseshoes(wing_vlm, [6], 6)
 
 ## Camberline coordinates
-AeroMDAO.AircraftGeometry.camber_coordinates(wing :: WingCoordinates, span_num, chord_num; spacings = ["sine"]) = affine_transformation(wing).(AeroMDAO.chord_coordinates(component(wing), span_num, chord_num; spacings = spacings))
+AeroMDAO.AircraftGeometry.camber_coordinates(wing :: WingCoordinates, span_num, chord_num; spacings = [Cosine()]) = affine_transformation(wing).(AeroMDAO.chord_coordinates(component(wing), span_num, chord_num; spacings = spacings))
 
 camber_coordinates(wing_vlm, [6], 6)
 
 ## Camber mesh
-AeroMDAO.AircraftGeometry.mesh_cambers(wing :: WingCoordinates, span_num, chord_num; spacings = ["sine"]) = make_panels((camber_coordinates(wing, span_num, chord_num; spacings = spacings)))
+AeroMDAO.AircraftGeometry.mesh_cambers(wing :: WingCoordinates, span_num, chord_num; spacings = [Cosine()]) = make_panels((camber_coordinates(wing, span_num, chord_num; spacings = spacings)))
 
 mesh_cambers(wing_vlm, [6], 6)

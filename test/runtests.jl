@@ -149,9 +149,9 @@ end
                      axis      = [1., 0., 0.])
 
     ## Assembly
-    wing_panels , wing_normals  = panel_wing(wing, 16, 10; spacing = "cosine")
-    htail_panels, htail_normals = panel_wing(htail, 6,  6; spacing = "cosine")
-    vtail_panels, vtail_normals = panel_wing(vtail, 5,  6; spacing = "cosine")
+    wing_panels , wing_normals  = panel_wing(wing, 16, 10; spacing = Cosine())
+    htail_panels, htail_normals = panel_wing(htail, 6,  6; spacing = Cosine())
+    vtail_panels, vtail_normals = panel_wing(vtail, 5,  6; spacing = Cosine())
 
     aircraft = ComponentArray(
                               wing  = Horseshoe.(wing_panels , wing_normals),
@@ -160,24 +160,23 @@ end
                              )
 
     ## Reference quantities
-    ac_name = "My Aircraft"
+    ac_name = :aircraft
     S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
     ρ       = 1.225
     ref     = [0.25c, 0., 0.]
     V, α, β = 1.0, 1.0, 1.0
     Ω       = [0.0, 0.0, 0.0]
     fs      = Freestream(V, α, β, Ω)
+    refs    = References(S, b, c, ρ, ref)
 
     ## Stability case
-    dv_data = solve_stability_case(aircraft, fs;
-                                   rho_ref   = ρ,
-                                   r_ref     = ref,
-                                   area_ref  = S,
-                                   span_ref  = b,
-                                   chord_ref = c,
-                                   name      = ac_name);
+    dv_data = solve_stability_case(aircraft, fs, refs;
+                                   name = ac_name);
 
-    nfs, ffs, dvs = dv_data[ac_name]
+    dcf = dv_data[ac_name]
+    nfs = dcf.NF
+    ffs = dcf.FF
+    dvs = dcf.dNF
 
     nf_tests = [0.000258, -0.006642, 0.074301, -0.003435, 0.075511, 0.001563]
     ff_tests = [0.000375, -0.006685, 0.074281]

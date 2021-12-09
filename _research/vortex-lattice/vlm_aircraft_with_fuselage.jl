@@ -46,11 +46,11 @@ wing_panels, wing_normals  = panel_wing(wing,                 # Wing or HalfWing
                                        )
 
 htail_panels, htail_normals = panel_wing(htail, [6], 6;
-                                         spacing  = "uniform"
+                                         spacing  = Uniform()
                                         )
 
 vtail_panels, vtail_normals = panel_wing(vtail, [6], 5;
-                                         spacing  = "uniform"
+                                         spacing  = Uniform()
                                         )
 
 wing_horses  = Horseshoe.(wing_panels,  wing_normals)
