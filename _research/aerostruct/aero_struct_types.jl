@@ -44,8 +44,6 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  axis      = [1., 0., 0.]);
 
 ## Meshing and assembly
-
-# Wing
 wing_mesh  = WingMesh(wing, [8,3], 6)
 htail_mesh = WingMesh(htail, [6], 6)
 vtail_mesh = WingMesh(vtail, [6], 6)
@@ -54,34 +52,33 @@ vtail_mesh = WingMesh(vtail, [6], 6)
 aircraft = ComponentArray(
                           wing    = make_horseshoes(wing_mesh),
                           htail   = make_horseshoes(htail_mesh),
-                          vtail   = make_horseshoes(vtail_mesh)
+                          vtail   = make_horseshoes(vtail_mesh),
                         );
 
-x_w, y_w, z_w = swing_mac = mean_aerodynamic_center(wing);
+wing_mac = mean_aerodynamic_center(wing);
 
 ## Aerodynamic case
-ac_name = :aircraft
+ac_name = "My Aircraft"
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 0.98
-ref     = [ x_w, 0., 0.]
+ref     = [wing_mac[1], 0., 0.]
 V, α, β = 25.0, 3.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 refs    = References(S, b, c, ρ, ref)
 
 ## Solve aerodynamic case for initial vector
-@time data =
+@time system =
     solve_case(aircraft, fs, refs;
-               name             = ac_name,   # Aircraft name
                print_components = true,      # Prints the results for each component
               );
 
 ## Data collection
-Fs = surface_forces(data)
+CFs, CMs = surface_coefficients(system)
 
 ## Aerodynamic forces and center locations
-vlm_acs    = bound_leg_center.(data.horseshoes.wing)
-vlm_forces = Fs.wing
+vlm_acs    = bound_leg_center.(system.horseshoes.wing)
+vlm_forces = force.(CFs.wing, dynamic_pressure(ρ, V), S)
 
 # FEM mesh
 fem_w    = 0.40
@@ -129,24 +126,21 @@ dx = solve_cantilever_beam(Ks, fem_loads, cons)
 ## Aerostructural residual
 #==========================================================================================#
 
-other_horsies = ComponentVector(
-                                htail = data.horseshoes.htail,
-                                vtail = data.horseshoes.vtail
-                               )
+other_horsies = ComponentVector( htail = system.horseshoes.htail,
+                                 vtail = system.horseshoes.vtail )
 
 # Set up initial guess and function
 solve_aerostructural_residual!(R, x) =
     solve_coupled_residual!(R, x,
                             V, deg2rad(β), ρ, Ω, # Aerodynamic state
-                            wing_mesh.vlm_mesh,  # VLM mesh
-                            wing_mesh.cam_mesh,  # Camber mesh
+                            wing_mesh.vlm_mesh, wing_mesh.cam_mesh,  # Aerodynamic variables
                             other_horsies,       # Other aerodynamic parameters
                             fem_mesh, stiffy,    # Structural variables
                             weight, load_factor) # Load factor variables
 
 
 # Initial guess as ComponentArray for the different equations
-x0 = ComponentArray(aerodynamics = data.circulations,
+x0 = ComponentArray(aerodynamics = system.circulations,
                     structures   = Δx,
                     load_factor  = deg2rad(α))
 
@@ -210,8 +204,8 @@ println("Lift: $lift N")
 println("Speed: $V m/s")
 println("Angle of attack: $(rad2deg(α_opt))ᵒ")
 
-## Generate DataFrame
-df = DataFrame(permutedims([ fem_loads; dx ]), :auto)
+## Generate systemFrame
+df = systemFrame(permutedims([ fem_loads; dx ]), :auto)
 rename!(df, [:Fx, :Fy, :Fz, :Mx, :My, :Mz, :dx, :dy, :dz, :θx, :θy, :θz])
 
 ## Plotting

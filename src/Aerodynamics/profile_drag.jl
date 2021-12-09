@@ -6,7 +6,7 @@ form_factor_wing(x_c, t_c, Λ_m, M) = (1 + 0.6t_c / x_c + 100t_c^4) * (1.34M^0.1
 
 function form_factor(wing :: HalfWing, M)
     # (x/c)_max, (t/c)_max, (t/c)_max sweep angles
-    xcs, tcs, sweeps = max_tbyc_sweeps(wing, 60)
+    xcs, tcs, sweeps = max_thickness_to_chord_ratio_sweeps(wing, 60)
     Kf  = form_factor_wing.(xcs, tcs, sweeps, M)
 end
 
@@ -39,12 +39,14 @@ function wetted_area_drag(wing :: HalfWing, x_tr, V, ρ, a_ref = 330., μ = 1.5e
     wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
 end
 
-# Sato's local-friction and local-dissipation method from Mark Drela, Flight Vehicle Aerodynamics, eq. 4.115.
-function local_dissipation_drag(panels :: Matrix{<: Panel3D}, ρ_es, u_es, x_tr, V, ρ, M, μ)
+# Sato's local-friction and local-dissipation based on power balance method from Mark Drela, Flight Vehicle Aerodynamics, eq. 4.115.
+function local_dissipation_drag(wing :: Wing, wetted_areas, ρ_es, u_es, x_tr, V, ρ, M, μ)
     # Chord processing
     mean_chords = (fwdsum ∘ chords)(wing) / 2
 
-    weighted_S_wets = sum(x -> x[1] * x[2]^3 * panel_area(x[3]), zip(ρ_es, u_es, panels), dims = 1) ./ (ρ * V^3)
+    # Compute weighted wetted areas based on inviscid edge velocity distribution.
+    weighted_S_wets = sum(x -> x[1] * norm(x[2])^3 * x[3], zip(ρ_es, u_es, wetted_areas), dims = 1) ./ (ρ * V^3)
+
     wetted_area_drag(mean_chords, weighted_S_wets, 1., x_tr, V, ρ, M, μ)
 end
 

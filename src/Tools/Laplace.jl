@@ -80,23 +80,47 @@ stream(uni :: Uniform2D, x, y)    = uni.magnitude * (y * cos(uni.angle) - x * si
 # source_potential(src :: Source2D, x, y, z) 
 # source_stream(src :: Source2D, x, y, z) 
 
+struct DoubletLine3D{T <: Real} <: AbstractLaplace
+    strength :: T
+    r1       :: SVector{3,T}
+    r2       :: SVector{3,T}
+    eta      :: SVector{3,T}
+end
+
+function doublet_influence(r, φ, η)
+    r_φ = dot(r, φ)
+    r_η = dot(r, η)
+    den = (norm(r)^2 - dot(r, φ)^2 ) * r
+
+    ((r_φ * η + r_η * φ) * den - (den * r / norm(r)^2 + 2 * (r - r_φ * η) * r) * r_φ * r_η) / den^2
+end
+
+function velocity(src :: DoubletLine3D)
+    l = normalize(src.r2 - src.r1)
+    
+    f(x) = src.strength / 4π * (doublet_influence(x - src.r2, l, src.eta) - doublet_influence(x - src.r1, l, src.eta))
+end
+
 ## Freestream
 #============================================#
 
-struct Freestream{T <: Real} <: AbstractLaplace
-    V     :: T
-    alpha :: T
-    beta  :: T
-    omega :: SVector{3,T}
-    Freestream{T}(V, α_deg, β_deg, Ω) where T <: Real = new(V, deg2rad(α_deg), deg2rad(β_deg), Ω)
+abstract type AbstractFreestream <: AbstractLaplace end
+
+struct Freestream{M,N,P,Q} <: AbstractFreestream
+    V     :: M
+    alpha :: N
+    beta  :: P
+    omega :: SVector{3,Q}
 end
+
+Freestream(V :: M, α_deg :: N, β_deg :: P, Ω :: AbstractVector{Q}) where {M <: Real, N <: Real, P <: Real, Q<:Real} = Freestream{M,N,P,Q}(V, deg2rad(α_deg), deg2rad(β_deg), Ω)
 
 """
     Freestream(V, α, β, Ω)
     
 A Freestream flow in spherical polar coordinates with magnitude ``V``, angle-of-attack ``α``, side-slip angle ``β``, and a quasi-steady rotation vector ``\\Omega``.
 """
-Freestream(V, α_deg, β_deg, Ω :: AbstractVector{T}) where T <: Real = Freestream{T}(V, α_deg, β_deg, Ω)
+# Freestream(V, α_deg, β_deg, Ω :: AbstractVector{T}) where T <: Real = Freestream{T}(V, α_deg, β_deg, Ω)
 
 # TODO: ForwardDiff testing
 # Freestream(V :: Real, α_deg, β_deg, Ω :: AbstractVector{<: Real}) = Freestream{Float64}(V, α_deg, β_deg, Ω)

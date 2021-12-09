@@ -10,6 +10,7 @@ using StaticArrays
 using CoordinateTransformations
 using Rotations
 using LinearAlgebra
+using SplitApplyCombine
 
 # Math tools
 import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, fwdsum, fwddiv, fwddiff, weighted_vector, vectarray, extend_yz
@@ -20,9 +21,9 @@ import ..PanelGeometry: Panel2D, Panel3D, panel_area, panel_normal, transform, m
 ## Types
 #==========================================================================================#
 
-abstract type Aircraft end
+abstract type AbstractAircraft end
 
-export Aircraft
+abstract type AbstractWing <: AbstractAircraft end
 
 ## Foil geometry
 #==========================================================================================#
@@ -52,6 +53,6 @@ include("mesh_wing.jl")
 
 aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
 
-info(wing :: Union{Wing, HalfWing}) = [ span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing) ]
+info(wing :: AbstractWing) = [ span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing) ]
 
 end

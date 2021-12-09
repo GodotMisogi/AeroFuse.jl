@@ -33,7 +33,7 @@ solve_case(wing, fs;
            chord_num = 5,
            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
            x_tr      = [0.3, 0.3],
-          #  spacing   = "uniform"
+          #  spacing   = Uniform()
           );
 
 print_coefficients(nf_coeffs, ff_coeffs, "Wing")
@@ -49,7 +49,7 @@ solve_stability_case(wing, fs;
                      viscous    = true,
                      x_tr       = [0.3, 0.3],
                      print      = false,
-                    #  spacing   = ["sine", "cosine"]
+                    #  spacing   = [Cosine(), "cosine"]
                     );
 
 #
@@ -81,7 +81,7 @@ num_stream_points = 100
 streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
 
 ## Display
-horseshoe_coords = plot_panels(horseshoe_panels[:])
+horseshoe_coords = plot_panels(horseshoe_panels)
 wing_coords      = plot_wing(wing);
 horseshoe_points = Tuple.(horseshoe_point.(horseshoe_panels))
 ys               = getindex.(horseshoe_points[1,:], 2)

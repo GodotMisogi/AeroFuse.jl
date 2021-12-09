@@ -35,7 +35,7 @@ function solve_inviscid_doublets(panels, wakes, u)
     P               = -A_inv * all_sources
 
     # Mass defect block computation
-    all_lengths = panel_length.(all_panels)         # N + N_w
+    all_lengths = panel_length.(all_panels)         #  N + N_w
     B           = source_matrix(wakes, all_panels)  # (N_w, N + N_w)
     A_w         = doublet_matrix(wakes, panels)     # (N_w, N)
     dKds        = -midpair_map(-, defect_block(P, A_w, B)) ./ all_lengths
@@ -84,7 +84,7 @@ edge_velocities(ms, D, U_invs) = U_invs + D * ms
 ## Newton setup
 #============================================#
 
-function solve_system(x_in, tags, all_lengths, C, U_invs, n_crit)
+function solve_system(x_in, panels, all_lengths, C, U_invs, n_crit)
     # Number of nodes
     n  = length(all_lengths)
 
@@ -115,9 +115,11 @@ function solve_system(x_in, tags, all_lengths, C, U_invs, n_crit)
     # c_τ_wake = c_τ
 
     # Evaluate residuals
-    R1, R2, R3 = boundary_layer_fd(Us[1:end-1], δ_stars, θs, Ts, ΔXs, tags, n_crit, a, ν)
+    # R1, R2, R3 = 
+    
+    R = boundary_layer_finite_difference(Us[1:end-1], δ_stars, θs, Ts, ΔXs, panels, n_crit, a, ν)[:]
 
-    [ R1; R2; R3 ]
+    # [ R1; R2; R3 ]
 end
 
 function solve_viscous_case(panels, wakes, uniform :: Uniform2D)
@@ -128,18 +130,18 @@ function solve_viscous_case(panels, wakes, uniform :: Uniform2D)
     #======================================================#
 
     ## Doublet-source panel method schema
-    U_invs, D, all_lengths = solve_inviscid_doublets(panels, wakes, u)
+    # U_invs, D, all_lengths = solve_inviscid_doublets(panels, wakes, u)
 
     ## Linear vortex-source panel method schema
-    # U_invs, D, all_lengths = solve_inviscid_vortices(panels, wakes, u)
+    U_invs, D, all_lengths = solve_inviscid_vortices(panels, wakes, u)
 
     @show U_invs
 
     # Ugly tagging and setup
     #======================================================#
 
-    tags    = [ fill(typeof(panels[1]), length(panels)) ; # Foil panels
-                fill(typeof(wakes[1] ), length(wakes) ) ] # Wake panels
+    # tags    = [ fill(typeof(panels[1]), length(panels)) ; # Foil panels
+                # fill(typeof(wakes[1] ), length(wakes) ) ] # Wake panels
     n_crit  = 9 # Critical amplification ratio for Tollmien-Schlichting waves to transition
 
     # Initialize variables
@@ -153,11 +155,11 @@ function solve_viscous_case(panels, wakes, uniform :: Uniform2D)
     #======================================================#
 
     # R  = zeros(num_nodes * num_vars + 1)
-    cuck(x)     = solve_system(x, tags, all_lengths, D, U_invs, n_crit)
+    cuck(x)     = solve_system(x, [panels; wakes], all_lengths, D, U_invs, n_crit)
     state       = nlsolve(cuck,
                           x0,
                           iterations = 20,
-                          autodiff = :forward,
+                        #   autodiff = :forward,
                           show_trace = true,
                           # extended_trace = true,
                           store_trace = true,

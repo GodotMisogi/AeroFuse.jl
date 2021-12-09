@@ -30,17 +30,10 @@ Panel3D(p1 :: FieldVector{3,T}, p2 :: FieldVector{3,T}, p3 :: FieldVector{3,T}, 
 
 Panel3D((p1, p2, p3, p4)) = Panel3D(p1, p2, p3, p4)
 
+Base.length(:: Panel3D) = 1
+
 average_chord(panel :: Panel3D) = (p2(panel) - p1(panel) + p3(panel) - p4(panel)) / 2
 average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)) / 2
-
-"""
-    panel_area(panel :: Panel3D)
-
-Compute the area of a Panel3D.
-"""
-panel_area(panel :: Panel3D) = (norm ∘ cross)(average_chord(panel), average_width(panel))
-
-wetted_area(panels :: Matrix{<: Panel3D}) = sum(panel -> panel_area(panel), panels)
 
 """
     panel_coords(panel :: Panel3D)
@@ -83,3 +76,12 @@ panel_normal(panel :: Panel3D) = let p31 = p3(panel) - p1(panel), p42 = p4(panel
 Compute the normal ``n_l``, the normal ``n_0`` of a `Panel3D` perturbed by the control gain ``\\delta_l`` about the hinge axis ``h_l``.
 """
 transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, panel_normal(panel))
+
+"""
+    panel_area(panel :: Panel3D)
+
+Compute the area of a Panel3D.
+"""
+panel_area(panel :: Panel3D) = norm(panel_normal(panel))
+
+wetted_area(panels) = sum(panel -> panel_area(panel), panels)

@@ -12,7 +12,7 @@ chop_trailing_edge(obj :: Wing, span_num :: Integer) = chop_coordinates([ traili
 coordinates(wing :: HalfWing, y_flip = false) = let (lead, trail) = wing_bounds(wing, y_flip); affine_transformation(wing).(wing_bounds(lead, trail)) end
 coordinates(wing :: Wing) = let (lead, trail) = wing_bounds(wing); affine_transformation(wing).(wing_bounds(lead, trail)) end
 
-coordinates(wing :: Union{HalfWing, Wing}, span_num, chord_num; span_spacing = ["cosine"], chord_spacing = ["cosine"]) = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
+coordinates(wing :: AbstractWing, span_num, chord_num; span_spacing = Cosine(), chord_spacing = Cosine()) = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
 
 """
     chord_coordinates(wing :: HalfWing, n_s :: Integer, n_c :: Integer, flip = false)
@@ -85,8 +85,8 @@ function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer})
 end
 
 # Spacing
-symmetric_spacing(wing :: HalfWing) = [ "sine"; fill("cosine", (length ∘ spans)(wing)         - 1) ]
-symmetric_spacing(wing :: Wing)     = [ "sine"; fill("cosine", (length ∘ spans ∘ right)(wing) - 1) ]
+symmetric_spacing(wing :: HalfWing) = [ Sine(); fill(Cosine(), (length ∘ spans)(wing)         - 1) ]
+symmetric_spacing(wing :: Wing)     = [ Sine(); fill(Cosine(), (length ∘ spans ∘ right)(wing) - 1) ]
 
 # Coordinates
 chord_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = chord_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
@@ -153,16 +153,46 @@ function mesh_cambers(wing :: Wing, span_num, chord_num; spacings = symmetric_sp
     [ left_panels right_panels ]
 end
 
-function paneller(wing :: Union{HalfWing, Wing}, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
+function paneller(wing :: AbstractWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
     horseshoe_panels = mesh_horseshoes(wing, span_num, chord_num; spacings = spacings)
     camber_panels    = mesh_cambers(wing, span_num, chord_num; spacings = spacings)
     horseshoe_panels, panel_normal.(camber_panels)
 end
 
-function paneller(wing :: Union{HalfWing, Wing}, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing))
+function paneller(wing :: AbstractWing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing))
     horseshoe_panels = mesh_horseshoes(wing, [span_num], chord_num; spacings = spacings)
     camber_panels    = mesh_cambers(wing, [span_num], chord_num; spacings = spacings)
     horseshoe_panels, panel_normal.(camber_panels)
 end
 
-panel_wing(comp :: Union{Wing, HalfWing}, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = symmetric_spacing(comp)) = paneller(comp, span_panels, chord_panels, spacings = ifelse(typeof(spacing) <: String, [spacing], spacing))
+panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = symmetric_spacing(comp)) = paneller(comp, span_panels, chord_panels, spacings = spacing)
+
+## Meshing type for convenience
+#==========================================================================================#
+
+mutable struct WingMesh{M <: AbstractWing, N <: Integer, O <: Integer, P, Q, R, S} <: AbstractWing
+    surf          :: M
+    num_span      :: Vector{N}
+    num_chord     :: O
+    chord_spacing :: P
+    span_spacing  :: Q
+    vlm_mesh      :: R
+    cam_mesh      :: S
+end
+
+function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: O; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surf)) where {M <: AbstractWing, N <: Integer, O <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}} 
+    vlm_mesh =  chord_coordinates(surf, n_span, n_chord; spacings = span_spacing)
+    cam_mesh = camber_coordinates(surf, n_span, n_chord; spacings = span_spacing)
+    WingMesh{M,N,O,P,Q,typeof(vlm_mesh),typeof(cam_mesh)}(surf, n_span, n_chord, chord_spacing, span_spacing, vlm_mesh, cam_mesh)
+end
+
+##
+chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = chord_coordinates(wing.surf, n_span, n_chord)
+camber_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = camber_coordinates(wing.surf, n_span, n_chord)
+surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = surface_coordinates(wing.surf, n_span, n_chord)
+
+surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
+
+chord_panels(wing :: WingMesh)    = make_panels(wing.vlm_mesh)
+camber_panels(wing :: WingMesh)   = make_panels(wing.cam_mesh)
+normal_vectors(wing :: WingMesh)  = panel_normal.(camber_panels(wing))

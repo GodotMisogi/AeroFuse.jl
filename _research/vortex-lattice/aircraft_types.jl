@@ -1,4 +1,4 @@
-struct AircraftSurfaces <: Aircraft
+struct AircraftSurfaces <: AbstractAircraft
     surfs :: Vector{Aircraft}
 end
 

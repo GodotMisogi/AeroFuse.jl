@@ -21,7 +21,7 @@ function print_case(data, comp)
     print_case(nf, ff, derivs, comp)
 end
 
-function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [ 0.25 * chord_ref, 0., 0.], span_ref = span(wing), span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, name = "Wing", viscous = false, x_tr = 0.3, print = false, spacing = ["sine"; fill("cosine", length(span_num) - 1)])
+function solve_stability_case(wing :: AbstractWing, freestream :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [ 0.25 * chord_ref, 0., 0.], span_ref = span(wing), span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, name = "Wing", viscous = false, x_tr = 0.3, print = false, spacing = symmetric_spacing(wing))
     # Reference values and scaling inputs
     S, b, c = area_ref, span_ref, chord_ref
     x, scale = scale_inputs(freestream, b, c)
@@ -62,46 +62,51 @@ function solve_stability_case(wing :: Union{Wing, HalfWing}, freestream :: Frees
     nf, ff, dvs
 end
 
-function solve_stability_case(aircraft :: Dict{String, Matrix{Horseshoe{T}}}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false) where T <: Real
+function solve_stability_case(aircraft, freestream :: Freestream, ref :: References; name = :aircraft, print = false, print_components = false)
     # Reference values and scaling inputs
-    S, b, c = area_ref, span_ref, chord_ref
+    b, c = ref.span, ref.chord
     x, scale = scale_inputs(freestream, b , c)
 
     # Closure to generate results with input vector
     function stab(x)
         fs   = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
-        data = solve_case(aircraft, fs,
-                          rho_ref   = rho_ref,
-                          r_ref     = r_ref,
-                          area_ref  = S,
-                          span_ref  = b,
-                          chord_ref = c,
-                          name  = name)
+        data = solve_case(aircraft, fs, ref,
+                          name      = name)
+
+        NFs = nearfield_coefficients(data)
+        FFs = farfield_coefficients(data)
 
         # Creates array of nearfield and farfield coefficients for each component as a row vector.
-        coeffs = reduce(hcat, let comps = data[name]; [ comps[1]; comps[2] ] end for name in names)
+        comp_coeffs = mapreduce(name -> [ NFs[name]; FFs[name] ], hcat, valkeys(data.horseshoes))
+        all_coeffs  = [ comp_coeffs sum(comp_coeffs, dims = 2) ] # Append sum of all forces for aircraft
     end
 
     names     = [ reduce(vcat, keys(aircraft)); name ]
     num_comps = length(names)
 
-    y   = zeros(9, num_comps)
+    y       = zeros(9, num_comps)
     result  = DiffResults.JacobianResult(y, x)
     result  = ForwardDiff.jacobian!(result, stab, x)
 
     vars    = DiffResults.value(result)
     derivs  = DiffResults.jacobian(result)
 
-    # Dictionary assembly
-    ranges  = (1:num_comps) .* 9                      # Painful hacking
-    bounds  = zip([ 1; ranges[1:end-1] .+ 1], ranges) # Painful hacking
-    data    = OrderedDict(name => (vars[1:6, i], vars[7:end, i], derivs[first(inds):last(inds)-3,:]) for (i, (name, inds)) in (enumerate ∘ zip)(names, bounds))
+    # Reshaping
+    data  = cat(vars, reshape(derivs, 9, num_comps, 5), dims = 3)
+    comps = @views NamedTuple(names[i] => ComponentArray(NF  = data[1:6,i,1],
+                                                         dNF = data[1:6,i,2:end], 
+                                                         FF  = data[7:end,i,1], 
+                                                         dFF = data[7:end,i,2:end]) 
+                              for i in axes(data, 2))
 
     # Printing
-    if print;            print_case(data, name)        end
-    if print_components; print_case.(Ref(data), names) end
+    if print_components
+        @views [ print_derivatives(comps[comp], comp) for comp in keys(comps) ]
+    elseif print
+        @views print_derivatives(comps[name], name)
+    end
 
-    data
+    comps
 end
 
 

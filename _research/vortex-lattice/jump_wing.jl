@@ -1,163 +1,145 @@
 ##
-using Revise
 using JuMP
 using Ipopt
-using StaticArrays
 using AeroMDAO
-using PlotlyJS
-using ForwardDiff
-
+using ComponentArrays
+# using PlotlyJS
 
 # Wing setup
 #============================================#
 
 ## Helper functions
 function make_wing(x)
-    wing_right = HalfWing(Foil.(naca4((0,0,1,2)) for i ∈ 1:5),
-                         [ x[1:5]... ],
-                         [0., 0., 0., 0., 0.],
-                         [0.2, 0.2, 0.2, 0.2],
-                         [0., 0., 0., 0.],
-                         [ x[6:end]... ])
-    span(Wing(wing_right, wing_right))
+    wing_right = HalfWing(Foil.(naca4((0,0,1,2)) for i = 1:5),
+                          [ x[1:5]... ],
+                          [0., 0., 0., 0., 0.],
+                          [0.2, 0.2, 0.2, 0.2],
+                          [0., 0., 0., 0.],
+                          [ x[6:end]... ])
+    Wing(wing_right, wing_right)
 end
 
-wing_chords = [0.18, 0.16, 0.08, 0.04, 0.02]
-wing_sweeps = [20, 15, 10, 5.]
-x0 = [ wing_chords; wing_sweeps ]
+## FUNCTIONAL TEST
+#==========================================================================================#
 
-ForwardDiff.gradient(make_wing, x0)
+# Helper functions
+#============================================#
 
-##
-function run_case(wing, V, α, β)
-    ρ = 1.225
-    Ω = SVector(0.0, 0.0, 0.0)
-    fs = Freestream(V, α, β, Ω)
-    c = mean_aerodynamic_chord(wing)
-    ref = SVector(0.25 * c, 0., 0.)
-    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = solve_case(wing, fs; rho_ref = ρ, r_ref = ref, area_ref = projected_area(wing), span_ref = span(wing), chord_ref = c, span_num = 80, chord_num = 20);
+function run_case(wing, V, α, ρ, span_num, chord_num)
+    uniform = Freestream(V, α, 0.0, zeros(3))
+    coeffs  = solve_case(wing, uniform,
+                         rho_ref = ρ,
+                         span_num = span_num,
+                         chord_num = chord_num,
+                         viscous = true)[1:2]
 end
 
 # Objective function
-function optimize_cdi_chords(x...)
-    wing = make_wing(x)
-    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, 10., 0., 0.)
+evaluate_CDi(wing, V, α, ρ, span_num, chord_num) = run_case(wing, V, α, ρ, span_num, chord_num)[1][1]
 
-    cdi = ff_coeffs[1]
-end
+# Lift and area constraint function
+function evaluate_cons(wing, V, α, ρ, span_num, chord_num)
+    area   = projected_area(wing)
+    nf, ff = run_case(wing, V, α, ρ, span_num, chord_num)
+    lift   = dynamic_pressure(ρ, V) * area * nf[5]
 
-function optimize_cdi_naca4(m, p, t, c)
-    wing = naca4_wing(m, p, t, c)
-    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, 10., 0., 0.)
-
-    cdi = ff_coeffs[1]
-end
-
-# Lift constraint function
-function chords_lift(x...)
-    ρ, speed = 1.225, 10.
-    wing = make_wing(x)
-    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, speed, 0., 0.)
-
-    cl = ff_coeffs[3]
-    lift = 1/2 * ρ * speed^2 * projected_area(wing) * cl
-end
-
-function naca4_lift(m, p, t, c)
-    ρ, speed = 1.225, 10.
-    wing = naca4_wing(m, p, t, c)
-    nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, speed, 0., 0.)
-
-    cl = ff_coeffs[3]
-    lift = 1/2 * ρ * speed^2 * projected_area(wing) * cl
+    lift
 end
 
 ## Test runs
 #============================================#
 
-wing_chords = [0.18, 0.16, 0.08, 0.04, 0.02]
-wing_sweeps = [20, 15, 10, 5.]
-x0 = [ wing_chords; wing_sweeps ]
-wing = make_wing(x0)
-cdi = optimize_cdi_chords(x0...)
-lifter = chords_lift(x0...)
-println("CDi: $cdi")
-println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, 10.), projected_area(wing)))")
+
+# Parameters
+V, α, ρ  = 15., 5., 1.225
+
+# Design variables
+n    = 12
+wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
+            chords    = fill(0.314, n),
+            twists    = fill(0.0, n),
+            spans     = fill(1.3/(n-1), n-1),
+            dihedrals = fill(0., n-1),
+            LE_sweeps = fill(0., n-1))
+
+# Meshing and assembly
+wing_mac = mean_aerodynamic_center(wing);
+b, S, c  = info(wing)[1:end-1]
+
+span_num  = 12
+chord_num = 6
+
+x0 = [chords(wing.right); sweeps(wing.right); α]
+
+make_wing(x) = Wing(chords    = collect(x[1:n]),
+                    foils     = foils(wing.right),
+                    spans     = spans(wing.right),
+                    twists    = rad2deg.(twists(wing.right)),
+                    dihedrals = rad2deg.(dihedrals(wing.right)),
+                    LE_sweeps = collect(x[n+1:end]))
+
+# Closures
+evaluate_CDi(x...)  = evaluate_CDi(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
+evaluate_cons(x...) = evaluate_cons(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
+run_case(x...)      = run_case(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
 
 ##
-naca_test = (2,4,1,2)
-wing = naca4_wing(naca_test...)
-cdi = optimize_cdi_naca4(naca_test...)
-lifter = naca4_lift(naca_test...)
-println("CDi: $cdi")
-println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, 10.), projected_area(wing)))")
+wing_chords = LinRange(0.2, 0.1, n)
+wing_sweeps = fill(10, n-1)
+x0 = ComponentVector(
+                     chords = wing_chords,
+                     sweeps = wing_sweeps,
+                     alpha  = α
+                     )
+wing = make_wing(x0)
+
+## Test runs
+@show cdi    = evaluate_CDi(x0...)
+@show lifter = evaluate_cons(x0...)
+@show coeffs = run_case(x0...)
 
 ## Chord optimization
 #============================================#
 
 chord_design = Model(with_optimizer(Ipopt.Optimizer))
-num_dv = 10
+set_optimizer_attribute(chord_design, "max_iter", 100)
 
-@variable(chord_design, 0.1 <= chordsweeps[1:num_dv - 1])
+## Variables and bounds
+num_dv = 2n
+@variable(chord_design, 0. <= x[i=1:num_dv] <= 20, start = x0[i])
 
-##
-register(chord_design, :optimize_cdi_chords, num_dv - 1, optimize_cdi_chords, autodiff = true)
+## Registration
+register(chord_design, :evaluate_CDi, num_dv, evaluate_CDi, autodiff=true)
+register(chord_design, :evaluate_cons, num_dv, evaluate_cons, autodiff = true)
 
-register(chord_design, :chords_lift, num_dv - 1, chords_lift, autodiff = true)
+## Objective
+@NLobjective(chord_design, Min, evaluate_CDi(x...))
 
-##
-@NLobjective(chord_design, Min, optimize_cdi_chords(chordsweeps...))
-@NLconstraint(chord_design, chords_lift(chordsweeps...) == 1)
+## Constraints
+@NLconstraint(chord_design, evaluate_cons(x...) == 35.)
 
 ## Run optimization
 optimize!(chord_design)
 
 ## Print optimal case
-println("Chords: $(value.(chords)), Optimal CDi: $(objective_value(chord_design))")
-chord_vals = value.(chords)
-uniform = Freestream(10., 0., 0.)
-wing = make_wing(chord_vals...)
-nf_coeffs, ff_coeffs, horseshoe_panels, normals, horseshoes, Γs = run_case(wing, 10., 0., 0.)
-cdi = ff_coeffs[2]
-cl = ff_coeffs[1]
-begin
-    println("\nNearfield:")
-    print_dynamics(nf_coeffs...)
-    println("\nFarfield:")
-    print_dynamics(ff_coeffs...)
-end
+@show value.(x)
+@show objective_value(chord_design)
 
 ##
-layout = Layout(title = "Vortex Lattice",
-                scene = attr(aspectratio=attr(x=1,y=1,z=1)));
-
-## Streamlines
-num_points = 30
-max_z = 0.02
-y = span(wing) / 2 - 0.5
-# seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
-
-span_points = 10
-init = trailing_chopper(wing.right, span_points)
-dx, dy, dz = 0, 0, 1e-3
-seed = [ init .+ Ref([dx, dy, dz]);
-         init .+ Ref([dx, dy, -dz]) ]
-
-trace_streams = trace_streamlines(uniform, seed, horseshoes[:], Γs[:], 2, 100);
+x_opt = value.(x)
+wing = make_wing(x_opt[1:end-1]);
 
 ##
-trace_horsies = trace_panels(horseshoe_panels[:])
-trace_horses = trace_panels(horseshoe_panels[:], Γs[:])
-trace_wing = trace_surface(wing)
+nf, ff = run_case(wing, V, x_opt[end], ρ, span_num, chord_num)
+print_coefficients(nf, ff)
 
-PlotlyJS.plot(
-            [
-                (trace for trace in trace_horsies)...,
-                (trace for trace in trace_horses)...,
-                (trace for trace in trace_streams)...,
-                # [ trace for trace in trace_wing ]...,
-            ],
-            layout)
+## Plotting
+bing = plot_wing(wing)
+
+##
+using Plots
+
+plot(bing)
 
 ## NACA-4 optimization
 #============================================#

@@ -40,13 +40,13 @@ foil_camthick(coords	  :: Array{2, Real},  # 2D coordinates
 ```
 
 ```julia
-foilpath  = "path/to/your/airfoil.dat"    # Airfoil coordinates file path
-coords    = read_foil(foilpath)           # Read coordinates file
-cos_foil  = cosine_foil(coords, 51)       # Cosine spacing with 51 points on upper and lower surfaces
-xcamthick = foil_camthick(cos_foil)       # Convert to camber-thickness representation
-foiler    = camthick_foil(xcamthick[:,1], # x-components
-                          xcamthick[:,2], # Camber distribution
-                          xcamthick[:,3]) # Thickness distribution
+foilpath  = "path/to/your/airfoil.dat"       # Airfoil coordinates file path
+coords    = read_foil(foilpath)              # Read coordinates file
+cos_foil  = cosine_foil(coords, 51)          # Cosine spacing with 51 points on upper and lower surfaces
+xcamthick = camber_thickness(Foil(cos_foil)) # Convert to camber-thickness representation
+foiler    = camber_thickness_to_coordinates(xcamthick[:,1], # x-components
+                          xcamthick[:,2],    # Camber distribution
+                          xcamthick[:,3])    # Thickness distribution
 ```
 
 ## Doublet-Source Panel Method
@@ -168,7 +168,7 @@ r_ref = [ mean_aerodynamic_center(wing)[1], 0., 0.]
 Now we run the case with specifications of the number of spanwise and chordwise panels by calling the `solve_case()` function, which has an associated method.
 
 ```julia
-solve_case(wing                   :: Union{Wing, HalfWing},
+solve_case(wing                   :: AbstractWing,
            freestream             :: Freestream;
            r_ref = [0.25, 0., 0.] :: Vector{Real},
            rho_ref = 1.225        :: Real,
@@ -241,7 +241,7 @@ Aircraft analysis by definition of multiple lifting surfaces using the `HalfWing
 panel_wing(wing                :: Union{HalfWing, Wing},
            span_num,           :: Union{Integer, Vector{<: Integer}},
            chord_num           :: Integer;
-           spacing  = "cosine" :: Union{String, Vector{String}} # Options: "uniform", "sine", "cosine"
+           spacing  = "cosine" :: Union{String, Vector{String}} # Options: Uniform(), Cosine(), "cosine"
           )
 ```
 
@@ -287,13 +287,13 @@ print_info(vtail, "Vertical Tail")
 
 # Assembly
 wing_panels , wing_normals  = panel_wing(wing, [20, 5], 10;
-                                         spacing = "uniform"
+                                         spacing = Uniform()
                                         )
 htail_panels, htail_normals = panel_wing(htail, [6], 6);
-                                         spacing = "uniform"
+                                         spacing = Uniform()
                                         )
 vtail_panels, vtail_normals = panel_wing(vtail, [6], 5;
-                                         spacing = "uniform"
+                                         spacing = Uniform()
                                         )
 ```
 

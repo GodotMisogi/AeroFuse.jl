@@ -26,7 +26,7 @@ print_info(wing, wing_name)
 # Mesh
 span_num        = 5
 chord_num       = 2
-panels, normies = panel_wing(wing, span_num, chord_num, spacing = "sine");
+panels, normies = panel_wing(wing, span_num, chord_num, spacing = Cosine());
 aircraft        = Dict(wing_name => (panels, normies));
 
 # Set up aerodynamic state
@@ -52,7 +52,7 @@ print_coefficients(aero_surfs[1], aero_state);
 #==========================================================================================#
 
 ## Mesh setup
-vlm_mesh = chord_coordinates(wing, [span_num], chord_num, spacings = ["sine"])
+vlm_mesh = chord_coordinates(wing, [span_num], chord_num, spacings = [Cosine()])
 
 ## Aerodynamic forces
 vlm_forces = surface_forces(aero_surfs[1])
@@ -214,7 +214,7 @@ fem_plot   = reduce(hcat, fem_mesh)
 loads_plot = fem_loads
 
 # Aerodynamic centers and forces
-panel_plot = plot_panels(panels[:])
+panel_plot = plot_panels(panels)
 ac_plot    = reduce(hcat, vlm_acs)
 force_plot = reduce(hcat, vlm_forces)
 

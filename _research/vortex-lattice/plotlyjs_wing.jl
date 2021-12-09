@@ -14,7 +14,7 @@ trace_coords(xs, ys, zs, color = :black) = [    scatter3d(
 
 trace_panels(panels :: Vector{<: Panel3D}) = trace_coords(panel_splits(panel_coords.(panels))...)
 
-trace_surface(wing :: Union{HalfWing, Wing}, span_num = 5, chord_num = 30; rotation = [1 0 0; 0 1 0; 0 0 1], translation = SVector(0, 0, 0)) = trace_panels([ transform(panel, rotation, translation) for panel in mesh_wing(wing, span_num, chord_num)[:] ])
+trace_surface(wing :: AbstractWing, span_num = 5, chord_num = 30; rotation = [1 0 0; 0 1 0; 0 0 1], translation = SVector(0, 0, 0)) = trace_panels([ transform(panel, rotation, translation) for panel in mesh_wing(wing, span_num, chord_num)[:] ])
 
 function trace_panels(panels :: Vector{<: Panel3D}, Γs :: Vector{<: Real})
     coords = panel_coords.(panels[:])

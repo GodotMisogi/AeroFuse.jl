@@ -13,7 +13,7 @@ influence_coefficient(horseshoe :: Horseshoe, horseshoe_j, V_hat, finite_core = 
 
 Assemble the Aerodynamic Influence Coefficient (AIC) matrix given horseshoes, collocation points, associated normal vectors, and a unit vector representing the freestream.
 """
-influence_matrix(horseshoes :: Vector{<: Horseshoe}, V_hat, finite_core = false) = [ influence_coefficient(horsie_j, horsie_i, V_hat, finite_core) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
+influence_matrix(horseshoes, V_hat, finite_core = false) = [ influence_coefficient(horsie_j, horsie_i, V_hat, finite_core) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
 
 """
     boundary_condition(velocities, normals)
@@ -26,7 +26,7 @@ boundary_condition(velocities, normals) = dot.(velocities, normals)
 ## Pre-allocated versions
 #====================================================#
 
-function matrix_assembly!(AIC, RHS, horseshoes :: Vector{<: Horseshoe}, collocation_points, normals, V, Ω, finite_core = false)
+function matrix_assembly!(AIC, RHS, horseshoes, collocation_points, normals, V, Ω, finite_core = false)
     for inds ∈ CartesianIndices(AIC)
         i, j = inds.I
         AIC[inds] = dot(velocity(collocation_points[i], horseshoes[j], 1., -normalize(V), finite_core), normals[i])

@@ -6,6 +6,7 @@ module Beams
 using SparseArrays
 using StaticArrays
 using LinearAlgebra
+using SplitApplyCombine
 
 abstract type AbstractBeam end
 
@@ -165,10 +166,9 @@ end
 
 tube_stiffness_matrix(tubes :: Vector{<: Tube}) = tube_stiffness_matrix((elastic_modulus ∘ material).(tubes), (shear_modulus ∘ material).(tubes), area.(tubes), moment_of_inertia.(tubes), moment_of_inertia.(tubes), polar_moment_of_inertia.(tubes), length.(tubes))
 
-function build_stiffness_matrix(Ks, constraint_indices)
+function build_stiffness_matrix(D, constraint_indices)
     # Temporary reshaping for sparse matrix construction
-    num_Ks = length(Ks)
-    D      = @views reshape(reduce(hcat, Ks), 12, 12, num_Ks)
+    num_Ks = @views length(D[1,1,:])
 
     # First element
     D_start = @views D[1:6,1:6,1]
@@ -185,17 +185,17 @@ function build_stiffness_matrix(Ks, constraint_indices)
 
     # Build sparse matrix
     stiffness = spzeros(6 * (num_Ks + 2), 6 * (num_Ks + 2))
-    stiffness[7:12,7:12]           = D_start
-    stiffness[end-5:end,end-5:end] = D_end
+    @views stiffness[7:12,7:12]           = D_start
+    @views stiffness[end-5:end,end-5:end] = D_end
 
     for m in 1:num_Ks
         mid_inds = 6(m+1)+1:6(m+1)+6
         off_inds = 6(m)+1:6(m)+6
         if m < num_Ks
-            stiffness[mid_inds,mid_inds] = D_mid[:,:,m]
+            @views stiffness[mid_inds,mid_inds] = D_mid[:,:,m]
         end
-        stiffness[off_inds,mid_inds] = D_12[:,:,m]
-        stiffness[mid_inds,off_inds] = D_21[:,:,m]
+        @views stiffness[off_inds,mid_inds] = D_12[:,:,m]
+        @views stiffness[mid_inds,off_inds] = D_21[:,:,m]
     end
 
     # Fixed boundary condition by constraining the locations.
@@ -203,10 +203,10 @@ function build_stiffness_matrix(Ks, constraint_indices)
     arr = 1:6
 
     col = arr
-    row = reduce(hcat, con .+ arr for con in cons)
+    row = combinedimsview(map(con -> con .+ arr, cons))
 
-    stiffness[CartesianIndex.(col, row)] .= 1e9
-    stiffness[CartesianIndex.(row, col)] .= 1e9
+    @views stiffness[CartesianIndex.(col, row)] .= 1e9
+    @views stiffness[CartesianIndex.(row, col)] .= 1e9
 
     stiffness
 end
@@ -224,7 +224,7 @@ function solve_cantilever_beam(Ks, loads, constraint_indices)
     x = K \ f
 
     # Throw away the junk values for the constraint
-    reshape(x[7:end], 6, length(Ks) + 1)
+    @views reshape(x[7:end], 6, length(Ks[1,1,:]) + 1)
 end
 
 end

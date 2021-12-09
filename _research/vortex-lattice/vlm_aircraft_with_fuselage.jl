@@ -46,25 +46,28 @@ wing_panels, wing_normals  = panel_wing(wing,                 # Wing or HalfWing
                                        )
 
 htail_panels, htail_normals = panel_wing(htail, [6], 6;
-                                         spacing  = "uniform"
+                                         spacing  = Uniform()
                                         )
 
 vtail_panels, vtail_normals = panel_wing(vtail, [6], 5;
-                                         spacing  = "uniform"
+                                         spacing  = Uniform()
                                         )
 
 wing_horses  = Horseshoe.(wing_panels,  wing_normals)
 htail_horses = Horseshoe.(htail_panels, htail_normals)
 vtail_horses = Horseshoe.(vtail_panels, vtail_normals)
 
-aircraft_panels = [ wing_panels[:]; htail_panels[:]; vtail_panels[:] ]
-horses          = [ wing_horses[:]; htail_horses[:]; vtail_horses[:] ]
+aircraft_panels = ComponentArray(
+                                 wing  = wing_panels,
+                                 htail = htail_panels,
+                                 vtail = vtail_panels
+                                )
 
-aircraft = Dict(
-                "Wing"             => wing_horses,
-                "Horizontal Tail"  => htail_horses,
-                "Vertical Tail"    => vtail_horses
-                )
+aircraft = ComponentArray(
+                          wing  = wing_horses,
+                          htail = htail_horses,
+                          vtail = vtail_horses
+                         )
 
 wing_mac = mean_aerodynamic_center(wing)
 x_w      = wing_mac[1]
@@ -74,7 +77,7 @@ ac_name = "My Aircraft"
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ρ       = 1.225
 ref     = [ x_w, 0., 0.]
-V, α, β = 1.0, 5.0, 0.0
+V, α, β = 1.0, 5.0, 5.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
 

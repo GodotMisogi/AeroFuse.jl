@@ -25,8 +25,8 @@ cos_foil = cosine_foil(coords, 60)
 doublet_source_case(cos_foil, uniform)
 
 ## Camber-thickness transformations
-xcamthick = foil_camthick(cos_foil)
-foiler = camthick_foil(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
+xcamthick = camber_thickness(Foil(cos_foil), 60)
+foiler = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
 
 doublet_source_case(foiler, uniform)
 
@@ -37,7 +37,7 @@ num_dv = 8
 up, low  = split_foil(coords)
 alpha_u  = coords_to_CST(up, num_dv)
 alpha_l  = coords_to_CST(low, num_dv)
-cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), 0.0)
+cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.))
 
 doublet_source_case(cst_foil, uniform)
 

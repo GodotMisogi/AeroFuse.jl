@@ -8,27 +8,25 @@
 
 Definition for a `HalfWing` consisting of ``N+1`` airfoils and their associated chord lengths ``c``, twist angles ``\\iota``, for ``N`` sections with span lengths ``b``, dihedrals ``\\delta`` and sweep angles ``\\Lambda``, with all angles in degrees.
 """
-struct HalfWing{T <: Real} <: Aircraft
-    foils      :: Vector{Foil{T}}
-    chords     :: Vector{T}
-    twists     :: Vector{T}
-    spans      :: Vector{T}
-    dihedrals  :: Vector{T}
-    sweeps     :: Vector{T}
-    position   :: SVector{3,T}
-    orientation :: SMatrix{3,3,T}
-    function HalfWing(foils :: AbstractVector{Foil{T}}, chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: AbstractVector{T}, dihedrals :: AbstractVector{T}, sweeps :: AbstractVector{T}, position = zeros(3), angle = 0., axis = [0.,1.,0.]) where T <: Real
-        # Error handling
-        check_wing(foils, chords, twists, spans, dihedrals, sweeps)
-        # Convert angles to radians, with adjusting twists to leading edge, and generate HalfWing
-        new{T}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), position, AngleAxis{T}(deg2rad(angle), axis...))
-    end
+struct HalfWing{M,N,P,Q,R,S,T} <: AbstractWing
+    foils      :: Vector{M}
+    chords     :: Vector{N}
+    twists     :: Vector{P}
+    spans      :: Vector{Q}
+    dihedrals  :: Vector{R}
+    sweeps     :: Vector{S}
+    affine     :: T
 end
 
-# HalfWing(foils :: AbstractVector{<: Foil}, chords :: AbstractVector{<: Real}, twists :: AbstractVector{<: Real}, spans :: AbstractVector{<: Real}, dihedrals :: AbstractVector{<: Real}, sweeps :: AbstractVector{<: Real}) = HalfWing(foils, chords, twists, spans, dihedrals, sweeps)
+function HalfWing(foils :: AbstractVector{M}, chords :: AbstractVector{N}, twists :: AbstractVector{P}, spans :: AbstractVector{Q}, dihedrals :: AbstractVector{R}, sweeps :: AbstractVector{S}, position = zeros(3), angle :: T = 0., axis = [0.,1.,0.], affine = AffineMap(AngleAxis{T}(deg2rad(angle), axis...), position)) where {M <: AbstractFoil, N <: Real, P <: Real, Q <: Real, R <: Real, S <: Real, T <: Real} 
+    # Error handling
+    check_wing(foils, chords, twists, spans, dihedrals, sweeps)
+    # Convert angles to radians, with adjusting twists to leading edge, and generate HalfWing
+    HalfWing{M,N,P,Q,R,S,typeof(affine)}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), affine)
+end
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
-    # Check if number of sections match up with number of edges
+    # Check if number of sections match up with number of edges (NEEDS WORK)
     @assert (length ∘ zip)(foils, chords, twists) == (length ∘ zip)(spans, dihedrals, sweeps) + 1 "N+1 foil sections, chords and twists are required for N section(s)."
     # Check if lengths are positive
     @assert any(x -> x >= 0., chords) || any(x -> x >= 0., spans) "Chord and span lengths must be positive."
@@ -50,9 +48,9 @@ dihedrals(wing :: HalfWing) = wing.dihedrals
 sweeps(wing    :: HalfWing) = wing.sweeps
 
 # Affine transformation
-Base.position(wing :: HalfWing) = wing.position
-orientation(wing :: HalfWing) = wing.orientation
-affine_transformation(wing :: HalfWing{T}) where T <: Real = Translation(position(wing)) ∘ LinearMap(orientation(wing))
+Base.position(wing :: HalfWing) = wing.affine.transformation
+orientation(wing :: HalfWing) = wing.affine.linear
+affine_transformation(wing :: HalfWing) = wing.affine
 
 """
     span(half_wing :: HalfWing)
@@ -112,7 +110,7 @@ camber_thickness(wing :: HalfWing, num) = camber_thickness.(wing.foils, num)
 
 max_thickness_to_chord_ratio_location(wing :: HalfWing, num) = max_thickness_to_chord_ratio_location.(camber_thickness(wing, num))
 
-function max_tbyc_sweeps(wing :: HalfWing, num)
+function max_thickness_to_chord_ratio_sweeps(wing :: HalfWing, num)
     xs_max_tbyc = max_thickness_to_chord_ratio_location(wing, num)
     max_tbyc    = last.(xs_max_tbyc)
     xs_temp     = first.(xs_max_tbyc)

@@ -1,6 +1,7 @@
 ## Aircraft analysis case
 using AeroMDAO
-
+using ComponentArrays
+using TimerOutputs
 ## Lifting surfaces
 
 # Wing
@@ -46,28 +47,31 @@ wing_panels, wing_normals  = panel_wing(wing,                 # Wing or HalfWing
                                        )
 
 htail_panels, htail_normals = panel_wing(htail, [6], 6;
-                                         spacing  = "uniform"
+                                         spacing  = Uniform()
                                         )
 
 vtail_panels, vtail_normals = panel_wing(vtail, [6], 5;
-                                         spacing  = "uniform"
+                                         spacing  = Uniform()
                                         )
 
 wing_horses  = Horseshoe.(wing_panels,  wing_normals)
 htail_horses = Horseshoe.(htail_panels, htail_normals)
 vtail_horses = Horseshoe.(vtail_panels, vtail_normals)
 
-aircraft_panels = [ wing_panels[:]; htail_panels[:]; vtail_panels[:] ]
-horses          = [ wing_horses[:]; htail_horses[:]; vtail_horses[:] ]
+aircraft_panels = ComponentArray(
+                                 wing  = wing_panels,
+                                 htail = htail_panels, 
+                                 vtail = vtail_panels
+                                )
 
-aircraft = Dict(
-                "Wing"             => wing_horses,
-                "Horizontal Tail"  => htail_horses,
-                "Vertical Tail"    => vtail_horses
-                )
+aircraft = ComponentArray(
+                          wing  = wing_horses,
+                          htail = htail_horses,
+                          vtail = vtail_horses
+                         )
 
 wing_mac = mean_aerodynamic_center(wing)
-x_w     = wing_mac[1]
+x_w      = wing_mac[1]
 
 ## Case
 ac_name = "My Aircraft"
@@ -90,11 +94,23 @@ fs      = Freestream(V, α, β, Ω)
                print_components = true, # Prints the results for each component
               );
 
-## Data collection
-comp_names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
-comp  = comp_names[1]               # Pick your component
-nf_coeffs, ff_coeffs, CFs, CMs, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
-print_coefficients(nf_coeffs, ff_coeffs, comp)
+## Data access
+Γs_comp    = data.wing.circulations
+CFs        = data.wing.CFs
+CMs        = data.wing.CMs
+
+# Component data processing
+nf_coeffs  = nearfield(data.wing) # Nearfield coefficients
+ff_coeffs  = farfield(data.wing)  # Farfield coefficients
+
+print_coefficients(nf_coeffs, ff_coeffs, :wing)
+
+## System data processing
+Γs   = circulations(data)                # Circulations of entire system
+nf_c = sum(nearfield_coefficients(data)) # Total nearfield force and moment coefficients
+ff_c = sum(farfield_coefficients(data))  # Total farfield force coefficients
+
+print_coefficients(nf_c, ff_c, ac_name)
 
 ## Stability case
 @time dv_data =
@@ -135,7 +151,7 @@ seed        = [ init .+ Ref([dx, dy, dz]) ;
 
 distance = 8
 num_stream_points = 200
-streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
+streams = plot_streams(fs, seed, aircraft, Γs, distance, num_stream_points);
 
 ##
 using Plots
@@ -143,8 +159,9 @@ gr(size = (1280, 720), dpi = 300)
 
 ##
 horseshoe_coords = plot_panels(aircraft_panels)
-horseshoe_points = Tuple.(horseshoe_point.(aircraft_panels))[:];
+horseshoe_points = Tuple.(horseshoe_point.(aircraft_panels));
 
+##
 z_limit = b
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      camera = (30, 60),
@@ -166,7 +183,7 @@ CDis     = @. getindex(wind_CFs, 1)
 CYs      = @. getindex(wind_CFs, 2)
 CLs      = @. getindex(wind_CFs, 3)
 
-hs_pts = Tuple.(bound_leg_center.(horses))[:]
+hs_pts = Tuple.(bound_leg_center.(aircraft))
 
 quiver!(hs_pts, quiver=(CDis[:], CYs[:], CLs[:]) .* 500)
 plot!()
