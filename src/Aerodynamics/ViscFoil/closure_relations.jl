@@ -83,7 +83,6 @@ m(H_k) = (0.058(H_k - 4)^2 / (H_k - 1) - 0.068) / l(H_k)
 # New correlation: -0.05 + 2.7*H_k - 5.5H_k^2 + 3.0H_k^3
 
 
-
 ## Generic conversions
 #============================================#
 
@@ -93,3 +92,5 @@ cf(U_e, θ, H, ν = 1.5e-5) = 2 * lam_CF(H) / reynolds_number(U_e, θ, ν)
 # CD = lam_H_star(H) * lam_CD(H) / 2Re
 cD(U_e, θ, H, ν) = lam_H_star(H) * lam_CD(H) / (2 * reynolds_number(U_e, θ, ν) )
 
+# Squire-Young formula for drag coefficient
+cd_squire_young(θ_wake, u_e_wake, H_wake, V_inf) = 2θ_wake * (u_e_wake / V_inf)^((5 + H) / 2)

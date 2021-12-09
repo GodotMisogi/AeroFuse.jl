@@ -149,7 +149,7 @@ function solve_viscous_case(panels, wakes, uniform :: Uniform2D)
     ms          = U_invs ./ [ all_lengths; all_lengths[end] ] .* 0.01   # N + N_w + 1
     θs          = fill(0.1, num_nodes)                                  # N + N_w
     ns          = fill(6.0, num_nodes)                                  # N + N_w
-    x0          = [ ms; θs; ns ]
+    x0          = [ ms; θs; ns ] # Is there any better way to guess than the heuristic?
 
     # Solving system
     #======================================================#

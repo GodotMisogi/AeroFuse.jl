@@ -168,6 +168,7 @@ function boundary_layer_finite_difference(Us, δ_stars, θs, Ts, ΔXs, panels, n
     R = zeros(length(panels), 3)
     evaluate_residuals!(R, bl_sys)
 
+    # Old/pure evaluation
     # Rs  = evaluate_residuals.(panels[1:end-1], panels[2:end],   # Foil panels and wake panels
     #                           Us[1:end-1], Us[2:end],           # Edge velocities
     #                           θs[1:end-1], θs[2:end],           # Momentum thicknesses
