@@ -205,7 +205,6 @@ state  = StateVector(R_o, φs, U, Ω)
 x0     = (collect ∘ vector)(state)
 ps     = (aircraft, mass, g, inertia, zeros(3), ρ, ref, S, b, c)
 
-# @time cocker = cuck(1.0, x0) # Test
 
 ##
 tspan       = (0., 1.0)
@@ -218,7 +217,7 @@ prob        = ODEProblem(run, x0, tspan, (t, x) -> compute_6DOF_dynamics(t, x, p
 # jac         = eval(ModelingToolkit.generate_jacobian(de)[2])
 # f           = ODEFunction(run, jac = jac, mass_matrix = M)
 
-# prob_jac = ODEProblem(f, x0, tspan, cuck)
+# prob_jac = ODEProblem(f, x0, tspan, params)
 
 ##
 @time sol = solve(prob, reltol = 1e-6, abstol = 1e-6);

@@ -155,8 +155,8 @@ function solve_viscous_case(panels, wakes, uniform :: Uniform2D)
     #======================================================#
 
     # R  = zeros(num_nodes * num_vars + 1)
-    cuck(x)     = solve_system(x, [panels; wakes], all_lengths, D, U_invs, n_crit)
-    state       = nlsolve(cuck,
+    system(x)   = solve_system(x, [panels; wakes], all_lengths, D, U_invs, n_crit)
+    state       = nlsolve(system,
                           x0,
                           iterations = 20,
                         #   autodiff = :forward,

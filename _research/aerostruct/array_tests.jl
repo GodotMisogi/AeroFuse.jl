@@ -124,10 +124,10 @@ vlm_arr = reshape(reduce(hcat, bound_leg_center.(horsies)), (3, size(horsies)...
 vlm_fs  = reshape(reduce(hcat, vlm_forces), (3, size(horsies)...))
 fem_arr = reduce(hcat, fem_pts)
 
-mommy(vlm_arr, fem_arr, vlm_fs) =
+compute_loads(vlm_arr, fem_arr, vlm_fs) =
     [ (vlm_arr[:,j,i] - fem_arr[:,i]) × vlm_fs[:,j,i] for j in eachindex(vlm_fs[1,:,1]), i in eachindex(fem_arr[1,:]) ]
 
-cuck = sum(mommy(vlm_arr, fem_arr[:,1:end-1], vlm_fs / 2), dims = 1)[:]
+res = sum(compute_loads(vlm_arr, fem_arr[:,1:end-1], vlm_fs / 2), dims = 1)[:]
 
 
     # dx_wtf      = reshape(reduce(hcat, dx_mesh), (size(dx_mesh)..., 3))
