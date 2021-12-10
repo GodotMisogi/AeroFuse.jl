@@ -103,10 +103,10 @@ function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: Abstrac
     end
 end
 
-function print_derivatives(derivs, name = ""; browser = false)
+function print_derivatives(comp, name = ""; browser = false)
     coeffs = ["CD", "CY", "CL", "Cl", "Cm", "Cn", "CD_ff", "CY_ff", "CL_ff"]
     nf_vars = [ "$name" "Values" "" "" "Derivatives" "" "" ; "" "" "∂α, 1/rad" "∂β, 1/rad" "∂p̄" "∂q̄" "∂r̄" ]
-    nf_rows = [ coeffs reshape(derivs, 9, 6) ]
+    nf_rows = [ coeffs [ [comp.NF; comp.FF] [ comp.dNF; comp.dFF ] ] ]
 
     if browser
         pretty_table(String, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
