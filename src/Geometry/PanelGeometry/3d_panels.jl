@@ -36,11 +36,11 @@ average_chord(panel :: Panel3D) = (p2(panel) - p1(panel) + p3(panel) - p4(panel)
 average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)) / 2
 
 """
-    panel_coords(panel :: Panel3D)
+    panel_coordinates(panel :: Panel3D)
 
 Compute the coordinates of a Panel3D.
 """
-panel_area(panel :: Panel3D) = (norm ∘ cross)(average_chord(panel), average_width(panel))
+panel_coordinates(panel :: Panel3D) = [ p1(panel), p2(panel), p3(panel), p4(panel) ]
 
 """
     make_panels(xyzs)
@@ -54,7 +54,7 @@ make_panels(xyzs) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], 
 
 Perform an affine transformation on the coordinates of a Panel3D given a rotation matrix and translation vector.
 """
-transform(panel :: Panel3D, rotation, translation) = Panel3D((Translation(translation) ∘ LinearMap(rotation)).(panel_coords(panel)))
+transform(panel :: Panel3D, rotation, translation) = Panel3D((Translation(translation) ∘ LinearMap(rotation)).(panel_coordinates(panel)))
 
 """
     midpoint(panel :: Panel3D)
@@ -82,6 +82,6 @@ transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, panel_normal(pan
 
 Compute the area of a Panel3D.
 """
-panel_area(panel :: Panel3D) = norm(panel_normal(panel))
+panel_area(panel :: Panel3D) = (norm ∘ cross)(average_chord(panel), average_width(panel))
 
 wetted_area(panels) = sum(panel -> panel_area(panel), panels)
