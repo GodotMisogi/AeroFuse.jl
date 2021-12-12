@@ -23,9 +23,9 @@ Compute the normal derivative strengths of the doublets given the wake `Line`s, 
 """
 function doublet_normal_derivatives(wake_lines :: Vector{<: Line}, Δφs, normals)
     centers = center.(wake_lines)
-    pts 	= points(wake_lines)
-    AIC   	= trefftz_influence_matrix(centers, normals, pts)
-    ∂φ_∂n 	= AIC * Δφs
+    pts     = points(wake_lines)
+    AIC     = trefftz_influence_matrix(centers, normals, pts)
+    ∂φ_∂n   = AIC * Δφs
 end
 
 project_vector(vector, U) = vector - dot(U, vector) * U
@@ -76,7 +76,7 @@ end
 
 Compute the aerodynamic forces in the Trefftz plane normal to the freestream given horseshoes, their associated strengths Γs, and a density ρ.
 """
-function trefftz_forces(Γs, horseshoes :: AbstractArray{<: Horseshoe}, speed, α, β, ρ)
+function trefftz_forces(Γs, horseshoes, speed, α, β, ρ)
     # Get projections of horseshoes into Trefftz plane with the associated normals, dihedral angles and lengths
     wake_lines, normals, dihedrals, Δs = trefftz_preprocessing(horseshoes, α, β)
 

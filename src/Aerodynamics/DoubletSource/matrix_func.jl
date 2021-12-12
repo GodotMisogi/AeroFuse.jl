@@ -53,7 +53,7 @@ boundary_vector(colpoints, u, r_te) = [ dot.(colpoints, Ref(u)); dot(u, r_te) ]
 
 # boundary_vector(panels, u, r_te) = [ dot.(collocation_point.(panels), Ref(u)); dot(u, r_te) ]
 
-function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<: AbstractPanel2D}, u) 
+function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<: AbstractPanel2D}, u)
     source_panels = [ panels; wakes ]
     [ - source_matrix(panels, source_panels) * source_strengths(source_panels, u); 0 ]
 end
@@ -68,16 +68,16 @@ function solve_strengths(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     woke_panel  = wake_panel(panels, bound, α)
     woke_vector = wake_vector(woke_panel, panels)
     woke_matrix = [ -woke_vector zeros(length(panels), length(panels) -2) woke_vector ]
-    
-    # AIC
-    AIC 	= doublet_matrix(panels, panels) + woke_matrix
-    boco 	= dot.(collocation_point.(panels), Ref(u)) - woke_vector * dot(u, r_te)
-    
-    # AIC
-    # AIC 	= influence_matrix(panels, woke_panel)
-    # boco 	= boundary_vector(ifelse(sources, panels, collocation_point.(panels)), u, r_te) - [ woke_vector; 0 ] .* dot(u, r_te) 
 
-    AIC \ boco 
+    # AIC
+    AIC     = doublet_matrix(panels, panels) + woke_matrix
+    boco    = dot.(collocation_point.(panels), Ref(u)) - woke_vector * dot(u, r_te)
+
+    # AIC
+    # AIC   = influence_matrix(panels, woke_panel)
+    # boco  = boundary_vector(ifelse(sources, panels, collocation_point.(panels)), u, r_te) - [ woke_vector; 0 ] .* dot(u, r_te)
+
+    AIC \ boco
 end
 
 """
@@ -89,8 +89,8 @@ function tangential_velocities(panels, φs, u, sources :: Bool)
     # Δrs   = midpair_map(panel_dist, panels)
     # Δφs   = -midpair_map(-, φs[1:end-1])
 
-    Δrs   	 = @. panel_dist(panels[2:end], panels[1:end-1])
-    Δφs   	 = @. φs[1:end-1] - φs[2:end] 
+    Δrs      = @. panel_dist(panels[2:end], panels[1:end-1])
+    Δφs      = @. φs[1:end-1] - φs[2:end]
     tangents = @. panel_tangent(panels[2:end])
 
     vels  = ifelse(sources, panel_velocity.(Δφs, Δrs, Ref(u), tangents), Δφs ./ Δrs)
@@ -106,9 +106,9 @@ end
 
 Solve the system of equations ``[AIC][\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` condition given the array of Panel2Ds, a velocity ``\\vec U``, a vector of wake `Panel2D`s, and an optional named bound for the length of the wake.
 """
-function solve_strengths(panels, u, α, wakes; bound = 1e2) 
+function solve_strengths(panels, u, α, wakes; bound = 1e2)
     AIC  = influence_matrix(panels, wake_panel(panels, bound, α))
     boco = boundary_vector(panels, wakes, u)
 
-    AIC \ boco 
+    AIC \ boco
 end

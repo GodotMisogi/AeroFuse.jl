@@ -1,11 +1,18 @@
 module DoubletSource
 
+## Package imports
+#==========================================================================================#
+
 using LinearAlgebra
 using Base.Iterators
 using StaticArrays
 using Statistics
 
-using ..AeroMDAO: AbstractPanel2D, Panel2D, WakePanel2D, Point2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, rotation, inverse_rotation, midpair_map, pressure_coefficient, wake_panel, wake_panels, panel_points, panel_vector
+import ..MathTools: rotation, inverse_rotation, midpair_map
+
+import ..NonDimensional: pressure_coefficient
+
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, panel_dist, wake_panel, wake_panels, panel_points, panel_vector
 
 ## Doublet-source Dirichlet boundary condition
 #===========================================================================#
@@ -64,37 +71,37 @@ include("matrix_func.jl")
 export solve_problem
 
 function solve_problem(panels, u, α, sources :: Bool, wake_length)
-    speed 			= norm(u)
-    xs	 			= getindex.(panel_points(panels)[2:end-1], 1)
+    speed           = norm(u)
+    xs              = getindex.(panel_points(panels)[2:end-1], 1)
 
     # Blunt trailing edge tests
-    te_panel 		= Panel2D((p2 ∘ last)(panels), (p1 ∘ first)(panels))
-    r_te 			= panel_vector(te_panel)
-    φ_TE  			= dot(u, r_te)
+    te_panel        = Panel2D((p2 ∘ last)(panels), (p1 ∘ first)(panels))
+    r_te            = panel_vector(te_panel)
+    φ_TE            = dot(u, r_te)
 
     # Solve for doublet strengths
-    φs 				= solve_strengths(panels, u, α, r_te, sources; bound = wake_length)
-    
+    φs              = solve_strengths(panels, u, α, r_te, sources; bound = wake_length)
+
     # Evaluate inviscid edge velocities
-    u_es, Δrs 		= tangential_velocities(panels, φs, u, sources)
-    
-    # Compute coefficients 
-    cls, cms, cps 	= eval_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
-    
+    u_es, Δrs       = tangential_velocities(panels, φs, u, sources)
+
+    # Compute coefficients
+    cls, cms, cps   = eval_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
+
     # Evaluate lift coefficient from wake doublet strength
-    cl_wake 		= lift_coefficient(φs[end] - φs[1] + φ_TE, speed)
+    cl_wake         = lift_coefficient(φs[end] - φs[1] + φ_TE, speed)
 
     cls, cms, cps, cl_wake
 end
 
 function solve_problem(panels, u, α, num_wake :: Integer, wake_length)
-    speed 			= norm(u)
-    xs	 			= getindex.(panel_points(panels)[2:end-1], 1)
-    wakes 			= wake_panels(panels, wake_length, num_wake)
-    φs				= solve_strengths(panels, u, α, wakes; bound = wake_length)
-    u_es, Δrs 		= tangential_velocities(panels, φs[1:end-1], u, false)
-    cls, cms, cps 	= evaluate_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
-    cl_wake 		= lift_coefficient(last(φs), speed)
+    speed           = norm(u)
+    xs              = getindex.(panel_points(panels)[2:end-1], 1)
+    wakes           = wake_panels(panels, wake_length, num_wake)
+    φs              = solve_strengths(panels, u, α, wakes; bound = wake_length)
+    u_es, Δrs       = tangential_velocities(panels, φs[1:end-1], u, false)
+    cls, cms, cps   = evaluate_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
+    cl_wake         = lift_coefficient(last(φs), speed)
 
     cls, cms, cps, cl_wake
 end

@@ -12,9 +12,9 @@ Compute the streamlines from a given starting point, a Freestream, Horseshoes an
 """
 function streamlines(point, V, Ω, horseshoes, Γs, length, num_steps :: Integer)
     streamlines = fill(point, num_steps)
-    cuck(x) = stream_velocity(x, horseshoes, Γs, V, Ω)
+    f(x) = stream_velocity(x, horseshoes, Γs, V, Ω)
     for i ∈ 2:num_steps
-        update = cuck(streamlines[i-1])
+        update = f(streamlines[i-1])
         streamlines[i] = streamlines[i-1] + (update / norm(update) * length / num_steps)
     end
     streamlines

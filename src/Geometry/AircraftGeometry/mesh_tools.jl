@@ -1,34 +1,42 @@
-function chop_sections(set1, set2, n :: Integer, spacing = "cosine"; flip = false)
-    if lowercase(spacing) == "uniform"
-        space = uniform_spacing(0., 1., n + 1)
-    elseif lowercase(spacing) == "sine"
-        space = sine_spacing(0., 1., (n + 1) * ifelse(flip, -1, 1))
-    else
-        space = cosine_spacing(0.5, 1., n + 1)
-    end
+abstract type AbstractSpacing end
 
+struct Cosine  <: AbstractSpacing end
+struct Sine    <: AbstractSpacing end
+struct Uniform <: AbstractSpacing end
+
+spacing(n, :: Uniform, flip = false) = uniform_spacing(0., 1., n + 1)
+spacing(n, :: Cosine, flip = false)  = cosine_spacing(0.5, 1., n + 1)
+spacing(n, :: Sine, flip = false) = sine_spacing(0., 1., (n + 1) * ifelse(flip, -1, 1))
+spacing(n, distribution :: AbstractSpacing = Cosine(), flip = false) = spacing(n, distribution, flip)
+
+Base.reverse(q :: AbstractSpacing) = q
+Base.Broadcast.broadcastable(q::AbstractSpacing) = Ref(q)
+
+function chop_sections(set1, set2, n :: Integer, distribution = Cosine(); flip = false)
+    space = spacing(n, distribution, flip)
     @views [ weighted_vector.(set1, set2, μ) for μ ∈ space ][1:end-1]
 end
 
-chop_coordinates(coords, n, spacings = "cosine", flip = false) = @views [ reduce(vcat, chop_sections.(coords[1:end-1], coords[2:end], n, spacings; flip = flip)); [ coords[end] ] ]
+chop_coordinates(coords, n, spacing = Cosine(), flip = false) = @views [ reduce(vcat, chop_sections.(coords[1:end-1], coords[2:end], n, spacing; flip = flip)); [ coords[end] ] ]
 
-chord_sections(lead, trail) = [ [ l'; t' ] for (l, t) ∈ zip(lead, trail) ]
+chop_spans(xyzs, div, spacing = Cosine(), flip = false) = permutedims(combinedimsview(map(xyz -> chop_coordinates(xyz, div, spacing, flip), eachrow(xyzs))))
 
-chop_chords(coords, n) = @views [ [ weighted_vector(chord[1,:], chord[2,:], μ) for μ ∈ cosine_spacing(0.5, 1., n + 1) ] for chord ∈ coords ]
+chop_chords(xyzs, div, spacing = Cosine()) = combinedimsview(map(xyz -> chop_coordinates(xyz, div, spacing), eachcol(xyzs)))
 
-chop_spans(lead, trail, div, spacing = "cosine", flip = false) = chop_coordinates(lead, div, spacing, flip), chop_coordinates(trail, div, spacing, flip)
+chop_wing(xyzs, span_num, chord_num; span_spacing = Cosine(), chord_spacing = Cosine(), flip = false) = chop_chords(chop_spans(xyzs, span_num, span_spacing, flip), chord_num, chord_spacing)
 
-chop_wing(lead, trail, span_num, chord_num; span_spacing = "cosine", flip = false) = let (lead, trail) = chop_spans(lead, trail, span_num, span_spacing, flip); chop_chords(chord_sections(lead, trail), chord_num) end
+transform_coordinates(xyz, twist, section) = eachrow(xyz * RotY(-twist)') .+ Ref(section)
 
-"""
-    make_panels(xyzs)
+function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_num, spacings, flip = false)
+    # Reverse direction if left side
+    if flip
+        scaled_foils = reverse(scaled_foils)
+        twisties     = reverse(twisties)
+    end
 
-Convert an array of coordinates corresponding to a wing, ordered from root to tip and leading-edge to trailing-edge, into panels.
-"""
-make_panels(xyzs) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], xyzs[2:end,2:end], xyzs[1:end-1,2:end])
+    # Rotate and translate coordinates
+    foil_coords = combinedimsview(transform_coordinates.(scaled_foils, twisties, leading_xyz))
 
-# WTF was I thinking?
-# spanlist = vectarray.(coords)
-# spanlist = zip(coords, coords[2:end,:])
-# adjacent_sections = zip(spanlist, spanlist[2:end])
-# @views hcat(( Panel3D.(root[1:end-1], root[2:end], tip[2:end], tip[1:end-1]) for (root, tip) ∈ adjacent_sections )...)
+    # Chop up spanwise sections
+    chop_spans(foil_coords, span_num, spacings, flip)
+end

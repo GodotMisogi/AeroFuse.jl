@@ -30,15 +30,15 @@ function transform_panel_points(panel_1 :: AbstractPanel2D, panel_2 :: AbstractP
     x1, y1, x2, y2 = p1(panel_2), p2(panel_2)
     xs, ys = p1(panel_1)
 
-    xp1, yp1 = affine_2D(x1, y1, xs, ys, panel_angle(panel_1)) 
-    xp2, yp2 = affine_2D(x2, y2, xs, ys, panel_angle(panel_1)) 
+    xp1, yp1 = affine_2D(x1, y1, xs, ys, panel_angle(panel_1))
+    xp2, yp2 = affine_2D(x2, y2, xs, ys, panel_angle(panel_1))
 
     xp1, yp1, xp2, yp2
 end
 
 function transform_panel(panel :: AbstractPanel2D, point :: SVector{2,<: Real})
     xs, ys = p1(panel)
-    affine_2D(first(point), last(point), xs, ys, panel_angle(panel)) 
+    affine_2D(first(point), last(point), xs, ys, panel_angle(panel))
 end
 
 panel_angle(panel :: AbstractPanel2D) = let (x, y) = panel_vector(panel); atan(y, x) end
@@ -54,17 +54,17 @@ trailing_edge_panel(panels) = Panel2D((p2 ∘ last)(panels), (p1 ∘ first)(pane
 
 function wake_panel(panels, bound, α)
     firstx, firsty   = (p1 ∘ first)(panels)
-    lastx, lasty	 = (p2 ∘ last)(panels)
-    y_mid 			 = (firsty + lasty) / 2
-    y_bound, x_bound = bound .* sincos(α) 
+    lastx, lasty     = (p2 ∘ last)(panels)
+    y_mid            = (firsty + lasty) / 2
+    y_bound, x_bound = bound .* sincos(α)
     WakePanel2D(SVector(lastx, y_mid), SVector(x_bound * lastx, y_bound * y_mid))
 end
 
 function wake_panels(panels, chord, length, num)
     firstx, firsty  = (p1 ∘ first)(panels)
-    lastx, lasty	= (p2 ∘ last)(panels)
-    y_mid 			= (firsty + lasty) / 2
-    bounds 			= cosine_spacing(chord + length / 2, length, num)
+    lastx, lasty    = (p2 ∘ last)(panels)
+    y_mid           = (firsty + lasty) / 2
+    bounds          = cosine_spacing(chord + length / 2, length, num)
     @. WakePanel2D(SVector(bounds[1:end-1], y_mid), SVector(bounds[2:end], y_mid))
 end
 

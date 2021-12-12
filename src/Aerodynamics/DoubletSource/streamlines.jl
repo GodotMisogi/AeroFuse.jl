@@ -12,5 +12,5 @@ stream_velocity(x, φs, panels, V) = V .+ sum(doublet_velocity(φ_j, p_j, p_i) f
 
 function streamlines(point, V, φs, panels, length, num_steps :: Integer)
     streamlines = fill(point, num_steps)
-    cuck(x)     = stream_velocity(x, φs, panels, V)
+    f(x)        = stream_velocity(x, φs, panels, V)
 end

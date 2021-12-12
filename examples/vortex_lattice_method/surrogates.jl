@@ -3,87 +3,84 @@ using Surrogates
 using DataFrames
 using AeroMDAO
 
-## Wing
+## Lifting surfaces
+
+# Wing
 wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
 wing       = Wing(foils     = wing_foils,
                   chords    = [1.0, 0.6],
                   twists    = [0.0, 0.0],
                   spans     = [5.0],
-                  dihedrals = [11.3],
-                  sweep_LEs = [2.29]);
-wing_mac   = mean_aerodynamic_center(wing)
-wing_pos   = [0., 0., 0.]
-print_info(wing, "Wing")
+                  dihedrals = [0.],
+                  LE_sweeps = [2.29]);
 
 # Horizontal tail
-htail = Wing(chords    = [0.7, 0.42],
-             twists    = [0.0, 0.0],
-             spans     = [1.25],
-             dihedrals = [0.],
-             sweep_LEs = [6.39])
-htail_mac = mean_aerodynamic_center(htail)
-htail_pos = [5., 0., 0.]
-α_h_i     = 0.
-print_info(htail, "Horizontal Tail")
+htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
+htail       = Wing(foils     = htail_foils,
+                   chords    = [0.7, 0.42],
+                   twists    = [0.0, 0.0],
+                   spans     = [1.25],
+                   dihedrals = [0.],
+                   LE_sweeps = [6.39],
+                   position	 = [4., 0, 0],
+                   angle     = deg2rad(-0.),
+                   axis      = [0., 1., 0.])
+
 
 # Vertical tail
-vtail_foil = Foil(naca4((0,0,0,9)))
-vtail = HalfWing(foils     = fill(vtail_foil, 2), 
+vtail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
+vtail = HalfWing(foils     = vtail_foils,
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweep_LEs = [7.97])
-vtail_mac = mean_aerodynamic_center(vtail) # NEEDS FIXING FOR ROTATION
-vtail_pos = [5., 0., 0.]
+                 LE_sweeps = [7.97],
+                 position  = [4., 0, 0],
+                 angle     = 90.,
+                 axis      = [1., 0., 0.])
+
+# Print info
+print_info(wing, "Wing")
+print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
-## Panelling and assembly
-wing_panels  = panel_wing(wing, [20], 10,
-                          position = wing_pos
-                         );
-htail_panels = panel_wing(htail, [12], 12;
-                          position	= htail_pos,
-                          angle 	= deg2rad(α_h_i),
-                          axis 	  	= [0., 1., 0.]
-                         )
-vtail_panels = panel_wing(vtail, [12], 10; 
-                          position 	= vtail_pos,
-                          angle 	= π/2, 
-                          axis 	 	= [1., 0., 0.]
-                         )
+# Assembly
+wing_panels, wing_normals   = panel_wing(wing, [20], 10)
+htail_panels, htail_normals = panel_wing(htail, [12], 12)
+vtail_panels, vtail_normals = panel_wing(vtail, [12], 10)
 
-aircraft     = Dict(
-                    "Wing"            => wing_panels,
-                    "Horizontal Tail" => htail_panels,
-                    "Vertical Tail"   => vtail_panels
-                   )
+aircraft = Dict("Wing"            => Horseshoe.(wing_panels,  wing_normals ),
+                "Horizontal Tail" => Horseshoe.(htail_panels, htail_normals),
+                "Vertical Tail"   => Horseshoe.(vtail_panels, vtail_normals))
+
+S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
+wing_mac = mean_aerodynamic_center(wing)
 
 ## VLM setup
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
     # Evaluate case
-    data =  solve_case(aircraft, fs; 
-                       rho_ref   = ρ, 
+    data =  solve_case(aircraft, fs;
+                       rho_ref   = ρ,
                        r_ref     = ref,
                        area_ref  = S,
                        span_ref  = b,
                        chord_ref = c,
                        print     = print
                       );
-    
+
     # Get data
-    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs = data["Aircraft"]
+    nf_coeffs, ff_coeffs = data["Aircraft"][1:2]
 
     # Filter relevant data
-    [ ff_coeffs[1:3]; nf_coeffs[4:6] ]
+    [ ff_coeffs; nf_coeffs[4:6] ]
 end
 
-## Evaluate one case
+## Evaluate one case for compilation and test
+
 # Case
-x_w     = wing_pos + [ wing_mac[1], 0, 0 ]
 ac_name = "My Aircraft"
 ρ       = 1.225
-ref     = x_w
+ref     = [ wing_mac[1], 0, 0 ]
 V, α, β = 1.0, 0.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
@@ -105,7 +102,7 @@ rename!(data, [:α, :β, :CD, :CY, :CL, :Cl, :Cm, :Cn])
 
 ##
 using Plots
-plotly(size = (1280, 720), markersize = 2, dpi = 300)
+pyplot(size = (1280, 720), markersize = 2, dpi = 300)
 
 ## The labels don't work for some reason, need to fix that later...
 CD_plot = scatter(data[:,1], data[:,2], data[:,3], label = "CD")
@@ -116,7 +113,7 @@ Cm_plot = scatter(data[:,1], data[:,2], data[:,7], label = "Cm")
 Cn_plot = scatter(data[:,1], data[:,2], data[:,8], label = "Cn")
 
 plots = [ CD_plot CY_plot CL_plot Cl_plot Cm_plot Cn_plot ]
-plot(plots..., layout = (2, 3), xlabel = "α, ᵒ", ylabel = "β, ᵒ", zlabel = :nothing)
+plot(plots..., layout = (2, 3), xlabel = "α, ᵒ", ylabel = "β, ᵒ")
 plot!()
 
 ## Surrogate training data
@@ -124,7 +121,7 @@ lower_bound, upper_bound = minimum.(eachcol(data[:,3])), maximum.(eachcol(data[:
 zs = data[:,3]
 
 ## Generate surrogate
-surrogate_model = LobachevskySurrogate(αβs, zs, lower_bound, upper_bound); 
+surrogate_model = LobachevskySurrogate(αβs, zs, lower_bound, upper_bound);
 
 ## Evaluate surrogate
 num     = 100

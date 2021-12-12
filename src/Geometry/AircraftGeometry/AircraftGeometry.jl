@@ -1,5 +1,8 @@
 module AircraftGeometry
 
+## Package imports
+#==========================================================================================#
+
 using Base.Math
 using Base.Iterators
 using DelimitedFiles
@@ -7,25 +10,30 @@ using StaticArrays
 using CoordinateTransformations
 using Rotations
 using LinearAlgebra
+using SplitApplyCombine
 
-using ..AeroMDAO: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, fwdsum, fwddiv, fwddiff, weighted_vector, vectarray, Point2D, Panel2D, Panel3D, extend_yz, transform, panel_area, panel_normal, wetted_area
+# Math tools
+import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, fwdsum, fwddiv, fwddiff, weighted_vector, vectarray, extend_yz
 
-abstract type Aircraft end
+# Panel geometry
+import ..PanelGeometry: Panel2D, Panel3D, panel_area, panel_normal, transform, make_panels
 
-export Aircraft
+## Types
+#==========================================================================================#
+
+abstract type AbstractAircraft end
+
+abstract type AbstractWing <: AbstractAircraft end
 
 ## Foil geometry
 #==========================================================================================#
 
 include("foil.jl")
 
-# export Foil, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foil_camthick, camthick_foil, camber_thickness, cosine_foil, camthick_to_CST, coords_to_CST, max_thickness_to_chord_ratio_location
-
 ## Fuselage geometry
+#==========================================================================================#
 
 include("fuselage.jl")
-
-# export Fuselage, projected_area, length, cosine_distribution
 
 ## Wing geometry
 #==========================================================================================#
@@ -38,15 +46,13 @@ mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + tape
 y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / 3(1 + λ)
 quarter_chord(chord) = 0.25 * chord
 
-include("mesh_tools.jl")
 include("halfwing.jl")
 include("wing.jl")
+include("mesh_tools.jl")
 include("mesh_wing.jl")
 
 aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
 
-info(wing :: Union{Wing, HalfWing}) = [ span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing) ]
-
-# export HalfWing, HalfWingSection, Wing, WingSection, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, max_tbyc_sweeps, leading_edge, trailing_edge, wing_bounds, chop_leading_edge, chop_trailing_edge, chop_wing, paneller, panel_wing, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing, mean_aerodynamic_center, wetted_area, number_of_spanwise_panels, spanwise_spacing, coordinates
+info(wing :: AbstractWing) = [ span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing) ]
 
 end

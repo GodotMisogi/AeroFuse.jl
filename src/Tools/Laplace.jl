@@ -1,10 +1,17 @@
 module Laplace
 
+## Package imports
+#==========================================================================================#
+
 using StaticArrays
 using LinearAlgebra
-using ..AeroMDAO: Point2D, Point3D
+
+import ..MathTools: Point2D, Point3D, magnitude, angle
 
 abstract type AbstractLaplace end
+
+## Legacy (to be removed?)
+#==========================================================================================#
 
 # Performs velocity and potential computations for an object on a grid
 grid_data(object :: AbstractLaplace, xs) = velocity(object, xs), potential(object, xs)
@@ -24,13 +31,13 @@ end
 
 struct Singularity2D{T <: Real} <: AbstractLaplace
     strength :: T
-    r 		 :: Point2D{T}
+    r        :: Point2D{T}
 end
 
 # Getters
 strength(s :: Singularity2D) = s.strength
-x(s :: Singularity2D) 		 = s.r.x
-y(s :: Singularity2D) 		 = s.r.y
+x(s :: Singularity2D)        = s.r.x
+y(s :: Singularity2D)        = s.r.y
 
 source_velocity(src :: Singularity2D, x, y) = SVector(strength(src) / (2π) * (x - y(src)) / ((x - y(src))^2 + (y - x(src))^2), str / (2π) * (y - x(src)) / ((x - y(src))^2 + (y - x(src))^2))
 source_potential(src :: Singularity2D, x, y) = strength(src) / (4π) * log((x - y(src))^2 + (y - x(src))^2)
@@ -47,7 +54,7 @@ vortex_stream(vor :: Singularity2D, x, y) = -strength(vor) / (4π) * log((x - y(
 
 struct Uniform2D{T <: Real} <: AbstractLaplace
     magnitude :: T
-    angle 	  :: T
+    angle     :: T
     Uniform2D{T}(mag, ang) where T <: Real = new(mag, deg2rad(ang))
 end
 
@@ -65,31 +72,55 @@ stream(uni :: Uniform2D, x, y)    = uni.magnitude * (y * cos(uni.angle) - x * si
 #============================================#
 
 # struct Singularity3D{T <: Real} <: AbstractLaplace
-# 	str :: T
-# 	r 	:: Point3D{T}
+#       str :: T
+#       r   :: Point3D{T}
 # end
 
 # source_velocity(src :: Source2D, x, y, z)
 # source_potential(src :: Source2D, x, y, z) 
 # source_stream(src :: Source2D, x, y, z) 
 
+struct DoubletLine3D{T <: Real} <: AbstractLaplace
+    strength :: T
+    r1       :: SVector{3,T}
+    r2       :: SVector{3,T}
+    eta      :: SVector{3,T}
+end
+
+function doublet_influence(r, φ, η)
+    r_φ = dot(r, φ)
+    r_η = dot(r, η)
+    den = (norm(r)^2 - dot(r, φ)^2 ) * r
+
+    ((r_φ * η + r_η * φ) * den - (den * r / norm(r)^2 + 2 * (r - r_φ * η) * r) * r_φ * r_η) / den^2
+end
+
+function velocity(src :: DoubletLine3D)
+    l = normalize(src.r2 - src.r1)
+    
+    f(x) = src.strength / 4π * (doublet_influence(x - src.r2, l, src.eta) - doublet_influence(x - src.r1, l, src.eta))
+end
+
 ## Freestream
 #============================================#
 
-struct Freestream{T <: Real} <: AbstractLaplace
-    V 	  :: T
-    alpha :: T
-    beta  :: T
-    omega :: SVector{3,T}
-    Freestream{T}(V, α_deg, β_deg, Ω) where T <: Real = new(V, deg2rad(α_deg), deg2rad(β_deg), Ω)
+abstract type AbstractFreestream <: AbstractLaplace end
+
+struct Freestream{M,N,P,Q} <: AbstractFreestream
+    V     :: M
+    alpha :: N
+    beta  :: P
+    omega :: SVector{3,Q}
 end
+
+Freestream(V :: M, α_deg :: N, β_deg :: P, Ω :: AbstractVector{Q}) where {M <: Real, N <: Real, P <: Real, Q<:Real} = Freestream{M,N,P,Q}(V, deg2rad(α_deg), deg2rad(β_deg), Ω)
 
 """
     Freestream(V, α, β, Ω)
     
 A Freestream flow in spherical polar coordinates with magnitude ``V``, angle-of-attack ``α``, side-slip angle ``β``, and a quasi-steady rotation vector ``\\Omega``.
 """
-Freestream(V, α_deg, β_deg, Ω :: AbstractVector{T}) where T <: Real = Freestream{T}(V, α_deg, β_deg, Ω)
+# Freestream(V, α_deg, β_deg, Ω :: AbstractVector{T}) where T <: Real = Freestream{T}(V, α_deg, β_deg, Ω)
 
 # TODO: ForwardDiff testing
 # Freestream(V :: Real, α_deg, β_deg, Ω :: AbstractVector{<: Real}) = Freestream{Float64}(V, α_deg, β_deg, Ω)
@@ -115,6 +146,11 @@ freestream_to_cartesian(r, θ, φ) = r .* SVector(cos(θ) * cos(φ), -sin(φ), s
 Convert Cartesian coordinates to freestream (spherical polar) flow coordinates.
 """
 cartesian_to_freestream(U) = SVector(norm(U), -atand(U[3], U[1]), -atand(U[2], √(U[1]^2 + U[3]^2)))
+
+# 2D versions
+cartesian_to_freestream(u, w) = magnitude(u, w), angle(u, w)
+freestream_to_cartesian(V, α) = V * cos(α), V * sin(α)
+
 
 """
     velocity(freestream :: Freestream)
