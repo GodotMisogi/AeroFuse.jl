@@ -236,7 +236,6 @@ function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_e
 
     # Thickness distribution
     thickness = naca4_thickness.(Ref(t_by_c), xs, Ref(sharp_trailing_edge))
-
     if pos == 0 || cam == 0
         x_upper = xs
         y_upper = thickness

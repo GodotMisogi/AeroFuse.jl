@@ -40,7 +40,7 @@ average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)
 
 Compute the coordinates of a Panel3D.
 """
-panel_coords(panel :: Panel3D) = [ p1(panel), p2(panel), p3(panel), p4(panel) ]
+panel_area(panel :: Panel3D) = (norm ∘ cross)(average_chord(panel), average_width(panel))
 
 """
     make_panels(xyzs)
