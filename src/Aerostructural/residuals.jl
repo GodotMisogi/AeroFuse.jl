@@ -86,10 +86,10 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
 
     # Compute displacements
     δs      = δ.displacement
-    dxs, Ts = translations_and_rotations(δs)
+    @timeit "Translate and Rotate" dxs, Ts = translations_and_rotations(δs)
 
     # New VLM variables
-    new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
+    @timeit "New Horseshoes" new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
 
     # Compute aerodynamic residual and loads
     vlm_forces = evaluate_aerodynamics!(R_A, Γ, new_horsies, U, Ω, ρ, speed)
