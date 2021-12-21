@@ -50,7 +50,7 @@ struct References{T} <: AbstractReferences
     location :: SVector{3,T}
 end
 
-References(S :: T, b :: T, c :: T, ρ :: T, ref :: AbstractVector{T}) where {T<: Real} = References{T}(S, b, c, ρ, ref)
+References(S, b, c, ρ, ref :: AbstractVector{T}) where {T<: Real} = References{T}(S, b, c, ρ, ref)
 
 struct VLMSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
     horseshoes          :: M

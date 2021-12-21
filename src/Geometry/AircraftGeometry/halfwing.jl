@@ -21,7 +21,7 @@ end
 function HalfWing(foils :: AbstractVector{M}, chords :: AbstractVector{N}, twists :: AbstractVector{P}, spans :: AbstractVector{Q}, dihedrals :: AbstractVector{R}, sweeps :: AbstractVector{S}, position = zeros(3), angle :: T = 0., axis = [0.,1.,0.], affine = AffineMap(AngleAxis{T}(deg2rad(angle), axis...), position)) where {M <: AbstractFoil, N <: Real, P <: Real, Q <: Real, R <: Real, S <: Real, T <: Real} 
     # Error handling
     check_wing(foils, chords, twists, spans, dihedrals, sweeps)
-    # Convert angles to radians, with adjusting twists to leading edge, and generate HalfWing
+    # Convert angles to radians, adjust twists to leading edge, and generate HalfWing
     HalfWing{M,N,P,Q,R,S,typeof(affine)}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), affine)
 end
 

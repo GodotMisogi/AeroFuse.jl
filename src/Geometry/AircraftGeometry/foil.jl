@@ -17,9 +17,9 @@ end
 coordinates(foil :: Foil) = [ foil.x foil.y ]
 
 Foil(coords, name = "Unnamed") where T <: Real = Foil{T}(getindex.(coords, 1), getindex.(coords, 2), name)
-Foil(coords :: AbstractMatrix{T}, name = "Unnamed") where T <: Real = Foil{T}(coords[:,1], coords[:,2], name)
+Foil(coords :: AbstractMatrix{T}, name = "Unnamed") where T <: Real = @views Foil{T}(coords[:,1], coords[:,2], name)
 
-arc_length(foil :: Foil) = let c = coordinates(foil); norm(c[2:end,:] .- c[1:end-1,:]) end
+arc_length(foil :: Foil) = let c = coordinates(foil); @views norm(c[2:end,:] .- c[1:end-1,:]) end
 
 """
     scale_foil(foil :: Foil, chord)
@@ -43,9 +43,9 @@ Compute the camber-thickness distribution of a Foil with cosine spacing.
 camber_thickness(foil :: Foil, num :: Integer = 40) = foil_camthick(cosine_foil(coordinates(foil)), num + 1)
 
 function max_thickness_to_chord_ratio_location(coords)
-    xs, thiccs = coords[:,1], coords[:,3]
+    @views xs, thiccs = coords[:,1], coords[:,3]
     max_thick_arg = argmax(thiccs)
-    xs[max_thick_arg], thiccs[max_thick_arg]
+    @views xs[max_thick_arg], thiccs[max_thick_arg]
 end
 
 ## Foil processing

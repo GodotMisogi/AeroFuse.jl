@@ -14,6 +14,8 @@ end
 #     Wing{T}(left, right)
 # end
 
+Wing(bing :: HalfWing) = Wing(bing, bing)
+
 left(wing :: Wing)      = wing.left
 right(wing :: Wing)     = wing.right
 foils(wing :: Wing)     = @views [ (foils ∘ left)(wing)[end:-1:2]     ; (foils ∘ right)(wing)     ]

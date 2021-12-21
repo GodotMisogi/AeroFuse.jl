@@ -3,7 +3,7 @@ using JuMP
 using Ipopt
 using AeroMDAO
 using ComponentArrays
-# using PlotlyJS
+using StaticArrays
 
 # Wing setup
 #============================================#
@@ -27,11 +27,55 @@ end
 
 function run_case(wing, V, α, ρ, span_num, chord_num)
     uniform = Freestream(V, α, 0.0, zeros(3))
-    coeffs  = solve_case(wing, uniform,
-                         rho_ref = ρ,
-                         span_num = span_num,
-                         chord_num = chord_num,
-                         viscous = false)[1:2]
+
+    # Horizontal tail
+    htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.25],
+                 dihedrals = [0.],
+                 LE_sweeps = [6.39],
+                 position  = [4., 0, 0],
+                 angle     = -2.,
+                 axis      = [0., 1., 0.])
+
+    # Vertical tail
+    vtail = HalfWing(foils     = Foil.(fill(naca4(0,0,0,9), 2)),
+                     chords    = [0.7, 0.42],
+                     twists    = [0.0, 0.0],
+                     spans     = [1.0],
+                     dihedrals = [0.],
+                     LE_sweeps = [7.97],
+                     position  = [4., 0, 0],
+                     angle     = 90.,
+                     axis      = [1., 0., 0.])
+
+    ## WingMesh type
+    wing_mesh  = WingMesh(wing, [span_num], chord_num, 
+                          span_spacing = Cosine()
+                         )
+    htail_mesh = WingMesh(htail, [6], 4, 
+                        span_spacing = Cosine()
+                        )
+    vtail_mesh = WingMesh(vtail, [6], 4, 
+                        span_spacing = Cosine()
+                        )
+
+    x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
+    S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+    ρ       = 1.225
+    ref     = SVector(x_w, 0., 0.)
+    refs    = References(S, b, c, ρ, ref)
+
+    aircraft = ComponentArray(
+                               wing  = make_horseshoes(wing_mesh),
+                               htail = make_horseshoes(htail_mesh),
+                               vtail = make_horseshoes(vtail_mesh)
+                            );
+    
+    system  = solve_case(aircraft, uniform, refs)
+
+    nearfield(system), farfield(system)
 end
 
 # Objective function
@@ -49,12 +93,11 @@ end
 ## Test runs
 #============================================#
 
-
 # Parameters
 V, α, ρ  = 15., 5., 1.225
 
 # Design variables
-n    = 6
+n    = 12
 wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
             chords    = fill(0.314, n),
             twists    = fill(0.0, n),
@@ -139,7 +182,7 @@ bing = plot_wing(wing)
 ##
 using Plots
 
-plot(getindex.(bing, 1), getindex.(bing, 2))
+plot(bing)
 
 ## NACA-4 optimization
 #============================================#

@@ -51,6 +51,6 @@ function local_dissipation_drag(wing :: Wing, wetted_areas, ρ_es, u_es, x_tr, V
 end
 
 profile_drag_coefficient(wing :: HalfWing, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
-profile_drag_coefficient(wing :: Wing, x_tr, V, rho_ref, a_ref, area_ref, μ) = profile_drag_coefficient(left(wing), x_tr, V, rho_ref, a_ref, area_ref, μ) + profile_drag_coefficient(right(wing), x_tr, V, rho_ref, a_ref, area_ref, μ)
+profile_drag_coefficient(wing :: Wing, x_tr, V, rho_ref, a_ref, area_ref, μ) = profile_drag_coefficient(wing.left, x_tr, V, rho_ref, a_ref, area_ref, μ) + profile_drag_coefficient(wing.right, x_tr, V, rho_ref, a_ref, area_ref, μ)
 
 ## Local-friction and local-dissipation method
