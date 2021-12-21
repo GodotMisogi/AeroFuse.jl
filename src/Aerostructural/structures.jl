@@ -28,7 +28,7 @@ build_big_stiffy(tubes, fem_mesh, vlm_mesh) = @views combinedimsview(@. transfor
 
 function evaluate_structures!(R_S, δ, xs, forces, fem_mesh, stiffness_matrix)
     # Build force vector with constraint for structures
-    fem_loads = fem_load_vector(xs, forces, fem_mesh)
+    @timeit "FEM Loads" fem_loads = fem_load_vector(xs, forces, fem_mesh)
 
     # Structural residuals
     linear_residual!(R_S, stiffness_matrix, δ, fem_loads)

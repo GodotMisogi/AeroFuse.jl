@@ -121,7 +121,7 @@ x0 = ComponentArray(aerodynamics = data.circulations.wing,
 
 ##
 using ForwardDiff
-using Zygote
+# using Zygote
 
 function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
     x = copy(x0)
@@ -150,7 +150,7 @@ end
 ##
 reset_timer!()
 @timeit "Solving Residuals" res_aerostruct =
-    fixedpoint(solve_aerostruct!, x0,
+    nlsolve(solve_aerostruct!, x0,
             method         = :newton,
             show_trace     = true,
             # extended_trace = true,
