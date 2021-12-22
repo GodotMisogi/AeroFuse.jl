@@ -45,7 +45,7 @@ function solve_case(wing :: AbstractWing, freestream :: Freestream; rho_ref = 1.
     # Viscous drag evaluation
     if viscous
         # Compute profile drag via wetted-area equivalent skin-friction method
-        CDv = profile_drag_coefficient(wing, x_tr, freestream.V, rho_ref, a_ref, area_ref, mu_ref)
+        CDv = profile_drag_coefficient(wing, x_tr, fs.speed, rho_ref, a_ref, area_ref, mu_ref)
 
         # Compute profile drag using local dissipation based on power-balance method of Sato.
         # CDv = local_dissipation_drag(wing, panel_area.(camber_panels), ρ_es, u_es, x_tr, V, ρ, M, μ)
@@ -87,6 +87,43 @@ end
 #==========================================================================================#
 
 streamlines(freestream :: Freestream, points, horseshoes, Γs, length, num_steps :: Integer) = VortexLattice.streamlines.(points, Ref(velocity(freestream)), Ref(freestream.omega), Ref(horseshoes), Ref(Γs), Ref(length), Ref(num_steps))
+
+## Placeholder for functions I'm not sure where to put
+#==========================================================================================#
+
+function lifting_line_loads(panels, CFs, S)
+    CFs  = combinedimsview(CFs)
+    CDis = @views CFs[1,:,:]
+    CYs  = @views CFs[2,:,:]
+    CLs  = @views CFs[3,:,:]
+
+    area_scale  = S ./ sum(panel_area, panels, dims = 1)[:]
+    span_CDis   = sum(CDis, dims = 1)[:] .* area_scale
+    span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
+    span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
+
+    ys = sum(x -> midpoint(x)[2], panels, dims = 1)[:]
+
+    [ ys span_CDis span_CYs span_CLs ]
+end
+
+## Mesh connectivities
+triangle_connectivities(inds) = @views [ inds[1:end-1,1:end-1][:] inds[1:end-1,2:end][:]   inds[2:end,2:end][:]   ;
+                                           inds[2:end,2:end][:]   inds[2:end,1:end-1][:] inds[1:end-1,1:end-1][:] ]
+
+## Extrapolating surface values to neighbouring points
+function extrapolate_point_mesh(mesh)
+    m, n   = size(mesh)
+    points = zeros(eltype(mesh), m + 1, n + 1)
+
+    # The quantities are measured at the bound leg (0.25×)
+    @views points[1:end-1,1:end-1] += 0.75 * mesh / 2
+    @views points[1:end-1,2:end]   += 0.75 * mesh / 2
+    @views points[2:end,1:end-1]   += 0.25 * mesh / 2
+    @views points[2:end,2:end]     += 0.25 * mesh / 2
+
+    points
+end
 
 ## Printing
 #==========================================================================================#

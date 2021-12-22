@@ -126,7 +126,7 @@ function solve_strengths(panels :: Vector{Panel2D}, cavity_panels :: Vector{Pane
 
     # Cavity velocity, cavitation number and wake panel strength
     qc        = strengths[end - 1]
-    σ         = qc^2 / freestream.V^2 - 1
+    σ         = qc^2 / fs.speed^2 - 1
 
     println("Cavity Velocity: ", qc, ", Cavitation Number: ", σ)
 end

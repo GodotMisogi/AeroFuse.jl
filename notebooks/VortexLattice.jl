@@ -315,7 +315,7 @@ begin
 	span_CDis   = sum(CDis, dims = 1)[:] .* area_scale
 	span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
 	span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
-	CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * fs.V * c)
+	CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * fs.speed * c)
 	
 	plot1 = plot(sec_ys, span_CDis, label = nothing, ylabel = "CDi Loading")
 	plot2 = plot(sec_ys, round.(span_CYs, digits = 4), label = nothing, ylabel = "CY Loading")

@@ -2,7 +2,7 @@
 #==========================================================================================#
 
 # Sum adjacent values
-adjacent_adder(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
+adjacent_adder(x1, x2) = @views [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
 
 # Compute moments for each section with local beam nodes as origins
 section_moment(vlm_ac, fem_pts, half_vlm_force) = @. (vlm_ac - fem_pts) × half_vlm_force

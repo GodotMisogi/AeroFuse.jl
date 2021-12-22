@@ -257,7 +257,7 @@ end
 # ╔═╡ e845a360-8312-11eb-1551-b3e2ecf7cbd2
 begin
 	ys, span_CLs, span_CDis, span_CYs = trefftz_plane_forces(horseshoe_panels, CFs, ρ, V, S, fs.alpha, fs.beta)
-	CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * fs.V * c)
+	CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * fs.speed * c)
 	
 	plot_CD = plot(ys, span_CDis, label = :none, ylabel = "CDi")
 	plot_CY = plot(ys, span_CYs, label = :none, ylabel = "CY")

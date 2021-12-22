@@ -161,13 +161,12 @@ end
 
     ## Reference quantities
     ac_name = :aircraft
-    S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
-    ρ       = 1.225
-    ref     = [0.25c, 0., 0.]
-    V, α, β = 1.0, 1.0, 1.0
-    Ω       = [0.0, 0.0, 0.0]
-    fs      = Freestream(V, α, β, Ω)
-    refs    = References(S, b, c, ρ, ref)
+    fs      = Freestream(1.0, 1.0, 1.0, zeros(3))
+    refs    = References(area     = projected_area(wing),
+                         span     = span(wing),
+                         chord    = mean_aerodynamic_chord(wing),
+                         density  = 1.225,
+                         location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.])
 
     ## Stability case
     dv_data = solve_stability_case(aircraft, fs, refs;

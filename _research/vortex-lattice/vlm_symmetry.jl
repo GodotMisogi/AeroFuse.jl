@@ -9,7 +9,7 @@
 
 #   panel_forces, panel_moments, wind_rates, force, moment, trefftz_force, trefftz_moment, Γs, horseshoes = solve_case(horseshoe_panels, normals, freestream, r_ref, ρ, symmetry = true)
 
-#   nearfield_coeffs, farfield_coeffs = symmetric_case_coefficients(wing.right, force, moment, wind_rates, trefftz_force, trefftz_moment, freestream.V, ρ)
+#   nearfield_coeffs, farfield_coeffs = symmetric_case_coefficients(wing.right, force, moment, wind_rates, trefftz_force, trefftz_moment, fs.speed, ρ)
 
 #   Γs   = reflect_mapper(identity, Γs)
 #   horseshoe_panels     = reflect_mapper(x -> reflect_xz.(x), horseshoe_panels)

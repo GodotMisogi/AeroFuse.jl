@@ -50,7 +50,7 @@ struct References{T} <: AbstractReferences
     location :: SVector{3,T}
 end
 
-References(S, b, c, ρ, ref :: AbstractVector{T}) where {T<: Real} = References{T}(S, b, c, ρ, ref)
+References(; density = 1., span = 1., chord = 1., area = 1., location :: AbstractVector{T} = zeros(3)) where T <: Real = References{T}(area, span, chord, density, location)
 
 struct VLMSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
     horseshoes          :: M
@@ -134,7 +134,7 @@ end
 surface_dynamics(system; axes :: AircraftAxes = Wind()) = surface_dynamics(system, axes)
 
 function surface_coefficients(system :: VLMSystem; axes :: AircraftAxes = Wind()) 
-    V = system.freestream.V
+    V = system.freestream.speed
     ρ = system.reference.density
     S = system.reference.area
     b = system.reference.span
@@ -155,7 +155,7 @@ end
 function farfield_forces(system :: VLMSystem)
     hs = system.horseshoes 
     Γs = system.circulations
-    V  = system.freestream.V
+    V  = system.freestream.speed
     α  = system.freestream.alpha
     β  = system.freestream.beta
     ρ  = system.reference.density
@@ -168,7 +168,7 @@ function nearfield_coefficients(system :: VLMSystem)
     ComponentVector(NamedTuple{keys(CFs)}([sum(CFs[key]); sum(CMs[key])] for key in valkeys(CFs)))
 end
 
-farfield_coefficients(system :: VLMSystem) = force_coefficient.(farfield_forces(system), dynamic_pressure(system.reference.density, system.freestream.V), system.reference.area)
+farfield_coefficients(system :: VLMSystem) = force_coefficient.(farfield_forces(system), dynamic_pressure(system.reference.density, system.freestream.speed), system.reference.area)
 
 nearfield(system :: VLMSystem) = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
 farfield(system :: VLMSystem)  = let ff = farfield_coefficients(system); vec(sum(reshape(ff, 3, length(ff) ÷ 3), dims = 2)) end

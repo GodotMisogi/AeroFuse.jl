@@ -148,7 +148,7 @@ function compute_6DOF_dynamics(t, x, p)
     ac, mass, g, I, h, ρ, ref, S, b, c = p
 
     fs = Freestream(U, Ω)
-    q  = dynamic_pressure(ρ, fs.V)
+    q  = dynamic_pressure(ρ, fs.speed)
 
     # Aerodynamics
     @log t
@@ -160,7 +160,7 @@ function compute_6DOF_dynamics(t, x, p)
     F_A, M_A = aero_stability(CFs, CMs, q, S, b, c)
 
     # Propulsion (Gliding for now)
-    F_T      = zeros(3) # thrust_force(fs.V)
+    F_T      = zeros(3) # thrust_force(fs.speed)
 
     # Force equilibrium
     F = F_T - F_A

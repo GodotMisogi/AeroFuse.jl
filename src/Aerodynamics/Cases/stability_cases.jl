@@ -1,12 +1,12 @@
 ## Stability derivative cases
-function scale_inputs(freestream :: Freestream, b, c)
+function scale_inputs(fs :: Freestream, b, c)
     # Building input vector
-    x0 = [ freestream.alpha;
-           freestream.beta;
-           rate_coefficient(freestream.omega, freestream.V, b, c) ]
+    x0 = [ fs.alpha;
+           fs.beta;
+           rate_coefficient(fs.omega, fs.speed, b, c) ]
 
     # Unscaling non-dimensional rate coefficients
-    scale = 2freestream.V .* [1/b, 1/c, 1/b]
+    scale = 2fs.speed .* [1/b, 1/c, 1/b]
 
     x0, scale
 end
@@ -21,14 +21,14 @@ function print_case(data, comp)
     print_case(nf, ff, derivs, comp)
 end
 
-function solve_stability_case(wing :: AbstractWing, freestream :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [ 0.25 * chord_ref, 0., 0.], span_ref = span(wing), span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, name = "Wing", viscous = false, x_tr = 0.3, print = false, spacing = symmetric_spacing(wing))
+function solve_stability_case(wing :: AbstractWing, fs :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [ 0.25 * chord_ref, 0., 0.], span_ref = span(wing), span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, name = "Wing", viscous = false, x_tr = 0.3, print = false, spacing = symmetric_spacing(wing))
     # Reference values and scaling inputs
     S, b, c = area_ref, span_ref, chord_ref
-    x, scale = scale_inputs(freestream, b, c)
+    x, scale = scale_inputs(fs, b, c)
 
     # Closure to generate results with input vector
     function stab(x)
-        fs   = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
+        fs   = Freestream(fs.speed, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
         data = solve_case(wing, fs;
                           rho_ref   = rho_ref,
                           r_ref     = r_ref,
@@ -62,14 +62,14 @@ function solve_stability_case(wing :: AbstractWing, freestream :: Freestream; rh
     nf, ff, dvs
 end
 
-function solve_stability_case(aircraft, freestream :: Freestream, ref :: References; name = :aircraft, print = false, print_components = false)
+function solve_stability_case(aircraft, fs :: Freestream, ref :: References; name = :aircraft, print = false, print_components = false)
     # Reference values and scaling inputs
     b, c = ref.span, ref.chord
-    x, scale = scale_inputs(freestream, b , c)
+    x, scale = scale_inputs(fs, b , c)
 
     # Closure to generate results with input vector
     function stab(x)
-        fs   = Freestream(freestream.V, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
+        fs   = Freestream(fs.speed, rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
         data = solve_case(aircraft, fs, ref,
                           name      = name)
 

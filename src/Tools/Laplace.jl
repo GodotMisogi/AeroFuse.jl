@@ -107,7 +107,7 @@ end
 abstract type AbstractFreestream <: AbstractLaplace end
 
 struct Freestream{M,N,P,Q} <: AbstractFreestream
-    V     :: M
+    speed   :: M
     alpha :: N
     beta  :: P
     omega :: SVector{3,Q}
@@ -120,10 +120,7 @@ Freestream(V :: M, α_deg :: N, β_deg :: P, Ω :: AbstractVector{Q}) where {M <
     
 A Freestream flow in spherical polar coordinates with magnitude ``V``, angle-of-attack ``α``, side-slip angle ``β``, and a quasi-steady rotation vector ``\\Omega``.
 """
-# Freestream(V, α_deg, β_deg, Ω :: AbstractVector{T}) where T <: Real = Freestream{T}(V, α_deg, β_deg, Ω)
-
-# TODO: ForwardDiff testing
-# Freestream(V :: Real, α_deg, β_deg, Ω :: AbstractVector{<: Real}) = Freestream{Float64}(V, α_deg, β_deg, Ω)
+Freestream(; speed = 1., alpha = 0., beta = 0., omega = zeros(3)) = Freestream(speed, alpha, beta, omega)
 
 """
     Freestream(U, Ω)
@@ -157,7 +154,7 @@ freestream_to_cartesian(V, α) = V * cos(α), V * sin(α)
 
 Compute the velocity of a `Freestream`.
 """
-velocity(freestream :: Freestream) = freestream_to_cartesian(freestream.V, freestream.alpha, freestream.beta)
+velocity(freestream :: Freestream) = freestream_to_cartesian(freestream.speed, freestream.alpha, freestream.beta)
 
 """
     aircraft_velocity(freestream :: Freestream)

@@ -117,7 +117,7 @@ function vlm_state_derivatives(fs)
         freestream_to_cartesian(-state.speed, state.alpha, state.beta)
     end
 
-    V, α, β, Ω = fs.V, fs.alpha, fs.beta, fs.omega
+    V, α, β, Ω = fs.speed, fs.alpha, fs.beta, fs.omega
     jac = ForwardDiff.jacobian(get_derivatives, [ V; α; β; Ω ])
 end
 
@@ -147,7 +147,7 @@ function vlm_system_derivatives(system, surf, fs, r_ref)
         [ nearfield_coeffs[:]; farfield_coeffs[:]; reduce(vcat, CFs[:]); reduce(vcat, CMs[:]) ]
     end
 
-    V, α, β, Ω = fs.V, fs.alpha, fs.beta, fs.omega
+    V, α, β, Ω = fs.speed, fs.alpha, fs.beta, fs.omega
     jac = ForwardDiff.jacobian(get_derivatives, [ V; α; β; Ω; r_ref ])
 end
 

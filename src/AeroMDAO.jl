@@ -8,8 +8,11 @@ using StaticArrays
 using CoordinateTransformations, Rotations
 using ForwardDiff, DiffResults
 using PrettyTables, OrderedCollections
-using ComponentArrays
 using SplitApplyCombine
+
+using ComponentArrays
+
+export ComponentVector, ComponentArray
 
 ## Math tools
 #==========================================================================================#
@@ -105,7 +108,8 @@ include("Aerodynamics/Cases/cases.jl")
 include("Aerodynamics/Cases/stability_cases.jl")
 include("Aerodynamics/Cases/foil_cases.jl")
 
-export solve_case, solve_stability_case, streamlines, print_case, print_info, print_coefficients, print_derivatives
+export solve_case, solve_stability_case, streamlines, print_case, print_info, print_coefficients, print_derivatives, lifting_line_loads, 
+triangle_connectivities, extrapolate_point_mesh
 
 ## Structural analyses
 #==========================================================================================#
