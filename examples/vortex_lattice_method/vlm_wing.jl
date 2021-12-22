@@ -65,7 +65,7 @@ gr()
 # seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
 
 # Spanwise distribution
-span_points = 2
+span_points = 20
 init        = chop_trailing_edge(wing, span_points)
 dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy,  dz])  ;
@@ -91,12 +91,12 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      size = (800, 600))
 plot!.(horseshoe_coords, color = :black, label = :none)
 scatter!(horseshoe_points[:], marker = 1, color = :black, label = :none)
-# [ plot!(Tuple.(stream), color = :green, label = :none) for stream in eachrow(streams) ]
+[ plot!(stream, color = :green, label = :none) for stream in eachcol(Tuple.(streams)) ]
 plot!()
 
 ## Spanwise forces
 LL_loads    = lifting_line_loads(horseshoe_panels, CFs.wing, projected_area(wing))
-CL_loadings = sum(system.circulations.wing, dims = 1)[:] / (0.5 * fs.speed * c)
+CL_loadings = sum(system.circulations.wing, dims = 1)[:] / (0.5 * fs.speed * refs.chord)
 
 ##
 plot_CD = plot(LL_loads[:,1], LL_loads[:,2], label = :none, ylabel = "CDi")
@@ -115,11 +115,12 @@ hs_pts = Tuple.(bound_leg_center.(system.horseshoes))[:]
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
      camera = (60, 60),
-     zlim = (-0.1, z_limit)
+     zlim = (-0.1, z_limit),
+     title = "Forces (Exaggerated)"
     )
 plot!.(horseshoe_coords, color = :gray, label = :none)
 # scatter!(cz_pts, zcolor = CLs[:], marker = 2, label = "CL (Exaggerated)")
-quiver!(hs_pts, quiver=(CDis[:], CYs[:], CLs[:]) .* 100, label = "Forces (Exaggerated)")
+quiver!(hs_pts, quiver=(LL_loads[:,2], LL_loads[:,3], LL_loads[:,4]) .* 10)
 plot!(size = (800, 600))
 
 
