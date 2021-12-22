@@ -25,52 +25,17 @@ end
 # Helper functions
 #============================================#
 
-function run_case(wing, V, α, ρ, span_num, chord_num)
+function run_case(wing, htail_horses, vtail_horses, V, α, ρ, span_num, chord_num)
     uniform = Freestream(V, α, 0.0, zeros(3))
 
-    # Horizontal tail
-    htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
-                 chords    = [0.7, 0.42],
-                 twists    = [0.0, 0.0],
-                 spans     = [1.25],
-                 dihedrals = [0.],
-                 LE_sweeps = [6.39],
-                 position  = [4., 0, 0],
-                 angle     = -2.,
-                 axis      = [0., 1., 0.])
-
-    # Vertical tail
-    vtail = HalfWing(foils     = Foil.(fill(naca4(0,0,0,9), 2)),
-                     chords    = [0.7, 0.42],
-                     twists    = [0.0, 0.0],
-                     spans     = [1.0],
-                     dihedrals = [0.],
-                     LE_sweeps = [7.97],
-                     position  = [4., 0, 0],
-                     angle     = 90.,
-                     axis      = [1., 0., 0.])
-
-    ## WingMesh type
     wing_mesh  = WingMesh(wing, [span_num], chord_num, 
                           span_spacing = Cosine()
                          )
-    htail_mesh = WingMesh(htail, [6], 4, 
-                        span_spacing = Cosine()
-                        )
-    vtail_mesh = WingMesh(vtail, [6], 4, 
-                        span_spacing = Cosine()
-                        )
-
-    x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
-    S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
-    ρ       = 1.225
-    ref     = SVector(x_w, 0., 0.)
-    refs    = References(S, b, c, ρ, ref)
-
+    
     aircraft = ComponentArray(
-                               wing  = make_horseshoes(wing_mesh),
-                               htail = make_horseshoes(htail_mesh),
-                               vtail = make_horseshoes(vtail_mesh)
+                                wing  = make_horseshoes(wing_mesh),
+                                htail = htail_horses,
+                                vtail = vtail_horses
                             );
     
     system  = solve_case(aircraft, uniform, refs)
@@ -79,13 +44,13 @@ function run_case(wing, V, α, ρ, span_num, chord_num)
 end
 
 # Objective function
-evaluate_CDi(wing, V, α, ρ, span_num, chord_num) = run_case(wing, V, α, ρ, span_num, chord_num)[1][1]
+evaluate_CDi(wing, htail_horses, vtail_horses, V, α, ρ, span_num, chord_num) = run_case(wing, htail_horses, vtail_horses, V, α, ρ, span_num, chord_num)[1][1]
 
 # Lift and area constraint function
-function evaluate_cons(wing, V, α, ρ, span_num, chord_num)
+function evaluate_cons(wing, htail_horses, vtail_horses, V, α, ρ, span_num, chord_num)
     area   = projected_area(wing)
-    nf, ff = run_case(wing, V, α, ρ, span_num, chord_num)
-    lift   = dynamic_pressure(ρ, V) * area * nf[5]
+    nf, ff = run_case(wing, htail_horses, vtail_horses, V, α, ρ, span_num, chord_num)
+    lift   = dynamic_pressure(ρ, V) * area * nf[3]
 
     lift
 end
@@ -105,6 +70,46 @@ wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
             dihedrals = fill(0., n-1),
             LE_sweeps = fill(0., n-1))
 
+# Horizontal tail
+htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
+             chords    = [0.7, 0.42],
+             twists    = [0.0, 0.0],
+             spans     = [1.25],
+             dihedrals = [0.],
+             LE_sweeps = [6.39],
+             position  = [4., 0, 0],
+             angle     = -2.,
+             axis      = [0., 1., 0.])
+
+# Vertical tail
+vtail = HalfWing(foils     = Foil.(fill(naca4(0,0,0,9), 2)),
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.0],
+                 dihedrals = [0.],
+                 LE_sweeps = [7.97],
+                 position  = [4., 0, 0],
+                 angle     = 90.,
+                 axis      = [1., 0., 0.])
+
+htail_mesh = WingMesh(htail, [6], 4, 
+                      span_spacing = Cosine()
+                      )
+vtail_mesh = WingMesh(vtail, [6], 4, 
+                      span_spacing = Cosine()
+                      )
+
+htail_horses = make_horseshoes(htail_mesh)
+vtail_horses = make_horseshoes(vtail_mesh)
+
+x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
+S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+ρ       = 1.225
+ref     = SVector(x_w, 0., 0.)
+refs    = References(S, b, c, ρ, ref)
+
+
+
 # Meshing and assembly
 wing_mac = mean_aerodynamic_center(wing);
 b, S, c  = info(wing)[1:end-1]
@@ -122,9 +127,9 @@ make_wing(x) = Wing(chords    = collect(x[1:n]),
                     LE_sweeps = collect(x[n+1:end]))
 
 # Closures
-evaluate_CDi(x...)  = evaluate_CDi(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
-evaluate_cons(x...) = evaluate_cons(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
-run_case(x...)      = run_case(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)
+evaluate_CDi(x...)  = evaluate_CDi(make_wing(x[1:end-1]), htail_horses, vtail_horses, V, x[end], ρ, span_num, chord_num)
+evaluate_cons(x...) = evaluate_cons(make_wing(x[1:end-1]), htail_horses, vtail_horses, V, x[end], ρ, span_num, chord_num)
+run_case(x...)      = run_case(make_wing(x[1:end-1]), htail_horses, vtail_horses, V, x[end], ρ, span_num, chord_num)
 
 ##
 wing_chords = LinRange(0.2, 0.1, n)
