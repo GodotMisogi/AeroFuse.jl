@@ -3,7 +3,6 @@ using Revise
 using AeroMDAO
 using ComponentArrays
 using LinearAlgebra
-using SplitApplyCombine
 
 ## Surfaces
 

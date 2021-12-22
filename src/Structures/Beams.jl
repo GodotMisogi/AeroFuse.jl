@@ -6,7 +6,7 @@ module Beams
 using SparseArrays
 using StaticArrays
 using LinearAlgebra
-using SplitApplyCombine
+import SplitApplyCombine: combinedimsview
 
 abstract type AbstractBeam end
 

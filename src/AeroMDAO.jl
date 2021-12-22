@@ -8,11 +8,15 @@ using StaticArrays
 using CoordinateTransformations, Rotations
 using ForwardDiff, DiffResults
 using PrettyTables, OrderedCollections
-using SplitApplyCombine
+
+import SplitApplyCombine: combinedimsview, combinedims
+
+export combinedimsview, combinedims
 
 using ComponentArrays
 
 export ComponentVector, ComponentArray
+
 
 ## Math tools
 #==========================================================================================#

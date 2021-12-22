@@ -13,7 +13,7 @@ x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
 ## Meshing and assembly
-wing_mesh = WingMesh(wing, [12], 6);
+wing_mesh = WingMesh(wing, [12, 3], 6);
 aircraft  = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
@@ -33,7 +33,7 @@ refs    = References(density = 1.225,
 system   = solve_case(aircraft, fs, refs;);
 
 ## Compute dynamics
-ax       = Stability()
+ax       = Wind()
 Fs       = surface_forces(system)
 Ms       = surface_moments(system)
 Fs, Ms   = surface_dynamics(system; axes = ax) 
@@ -98,7 +98,7 @@ plot!()
 LL_loads    = lifting_line_loads(horseshoe_panels, CFs.wing, projected_area(wing))
 CL_loadings = sum(system.circulations.wing, dims = 1)[:] / (0.5 * fs.speed * refs.chord)
 
-##
+## Lifting line loads
 plot_CD = plot(LL_loads[:,1], LL_loads[:,2], label = :none, ylabel = "CDi")
 plot_CY = plot(LL_loads[:,1], LL_loads[:,3], label = :none, ylabel = "CY")
 plot_CL = begin

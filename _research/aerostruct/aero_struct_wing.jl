@@ -7,7 +7,6 @@ using DataFrames
 using NLsolve
 using ComponentArrays
 using TimerOutputs
-using SplitApplyCombine
 
 # Case
 #==========================================================================================#
@@ -41,7 +40,11 @@ ref     = [ x_w, 0., 0. ]
 V, α, β = 25.0, 5.0, 0.0
 Ω       = [0.0, 0.0, 0.0]
 fs      = Freestream(V, α, β, Ω)
-refs    = References(S, b, c, ρ, ref)
+refs    = References(density = 1.225, 
+                     area     = projected_area(wing),   
+                     span     = span(wing), 
+                     chord    = mean_aerodynamic_chord(wing), 
+                     location = [ x_w; 0.; 0. ])
 
 # Solve aerodynamic case for initial vector
 @time data = solve_case(aircraft, fs, refs; 
@@ -196,7 +199,7 @@ fem_loads    = compute_loads(vlm_acs, vlm_forces, new_fem_mesh)
 σs  = combinedimsview(von_mises_stress.(tubes, δxs, δθs))
 
 ## Check numbers
-lift     = sum(vlm_forces)[3]
+ lift     = sum(vlm_forces)[3]
 load_fac = lift * cos(α_opt) / weight
 
 println("Load factor: $load_fac")
@@ -268,7 +271,7 @@ streams = plot_streams(new_fs, seed, system.horseshoes, Γ_opt, 1, 100);
 
 ## Plot
 using LaTeXStrings
-using GeometryTypes
+# using GeometryTypes
 
 # using CairoMakie
 # CairoMakie.activate!()
@@ -276,20 +279,6 @@ using GLMakie
 # GLMakie.activate!()
 
 const LS = LaTeXString
-
-## Extrapolating surface values to neighbouring points
-function extrapolate_point_mesh(mesh)
-    m, n   = size(mesh)
-    points = zeros(eltype(mesh), m + 1, n + 1)
-
-    # The quantities are measured at the bound leg (0.25×)
-    @views points[1:end-1,1:end-1] += 0.75 * mesh / 2
-    @views points[1:end-1,2:end]   += 0.75 * mesh / 2
-    @views points[2:end,1:end-1]   += 0.25 * mesh / 2
-    @views points[2:end,2:end]     += 0.25 * mesh / 2
-
-    points
-end
 
 ## Surface pressure coefficients
 CFs, CMs         = surface_coefficients(data; axes = Wind())
@@ -302,22 +291,6 @@ wing_cp_points     = extrapolate_point_mesh(cps.wing)
 new_wing_cp_points = extrapolate_point_mesh(new_cps.wing)
 
 ## Spanwise loads
-function lifting_line_loads(panels, CFs, S)
-    CFs  = combinedimsview(CFs)
-    CDis = @views CFs[1,:,:]
-    CYs  = @views CFs[2,:,:]
-    CLs  = @views CFs[3,:,:]
-
-    area_scale  = S ./ sum(panel_area, panels, dims = 1)[:]
-    span_CDis   = sum(CDis, dims = 1)[:] .* area_scale
-    span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
-    span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
-
-    # ys = sum(x -> getindex(midpoint(x), 2), panels, dims = 1) 
-
-    SVector.(span_CDis, span_CYs, span_CLs)
-end
-
 cl_loading(Γs, V, c) = vec(sum(Γs, dims = 1)) / (0.5 * V * c)
 
 hs_pts      = horseshoe_point.(data.horseshoes)
@@ -348,17 +321,16 @@ ax_cy = GLMakie.Axis(ax[2,1:2], ylabel = L"C_Y",)
 ax_cl = GLMakie.Axis(ax[3,1:2], xlabel = L"y", ylabel = L"C_L")
 
 # Spanload plot
-function plot_spanload!(ax, ys, CFs, name = "Wing")
-    CFs  = combinedimsview(CFs)
-    @views lines!(ax[1,1:2], ys, CFs[1,:], label = name,)
-    @views lines!(ax[2,1:2], ys, CFs[2,:], label = name,)
-    @views lines!(ax[3,1:2], ys, CFs[3,:], label = name,)
+function plot_spanload!(ax, ll_loads, name = "Wing")
+    @views lines!(ax[1,1:2], ll_loads[:,1], ll_loads[:,2], label = name,)
+    @views lines!(ax[2,1:2], ll_loads[:,1], ll_loads[:,3], label = name,)
+    @views lines!(ax[3,1:2], ll_loads[:,1], ll_loads[:,4], label = name,)
 
     nothing
 end
 
-plot_spanload!(ax, wing_ys, wing_ll, LS("Wing"))
-plot_spanload!(ax, new_wing_ys, new_wing_ll, LS("Deflected Wing"))
+plot_spanload!(ax, wing_ll, LS("Wing"))
+plot_spanload!(ax, new_wing_ll, LS("Deflected Wing"))
 
 # Meshes
 m1 = poly!(scene, wing_mesh.cam_mesh[:], wing_cam_connec, color = wing_cp_points[:], shading = true, transparency = true)

@@ -3,7 +3,6 @@ using Revise
 using AeroMDAO
 using ComponentArrays
 using LinearAlgebra
-using SplitApplyCombine
 
 ## Surfaces
 
@@ -84,10 +83,10 @@ refs    = References(area     = projected_area(wing),
                      );
 
     # Compute dynamics
-    ax       = Stability()
-    Fs       = surface_forces(data)
-    Fs, Ms   = surface_dynamics(data; axes = ax) 
-    CFs, CMs = surface_coefficients(data; axes = ax)
+    ax       = Wind() # Stability(), Body()
+    # Fs       = surface_forces(data)
+    # Fs, Ms   = surface_dynamics(data; axes = ax) 
+    # CFs, CMs = surface_coefficients(data; axes = ax)
 
     nfs = nearfield_coefficients(data)
     ffs = farfield_coefficients(data)
@@ -96,13 +95,7 @@ refs    = References(area     = projected_area(wing),
     ff  = farfield(data)
 end;
 
-## Spanwise forces
-# hs_pts   = horseshoe_point.(data.horseshoes)
-# wing_ys  = combinedimsview(hs_pts.wing)[2,end,:]
-# htail_ys = combinedimsview(hs_pts.htail)[2,end,:]
-# vtail_ys = combinedimsview(hs_pts.vtail)[2,end,:]
-
-##
+## Spanwise forces/lifting line loads
 wing_ll  = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, S)
 htail_ll = lifting_line_loads(chord_panels(htail_mesh), CFs.htail, S)
 vtail_ll = lifting_line_loads(chord_panels(vtail_mesh), CFs.vtail, S);
