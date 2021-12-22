@@ -102,7 +102,7 @@ function lifting_line_loads(panels, CFs, S)
     span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
     span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
 
-    ys = sum(x -> midpoint(x)[2], panels, dims = 1)[:]
+    ys = map(x -> midpoint(x)[2], panels[1,:])[:]
 
     [ ys span_CDis span_CYs span_CLs ]
 end
@@ -134,7 +134,7 @@ function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: Abstrac
     head = [ name, "Nearfield", "Farfield" ]
     h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true)
     if browser
-        pretty_table(String, data, head, alignment = [:c, :c, :c], tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(font_weight = "bold")), formatters = ft_round(8))
+        pretty_table(HTML, data, head, alignment = [:c, :c, :c], tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(font_weight = "bold")), formatters = ft_round(8))
     else
         pretty_table(data, head, alignment = [:c, :c, :c], tf = tf_compact, highlighters = h1, vlines = :none, formatters = ft_round(8))
     end
@@ -146,7 +146,7 @@ function print_derivatives(comp, name = ""; browser = false)
     nf_rows = [ coeffs [ [comp.NF; comp.FF] [ comp.dNF; comp.dFF ] ] ]
 
     if browser
-        pretty_table(String, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
+        pretty_table(HTML, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
     else
         pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true), vlines = :none, formatters = ft_round(8))
     end

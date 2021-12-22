@@ -9,36 +9,20 @@ wing_right = HalfWing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
                       dihedrals = [5., 5.],
                       LE_sweeps = [5., 5.]);
 wing = Wing(wing_right, wing_right)
-wing_mac = mean_aerodynamic_center(wing)
+x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
-## Assembly
-fs = Freestream(speed = 1.0, 
-                alpha = 1.0, 
-                beta  = 5.0, 
-                omega = [0.,0.,0.])
-
-## Evaluate case
-# @time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs =
-# solve_case(wing, fs;
-#            rho_ref   = ρ,
-#            r_ref     = ref,
-#            area_ref  = S,
-#            span_ref  = b,
-#            chord_ref = c,
-#            span_num  = [25, 8],
-#            chord_num = 5,
-#            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
-#            x_tr      = [0.3, 0.3],
-#           #  spacing   = Uniform()
-#           );
-
-## Meshing
+## Meshing and assembly
 wing_mesh = WingMesh(wing, [12], 6);
 aircraft  = ComponentVector(wing = make_horseshoes(wing_mesh))
 
-## References
-x_w     = wing_mac[1]
+# Freestream conditions
+fs      = Freestream(speed = 1.0, 
+                     alpha = 1.0, 
+                     beta  = 5.0, 
+                     omega = [0.,0.,0.])
+
+# Reference values
 refs    = References(density = 1.225, 
                      area     = projected_area(wing),   
                      span     = span(wing), 
@@ -46,7 +30,7 @@ refs    = References(density = 1.225,
                      location = [ x_w; 0.; 0. ])
 
 ## Solve system
-system  = solve_case(aircraft, fs, refs;);
+system   = solve_case(aircraft, fs, refs;);
 
 ## Compute dynamics
 ax       = Stability()
@@ -56,10 +40,10 @@ Fs, Ms   = surface_dynamics(system; axes = ax)
 CFs, CMs = surface_coefficients(system; axes = ax)
 
 ## Total force coefficients
-nf  = nearfield(system) 
-ff  = farfield(system)
+nf       = nearfield(system) 
+ff       = farfield(system)
 
-print_coefficients(nf, ff, "Wing")
+print_coefficients(nf, ff, :wing)
 
 ## Evaluate case with stability derivatives
 @time dv_data =
@@ -111,15 +95,15 @@ scatter!(horseshoe_points[:], marker = 1, color = :black, label = :none)
 plot!()
 
 ## Spanwise forces
-ll_loads    = lifting_line_loads(horseshoe_panels, CFs.wing, projected_area(wing))
+LL_loads    = lifting_line_loads(horseshoe_panels, CFs.wing, projected_area(wing))
 CL_loadings = sum(system.circulations.wing, dims = 1)[:] / (0.5 * fs.speed * c)
 
 ##
-plot_CD = plot(ll_loads[:,1], ll_loads[:,2], label = :none, ylabel = "CDi")
-plot_CY = plot(ll_loads[:,1], ll_loads[:,3], label = :none, ylabel = "CY")
+plot_CD = plot(LL_loads[:,1], LL_loads[:,2], label = :none, ylabel = "CDi")
+plot_CY = plot(LL_loads[:,1], LL_loads[:,3], label = :none, ylabel = "CY")
 plot_CL = begin
-            plot(ll_loads[:,1], ll_loads[:,3], label = :none, xlabel = "y", ylabel = "CL")
-            plot!(ll_loads[:,1], CL_loadings, label = "Normalized", xlabel = "y")
+            plot(LL_loads[:,1], LL_loads[:,3], label = :none, xlabel = "y", ylabel = "CL")
+            plot!(LL_loads[:,1], CL_loadings, label = "Normalized", xlabel = "y")
           end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 
@@ -137,3 +121,19 @@ plot!.(horseshoe_coords, color = :gray, label = :none)
 # scatter!(cz_pts, zcolor = CLs[:], marker = 2, label = "CL (Exaggerated)")
 quiver!(hs_pts, quiver=(CDis[:], CYs[:], CLs[:]) .* 100, label = "Forces (Exaggerated)")
 plot!(size = (800, 600))
+
+
+## Evaluate case
+# @time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs =
+# solve_case(wing, fs;
+#            rho_ref   = ρ,
+#            r_ref     = ref,
+#            area_ref  = S,
+#            span_ref  = b,
+#            chord_ref = c,
+#            span_num  = [25, 8],
+#            chord_num = 5,
+#            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
+#            x_tr      = [0.3, 0.3],
+#           #  spacing   = Uniform()
+#           );
