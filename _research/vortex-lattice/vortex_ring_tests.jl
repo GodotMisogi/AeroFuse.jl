@@ -63,12 +63,16 @@ aircraft = ComponentArray(
 
 ## Case
 ac_name = :aircraft
-ρ       = 1.225
-ref     = [ x_w, 0., 0.]
-V, α, β = 15.0, 0.0, 0.0
-Ω       = [0.0, 0.0, 0.0]
-fs      = Freestream(V, α, β, Ω)
-refs    = References(S, b, c, ρ, ref)
+fs      = Freestream(speed = 15.0, 
+                     alpha = 0.0, 
+                     beta  = 0.0, 
+                     omega = [0., 0., 0.]);
+
+refs    = References(area     = projected_area(wing),
+                     span     = span(wing),
+                     chord    = mean_aerodynamic_chord(wing),
+                     density  = 1.225,
+                     location = [ x_w, 0., 0.])
 
 ##
 @time begin 
@@ -79,10 +83,10 @@ refs    = References(S, b, c, ρ, ref)
                      );
 
     # Compute dynamics
-    ax       = Stability()
-    Fs       = surface_forces(data)
-    Fs, Ms   = surface_dynamics(data; axes = ax) 
-    CFs, CMs = surface_coefficients(data; axes = ax)
+    ax       = Wind() # Stability(), Body()
+    # Fs       = surface_forces(data)
+    # Fs, Ms   = surface_dynamics(data; axes = ax) 
+    # CFs, CMs = surface_coefficients(data; axes = ax)
 
     nfs = nearfield_coefficients(data)
     ffs = farfield_coefficients(data)
@@ -91,30 +95,7 @@ refs    = References(S, b, c, ρ, ref)
     ff  = farfield(data)
 end;
 
-## Spanwise forces
-using StaticArrays
-function lifting_line_loads(panels, CFs, S)
-    CFs  = combinedimsview(CFs)
-    CDis = @views CFs[1,:,:]
-    CYs  = @views CFs[2,:,:]
-    CLs  = @views CFs[3,:,:]
-
-    area_scale  = S ./ sum(panel_area, panels, dims = 1)[:]
-    span_CDis   = sum(CDis, dims = 1)[:] .* area_scale
-    span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
-    span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
-
-    # ys = sum(x -> getindex(midpoint(x), 2), panels, dims = 1) 
-
-    SVector.(span_CDis, span_CYs, span_CLs)
-end
-
-hs_pts   = horseshoe_point.(data.horseshoes)
-wing_ys  = @views getindex.(hs_pts.wing[1,:],  2)
-htail_ys = @views getindex.(hs_pts.htail[1,:], 2)
-vtail_ys = @views getindex.(hs_pts.vtail[1,:], 2)
-
-##
+## Spanwise forces/lifting line loads
 wing_ll  = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, S)
 htail_ll = lifting_line_loads(chord_panels(htail_mesh), CFs.htail, S)
 vtail_ll = lifting_line_loads(chord_panels(vtail_mesh), CFs.vtail, S);
@@ -142,27 +123,9 @@ distance = 5
 num_stream_points = 100
 streams = plot_streams(fs, seed, data.horseshoes, data.circulations, distance, num_stream_points);
 
-## Mesh connectivities
-triangle_connectivities(inds) = @views [ inds[1:end-1,1:end-1][:] inds[1:end-1,2:end][:]   inds[2:end,2:end][:]   ;
-                                           inds[2:end,2:end][:]   inds[2:end,1:end-1][:] inds[1:end-1,1:end-1][:] ]
-
 wing_cam_connec  = triangle_connectivities(LinearIndices(wing_mesh.cam_mesh))
 htail_cam_connec = triangle_connectivities(LinearIndices(htail_mesh.cam_mesh))
 vtail_cam_connec = triangle_connectivities(LinearIndices(vtail_mesh.cam_mesh));
-
-## Extrapolating surface values to neighbouring points
-function extrapolate_point_mesh(mesh)
-    m, n   = size(mesh)
-    points = zeros(eltype(mesh), m + 1, n + 1)
-
-    # The quantities are measured at the bound leg (0.25×)
-    @views points[1:end-1,1:end-1] += 0.75 * mesh / 2
-    @views points[1:end-1,2:end]   += 0.75 * mesh / 2
-    @views points[2:end,1:end-1]   += 0.25 * mesh / 2
-    @views points[2:end,2:end]     += 0.25 * mesh / 2
-
-    points
-end
 
 ## Surface velocities
 vels = surface_velocities(data);
@@ -180,32 +143,31 @@ htail_cp_points = extrapolate_point_mesh(cps.htail)
 vtail_cp_points = extrapolate_point_mesh(cps.vtail)
 
 ## Figure plot
-fig  = Figure(resolution = (1280, 720))
+fig1  = Figure(resolution = (1280, 720))
 
-scene = LScene(fig[1:4,1])
-ax    = fig[1:4,2] = GridLayout()
+scene = LScene(fig1[1:4,1])
+ax    = fig1[1:4,2] = GridLayout()
 
 ax_cd = GLMakie.Axis(ax[1,1:2], ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
 ax_cy = GLMakie.Axis(ax[2,1:2], ylabel = L"C_Y",)
 ax_cl = GLMakie.Axis(ax[3,1:2], xlabel = L"y", ylabel = L"C_L")
 
 # Spanload plot
-function plot_spanload!(ax, ys, CFs, name = "Wing")
-    CFs  = combinedimsview(CFs)
-    @views lines!(ax[1,1:2], ys, CFs[1,:], label = name,)
-    @views lines!(ax[2,1:2], ys, CFs[2,:], label = name,)
-    @views lines!(ax[3,1:2], ys, CFs[3,:], label = name,)
+function plot_spanload!(ax, ll_loads, name = "Wing")
+    @views lines!(ax[1,1:2], ll_loads[:,1], ll_loads[:,2], label = name,)
+    @views lines!(ax[2,1:2], ll_loads[:,1], ll_loads[:,3], label = name,)
+    @views lines!(ax[3,1:2], ll_loads[:,1], ll_loads[:,4], label = name,)
 
     nothing
 end
 
-plot_spanload!(ax, wing_ys, wing_ll, LS("Wing"))
-plot_spanload!(ax, htail_ys, htail_ll, LS("Horizontal Tail"))
-plot_spanload!(ax, vtail_ys, vtail_ll, LS("Vertical Tail"))
+plot_spanload!(ax, wing_ll, LS("Wing"))
+plot_spanload!(ax, htail_ll, LS("Horizontal Tail"))
+plot_spanload!(ax, vtail_ll, LS("Vertical Tail"))
 
 # Legend
 Legend(ax[4,1:2], ax_cl)
-fig[0, :] = Label(fig, LS("Vortex Lattice Analysis"), textsize = 20)
+fig1[0, :] = Label(fig1, LS("Vortex Lattice Analysis"), textsize = 20)
 
 # Surface pressure meshes
 m1 = poly!(scene, wing_mesh.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
@@ -223,17 +185,17 @@ lines!(scene, plot_wing(wing))
 lines!(scene, plot_wing(htail))
 lines!(scene, plot_wing(vtail))
 
-l1 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(wing_mesh.cam_mesh))  ]
-l2 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(htail_mesh.cam_mesh)) ]
-l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(make_panels(vtail_mesh.cam_mesh)) ]
+l1 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(wing_mesh))  ]
+l2 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(htail_mesh)) ]
+l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(vtail_mesh)) ]
 
 # Streamlines
 [ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]
 
-fig.scene
+fig1.scene
 
 ## Save figure
-# save("plots/VortexLattice.png", fig, px_per_unit = 1.5)
+# save("plots/VortexLattice.png", fig1, px_per_unit = 1.5)
 
 ## Animation settings
 pts = [ Node(Point3f0[stream]) for stream in streams[1,:] ]
