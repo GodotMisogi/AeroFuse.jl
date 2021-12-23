@@ -106,6 +106,23 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
     return R
 end
 
+function coupled_residuals!(R, all_horsies, Γs, U, Ω, speed, stiffness_matrix, δs, fem_loads, weight, load_factor, L)
+    # Get residual vector views
+    R_A = R.aerodynamics
+    R_S = R.structures
+    R_W = @view R[end]
+
+    # Aerodynamic residuals
+    @timeit "Aerodynamic Residuals" aerodynamic_residual!(R_A, all_horsies, Γs / speed, U / speed, Ω / speed)
+
+    # Structural residuals
+    @timeit "Structural Residuals" linear_residual!(R_S, stiffness_matrix, δs, fem_loads)
+
+    # Weight residual
+    linear_residual!(R_W, weight, load_factor, L)
+
+end
+
 # Residual setup for single aerostructural surface and multiple aerodynamic surfaces
 function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, other_horsies, fem_mesh, stiffness_matrix, weight, load_factor)
     # Unpack aerodynamic and structural variables
@@ -187,10 +204,10 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
     @timeit "Other Forces" other_forces = surface_forces(other_Γs, other_horsies, Γs, all_horsies, U, Ω, ρ)[:]
 
     # Compute lift
-    L = sum([ reduce(vcat, vec.(new_forces)); other_forces[:] ])[3]
+    L = sum([ mapreduce(vec, vcat, new_forces); other_forces[:] ])[3]
 
     # Build force vector with constraint for structures
-    @timeit "FEM Loads" fem_loads = reduce(vcat, fem_load_vector.(new_acs, new_forces, fem_meshes))
+    @timeit "FEM Loads" fem_loads = mapreduce(fem_load_vector, vcat, new_acs, new_forces, fem_meshes)
 
     # Aerodynamic residuals
     @timeit "Aerodynamic Residuals" aerodynamic_residual!(R_A, all_horsies, Γs / speed, U / speed, Ω / speed)
@@ -235,10 +252,10 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
     @timeit "New Forces" new_forces   = surface_forces.(new_Γs, new_horsies, Ref(Γs), Ref(all_horsies), Ref(U), Ref(Ω), Ref(ρ))
 
     # Compute lift
-    L = sum(reduce(vcat, vec.(new_forces)))[3]
+    L = sum(mapreduce(vec, vcat, new_forces))[3]
 
     # Build force vector with constraint for structures
-    @timeit "FEM Loads" fem_loads = reduce(vcat, fem_load_vector.(new_acs, new_forces, fem_meshes))
+    @timeit "FEM Loads" fem_loads = mapreduce(fem_load_vector, vcat, new_acs, new_forces, fem_meshes)
 
     # Aerodynamic residuals
     @timeit "Aerodynamic Residuals" aerodynamic_residual!(R_A, all_horsies, Γs / speed, U / speed, Ω / speed)
