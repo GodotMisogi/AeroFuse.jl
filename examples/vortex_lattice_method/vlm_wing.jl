@@ -34,10 +34,11 @@ system   = solve_case(aircraft, fs, refs;);
 
 ## Compute dynamics
 ax       = Wind()
-Fs       = surface_forces(system)
-Ms       = surface_moments(system)
-Fs, Ms   = surface_dynamics(system; axes = ax) 
 CFs, CMs = surface_coefficients(system; axes = ax)
+# Fs       = surface_forces(system)
+# Ms       = surface_moments(system)
+# Fs, Ms   = surface_dynamics(system; axes = ax) 
+
 
 ## Total force coefficients
 nf       = nearfield(system) 
@@ -46,10 +47,9 @@ ff       = farfield(system)
 print_coefficients(nf, ff, :wing)
 
 ## Evaluate case with stability derivatives
-@time dv_data =
-solve_stability_case(aircraft, fs, refs;
-                     print = true
-                    );
+@time dv_data = solve_stability_case(aircraft, fs, refs;
+                                     print = true
+                                    );
 
 ## Plotting
 using StaticArrays

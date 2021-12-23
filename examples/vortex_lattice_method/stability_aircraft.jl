@@ -1,6 +1,5 @@
 ## Aircraft stability analysis example
 using AeroMDAO
-using ComponentArrays
 
 ## Lifting surfaces
 
@@ -116,6 +115,10 @@ Cn_r = dvs_plane[6,5]
 Cn_β = dvs_plane[6,2]
 
 γ    = Cl_β * Cn_r / (Cl_r * Cn_β) # Check degree-radian issue
+
+## Other quantities
+dvs_htail = dv_data.htail.dNF
+CL_α_h    = dvs_htail[3,1]
 
 # Locations
 x_np = [ ref[1] .+ np; zeros(2) ]  # Neutral point
