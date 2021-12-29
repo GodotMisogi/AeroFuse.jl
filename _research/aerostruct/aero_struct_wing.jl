@@ -5,7 +5,6 @@ using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
-using ComponentArrays
 using TimerOutputs
 
 # Case
@@ -123,31 +122,29 @@ x0 = ComponentArray(aerodynamics = data.circulations.wing,
                     load_factor  = deg2rad(α))
 
 ##
-using ForwardDiff
+# using ForwardDiff
 # using Zygote
 
-function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
-    x = copy(x0)
-    R = similar(x)
-    ∂R∂x = Matrix{eltype(x)}(undef, length(R), length(x))
-    ε = 1e5
-    i = 0
-    for i = 1:max_iters
-        ForwardDiff.jacobian!(∂R∂x, f!, R, x)
-        dx   = ∂R∂x \ -R
-        if ε <= tol return x end # Needs NAN checks and everything like NLsolve
-        ε    = LinearAlgebra.norm(dx)
-        @show (i, ε)
-        x  .+= dx
-        i   += 1
-    end
-    return x
-end
+# function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
+#     x = copy(x0)
+#     R = similar(x)
+#     ∂R∂x = Matrix{eltype(x)}(undef, length(R), length(x))
+#     ε = 1e5
+#     i = 0
+#     for i = 1:max_iters
+#         ForwardDiff.jacobian!(∂R∂x, f!, R, x)
+#         dx   = ∂R∂x \ -R
+#         if ε <= tol return x end # Needs NAN checks and everything like NLsolve
+#         ε    = LinearAlgebra.norm(dx)
+#         @show (i, ε)
+#         x  .+= dx
+#         i   += 1
+#     end
+#     return x
+# end
 
-##
 # x = @time newton_raphson(solve_aerostruct!, x0)
 
-##
 # x = @time aerostruct_gauss_seidel(x0, V, deg2rad(β), ρ, Ω, wing_mesh.vlm_mesh, wing_mesh.cam_mesh, fem_mesh, stiffy, weight, load_factor; max_iters = 50, tol = 1e-9)
 
 ##

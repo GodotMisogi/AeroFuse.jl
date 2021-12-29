@@ -6,7 +6,6 @@ using StaticArrays
 using DataFrames
 using NLsolve
 using TimerOutputs
-using ComponentArrays
 
 # Case
 #==========================================================================================#
@@ -14,12 +13,12 @@ using ComponentArrays
 ## Aerodynamic variables
 
 # Define wing
-wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
-            chords    = [1.0, 0.6, 0.2],
-            twists    = [0.0, 0.0, 0.0],
-            spans     = [5.0, 0.3],
-            dihedrals = [0., 45.],
-            LE_sweeps = [5., 60.]);
+wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 2)),
+            chords    = [1.0, 0.6],
+            twists    = [0.0, 0.0],
+            spans     = [5.0],
+            dihedrals = [5.],
+            LE_sweeps = [15.]);
 
 # Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
@@ -46,9 +45,9 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 ## Meshing and assembly
 
 # Wing
-wing_mesh  = WingMesh(wing, [8,3], 6)
-htail_mesh = WingMesh(htail, [6], 6)
-vtail_mesh = WingMesh(vtail, [6], 6)
+wing_mesh  = WingMesh(wing, [6], 6)
+htail_mesh = WingMesh(htail, [6], 4)
+vtail_mesh = WingMesh(vtail, [6], 4)
 
 # Aircraft assembly
 aircraft = ComponentArray(

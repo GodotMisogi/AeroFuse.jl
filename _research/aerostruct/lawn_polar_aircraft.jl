@@ -6,7 +6,6 @@ using StaticArrays
 using DataFrames
 using NLsolve
 using TimerOutputs
-using ComponentArrays
 using SparseArrays
 
 # Aerostructural analysis case
@@ -110,10 +109,9 @@ fs       = Freestream(V, α, β, Ω)
 refs     = References(S, b, c, ρ, ref)
 
 ## Solve aerodynamic case for initial vector
-@time system =
-    solve_case(aircraft, fs, refs;
-            #    print_components = true,      # Prints the results for each component
-              );
+@time system = solve_case(aircraft, fs, refs;
+                          print_components = true,
+                         );
 
 ## Data collection
 # @time CFs, CMs = surface_coefficients(system);
@@ -126,16 +124,16 @@ vlm_forces_wing = Fs.wing
 wing_beam_ratio = 0.40
 wing_fem_mesh   = make_beam_mesh(wing_mesh.vlm_mesh, wing_beam_ratio)
 
-aluminum = Material(       # Aluminum properties
-                    85e9,  # Elastic modulus, N/m²
-                    25e9,  # Shear modulus, N/m²,
-                    350e6, # Yield stress with factor of safety 2.5, N/m²,
-                    1.6e3, # Density, kg/m³
+aluminum = Material(# Aluminum properties
+                    elastic_modulus = 85e9,
+                    shear_modulus   = 25e9,
+                    yield_stress    = 350e6,
+                    density         = 1.6e3
                    )
 
-Ls_wing = norm.(diff(wing_fem_mesh))                              # Beam lengths, m
-rs_wing = range(5e-2, stop = 1e-2, length = length(Ls_wing) ÷ 2)  # Outer radius, m
-ts_wing = range(1e-2, stop = 6e-3, length = length(Ls_wing) ÷ 2)  # Thickness, m
+Ls_wing = norm.(diff(wing_fem_mesh))                 # Beam lengths, m
+rs_wing = LinRange(5e-2, 1e-2, length(Ls_wing) ÷ 2)  # Outer radius, m
+ts_wing = LinRange(1e-2, 6e-3, length(Ls_wing) ÷ 2)  # Thickness, m
 r_wing  = [ reverse(rs_wing); rs_wing ]
 t_wing  = [ reverse(ts_wing); ts_wing ]
 
@@ -156,9 +154,9 @@ htail_beam_ratio = 0.35
 htail_fem_mesh   = make_beam_mesh(htail_mesh.vlm_mesh, htail_beam_ratio)
 
 # Beam properties
-Ls_htail = norm.(diff(htail_fem_mesh))                              # Beam lengths, m
-rs_htail = range(8e-3, stop = 2e-3, length = length(Ls_htail) ÷ 2)  # Outer radius, m
-ts_htail = range(6e-4, stop = 2e-4, length = length(Ls_htail) ÷ 2)  # Thickness, m
+Ls_htail = norm.(diff(htail_fem_mesh))                 # Beam lengths, m
+rs_htail = LinRange(8e-3, 2e-3, length(Ls_htail) ÷ 2)  # Outer radius, m
+ts_htail = LinRange(6e-4, 2e-4, length(Ls_htail) ÷ 2)  # Thickness, m
 r_htail  = [ reverse(rs_htail); rs_htail ]
 t_htail  = [ reverse(ts_htail); ts_htail ]
 
@@ -247,8 +245,8 @@ reset_timer!()
             method         = :newton,
             show_trace     = true,
             # extended_trace = true,
-            store_trace    = true,
-            # autodiff       = :forward,
+            # store_trace    = true,
+            autodiff       = :forward,
            );
 print_timer()
 
