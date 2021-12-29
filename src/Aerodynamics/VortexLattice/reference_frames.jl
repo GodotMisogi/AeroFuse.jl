@@ -1,6 +1,14 @@
 ## Axis transformations
 #==========================================================================================#
 
+abstract type AbstractAxisSystem end
+
+struct Global    <: AbstractAxisSystem end
+struct Body      <: AbstractAxisSystem end
+struct Stability <: AbstractAxisSystem end
+struct Wind      <: AbstractAxisSystem end
+
+
 function rotate_zy(theta1, theta2)
     sinθ₁, cosθ₁ = sincos(theta1)
     sinθ₂, cosθ₂ = sincos(theta2)
@@ -26,12 +34,15 @@ Convert coordinates into stability axes with angle ``\\alpha``.
 """
 stability_to_body_axes(coords, α :: T) where T <: Real = RotY{T}(-α) * coords
                                             
+
+# Possible cancellation errors causing convergence issues in optimization?
+# body_to_wind_axes(coords, α, β) = let T = promote_type(eltype(α), eltype(β)); RotZY{T}(β, α) * coords end
+
 """
     body_to_wind_axes(coords, α, β)
 
 Convert coordinates from body axes to wind axes with angles ``\\alpha,~ \\beta``.
 """
-# body_to_wind_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(β, α) * coords
 body_to_wind_axes(coords, α, β) = rotate_zy(β, α) * coords
 
 """

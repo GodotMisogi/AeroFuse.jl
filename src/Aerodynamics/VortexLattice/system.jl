@@ -63,13 +63,6 @@ struct VLMSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
     reference           :: Q
 end
 
-abstract type AircraftAxes end
-
-struct Global    <: AircraftAxes end
-struct Body      <: AircraftAxes end
-struct Stability <: AircraftAxes end
-struct Wind      <: AircraftAxes end
-
 surface_velocities(system :: VLMSystem) = surface_velocities(system.horseshoes, system.circulations, system.horseshoes, aircraft_velocity(system.freestream), system.freestream.omega)
 
 surface_forces(system :: VLMSystem, ::Body) = surface_forces(system.circulations, system.horseshoes, aircraft_velocity(system.freestream), system.freestream.omega, system.reference.density)
@@ -78,7 +71,7 @@ surface_forces(system :: VLMSystem, ::Stability) = body_to_stability_axes.(surfa
 
 surface_forces(system :: VLMSystem, ::Wind) = body_to_wind_axes.(surface_forces(system, Body()), system.freestream.alpha, system.freestream.beta)
 
-surface_forces(system; axes :: AircraftAxes = Body()) = surface_forces(system, axes)
+surface_forces(system; axes :: AbstractAxisSystem = Body()) = surface_forces(system, axes)
 
 surface_moments(system :: VLMSystem, ::Body) = surface_moments(system.horseshoes, surface_forces(system, Body()), system.reference.location)
 
@@ -86,7 +79,7 @@ surface_moments(system :: VLMSystem, ::Stability) = surface_moments(system.horse
 
 surface_moments(system :: VLMSystem, ::Wind) = surface_moments(system.horseshoes, stability_flip.(surface_forces(system, Wind())), system.reference.location)
 
-surface_moments(system; axes :: AircraftAxes = Body()) = surface_moments(system, axes)
+surface_moments(system; axes :: AbstractAxisSystem = Body()) = surface_moments(system, axes)
 
 function surface_dynamics(system :: VLMSystem)
     hs = system.horseshoes
@@ -133,9 +126,9 @@ function surface_dynamics(system :: VLMSystem, ::Wind)
     wind_forces, wind_moments
 end
 
-surface_dynamics(system; axes :: AircraftAxes = Wind()) = surface_dynamics(system, axes)
+surface_dynamics(system; axes :: AbstractAxisSystem = Wind()) = surface_dynamics(system, axes)
 
-function surface_coefficients(system :: VLMSystem; axes :: AircraftAxes = Wind()) 
+function surface_coefficients(system :: VLMSystem; axes :: AbstractAxisSystem = Wind()) 
     V = system.freestream.speed
     ρ = system.reference.density
     S = system.reference.area
