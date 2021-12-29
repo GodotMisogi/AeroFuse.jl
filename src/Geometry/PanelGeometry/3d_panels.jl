@@ -80,8 +80,8 @@ transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, panel_normal(pan
 """
     panel_area(panel :: Panel3D)
 
-Compute the area of a Panel3D.
+Compute the (possibly non-planar, hence nonsensical) area of a Panel3D.
 """
-panel_area(panel :: Panel3D) = (norm ∘ cross)(average_chord(panel), average_width(panel))
+panel_area(panel :: Panel3D) = 1/2 * norm(panel_normal(panel)) # (norm ∘ cross)(average_chord(panel), average_width(panel))
 
 wetted_area(panels) = sum(panel -> panel_area(panel), panels)
