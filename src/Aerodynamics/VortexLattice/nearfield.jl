@@ -22,7 +22,7 @@ end
 
 Evaluate the total velocity at a given location ``r`` by summing over the velocities induced by the trailing legs of Horseshoes with vortex strengths ``\\Gamma``s, of the rotation rates ``\\Omega``, and of the freestream flow vector ``U`` in the aircraft reference frame.
 """
-midpoint_velocity(r, horseshoes, Γs, U, Ω) = let vel = zeros(eltype(r), 3); induced_trailing_velocity!(vel, r, horseshoes, Γs, -normalize(U)) - (U + Ω × r) end
+midpoint_velocity(r, horseshoes, Γs, U, Ω) = induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
 
 surface_velocity(hs, Γs, horseshoes, U, Ω) = midpoint_velocity(bound_leg_center(hs), horseshoes, Γs, U, Ω)
 
