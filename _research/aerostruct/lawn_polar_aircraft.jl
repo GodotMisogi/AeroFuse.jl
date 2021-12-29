@@ -239,16 +239,17 @@ solve_aerostructural_residual!(R, x) =
                             stiffy, weight, load_factor)
 
 ## Solve nonlinear system
-reset_timer!()
-@timeit "Solving Residuals" res_aerostruct =
+# reset_timer!()
+# @timeit "Solving Residuals" 
+@time res_aerostruct =
     nlsolve(solve_aerostructural_residual!, x0,
             method         = :newton,
-            show_trace     = true,
+            # show_trace     = true,
             # extended_trace = true,
             # store_trace    = true,
             autodiff       = :forward,
            );
-print_timer()
+# print_timer()
 
 ## Get zero
 x_opt = res_aerostruct.zero
