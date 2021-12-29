@@ -1,6 +1,5 @@
 ## Aircraft analysis benchmarking
 using BenchmarkTools
-using ComponentArrays
 using TimerOutputs
 
 # All subsequent analyses use no symmetry tricks for performance as AeroMDAO hasn't implemented them and apples must be compared to apples.

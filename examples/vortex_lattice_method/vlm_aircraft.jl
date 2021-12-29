@@ -1,7 +1,6 @@
 ## Wing analysis case
 using Revise
 using AeroMDAO
-using ComponentArrays
 using LinearAlgebra
 
 ## Surfaces
@@ -85,7 +84,7 @@ refs    = References(area     = projected_area(wing),
     # Compute dynamics
     ax       = Wind() # Stability(), Body()
     # CFs, CMs = surface_coefficients(data; axes = ax)
-    # Fs       = surface_forces(data)
+    Fs       = surface_forces(data)
     # Fs, Ms   = surface_dynamics(data; axes = ax) 
 
     nfs = nearfield_coefficients(data)

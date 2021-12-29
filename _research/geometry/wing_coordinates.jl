@@ -22,7 +22,7 @@ struct WingCoordinates{T <: Real} <: AbstractAircraft
     orientation :: AngleAxis{T}
 end
 
-WingCoordinates(wing; position = zeros(3), angle :: T = 0., axis = [1.,0.,0.]) where T <: Real = WingCoordinates(wing, position, AngleAxis{T}(angle, axis...))
+WingCoordinates(wing; position = zeros(3), angle :: T = 0., axis = SVector(1., 0., 0.)) where T <: Real = WingCoordinates(wing, position, AngleAxis{T}(angle, axis...))
 
 ## Methods
 component(comp :: WingCoordinates)   = comp.wing
