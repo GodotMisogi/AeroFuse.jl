@@ -121,7 +121,7 @@ seed        = init # [ init .+ Ref([dx, dy,  dz])
 
 distance = 5
 num_stream_points = 100
-streams = plot_streams(fs, seed, data.horseshoes, data.circulations, distance, num_stream_points);
+streams = plot_streams(fs, seed, data.vortices, data.circulations, distance, num_stream_points);
 
 wing_cam_connec  = triangle_connectivities(LinearIndices(wing_mesh.cam_mesh))
 htail_cam_connec = triangle_connectivities(LinearIndices(htail_mesh.cam_mesh))

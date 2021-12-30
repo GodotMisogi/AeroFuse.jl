@@ -79,7 +79,7 @@ refs    = References(S, b, c, ρ, ref)
 Fs = surface_forces(data)
 
 ## Aerodynamic forces and center locations
-vlm_acs    = bound_leg_center.(data.horseshoes.wing)
+vlm_acs    = bound_leg_center.(data.vortices.wing)
 vlm_forces = Fs.wing
 
 # FEM mesh
@@ -129,8 +129,8 @@ dx = solve_cantilever_beam(Ks, fem_loads, cons)
 #==========================================================================================#
 
 other_horsies = ComponentVector(
-                                htail = data.horseshoes.htail,
-                                vtail = data.horseshoes.vtail
+                                htail = data.vortices.htail,
+                                vtail = data.vortices.vtail
                                )
 
 # Set up initial guess and function

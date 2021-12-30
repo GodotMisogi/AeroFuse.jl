@@ -50,7 +50,7 @@ refs    = References(density = 1.225,
                         print = true);
 
 ## Aerodynamic forces and center locations
-vlm_acs    = bound_leg_center.(data.horseshoes.wing)
+vlm_acs    = bound_leg_center.(data.vortices.wing)
 vlm_forces = surface_forces(data).wing
 
 ## FEM mesh
@@ -182,8 +182,8 @@ new_fs       = Freestream(V, rad2deg(α_opt), β, Ω)
 system       = solve_case(new_aircraft, new_fs, refs);
 
 ## Aerodynamic forces and center locations
-U_opt       = aircraft_velocity(new_fs)
-vlm_acs     = bound_leg_center.(system.horseshoes.wing)
+U_opt       = body_frame_velocity(new_fs)
+vlm_acs     = bound_leg_center.(system.vortices.wing)
 vlm_forces  = surface_forces(system).wing
 
 ## New beams and loads
@@ -264,7 +264,7 @@ nwing_plan = plot_wing(new_cam_mesh)
 
 # Streamlines
 seed    = chop_coordinates(new_cam_mesh[1,:], 3)
-streams = plot_streams(new_fs, seed, system.horseshoes, Γ_opt, 1, 100);
+streams = plot_streams(new_fs, seed, system.vortices, Γ_opt, 1, 100);
 
 ## Plot
 using LaTeXStrings
@@ -290,10 +290,10 @@ new_wing_cp_points = extrapolate_point_mesh(new_cps.wing)
 ## Spanwise loads
 cl_loading(Γs, V, c) = vec(sum(Γs, dims = 1)) / (0.5 * V * c)
 
-hs_pts      = horseshoe_point.(data.horseshoes)
+hs_pts      = horseshoe_point.(data.vortices)
 wing_ys     = @view combinedimsview(hs_pts.wing[1,:])[2,:]
 
-new_hs_pts  = horseshoe_point.(system.horseshoes)
+new_hs_pts  = horseshoe_point.(system.vortices)
 new_wing_ys = @view combinedimsview(new_hs_pts.wing[1,:])[2,:]
 
 wing_ll     = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, S)

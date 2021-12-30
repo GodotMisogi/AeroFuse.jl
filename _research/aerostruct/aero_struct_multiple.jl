@@ -1,5 +1,5 @@
 ##
-# using Revise
+using Revise
 using AeroMDAO
 using LinearAlgebra
 using DataFrames
@@ -43,13 +43,13 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  angle     = 90.,
                  axis      = [1., 0., 0.]);
 
-## Meshing and assembly
-wing_mesh  = WingMesh(wing, [6], 6)
-htail_mesh = WingMesh(htail, [6], 3)
-vtail_mesh = WingMesh(vtail, [4], 3)
+## Meshing
+@time wing_mesh  = WingMesh(wing, [6], 6);
+@time htail_mesh = WingMesh(htail, [6], 3);
+@time vtail_mesh = WingMesh(vtail, [4], 3);
 
-# Aircraft assembly
-aircraft = ComponentVector(
+## Aircraft assembly
+@time aircraft = ComponentVector(
                            wing  = make_horseshoes(wing_mesh),
                            htail = make_horseshoes(htail_mesh),
                            vtail = make_horseshoes(vtail_mesh),
@@ -69,15 +69,14 @@ refs     = References(S, b, c, ρ, ref)
 
 ## Solve aerodynamic case for initial vector
 @time system = solve_case(aircraft, fs, refs;
-                          print_components = true,
+                        #   print_components = true,
                          );
 
-
 ## Data collection
-Fs = surface_forces(system)
+@time Fs = surface_forces(system);
 
 ## Wing FEM setup
-vlm_acs_wing    = bound_leg_center.(system.horseshoes.wing)
+vlm_acs_wing    = bound_leg_center.(system.vortices.wing)
 vlm_forces_wing = Fs.wing
 
 wing_beam_ratio = 0.40
@@ -111,7 +110,7 @@ dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 Δx_wing = [ zeros(6); dx_wing[:] ]
 
 ## Horizontal tail FEM setup
-vlm_acs_htail    = bound_leg_center.(system.horseshoes.wing)
+vlm_acs_htail    = bound_leg_center.(system.vortices.wing)
 vlm_forces_htail = Fs.htail
 
 htail_beam_ratio = 0.35
@@ -135,7 +134,7 @@ fem_loads_htail = compute_loads(vlm_acs_htail, vlm_forces_htail, htail_fem_mesh)
 dx_htail = solve_cantilever_beam(Ks_htail, fem_loads_htail, cons_htail)
 Δx_htail = [ zeros(6); dx_htail[:] ]
 
-as_htail = AerostructWing(htail_mesh, htail_beam)
+as_htail = AerostructWing(htail_mesh, htail_beam);
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -173,23 +172,61 @@ x0 = ComponentArray(aerodynamics = (
                     load_factor  = deg2rad(α))
 
 # Set up initial guess and function
-solve_aerostructural_residual!(R, x) =
-    solve_coupled_residual!(R, x,
-                            V, deg2rad(β), ρ, Ω,
-                            syms, vlm_meshes, cam_meshes, fem_meshes,
-                            aircraft.vtail, stiffy, weight, load_factor)
+function aerostructural_problem(V, β, ρ, Ω, syms, vlm_meshes, cam_meshes, fem_meshes, horsies, stiffy, weight, load_factor)
+    f!(R, x) =
+        solve_coupled_residual!(R, x,
+                                V, β, ρ, Ω,         # Aerodynamic state
+                                syms, vlm_meshes, cam_meshes, fem_meshes,
+                                horsies, stiffy, weight, load_factor)
+end
+
+@code_warntype aerostructural_problem(V, deg2rad(β), ρ, Ω, syms, vlm_meshes, cam_meshes, fem_meshes, aircraft.vtail, stiffy, weight, load_factor)
+
+## Closure
+solve_aerostruct! = aerostructural_problem(V, deg2rad(β), ρ, Ω, syms, vlm_meshes, cam_meshes, fem_meshes, aircraft.vtail, stiffy, weight, load_factor)
 
 ## Solve nonlinear system
+using ForwardDiff, ReverseDiff
+# using Zygote
+
+function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
+    x = copy(x0)
+    dx = similar(x)
+    R = similar(x)
+    ∂R∂x = Matrix{eltype(x)}(undef, length(R), length(x))
+    ε = 1e5
+    i = 0
+    for i = 1:max_iters
+        @timeit "Evaluating Jacobian" ForwardDiff.jacobian!(∂R∂x, f!, R, x)
+        @timeit "Inverting System" ldiv!(dx, factorize(∂R∂x), -R)
+        if ε <= tol return x end # Needs NAN checks and everything like NLsolve
+        ε    = LinearAlgebra.norm(dx)
+        # @show (i, ε)
+        x  .+= dx
+        i   += 1
+    end
+    return x
+end
+
+##
+R = similar(x0)
+@code_warntype solve_aerostruct!(R, x0)
+
+##
 # reset_timer!()
+
 # @timeit "Solving Residuals" 
-@ProfileView.profview res_aerostruct =
-    nlsolve(solve_aerostructural_residual!, x0,
+
+@benchmark res_aerostruct =
+    # newton_raphson(solve_aerostructural_residual!, x0)
+    nlsolve($solve_aerostruct!, $x0,
             method         = :newton,
+            autodiff       = :forward,
             # show_trace     = true,
             # extended_trace = true,
-            autodiff       = :forward,
-           );
-# print_timer()
+           ) seconds = 30
+
+## print_timer()
 
 ## Get zero
 x_opt = res_aerostruct.zero
@@ -199,9 +236,8 @@ x_opt = res_aerostruct.zero
 
 ## Compute displacements
 Δs    = map((key, n) -> reshape(δ_opt[key][7:end], 6, n), valkeys(δ_opt), length.(fem_meshes))
-dx_Ts = translations_and_rotations.(Δs)
-dxs   = getindex.(dx_Ts, 1)
-Ts    = getindex.(dx_Ts, 2)
+dxs   = mesh_translation.(Δs)
+Ts    = mesh_rotation.(Δs)
 
 ## New VLM variables
 new.vlm_meshes = transfer_displacements.(dxs, Ts, vlm_meshes, fem_meshes)

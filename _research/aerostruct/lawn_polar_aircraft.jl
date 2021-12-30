@@ -118,7 +118,7 @@ refs     = References(S, b, c, ρ, ref)
 Fs = surface_forces(system)
 
 ## Wing FEM setup
-vlm_acs_wing    = bound_leg_center.(system.horseshoes.wing)
+vlm_acs_wing    = bound_leg_center.(system.vortices.wing)
 vlm_forces_wing = Fs.wing
 
 wing_beam_ratio = 0.40
@@ -147,7 +147,7 @@ dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
 Δx_wing = [ zeros(6); dx_wing[:] ]
 
 ## Horizontal tail FEM setup
-vlm_acs_htail    = bound_leg_center.(system.horseshoes.htail)
+vlm_acs_htail    = bound_leg_center.(system.vortices.htail)
 vlm_forces_htail = Fs.htail
 
 htail_beam_ratio = 0.35
@@ -170,7 +170,7 @@ dx_htail = solve_cantilever_beam(Ks_htail, fem_loads_htail, cons_htail)
 Δx_htail = [ zeros(6); dx_htail[:] ]
 
 ## Vertical tail FEM setup
-vlm_acs_vtail    = bound_leg_center.(system.horseshoes.vtail)
+vlm_acs_vtail    = bound_leg_center.(system.vortices.vtail)
 vlm_forces_vtail = Fs.vtail
 
 vtail_beam_ratio = 0.35
@@ -213,7 +213,7 @@ fem_meshes  = [ wing_fem_mesh, htail_fem_mesh, vtail_fem_mesh ]
 fem_weights = [ wing_beam_ratio, htail_beam_ratio, vtail_beam_ratio ]
 syms        = [ :wing, :htail, :vtail ]
 
-other_horsies = [ system.horseshoes.atail_l[:]; system.horseshoes.atail_r[:] ]
+other_horsies = [ system.vortices.atail_l[:]; system.vortices.atail_r[:] ]
 
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = (
@@ -259,9 +259,8 @@ x_opt = res_aerostruct.zero
 
 ## Compute displacements
 Δs    = map((key, n) -> reshape(δ_opt[key][7:end], 6, n), valkeys(δ_opt), length.(fem_meshes))
-dx_Ts = translations_and_rotations.(Δs)
-dxs   = getindex.(dx_Ts, 1)
-Ts    = getindex.(dx_Ts, 2)
+dxs   = mesh_translation.(Δs)
+Ts    = mesh_rotation.(Δs)
 
 ## New VLM variables
 new_mesh.vlm_meshes = transfer_displacements.(dxs, Ts, vlm_meshes, fem_meshes)

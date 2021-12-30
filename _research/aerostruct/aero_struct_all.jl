@@ -77,7 +77,7 @@ refs     = References(S, b, c, ρ, ref)
 ## Data collection
 CFs, CMs = surface_coefficients(system)
 forces, moments   = surface_dynamics(system)
-hs_acs   = bound_leg_center.(system.horseshoes)
+hs_acs   = bound_leg_center.(system.vortices)
 
 
 ## Wing FEM setup
@@ -206,9 +206,8 @@ x_opt = res_aerostruct.zero
 
 ## Compute displacements
 Δs    = map((key, n) -> reshape(δ_opt[key][7:end], 6, n), valkeys(δ_opt), length.(fem_meshes))
-dx_Ts = translations_and_rotations.(Δs)
-dxs   = getindex.(dx_Ts, 1)
-Ts    = getindex.(dx_Ts, 2)
+dxs   = mesh_translation.(Δs)
+Ts    = mesh_rotation.(Δs)
 
 ## New VLM variables
 new_mesh.vlm_meshes = transfer_displacements.(dxs, Ts, vlm_meshes, fem_meshes)

@@ -17,20 +17,22 @@ wing_mesh = WingMesh(wing, [12, 3], 6);
 aircraft  = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
-fs      = Freestream(speed = 1.0, 
-                     alpha = 1.0, 
-                     beta  = 5.0, 
+fs      = Freestream(alpha = 1.0, 
+                     beta  = 0.0, 
                      omega = [0.,0.,0.])
 
 # Reference values
-refs    = References(density = 1.225, 
+refs    = References(
+                     speed    = 15.0,
+                     density  = 1.225, 
                      area     = projected_area(wing),   
                      span     = span(wing), 
                      chord    = mean_aerodynamic_chord(wing), 
-                     location = [ x_w; 0.; 0. ])
+                     location = [ x_w; 0.; 0. ]
+                    )
 
 ## Solve system
-system   = solve_case(aircraft, fs, refs;);
+system   = solve_case(aircraft, fs, refs; print = true);
 
 ## Compute dynamics
 ax       = Wind()
@@ -73,13 +75,13 @@ seed        = [ init .+ Ref([dx, dy,  dz])  ;
 
 distance = 5
 num_stream_points = 100
-streams = plot_streams(fs, seed, system.horseshoes.wing, system.circulations.wing, distance, num_stream_points);
+streams = plot_streams(fs, seed, system.vortices.wing, system.circulations.wing, distance, num_stream_points);
 
 ## Display
 horseshoe_panels = chord_panels(wing_mesh)
 horseshoe_coords = plot_panels(horseshoe_panels)
 wing_coords      = plot_wing(wing);
-horseshoe_points = Tuple.(horseshoe_point.(system.horseshoes))
+horseshoe_points = Tuple.(horseshoe_point.(system.vortices))
 ys               = getindex.(horseshoe_points, 2)
 
 ## Coordinates
@@ -110,7 +112,7 @@ plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 ## Lift distribution
 
 # Exaggerated CF distribution for plot
-hs_pts = Tuple.(bound_leg_center.(system.horseshoes))[:]
+hs_pts = Tuple.(bound_leg_center.(system.vortices))[:]
 
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
