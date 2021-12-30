@@ -36,7 +36,7 @@ function induced_velocity!(vel, r, horseshoes, Γs, U_hat)
     vel
 end
 
-induced_trailing_velocity(r, horseshoes, Γs, U_hat) = @views sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+induced_trailing_velocity(r, horseshoes, Γs, U_hat) = @timeit "Induced Trailing Velocity" @views sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
 
 # In-place version
 function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
@@ -52,7 +52,7 @@ function induced_velocity(r, hs, Γs, U, Ω)
     @timeit "Velocity" induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
 end
 
-function midpoint_velocity(r, horseshoes, Γs, U, Ω) 
+function induced_trailing_velocity(r, horseshoes, Γs, U, Ω) 
     # vel = zeros(eltype(r), 3)
     @timeit "Trailing Velocity" induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
 end

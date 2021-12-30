@@ -3,7 +3,7 @@
 
 kutta_joukowsky(ρ, V, l, Γ) = ρ * V × l * Γ
 
-surface_velocity(h, horseshoes, Γs, U, Ω) = midpoint_velocity(bound_leg_center(h), horseshoes, Γs, U, Ω)
+surface_velocity(h, horseshoes, Γs, U, Ω) = induced_trailing_velocity(bound_leg_center(h), horseshoes, Γs, U, Ω)
 
 surface_velocities(hs_comp, horseshoes, Γs, U, Ω) = map(h -> surface_velocity(h, horseshoes, Γs, U, Ω), hs_comp)
 
@@ -42,8 +42,8 @@ end
 #==========================================================================================#
 
 induced_trailing_velocity(r, horseshoes, Γs, U_hat, ε) = sum(x -> trailing_velocity(r, x[1], x[2], U_hat, ε), zip(horseshoes, Γs))
-midpoint_velocity(r, horseshoes, Γs, U, Ω, ε)          = induced_trailing_velocity(r, horseshoes, Γs, -normalize(U), ε) - (U + Ω × r)
-surface_velocity(hs, Γs, horseshoes, U, Ω, ε)          = @views midpoint_velocity(bound_leg_center(hs), horseshoes, Γs, U, Ω, ε)
+induced_trailing_velocity(r, horseshoes, Γs, U, Ω, ε)          = induced_trailing_velocity(r, horseshoes, Γs, -normalize(U), ε) - (U + Ω × r)
+surface_velocity(hs, Γs, horseshoes, U, Ω, ε)          = @views induced_trailing_velocity(bound_leg_center(hs), horseshoes, Γs, U, Ω, ε)
 surface_velocities(hs_comp, Γs, horseshoes, U, Ω, ε)   = map(hs -> surface_velocity(hs, Γs, horseshoes, U, Ω, ε), hs_comp)
 
 # surface_forces(Γ_comp, hs_comp, Γs, horseshoes, U, Ω, ρ, ε) = map((Γ, hs, v) -> kutta_joukowsky(ρ, Γ, v, bound_leg_vector(hs)), Γ_comp, horseshoes, surface_velocities(hs_comp, Γs, horseshoes, U, Ω, ε))
