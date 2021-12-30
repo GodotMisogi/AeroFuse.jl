@@ -10,7 +10,7 @@ using BenchmarkTools
 ## Aerodynamic variables
 
 # Define wing
-wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
+@time wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
             chords    = [1.0, 1.0, 0.6],
             twists    = [0.0, 0.0, 0.0],
             spans     = [4.0, 3.0],
@@ -20,7 +20,7 @@ wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
 print_info(wing, "Lawn Polar Wing")
 
 # Horizontal tail
-htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+@time htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
              spans     = [1.25],
@@ -31,7 +31,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail_u = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+@time vtail_u = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                    chords    = [0.7, 0.25],
                    twists    = [0.0, 0.0],
                    spans     = [1.0],
@@ -41,7 +41,7 @@ vtail_u = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                    angle     = 90.,
                    axis      = [1., 0., 0.]);
 
-vtail_d = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+@time vtail_d = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                    chords    = [0.7, 0.42],
                    twists    = [0.0, 0.0],
                    spans     = [0.4],
@@ -51,10 +51,10 @@ vtail_d = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                    angle     = 90.,
                    axis      = [1., 0., 0.]);
 
-vtail = Wing(vtail_d, vtail_u)
+@time vtail = Wing(vtail_d, vtail_u)
 
 # Tailerons
-atail_l = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+@time atail_l = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                chords    = [0.4, 0.2],
                twists    = [0.0, 0.0],
                spans     = [0.5],
@@ -62,9 +62,9 @@ atail_l = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                LE_sweeps = [8.],
                position  = [2., 2.5, 0.],
                angle     = 0.,
-               axis      = [0., 1., 0.])
+               axis      = [0., 1., 0.]);
 
-atail_r = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+@time atail_r = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                chords    = [0.4, 0.2],
                twists    = [0.0, 0.0],
                spans     = [0.5],
@@ -74,15 +74,15 @@ atail_r = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                angle     = 0.,
                axis      = [0., 1., 0.]);
 
-## Meshing and assembly
-wing_mesh    = WingMesh(wing, [6,6], 6)
-htail_mesh   = WingMesh(htail, [6], 4)
-vtail_mesh   = WingMesh(vtail, [6], 4)
-atail_l_mesh = WingMesh(atail_l, [4], 2)
-atail_r_mesh = WingMesh(atail_r, [4], 2)
+## Meshing
+@time wing_mesh    = WingMesh(wing, [6,6], 6);
+@time htail_mesh   = WingMesh(htail, [6], 4);
+@time vtail_mesh   = WingMesh(vtail, [6], 4);
+@time atail_l_mesh = WingMesh(atail_l, [4], 2);
+@time atail_r_mesh = WingMesh(atail_r, [4], 2);
 
-# Aircraft assembly
-aircraft = ComponentArray(
+## Aircraft assembly
+@time aircraft = ComponentArray(
                           wing    = make_horseshoes(wing_mesh),
                           htail   = make_horseshoes(htail_mesh),
                           vtail   = make_horseshoes(vtail_mesh),
@@ -101,16 +101,16 @@ S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ref      = [wing_mac[1], 0., 0.]
 V, α, β  = 25.0, 0.0, 0.0
 Ω        = zeros(3)
-fs       = Freestream(V, α, β, Ω)
-refs     = References(S, b, c, ρ, ref)
+@time fs       = Freestream(V, α, β, Ω);
+@time refs     = References(S, b, c, ρ, ref);
 
 ## Solve aerodynamic case for initial vector
-@benchmark system = solve_case($aircraft, $fs, $refs;
+@time system = solve_case(aircraft, fs, refs;
                         #   print_components = true,
-                         )
+                         );
 
 ## Data collection
-@benchmark CFs, CMs = surface_coefficients($system)
+@time CFs, CMs = surface_coefficients(system);
 
 ##
-@benchmark Fs = surface_forces($system)
+@time Fs = surface_forces(system);
