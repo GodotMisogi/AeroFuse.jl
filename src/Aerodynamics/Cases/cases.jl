@@ -26,7 +26,7 @@ Evaluate a vortex lattice case given a `Wing` or `HalfWing` with a `Freestream`,
 """
 function solve_case(wing :: AbstractWing, freestream :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [0.25 * chord_ref, 0., 0.], span_ref = span(wing), mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3, spacing = symmetric_spacing(wing))
     # Unpack Freestream
-    U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
+    U, α, β, Ω = body_frame_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Determine spanwise panel distribution and spacing
     span_nums = number_of_spanwise_panels(wing, span_num)
@@ -63,10 +63,10 @@ end
 
 function solve_case(components, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false, finite_core = false)
     # Unpack Freestream
-    # U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
+    # U, α, β, Ω = body_frame_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
 
     # Evaluate case
-    Γs, AIC, boco = solve_system(components, aircraft_velocity(freestream), freestream.omega, finite_core)
+    Γs, AIC, boco = solve_system(components, body_frame_velocity(freestream), freestream.omega, finite_core)
 
     system = VLMSystem(components, Γs, AIC, boco, freestream, refs)
 

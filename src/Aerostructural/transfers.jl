@@ -41,7 +41,8 @@ rotation_matrix(θs) = rotation_matrix.(θs[1,:], θs[2,:], θs[3,:])
 transfer_displacement(xyz, dx, rot, r) = xyz + dx + rot * (xyz - r)
 transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh) = permutedims(combinedimsview(map(xyz -> transfer_displacement.(xyz, dxs, Ts, fem_mesh), eachrow(vlm_mesh))))
 
-translations_and_rotations(δs) = @views SVector.(δs[1,:], δs[2,:], δs[3,:]), rotation_matrix(δs[4:6,:])
+mesh_translation(δs) = @views SVector.(δs[1,:], δs[2,:], δs[3,:])
+mesh_rotation(δs)    = @views rotation_matrix(δs[4:6,:])
 
 # Make new horseshoes
 function new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)

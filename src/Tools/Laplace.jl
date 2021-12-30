@@ -8,6 +8,8 @@ using LinearAlgebra
 
 import ..MathTools: Point2D, Point3D, magnitude, angle
 
+import ..AeroMDAO: velocity
+
 abstract type AbstractLaplace end
 
 ## Legacy (to be removed?)
@@ -103,33 +105,6 @@ end
 
 ## Freestream
 #============================================#
-
-abstract type AbstractFreestream <: AbstractLaplace end
-
-struct Freestream{M,N,P,Q} <: AbstractFreestream
-    speed   :: M
-    alpha :: N
-    beta  :: P
-    omega :: SVector{3,Q}
-end
-
-Freestream(V :: M, α_deg :: N, β_deg :: P, Ω :: AbstractVector{Q}) where {M <: Real, N <: Real, P <: Real, Q<:Real} = Freestream{M,N,P,Q}(V, deg2rad(α_deg), deg2rad(β_deg), Ω)
-
-"""
-    Freestream(V, α, β, Ω)
-    
-A Freestream flow in spherical polar coordinates with magnitude ``V``, angle-of-attack ``α``, side-slip angle ``β``, and a quasi-steady rotation vector ``\\Omega``.
-"""
-Freestream(; speed = 1., alpha = 0., beta = 0., omega = zeros(3)) = Freestream(speed, alpha, beta, omega)
-
-"""
-    Freestream(U, Ω)
-
-A Freestream flow in Cartesian coordinates with vector ``U`` and quasi-steady rotation vector ``\\Omega``.
-"""
-Freestream(U :: AbstractVector{T}, Ω :: AbstractVector{T}) where T <: Real = 
-    let (V, α, β) = cartesian_to_freestream(U); Freestream{T}(V, α, β, Ω) end
-
 """
     freestream_to_cartesian(r, θ, φ)
 
@@ -147,20 +122,5 @@ cartesian_to_freestream(U) = SVector(norm(U), -atand(U[3], U[1]), -atand(U[2], �
 # 2D versions
 cartesian_to_freestream(u, w) = magnitude(u, w), angle(u, w)
 freestream_to_cartesian(V, α) = V * cos(α), V * sin(α)
-
-
-"""
-    velocity(freestream :: Freestream)
-
-Compute the velocity of a `Freestream`.
-"""
-velocity(freestream :: Freestream) = freestream_to_cartesian(freestream.speed, freestream.alpha, freestream.beta)
-
-"""
-    aircraft_velocity(freestream :: Freestream)
-
-Compute the velocity of Freestream in the aircraft reference frame.
-"""
-aircraft_velocity(freestream :: Freestream) = -velocity(freestream)
 
 end

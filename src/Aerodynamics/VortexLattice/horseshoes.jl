@@ -40,7 +40,7 @@ struct Line{T <: Real} <: AbstractLine
     r2 :: SVector{3,T}
 end
 
-Line(r1 :: AbstractVector{T}, r2 :: AbstractVector{T}) where T <: Real = Line{T}(r1, r2)
+Line(r1, r2) = let T = promote_type(eltype(r1), eltype(r2)); Line{T}(r1, r2) end
 Line((r1, r2)) = Line(r1, r2)
 
 r1(line :: Line) = line.r1
@@ -83,7 +83,7 @@ struct Horseshoe{T <: Real} <: AbstractVortexArray
     chord             :: T
 end
 
-Base.length(::Horseshoe{T}) where T <: Real = 1
+Base.length(::Horseshoe) = 1
 
 """
     bound_leg(horseshoe :: Horseshoe)

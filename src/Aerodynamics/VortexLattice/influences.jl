@@ -22,6 +22,45 @@ Compute the projection of a velocity vector with respect to normal vectors of pa
 """
 boundary_condition(velocities, normals) = dot.(velocities, normals)
 
+# Matrix-free setup for nonlinear analyses
+#==========================================================================================#
+
+induced_velocity(r, horseshoes, Γs, U_hat) = @timeit "Induced Velocity" @views sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+
+# In-place version
+function induced_velocity!(vel, r, horseshoes, Γs, U_hat)
+    for i in eachindex(horseshoes)
+        vel += @timeit "Induced Velocity" @views velocity(r, horseshoes[i], Γs[i], U_hat)
+    end
+
+    vel
+end
+
+# In-place version
+function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
+    for i in eachindex(horseshoes)
+        vel += @timeit "Induced Trailing Velocity" @views trailing_velocity(r, horseshoes[i], Γs[i], U_hat)
+    end
+
+    vel
+end
+
+induced_trailing_velocity(r, horseshoes, Γs, U_hat) = @views sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+
+function induced_velocity(r, n, hs, Γs, U_hat, Ω_hat) 
+    # vel = zeros(eltype(r), 3)
+    @timeit "Velocity" dot(induced_velocity(r, hs, Γs, -U_hat) - (U_hat + Ω_hat × r), n) 
+end
+
+function midpoint_velocity(r, horseshoes, Γs, U, Ω) 
+    # vel = zeros(eltype(r), 3)
+    @timeit "Trailing Velocity" induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
+end
+
+# Residual computations
+aerodynamic_residual(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> induced_velocity(horseshoe_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
+
+aerodynamic_residual!(R, horseshoes, Γs, U_hat, Ω_hat) = @timeit "Aerodynamic Residual" map!(hs -> induced_velocity(horseshoe_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)
 
 ## Pre-allocated versions
 #====================================================#

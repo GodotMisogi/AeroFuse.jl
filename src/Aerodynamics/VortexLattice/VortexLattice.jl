@@ -19,8 +19,10 @@ import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, panel_
 # Non-dimensionalization
 import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
 
-# Tools regarding solutions to Laplace's equation
-import ..Laplace: AbstractFreestream, Freestream, aircraft_velocity,cartesian_to_freestream, freestream_to_cartesian
+# Some tools
+import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
+
+import ..AeroMDAO: velocity
 
 ## Horseshoe setup
 #==========================================================================================#
@@ -33,6 +35,7 @@ include("vortex_rings.jl")
 ## Reference frames
 #==========================================================================================#
 
+include("freestream.jl")
 include("reference_frames.jl")
 
 ## Influence matrix and solution of system

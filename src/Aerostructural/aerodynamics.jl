@@ -1,21 +1,6 @@
-# Induced velocities
-induced_velocity(r, horseshoes, Γs, U_hat) = @timeit "Induced Velocity" @views sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
-
-velocity(hs, Γs, r, n, U_hat, Ω_hat) = let vel = zeros(eltype(r), 3); @timeit "Velocity" dot(induced_velocity!(vel, r, hs, Γs, -U_hat) - (U_hat + Ω_hat × r), n) end
-
-# Residual computation
-aerodynamic_residual!(R_A, horseshoes, Γs, U_hat, Ω_hat) = @timeit "Aerodynamic Residual" R_A .= map(hs -> velocity(horseshoes, Γs, horseshoe_point(hs), horseshoe_normal(hs), U_hat, Ω_hat), horseshoes)
-
-## USELESS? TESTING
+## In-place testing
 #======================================#
 
-function induced_velocity!(vel, r, horseshoes, Γs, U_hat)
-    for i in eachindex(horseshoes)
-        vel += @views velocity(r, horseshoes[i], Γs[i], U_hat)
-    end
-
-    vel
-end
 
 # function surface_velocity!(vel, r, horseshoes, Γs, U, Ω)
 #     U_hat = -normalize(U)

@@ -34,35 +34,34 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
     U = freestream_to_cartesian(-speed, α, β)
     
     # Compute displacements
-    Δs    = map((key, n) -> reshape(δs[key][7:end], 6, n), valkeys(δs), length.(fem_meshes))
-    dx_Ts = translations_and_rotations.(Δs)
-    dxs   = getindex.(dx_Ts, 1)
-    Ts    = getindex.(dx_Ts, 2)
+    Δs    = map((key, fem_mesh) -> reshape(δs[key][7:end], 6, length(fem_mesh)), valkeys(δs), fem_meshes)
+    @timeit "Get Translations" dxs   = mesh_translation.(Δs)
+    @timeit "Get Rotations" Ts    = mesh_rotation.(Δs)
 
     # New VLM variables
     @timeit "New Horseshoes" new_horsies = new_horseshoes.(dxs, Ts, vlm_meshes, cam_meshes, fem_meshes)
 
     # Compute component forces for structural residual
-    new_Γs       = getindex.(Ref(Γs), syms) 
-    new_acs      = map(horsies -> bound_leg_center.(horsies), new_horsies)
+    @timeit "Get Circulations" new_Γs       = getindex.(Ref(Γs), syms) 
+    @timeit "Get Aerodynamic Centers" new_acs      = map(horsies -> bound_leg_center.(horsies), new_horsies)
     @timeit "All Horseshoes" all_horsies  = [ mapreduce(vec, vcat, new_horsies); other_horsies[:] ]
 
-    @timeit "New Forces" new_forces   = surface_forces.(new_Γs, new_horsies, Ref(Γs), Ref(all_horsies), Ref(U), Ref(Ω), Ref(ρ))
+    @timeit "New Forces" new_forces   = map((Γ_comp, hs_comp) -> surface_forces(Γ_comp, hs_comp, Γs, all_horsies, U, Ω, ρ), new_Γs, new_horsies)
     
     # Compute other forces for load factor residual
-    other_syms   = filter(sym -> !(sym ∈ syms), keys(Γs))
-    other_Γs     = mapreduce(sym -> vec(getindex(Γs, sym)), vcat, other_syms)
+    @timeit "Get Symbols" other_syms   = filter(sym -> !(sym ∈ syms), keys(Γs))
+    @timeit "Get Other Circulations" other_Γs     = mapreduce(sym -> vec(getindex(Γs, sym)), vcat, other_syms)
     @timeit "Other Forces" other_forces = surface_forces(other_Γs, other_horsies[:], Γs, all_horsies, U, Ω, ρ)
 
     # Compute lift
     @timeit "All Forces" vlm_forces = [ mapreduce(vec, vcat, new_forces); other_forces[:] ]
-    D, Y, L = body_to_wind_axes(sum(vlm_forces), α, β)
+    @timeit "Transform Summed Forces" D, Y, L = body_to_wind_axes(sum(vlm_forces), α, β)
 
     # Build force vector with constraint for structures
     @timeit "FEM Loads" fem_loads = mapreduce(vec ∘ fem_load_vector, vcat, new_acs, new_forces, fem_meshes)
 
     # Compute residuals
-    coupled_residuals!(R, all_horsies, Γs, U, Ω, speed, stiffness_matrix, δs, fem_loads, weight, load_factor, L * cos(α))
+    @timeit "Compute Residuals" coupled_residuals!(R, all_horsies, Γs, U, Ω, speed, stiffness_matrix, δs, fem_loads, weight, load_factor, L * cos(α))
 
     return R
 end
@@ -83,8 +82,9 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
     U = freestream_to_cartesian(-speed, α, β)
 
     # Compute displacements
-    δs      = δ.displacement
-    @timeit "Translate and Rotate" dxs, Ts = translations_and_rotations(δs)
+    Δs  = δ.displacement
+    dxs = mesh_translation(Δs)
+    Ts  = mesh_rotation(Δs)
 
     # New VLM variables
     @timeit "New Horseshoes" new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
@@ -120,8 +120,9 @@ end
 #     U = freestream_to_cartesian(-speed, α, β)
     
 #     # Compute displacements
-#     δs      = @views reshape(δ[7:end], 6, length(fem_mesh))
-#     dxs, Ts = translations_and_rotations(δs)
+#     δs  = @views reshape(δ[7:end], 6, length(fem_mesh))
+#     dxs = mesh_translation(Δs)
+#     Ts  = mesh_rotation(Δs)
 
 #     # New VLM variables
 #     new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
@@ -156,9 +157,8 @@ end
     
 #     # Compute displacements
 #     Δs    = map((key, n) -> reshape(δs[key][7:end], 6, n), valkeys(δs), length.(fem_meshes))
-#     dx_Ts = translations_and_rotations.(Δs)
-#     dxs   = getindex.(dx_Ts, 1)
-#     Ts    = getindex.(dx_Ts, 2)
+#     dxs   = mesh_translation.(Δs)
+#     Ts    = mesh_rotation.(Δs)
 
 #     # New VLM variables
 #     new_horsies  = new_horseshoes.(dxs, Ts, vlm_meshes, cam_meshes, fem_meshes)
@@ -201,8 +201,9 @@ function aerostruct_gauss_seidel(x0, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fem_
         U = freestream_to_cartesian(-speed, α, β)
 
         # Compute displacements
-        δs      = δ.displacement
-        dxs, Ts = translations_and_rotations(δs)
+        δs  = δ.displacement
+        dxs = mesh_translation(δs)
+        Ts  = mesh_rotation(δs)
 
         # New geometric variables
         new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)

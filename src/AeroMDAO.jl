@@ -8,6 +8,7 @@ using StaticArrays
 using CoordinateTransformations, Rotations
 using ForwardDiff, DiffResults
 using PrettyTables
+using StructArrays
 
 import SplitApplyCombine: combinedimsview, combinedims
 
@@ -17,6 +18,7 @@ using ComponentArrays
 
 export ComponentVector, ComponentArray
 
+function velocity end
 
 ## Math tools
 #==========================================================================================#
@@ -54,9 +56,9 @@ export AbstractAircraft, AbstractWing, AbstractFoil, Foil, arc_length, kulfan_CS
 Fuselage, projected_area, length, cosine_spacing, # Fuselage
 HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform
 
-make_horseshoes(wing :: WingMesh) = Horseshoe.(chord_panels(wing), normal_vectors(wing))
+make_horseshoes(wing :: WingMesh) = StructArray(Horseshoe.(chord_panels(wing), normal_vectors(wing)))
 
-make_vortex_rings(wing :: WingMesh) = VortexRing.(camber_panels(wing))
+make_vortex_rings(wing :: WingMesh) = StructArray(VortexRing.(camber_panels(wing)))
 
 export make_horseshoes, make_vortex_rings
 
@@ -64,9 +66,9 @@ export make_horseshoes, make_vortex_rings
 #==========================================================================================#
 
 include("Tools/Laplace.jl")
-import .Laplace: Uniform2D, Freestream, velocity, potential, stream, aircraft_velocity, cartesian_to_freestream, freestream_to_cartesian
+import .Laplace: Uniform2D, potential, stream,  cartesian_to_freestream, freestream_to_cartesian
 
-export Uniform2D, velocity, Freestream, aircraft_velocity, stream, vortex_stream_1, vortex_stream_2, source_stream, cartesian_to_freestream, freestream_to_cartesian
+export Uniform2D, stream, vortex_stream_1, vortex_stream_2, source_stream, cartesian_to_freestream, freestream_to_cartesian
 
 ## Aerodynamic analyses
 #==========================================================================================#
@@ -88,9 +90,9 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing
+import .VortexLattice: Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity
 
-export Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing
+export Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, streamlines, influence_coefficient, influence_matrix, boundary_condition, quasi_steady_freestream, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, body_to_wind_axes, body_to_stability_axes, stability_to_body_axes, wind_to_body_axes, evaluate_case,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity
 
 ## Profile drag estimation
 
@@ -127,9 +129,9 @@ export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_ine
 #==========================================================================================#
 
 include("Aerostructural/Aerostructural.jl")
-import .Aerostructural: AerostructWing, make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, translations_and_rotations, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
+import .Aerostructural: AerostructWing, make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
 
-export AerostructWing, make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, translations_and_rotations, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
+export AerostructWing, make_beam_mesh, axis_transformation, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
 
 ## Post-processing
 #==========================================================================================#
