@@ -56,7 +56,7 @@ r1(r, line :: Line) = r - r1(line)
 r2(r, line :: Line) = r - r2(line)
 
 bound_leg_velocity(a, b, Γ)    = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
-trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × u / (norm(r) - dot(r, u))
+trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × normalize(u) / (norm(r) - dot(r, u))
 
 trailing_legs_velocities(a, b, Γ, u) = trailing_leg_velocity(a, Γ, u) - trailing_leg_velocity(b, Γ, u)
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
@@ -68,9 +68,6 @@ bound_velocity(r, line :: Line, Γ) = bound_leg_velocity(r1(r, line), r2(r, line
 ## Arrays of vortex lines
 #==========================================================================================#
 
-"""
-Placeholder. Vortex rings and horseshoes basically have the same methods, and are arrays of vortex lines.
-"""
 abstract type AbstractVortexArray end
 
 """

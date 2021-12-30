@@ -118,7 +118,7 @@ seed        = [ init .+ Ref([dx, dy, dz]) ;
 
 distance = 8
 num_stream_points = 200
-streams = plot_streams(fs, seed, horses, Γs, distance, num_stream_points);
+streams = streamlines(fs, seed, horses, Γs, distance, num_stream_points);
 
 ## Fuselage definition
 lens = [0.0, 0.05,0.02,  0.3, 0.6, 0.8, 1.0]
@@ -169,7 +169,7 @@ plot!()
 ## Exaggerated CF distribution for plot, only works with GR and not Plotly
 
 # Forces
-wind_CFs = body_to_wind_axes.(CFs, fs.alpha, fs.beta)
+wind_CFs = geometry_to_wind_axes.(CFs, fs.alpha, fs.beta)
 CDis     = @. getindex(wind_CFs, 1)
 CYs      = @. getindex(wind_CFs, 2)
 CLs      = @. getindex(wind_CFs, 3)

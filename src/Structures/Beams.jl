@@ -230,7 +230,7 @@ function solve_cantilever_beam(Ks, loads, constraint_indices)
     K = build_stiffness_matrix(Ks, constraint_indices)
 
     # Build force vector with constraint
-    f = [ zeros(6); loads[:] ]
+    f = [ zeros(6); vec(loads) ]
 
     # Solve FEM system
     x = K \ f

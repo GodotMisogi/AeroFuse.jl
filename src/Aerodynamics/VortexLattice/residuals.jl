@@ -20,7 +20,7 @@ influence_matrix(horseshoes, V_hat, finite_core = false) = [ influence_coefficie
 
 Compute the projection of a velocity vector with respect to normal vectors of panels. Corresponds to construction of the boundary condition for the RHS of the AIC system.
 """
-boundary_condition(velocities, normals) = dot.(velocities, normals)
+boundary_condition(horseshoes, U, Ω) = map(hs -> dot(U + Ω × horseshoe_point(hs), horseshoe_normal(hs)), horseshoes)
 
 # Matrix-free setup for nonlinear analyses
 #==========================================================================================#
@@ -36,6 +36,8 @@ function induced_velocity!(vel, r, horseshoes, Γs, U_hat)
     vel
 end
 
+induced_trailing_velocity(r, horseshoes, Γs, U_hat) = @views sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+
 # In-place version
 function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
     for i in eachindex(horseshoes)
@@ -45,11 +47,9 @@ function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
     vel
 end
 
-induced_trailing_velocity(r, horseshoes, Γs, U_hat) = @views sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
-
-function induced_velocity(r, n, hs, Γs, U_hat, Ω_hat) 
+function induced_velocity(r, hs, Γs, U, Ω) 
     # vel = zeros(eltype(r), 3)
-    @timeit "Velocity" dot(induced_velocity(r, hs, Γs, -U_hat) - (U_hat + Ω_hat × r), n) 
+    @timeit "Velocity" induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 function midpoint_velocity(r, horseshoes, Γs, U, Ω) 
@@ -58,19 +58,10 @@ function midpoint_velocity(r, horseshoes, Γs, U, Ω)
 end
 
 # Residual computations
-aerodynamic_residual(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> induced_velocity(horseshoe_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
+function residual(r, n, hs, Γs, U, Ω) 
+    @timeit "Residual" dot(induced_velocity(r, hs, Γs, U, Ω), n)
+end 
 
-aerodynamic_residual!(R, horseshoes, Γs, U_hat, Ω_hat) = @timeit "Aerodynamic Residual" map!(hs -> induced_velocity(horseshoe_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)
+aerodynamic_residuals(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(horseshoe_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
 
-## Pre-allocated versions
-#====================================================#
-
-function matrix_assembly!(AIC, RHS, horseshoes, collocation_points, normals, V, Ω, finite_core = false)
-    for inds ∈ CartesianIndices(AIC)
-        i, j = inds.I
-        AIC[inds] = dot(velocity(collocation_points[i], horseshoes[j], 1., -normalize(V), finite_core), normals[i])
-        RHS[i]    = dot(V + Ω × collocation_points[i], normals[i])
-    end
-    nothing
-end
-    
+aerodynamic_residuals!(R, horseshoes, Γs, U_hat, Ω_hat) = @timeit "Aerodynamic Residual" map!(hs -> residual(horseshoe_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)

@@ -42,7 +42,7 @@ function trefftz_plane_quantities(horseshoes :: AbstractArray{<: Horseshoe}, α,
     U_ref = (Ref ∘ SVector)(1, 0, 0)
 
     # Transform to wind axes
-    wake_lines     = @. body_to_wind_axes(bound_leg(horseshoes[end,:][:]), α, β)
+    wake_lines     = @views geometry_to_wind_axes.(bound_leg.(vec(horseshoes[end,:])), α, β)
 
     # Project trailing edge horseshoes' bound legs into Trefftz plane along wind axes
     wake_vectors   = @. vector(wake_lines); 

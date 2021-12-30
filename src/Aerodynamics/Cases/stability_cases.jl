@@ -6,7 +6,7 @@ function scale_inputs(fs :: Freestream, refs :: References)
            rate_coefficient(fs.omega, refs.speed, refs.span, refs.chord) ]
 
     # Unscaling non-dimensional rate coefficients
-    scale = 2 * refs.speed .* 1. / [refs.span, refs.chord, refs.span]
+    scale = 2 * refs.speed * 1. ./ [refs.span, refs.chord, refs.span]
 
     x0, scale
 end
@@ -26,16 +26,16 @@ function solve_stability_case(aircraft, fs :: Freestream, ref :: References; nam
     x, scale = scale_inputs(fs, ref)
 
     # Closure to generate results with input vector
-    function stab(x)
+    function freestream_derivatives(x)
         fs   = Freestream(rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
-        data = solve_case(aircraft, fs, ref,
-                          name      = name)
+        system = solve_case(aircraft, fs, ref,
+                            name      = name)
 
-        NFs = nearfield_coefficients(data)
-        FFs = farfield_coefficients(data)
+        NFs = nearfield_coefficients(system)
+        FFs = farfield_coefficients(system)
 
         # Creates array of nearfield and farfield coefficients for each component as a row vector.
-        comp_coeffs = mapreduce(name -> [ NFs[name]; FFs[name] ], hcat, valkeys(data.vortices))
+        comp_coeffs = mapreduce(name -> [ NFs[name]; FFs[name] ], hcat, valkeys(system.vortices))
         all_coeffs  = [ comp_coeffs sum(comp_coeffs, dims = 2) ] # Append sum of all forces for aircraft
     end
 
@@ -44,7 +44,7 @@ function solve_stability_case(aircraft, fs :: Freestream, ref :: References; nam
 
     y       = zeros(9, num_comps)
     result  = DiffResults.JacobianResult(y, x)
-    result  = ForwardDiff.jacobian!(result, stab, x)
+    ForwardDiff.jacobian!(result, freestream_derivatives, x)
 
     vars    = DiffResults.value(result)
     derivs  = DiffResults.jacobian(result)

@@ -34,16 +34,21 @@ wing_mesh = WingMesh(wing, [12], 6,
 aircraft = ComponentVector(wing = make_horseshoes(wing_mesh));
 
 ## Aerodynamic case
-ρ       = 0.98
-ref     = [ x_w, 0., 0. ]
-V, α, β = 25.0, 5.0, 0.0
-Ω       = [0.0, 0.0, 0.0]
-fs      = Freestream(V, α, β, Ω)
-refs    = References(density = 1.225, 
+
+# Freestream conditions
+fs      = Freestream(alpha = 1.0, 
+                     beta  = 0.0, 
+                     omega = [0.,0.,0.])
+
+# Reference values
+refs    = References(
+                     speed    = 15.0,
+                     density  = 0.98, 
                      area     = projected_area(wing),   
                      span     = span(wing), 
                      chord    = mean_aerodynamic_chord(wing), 
-                     location = [ x_w; 0.; 0. ])
+                     location = [ x_w; 0.; 0. ]
+                    )
 
 # Solve aerodynamic case for initial vector
 @time data = solve_case(aircraft, fs, refs; 
@@ -264,7 +269,7 @@ nwing_plan = plot_wing(new_cam_mesh)
 
 # Streamlines
 seed    = chop_coordinates(new_cam_mesh[1,:], 3)
-streams = plot_streams(new_fs, seed, system.vortices, Γ_opt, 1, 100);
+streams = streamlines(new_fs, seed, system.vortices, Γ_opt, 1, 100);
 
 ## Plot
 using LaTeXStrings
@@ -296,9 +301,9 @@ wing_ys     = @view combinedimsview(hs_pts.wing[1,:])[2,:]
 new_hs_pts  = horseshoe_point.(system.vortices)
 new_wing_ys = @view combinedimsview(new_hs_pts.wing[1,:])[2,:]
 
-wing_ll     = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, S)
+wing_ll     = span_loads(chord_panels(wing_mesh), CFs.wing, S)
 
-new_wing_ll = lifting_line_loads(make_panels(new_vlm_mesh), new_CFs.wing, S)
+new_wing_ll = span_loads(make_panels(new_vlm_mesh), new_CFs.wing, S)
 
 ## Mesh connectivities
 triangle_connectivities(inds) = @views [ inds[1:end-1,1:end-1][:] inds[1:end-1,2:end][:]   inds[2:end,2:end][:]   ;

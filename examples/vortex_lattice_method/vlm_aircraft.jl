@@ -75,29 +75,29 @@ refs    = References(speed    = 1.0,
 
 ##
 @time begin 
-    data = solve_case(aircraft, fs, refs;
-                      print            = true, # Prints the results for only the aircraft
-                      print_components = true, # Prints the results for all components
-                    #   finite_core      = true
-                     );
+    system = solve_case(aircraft, fs, refs;
+                        print            = true, # Prints the results for only the aircraft
+                        print_components = true, # Prints the results for all components
+                      #   finite_core      = true
+                       );
 
     # Compute dynamics
     ax       = Wind() # Stability(), Body()
-    # CFs, CMs = surface_coefficients(data; axes = ax)
-    Fs       = surface_forces(data)
-    # Fs, Ms   = surface_dynamics(data; axes = ax) 
+    CFs, CMs = surface_coefficients(system; axes = ax)
+    Fs       = surface_forces(system)
+    # Fs, Ms   = surface_dynamics(system; axes = ax) 
 
-    nfs = nearfield_coefficients(data)
-    ffs = farfield_coefficients(data)
+    nfs = nearfield_coefficients(system)
+    ffs = farfield_coefficients(system)
 
-    nf  = nearfield(data) 
-    ff  = farfield(data)
+    nf  = nearfield(system) 
+    ff  = farfield(system)
 end;
 
 ## Spanwise forces/lifting line loads
-wing_ll  = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, S)
-htail_ll = lifting_line_loads(chord_panels(htail_mesh), CFs.htail, S)
-vtail_ll = lifting_line_loads(chord_panels(vtail_mesh), CFs.vtail, S);
+wing_ll  = span_loads(chord_panels(wing_mesh), CFs.wing, S)
+htail_ll = span_loads(chord_panels(htail_mesh), CFs.htail, S)
+vtail_ll = span_loads(chord_panels(vtail_mesh), CFs.vtail, S);
 
 ## Plotting
 using GLMakie
@@ -120,7 +120,7 @@ seed        = init # [ init .+ Ref([dx, dy,  dz])
 
 distance = 5
 num_stream_points = 100
-streams = plot_streams(fs, seed, data.vortices, data.circulations, distance, num_stream_points);
+streams = streamlines(data, seed, distance, num_stream_points);
 
 wing_cam_connec  = triangle_connectivities(LinearIndices(wing_mesh.cam_mesh))
 htail_cam_connec = triangle_connectivities(LinearIndices(htail_mesh.cam_mesh))
@@ -169,14 +169,14 @@ Legend(ax[4,1:2], ax_cl)
 fig1[0, :] = Label(fig1, LS("Vortex Lattice Analysis"), textsize = 20)
 
 # Surface pressure meshes
-m1 = poly!(scene, wing_mesh.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
-m2 = poly!(scene, htail_mesh.cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
-m3 = poly!(scene, vtail_mesh.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
+m1 = poly!(scene, vec(wing_mesh.cam_mesh),  wing_cam_connec,  color = vec(wing_cp_points))
+m2 = poly!(scene, vec(htail_mesh.cam_mesh), htail_cam_connec, color = vec(htail_cp_points))
+m3 = poly!(scene, vec(vtail_mesh.cam_mesh), vtail_cam_connec, color = vec(vtail_cp_points))
 
 # Airfoil meshes
 # wing_surf = surface_coordinates(wing_mesh, wing_mesh.n_span, 60)
 # surf_connec = triangle_connectivities(LinearIndices(wing_surf))
-# wing_surf_mesh = mesh(wing_surf[:], surf_connec)
+# wing_surf_mesh = mesh(vec(wing_surf), surf_connec)
 # w1 = wireframe!(scene, wing_surf_mesh.plot[1][], color = :grey, alpha = 0.1)
 
 # Borders
@@ -214,9 +214,9 @@ record(fig, "plots/vlm_animation.mp4", 1:nframes) do i
 end
 
 ## Arrows
-# hs_pts = Tuple.(bound_leg_center.(horses))[:]
+# hs_pts = vec(Tuple.(bound_leg_center.(horses)))
 # arrows!(scene, getindex.(hs_pts, 1), getindex.(hs_pts, 2), getindex.(hs_pts, 3), 
-#                 CDis[:], CYs[:], CLs[:], 
+#                 vec(CDis),vec(CYs),vec( Ls), 
 #                 arrowsize = Vec3f.(0.3, 0.3, 0.4),
 #                 lengthscale = 10,
 #                 label = "Forces (Exaggerated)")

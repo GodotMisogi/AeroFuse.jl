@@ -10,7 +10,7 @@ section_moments(vlm_acs, fem_pts, half_vlm_forces) = sum(x -> section_moment(x[1
 
 function compute_loads(vlm_acs, vlm_forces, fem_mesh)
     # Forces
-    @timeit "Sectional Forces" sec_forces   = sum(vlm_forces, dims = 1)[:] / 2
+    @timeit "Sectional Forces" sec_forces   = vec(sum(vlm_forces, dims = 1)) / 2
     @timeit "Beam Forces" beam_forces  = adjacent_adder(sec_forces / 2, sec_forces / 2)
 
     # Moments
@@ -23,7 +23,7 @@ function compute_loads(vlm_acs, vlm_forces, fem_mesh)
 end
 
 # Generate load vector for FEM system
-fem_load_vector(vlm_acs, vlm_forces, fem_mesh) = [ zeros(6); compute_loads(vlm_acs, vlm_forces, fem_mesh)[:] ]
+fem_load_vector(vlm_acs, vlm_forces, fem_mesh) = [ zeros(6); vec(compute_loads(vlm_acs, vlm_forces, fem_mesh)) ]
 
 
 ## Displacement transfer scheme

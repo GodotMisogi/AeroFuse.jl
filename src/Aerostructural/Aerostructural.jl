@@ -22,7 +22,7 @@ import ..PanelGeometry: make_panels, panel_normal
 import ..AircraftGeometry: WingMesh
 
 # VLM Aerodynamics
-import ..VortexLattice: velocity, induced_velocity, induced_trailing_velocity, aerodynamic_residual, aerodynamic_residual!, Horseshoe, horseshoe_normal, horseshoe_point, bound_leg_center, quasi_steady_freestream, influence_coefficient, influence_matrix, boundary_condition, body_to_wind_axes, bound_leg_vector, kutta_joukowsky
+import ..VortexLattice: velocity, induced_velocity, induced_trailing_velocity, aerodynamic_residuals, aerodynamic_residuals!, Horseshoe, horseshoe_normal, horseshoe_point, bound_leg_center, influence_coefficient, influence_matrix, boundary_condition, geometry_to_wind_axes, bound_leg_vector, kutta_joukowsky, surface_forces
 
 
 struct AerostructWing{S,T}

@@ -10,7 +10,7 @@ stream_velocity(r, horseshoes, Γs, V, Ω) = sum(x -> velocity(r, x[1], x[2], V 
 
 Compute the streamlines from a given starting point, a Freestream, Horseshoes and their associated strengths Γs with a specified length of the streamline and number of evaluation points.
 """
-function streamlines(point, V, Ω, horseshoes, Γs, length, num_steps :: Integer)
+function streamlines(V, Ω, horseshoes, Γs, point, length, num_steps :: Integer)
     streamlines = fill(point, num_steps)
     f(x) = stream_velocity(x, horseshoes, Γs, V, Ω)
     for i ∈ 2:num_steps
@@ -19,3 +19,5 @@ function streamlines(point, V, Ω, horseshoes, Γs, length, num_steps :: Integer
     end
     streamlines
 end
+
+streamlines(system :: VLMSystem, points, length, num_steps :: Integer) = mapreduce(pt -> streamlines(system.reference.speed * velocity(system.freestream), system.freestream.omega, system.vortices, system.circulations, pt, length, num_steps), hcat, points)

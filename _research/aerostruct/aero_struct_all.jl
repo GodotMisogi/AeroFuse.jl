@@ -291,7 +291,7 @@ nvtail_plan = plot_wing(new_mesh.cam_meshes[3])
 
 # Streamlines
 seed    = chop_coordinates(new_mesh.cam_meshes[1][end,:], 4)
-streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
+streams = streamlines(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
 using Plots

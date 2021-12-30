@@ -160,8 +160,10 @@ end
                              )
 
     ## Reference quantities
-    ac_name = :aircraft
-    fs      = Freestream(1.0, 1.0, zeros(3))
+    fs      = Freestream(alpha    = 1.0, 
+                         beta     = 1.0, 
+                         omega    = zeros(3))
+                         
     refs    = References(speed    = 1.0,
                          area     = projected_area(wing),
                          span     = span(wing),
@@ -170,10 +172,9 @@ end
                          location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.])
 
     ## Stability case
-    dv_data = solve_stability_case(aircraft, fs, refs;
-                                   name = ac_name);
+    dv_data = solve_stability_case(aircraft, fs, refs);
 
-    dcf = dv_data[ac_name]
+    dcf = dv_data.aircraft
     nfs = dcf.NF
     ffs = dcf.FF
     dvs = dcf.dNF

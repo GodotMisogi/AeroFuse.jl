@@ -96,8 +96,8 @@ end
 Line(r1 :: AbstractVector{M}, r2 :: AbstractVector{N}) where {M <: Real, N <: Real} = Line{M,N}(r1, r2)
 Line((r1, r2)) = Line(r1, r2)
 
-body_to_wind_axes(coords, α :: T, β :: T) where T <: Real = rotate_zy(β, α) * coords
-body_to_wind_axes(line :: AbstractLine, α :: T, β :: T) where {T <: Real} = Line(body_to_wind_axes(line.r1, α, β), body_to_wind_axes(line.r2, α, β))
+geometry_to_wind_axes(coords, α :: T, β :: T) where T <: Real = rotate_zy(β, α) * coords
+geometry_to_wind_axes(line :: AbstractLine, α :: T, β :: T) where {T <: Real} = Line(geometry_to_wind_axes(line.r1, α, β), geometry_to_wind_axes(line.r2, α, β))
 
 ##
 α  = deg2rad(1)
@@ -108,19 +108,19 @@ x  = [ r1 r2 ]
 line = Line(x[:,1], x[:,2])
 
 ## ForwardDiff
-ForwardDiff.gradient(x -> sum(body_to_wind_axes(x - r2, α, β)), r1)
+ForwardDiff.gradient(x -> sum(geometry_to_wind_axes(x - r2, α, β)), r1)
 ForwardDiff.gradient(x -> let l = Line(x[:,1], x[:,2]); sum([ l.r1; l.r2 ]) end, x)
-ForwardDiff.gradient(x -> let l = Line(x[:,1], x[:,2]); sum(body_to_wind_axes(sum([ l.r1 l.r2 ], dims = 2), α, β)) end, x)
-ForwardDiff.gradient(x -> sum(body_to_wind_axes(Line(x[:,1], x[:,2]), α, β).r1), x)
+ForwardDiff.gradient(x -> let l = Line(x[:,1], x[:,2]); sum(geometry_to_wind_axes(sum([ l.r1 l.r2 ], dims = 2), α, β)) end, x)
+ForwardDiff.gradient(x -> sum(geometry_to_wind_axes(Line(x[:,1], x[:,2]), α, β).r1), x)
 
 ## ReverseDiff
-ReverseDiff.gradient(x -> sum(body_to_wind_axes(x - r2, α, β)), r1) # (FAILS)
+ReverseDiff.gradient(x -> sum(geometry_to_wind_axes(x - r2, α, β)), r1) # (FAILS)
 ReverseDiff.gradient(x -> let l = Line(x[:,1], x[:,2]); sum([ l.r1; l.r2 ]) end, x)
-ReverseDiff.gradient(x -> let l = Line(x[:,1], x[:,2]); sum(body_to_wind_axes(sum([ l.r1 l.r2 ], dims = 2), α, β)) end, x)
-ReverseDiff.gradient(x -> sum(body_to_wind_axes(Line(x[:,1], x[:,2]), α, β).r1 - r2), x)
+ReverseDiff.gradient(x -> let l = Line(x[:,1], x[:,2]); sum(geometry_to_wind_axes(sum([ l.r1 l.r2 ], dims = 2), α, β)) end, x)
+ReverseDiff.gradient(x -> sum(geometry_to_wind_axes(Line(x[:,1], x[:,2]), α, β).r1 - r2), x)
 
 ## Zygote
-Zygote.gradient(x -> sum(body_to_wind_axes(x - r2, α, β)), r1)
+Zygote.gradient(x -> sum(geometry_to_wind_axes(x - r2, α, β)), r1)
 Zygote.gradient(x -> let l = Line(x[:,1], x[:,2]); sum([ l.r1; l.r2 ]) end, x)
-Zygote.gradient(x -> let l = Line(x[:,1], x[:,2]); sum(body_to_wind_axes(sum([ l.r1 l.r2 ], dims = 2), α, β)) end, x)
-Zygote.gradient(x -> sum(body_to_wind_axes(Line(x[:,1], x[:,2]), α, β).r1), x)
+Zygote.gradient(x -> let l = Line(x[:,1], x[:,2]); sum(geometry_to_wind_axes(sum([ l.r1 l.r2 ], dims = 2), α, β)) end, x)
+Zygote.gradient(x -> sum(geometry_to_wind_axes(Line(x[:,1], x[:,2]), α, β).r1), x)

@@ -44,12 +44,12 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                  axis      = [1., 0., 0.]);
 
 ## Meshing
-@time wing_mesh  = WingMesh(wing, [6], 6);
-@time htail_mesh = WingMesh(htail, [6], 3);
-@time vtail_mesh = WingMesh(vtail, [4], 3);
+wing_mesh  = WingMesh(wing, [6], 6);
+htail_mesh = WingMesh(htail, [6], 3);
+vtail_mesh = WingMesh(vtail, [4], 3);
 
 ## Aircraft assembly
-@time aircraft = ComponentVector(
+aircraft = ComponentVector(
                            wing  = make_horseshoes(wing_mesh),
                            htail = make_horseshoes(htail_mesh),
                            vtail = make_horseshoes(vtail_mesh),
@@ -64,16 +64,16 @@ S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ref      = [wing_mac[1], 0., 0.]
 V, α, β  = 25.0, 3.0, 0.0
 Ω        = zeros(3)
-fs       = Freestream(V, α, β, Ω)
-refs     = References(S, b, c, ρ, ref)
+fs       = Freestream(α, β, Ω)
+refs     = References(V, S, b, c, ρ, ref)
 
 ## Solve aerodynamic case for initial vector
 @time system = solve_case(aircraft, fs, refs;
                         #   print_components = true,
-                         );
+                         )
 
 ## Data collection
-@time Fs = surface_forces(system);
+Fs = surface_forces(system);
 
 ## Wing FEM setup
 vlm_acs_wing    = bound_leg_center.(system.vortices.wing)
@@ -215,18 +215,16 @@ R = similar(x0)
 ##
 # reset_timer!()
 
-# @timeit "Solving Residuals" 
-
-@benchmark res_aerostruct =
-    # newton_raphson(solve_aerostructural_residual!, x0)
-    nlsolve($solve_aerostruct!, $x0,
-            method         = :newton,
-            autodiff       = :forward,
+# @timeit "Solving Residuals" res_aerostruct =
+    @time newton_raphson(solve_aerostruct!, x0)
+    # nlsolve(solve_aerostruct!, x0,
+            # method         = :newton,
+            # autodiff       = :forward,
             # show_trace     = true,
             # extended_trace = true,
-           ) seconds = 30
+            # )
 
-## print_timer()
+# print_timer()
 
 ## Get zero
 x_opt = res_aerostruct.zero
@@ -320,7 +318,7 @@ nhtail_plan = plot_wing(new_cam_meshes[2])
 
 # Streamlines
 seed    = chop_coordinates(new_cam_meshes[1][end,:], 4)
-streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
+streams = streamlines(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
 using Plots

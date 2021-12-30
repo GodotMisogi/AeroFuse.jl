@@ -23,16 +23,18 @@ fs      = Freestream(alpha = 1.0,
 
 # Reference values
 refs    = References(
-                     speed    = 15.0,
+                     speed    = 10.0,
                      density  = 1.225, 
                      area     = projected_area(wing),   
                      span     = span(wing), 
                      chord    = mean_aerodynamic_chord(wing), 
-                     location = [ x_w; 0.; 0. ]
+                     location = mean_aerodynamic_center(wing)
                     )
 
 ## Solve system
-system   = solve_case(aircraft, fs, refs; print = true);
+system  = solve_case(aircraft, fs, refs; 
+                     print = true
+                    )
 
 ## Compute dynamics
 ax       = Wind()
@@ -40,7 +42,6 @@ CFs, CMs = surface_coefficients(system; axes = ax)
 # Fs       = surface_forces(system)
 # Ms       = surface_moments(system)
 # Fs, Ms   = surface_dynamics(system; axes = ax) 
-
 
 ## Total force coefficients
 nf       = nearfield(system) 
@@ -50,11 +51,11 @@ print_coefficients(nf, ff, :wing)
 
 ## Evaluate case with stability derivatives
 @time dv_data = solve_stability_case(aircraft, fs, refs;
-                                     print = true
-                                    );
+                                      print = true
+                                     );
 
 ## Plotting
-using StaticArrays
+# using StaticArrays
 using Plots
 gr()
 
@@ -75,7 +76,7 @@ seed        = [ init .+ Ref([dx, dy,  dz])  ;
 
 distance = 5
 num_stream_points = 100
-streams = plot_streams(fs, seed, system.vortices.wing, system.circulations.wing, distance, num_stream_points);
+streams = plot_streamlines(system, seed, distance, num_stream_points);
 
 ## Display
 horseshoe_panels = chord_panels(wing_mesh)
@@ -92,19 +93,19 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      zlim = (-0.1, z_limit),
      size = (800, 600))
 plot!.(horseshoe_coords, color = :black, label = :none)
-scatter!(horseshoe_points[:], marker = 1, color = :black, label = :none)
+scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
 [ plot!(stream, color = :green, label = :none) for stream in eachcol(Tuple.(streams)) ]
 plot!()
 
 ## Spanwise forces
-LL_loads    = lifting_line_loads(horseshoe_panels, CFs.wing, projected_area(wing))
-CL_loadings = sum(system.circulations.wing, dims = 1)[:] / (0.5 * fs.speed * refs.chord)
+LL_loads    = span_loads(horseshoe_panels, CFs.wing, projected_area(wing))
+CL_loadings = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
 
 ## Lifting line loads
 plot_CD = plot(LL_loads[:,1], LL_loads[:,2], label = :none, ylabel = "CDi")
 plot_CY = plot(LL_loads[:,1], LL_loads[:,3], label = :none, ylabel = "CY")
 plot_CL = begin
-            plot(LL_loads[:,1], LL_loads[:,3], label = :none, xlabel = "y", ylabel = "CL")
+            plot(LL_loads[:,1], LL_loads[:,4], label = :none, xlabel = "y", ylabel = "CL")
             plot!(LL_loads[:,1], CL_loadings, label = "Normalized", xlabel = "y")
           end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
@@ -112,7 +113,7 @@ plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 ## Lift distribution
 
 # Exaggerated CF distribution for plot
-hs_pts = Tuple.(bound_leg_center.(system.vortices))[:]
+hs_pts = vec(Tuple.(bound_leg_center.(system.vortices)))
 
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
@@ -121,7 +122,7 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      title = "Forces (Exaggerated)"
     )
 plot!.(horseshoe_coords, color = :gray, label = :none)
-# scatter!(cz_pts, zcolor = CLs[:], marker = 2, label = "CL (Exaggerated)")
+# scatter!(cz_pts, zcolor = vec(CLs), marker = 2, label = "CL (Exaggerated)")
 quiver!(hs_pts, quiver=(LL_loads[:,2], LL_loads[:,3], LL_loads[:,4]) .* 10)
 plot!(size = (800, 600))
 

@@ -66,9 +66,9 @@ function aeromdao_steady_vlm()
     x_ref   = [0.5, 0., 0.]
     V, α, β = 1.0, 5.0, 0.0
     Ω       = [0.0, 0.0, 0.0]
-    fs      = AeroMDAO.Freestream(V, α, β, Ω)
+    fs      = AeroMDAO.Freestream(α, β, Ω)
     S, b, c = 9.0, 10.0, 0.9
-    refs    = References(S, b, c, ρ, x_ref)
+    refs    = References(V, S, b, c, ρ, x_ref)
 
     # reset_timer!()
     # @timeit "Solving Case" 

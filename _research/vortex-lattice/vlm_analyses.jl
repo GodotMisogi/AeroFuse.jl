@@ -92,7 +92,7 @@ function load_factor_case!(system, state, weight, load_factor)
     evaluate_case!(system, state)
 
     # Compute lift
-    lift = body_to_wind_axes(sum(sum ∘ surface_forces, surfaces(system)), state.alpha, state.beta)[3]
+    lift = geometry_to_wind_axes(sum(sum ∘ surface_forces, surfaces(system)), state.alpha, state.beta)[3]
 
     # Weight residual
     load_factor_residual(lift, weight, load_factor)

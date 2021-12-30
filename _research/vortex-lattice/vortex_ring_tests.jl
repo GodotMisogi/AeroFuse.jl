@@ -96,9 +96,9 @@ refs    = References(area     = projected_area(wing),
 end;
 
 ## Spanwise forces/lifting line loads
-wing_ll  = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, S)
-htail_ll = lifting_line_loads(chord_panels(htail_mesh), CFs.htail, S)
-vtail_ll = lifting_line_loads(chord_panels(vtail_mesh), CFs.vtail, S);
+wing_ll  = span_loads(chord_panels(wing_mesh), CFs.wing, S)
+htail_ll = span_loads(chord_panels(htail_mesh), CFs.htail, S)
+vtail_ll = span_loads(chord_panels(vtail_mesh), CFs.vtail, S);
 
 ## Plotting
 using GLMakie
@@ -121,7 +121,7 @@ seed        = init # [ init .+ Ref([dx, dy,  dz])
 
 distance = 5
 num_stream_points = 100
-streams = plot_streams(fs, seed, data.vortices, data.circulations, distance, num_stream_points);
+streams = streamlines(fs, seed, data.vortices, data.circulations, distance, num_stream_points);
 
 wing_cam_connec  = triangle_connectivities(LinearIndices(wing_mesh.cam_mesh))
 htail_cam_connec = triangle_connectivities(LinearIndices(htail_mesh.cam_mesh))

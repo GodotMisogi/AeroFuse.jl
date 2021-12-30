@@ -6,6 +6,7 @@ using StaticArrays
 using Rotations
 using ComponentArrays
 using TimerOutputs
+import SplitApplyCombine: combinedimsview
 
 ## Package imports
 #==========================================================================================#
@@ -22,7 +23,7 @@ import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coeff
 # Some tools
 import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
 
-import ..AeroMDAO: velocity
+import ..AeroMDAO: velocity, solve_linear
 
 ## Horseshoe setup
 #==========================================================================================#
@@ -38,22 +39,20 @@ include("vortex_rings.jl")
 include("freestream.jl")
 include("reference_frames.jl")
 
-## Influence matrix and solution of system
+## Matrix and residual setups
 #==========================================================================================#
 
-include("influences.jl")
-
-quasi_steady_freestream(horseshoes, U, Ω) = map(hs -> U + Ω × horseshoe_point(hs), horseshoes)
+include("residuals.jl")
 
 """
-    solve_system(horseshoes, normals, U, Ω) 
+    solve_linear(horseshoes, normals, U, Ω) 
 
 Evaluate and return the vortex strengths ``\\Gamma``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``\\Omega``.
 """
-function solve_system(horseshoes, U, Ω, finite_core = false)
+function solve_linear(horseshoes, U, Ω, finite_core = false)
     AIC  = influence_matrix(horseshoes, -normalize(U), finite_core)
-    boco = boundary_condition(quasi_steady_freestream(horseshoes, U, Ω), horseshoe_normal.(horseshoes))
-    Γs   = AIC \ boco 
+    boco = boundary_condition(horseshoes, U, Ω)
+    Γs   = AIC \ boco
 
     Γs, AIC, boco
 end
@@ -67,15 +66,23 @@ include("nearfield.jl")
 # Farfield forces
 include("farfield.jl")
 
+
+# System setups
+#==========================================================================================#
+
+include("system.jl")
+
+function solve_system(components, fs :: Freestream, refs :: References, finite_core = false)
+    Γs, AIC, boco = solve_linear(components, body_frame_velocity(fs), fs.omega, finite_core)
+
+    VLMSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
+end
+
 ## Post-processing
 #==========================================================================================#
 
 # Streamlines
 include("streamlines.jl")
 
-# System setups
-#==========================================================================================#
-
-include("system.jl")
 
 end

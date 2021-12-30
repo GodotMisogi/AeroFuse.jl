@@ -105,8 +105,8 @@ S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ref      = [wing_mac[1], 0., 0.]
 V, α, β  = 25.0, 0.0, 0.0
 Ω        = zeros(3)
-fs       = Freestream(V, α, β, Ω)
-refs     = References(S, b, c, ρ, ref)
+fs       = Freestream(α, β, Ω)
+refs     = References(V, S, b, c, ρ, ref)
 
 ## Solve aerodynamic case for initial vector
 @time system = solve_case(aircraft, fs, refs;
@@ -144,7 +144,7 @@ stiffy_wing    = build_stiffness_matrix(Ks_wing, cons_wing)
 fem_loads_wing = compute_loads(vlm_acs_wing, vlm_forces_wing, wing_fem_mesh)
 
 dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
-Δx_wing = [ zeros(6); dx_wing[:] ]
+Δx_wing = [ zeros(6); vec(dx_wing) ]
 
 ## Horizontal tail FEM setup
 vlm_acs_htail    = bound_leg_center.(system.vortices.htail)
@@ -167,7 +167,7 @@ stiffy_htail    = build_stiffness_matrix(Ks_htail, cons_htail)
 fem_loads_htail = compute_loads(vlm_acs_htail, vlm_forces_htail, htail_fem_mesh)
 
 dx_htail = solve_cantilever_beam(Ks_htail, fem_loads_htail, cons_htail)
-Δx_htail = [ zeros(6); dx_htail[:] ]
+Δx_htail = [ zeros(6); vec(dx_htail) ]
 
 ## Vertical tail FEM setup
 vlm_acs_vtail    = bound_leg_center.(system.vortices.vtail)
@@ -190,7 +190,7 @@ stiffy_vtail    = build_stiffness_matrix(Ks_vtail, cons_vtail)
 fem_loads_vtail = compute_loads(vlm_acs_vtail, vlm_forces_vtail, vtail_fem_mesh)
 
 dx_vtail = solve_cantilever_beam(Ks_vtail, fem_loads_vtail, cons_vtail)
-Δx_vtail = [ zeros(6); dx_vtail[:] ]
+Δx_vtail = [ zeros(6); vec(dx_vtail) ]
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -355,7 +355,7 @@ seed    = [
             chop_coordinates(new_cam_meshes[1][1,:], 4)[1:2:end]; 
             # chop_coordinates(atail_l_cam_mesh[1,:], 4)[1:2:end] 
           ]
-streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 20);
+streams = streamlines(fs, seed, all_horsies, Γ_opt, 5, 20);
 
 ## Plot
 using Plots
