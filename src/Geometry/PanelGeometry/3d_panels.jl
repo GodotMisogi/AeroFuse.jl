@@ -26,7 +26,7 @@ struct Panel3D{T <: Real} <: AbstractPanel3D
     p4 :: SVector{3,T}
 end
 
-Panel3D(p1 :: FieldVector{3,T}, p2 :: FieldVector{3,T}, p3 :: FieldVector{3,T}, p4 :: FieldVector{3,T}) where T <: Real = Panel3D{T}(p1, p2, p3, p4)
+Panel3D(p1, p2, p3, p4) = let T = promote_type(eltype(p1), eltype(p2), eltype(p3), eltype(p4)); Panel3D{T}(p1, p2, p3, p4) end
 
 Panel3D((p1, p2, p3, p4)) = Panel3D(p1, p2, p3, p4)
 

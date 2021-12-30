@@ -170,20 +170,21 @@ panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer
 ## Meshing type for convenience
 #==========================================================================================#
 
-mutable struct WingMesh{M <: AbstractWing, N <: Integer, O <: Integer, P, Q, R, S} <: AbstractWing
+mutable struct WingMesh{M <: AbstractWing, N <: Integer, P, Q, T} <: AbstractWing
     surf          :: M
     num_span      :: Vector{N}
-    num_chord     :: O
+    num_chord     :: N
     chord_spacing :: P
     span_spacing  :: Q
-    vlm_mesh      :: R
-    cam_mesh      :: S
+    vlm_mesh      :: Matrix{T}
+    cam_mesh      :: Matrix{T}
 end
 
-function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: O; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surf)) where {M <: AbstractWing, N <: Integer, O <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}} 
+function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: N; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surf)) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}} 
     vlm_mesh =  chord_coordinates(surf, n_span, n_chord; spacings = span_spacing)
     cam_mesh = camber_coordinates(surf, n_span, n_chord; spacings = span_spacing)
-    WingMesh{M,N,O,P,Q,typeof(vlm_mesh),typeof(cam_mesh)}(surf, n_span, n_chord, chord_spacing, span_spacing, vlm_mesh, cam_mesh)
+    T = promote_type(eltype(vlm_mesh), eltype(cam_mesh))
+    WingMesh{M,N,P,Q,T}(surf, n_span, n_chord, chord_spacing, span_spacing, vlm_mesh, cam_mesh)
 end
 
 ##
