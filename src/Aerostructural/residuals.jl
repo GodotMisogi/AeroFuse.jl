@@ -35,11 +35,11 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
     
     # Compute displacements
     Δs    = map((key, fem_mesh) -> reshape(δs[key][7:end], 6, length(fem_mesh)), valkeys(δs), fem_meshes)
-    @timeit "Get Translations" dxs   = mesh_translation.(Δs)
-    @timeit "Get Rotations" Ts    = mesh_rotation.(Δs)
+    # @timeit "Get Translations" dxs   = 
+    # @timeit "Get Rotations" Ts    = 
 
     # New VLM variables
-    @timeit "New Horseshoes" new_horsies = new_horseshoes.(dxs, Ts, vlm_meshes, cam_meshes, fem_meshes)
+    @timeit "New Horseshoes" new_horsies = @. new_horseshoes(mesh_translation(Δs), mesh_rotation(Δs), vlm_meshes, cam_meshes, fem_meshes)
 
     # Compute component forces for structural residual
     @timeit "Get Circulations" new_Γs       = getindex.(Ref(Γs), syms) 
