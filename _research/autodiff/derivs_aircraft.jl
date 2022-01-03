@@ -171,8 +171,6 @@ ReverseDiff.gradient(x -> arc_length(HalfWing(fill(Foil(x_coords), length(x)), c
 ## VLM
 #===================================================================#
 
-using ComponentArrays
-
 function vlm_analysis(aircraft, fs, ρ, ref, S, b, c, print = false)
     # Evaluate case
     data =  solve_case(aircraft, fs;

@@ -1,6 +1,5 @@
 ## Wing analysis case
 using AeroMDAO
-using ComponentArrays
 using LinearAlgebra
 
 ## Surfaces

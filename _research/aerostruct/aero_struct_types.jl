@@ -5,7 +5,6 @@ using StaticArrays
 using DataFrames
 using NLsolve
 using TimerOutputs
-using ComponentArrays
 
 # Case
 #==========================================================================================#

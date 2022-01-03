@@ -1,7 +1,6 @@
 ## Drag polar analysis case
 using AeroMDAO
 using DataFrames
-using ComponentArrays
 using Plots
 
 ## Lifting surfaces

@@ -2,7 +2,6 @@
 using JuMP
 using Ipopt
 using AeroMDAO
-using ComponentArrays
 using StaticArrays
 
 # Wing setup
