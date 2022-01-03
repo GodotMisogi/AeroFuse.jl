@@ -13,9 +13,6 @@ wing = Wing(foils     = Foil.(fill(naca4(2,4,1,2), 2)),
             dihedrals = [5.],
             LE_sweeps = [5.]);
 
-x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
-
 # Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
              chords    = [0.7, 0.42],
@@ -39,13 +36,13 @@ vtail = HalfWing(foils     = Foil.(fill(naca4(0,0,0,9), 2)),
                  axis      = [1., 0., 0.])
 
 ## WingMesh type
-wing_mesh  = WingMesh(wing, [10], 10, 
+wing_mesh  = WingMesh(wing, [40], 20, 
                       span_spacing = Cosine()
                      )
-htail_mesh = WingMesh(htail, [6], 6, 
+htail_mesh = WingMesh(htail, [20], 10, 
                       span_spacing = Cosine()
                      )
-vtail_mesh = WingMesh(vtail, [6], 5, 
+vtail_mesh = WingMesh(vtail, [20], 10, 
                       span_spacing = Cosine()
                      )
 
@@ -72,12 +69,18 @@ refs    = References(
 ## Angle of attack sweep
 #==========================================================================================#
 
-using Distributed
-
 ## Sequential
 println("AeroMDAO Aircraft Sequential -")
-@benchmark systems = map(α -> solve_case($aircraft, Freestream(alpha = α), $refs), αs)
+@benchmark systems = map(α -> solve_case($aircraft, Freestream(alpha = α), $refs), $αs)
 
-## Parallel
-println("AeroMDAO Aircraft Parallel -")
-@benchmark systems = pmap(α -> solve_case($aircraft, Freestream(alpha = α), $refs), αs)
+## Thread-based parallelism
+using Folds
+
+println("AeroMDAO Aircraft Thread-Parallel -")
+@benchmark systems = Folds.map(α -> solve_case($aircraft, Freestream(alpha = α), $refs), $αs)
+
+## Distributed-computing parallelism
+using Distributed
+# addprocs(3)
+println("AeroMDAO Aircraft Proc-Parallel -")
+@benchmark systems = pmap(α -> solve_case($(aircraft[:]), Freestream(alpha = α), $refs), $αs)
