@@ -73,7 +73,7 @@ function split_foil(coords)
 end
 
 function paneller(foil :: Foil, num_panels :: Integer)
-    coords = cosine_foil(coordinates(foil), Int(ceil(num_panels / 2)))
+    coords = cosine_foil(coordinates(foil), num_panels ÷ 2)
     vecs   = SVector.(coords[:,1], coords[:,2])
     @views Panel2D.(vecs[2:end,:], vecs[1:end-1,:])[end:-1:1]
 end

@@ -4,7 +4,7 @@ using BenchmarkTools
 ##
 using ForwardDiff, ReverseDiff, Zygote
 
-# using StaticArrays
+using StaticArrays
 # @Zygote.adjoint (T :: Type{<:SVector})(xs :: Number ...) = T(xs...), dv -> (nothing, dv...)
 # @Zygote.adjoint (T :: Type{<:SVector})(x :: AbstractVector) = T(x), dv -> (nothing, dv)
 
@@ -29,10 +29,11 @@ Zygote.gradient(arc_length ∘ Foil, xi[:,1], xi[:,2])
 
 ## Aerodynamic analysis
 function optimize_CST(coords)
-    airfoil = Foil(coords)
+    # airfoil = Foil(coords)
     # airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), (0., 0.), 80)
-    uniform = Uniform2D(1.0, 5.0)
-    solve_case(airfoil, uniform, num_panels = size(coords)[1])[2]
+    vecs   = SVector.(coords[:,1], coords[:,2])
+    panels = Panel2D.(vecs[2:end], vecs[1:end-1])[end:-1:1]
+    AeroMDAO.solve_problem(panels, sincos(deg2rad(5.))[end:-1:1], deg2rad(5.), false, 1e5)[end]
 end
 
 alpha_u = fill(0.1, 60)
@@ -43,10 +44,10 @@ foil = Foil(xi)
 optimize_CST(xi)
 
 ## PASSES
-@time ForwardDiff.jacobian(optimize_CST, xi)
+@time ForwardDiff.gradient(optimize_CST, xi)
 
 ## PASSES
-@time ReverseDiff.jacobian(optimize_CST, xi)
+@time ReverseDiff.gradient(optimize_CST, xi)
 
 ## FAILS (due to binomial and SVector)
 # @time Zygote.jacobian(optimize_CST, xs)
