@@ -19,46 +19,6 @@ function print_info(wing :: AbstractWing, head = ""; browser = false)
     end
 end
 
-"""
-    solve_case(wing :: AbstractWing, freestream :: Freestream, ρ :: Real, r_ref; span_num :: Integer = 5, chord_num :: Integer = 10)
-
-Evaluate a vortex lattice case given a `Wing` or `HalfWing` with a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments, ``n_s`` span-wise panels and ``n_c`` chord-wise panels.
-"""
-function solve_case(wing :: AbstractWing, freestream :: Freestream, refs = References(); mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3, spacing = symmetric_spacing(wing))
-    # Determine spanwise panel distribution and spacing
-    span_nums = number_of_spanwise_panels(wing, span_num)
-
-    # Compute panels and normals
-    horseshoe_panels = mesh_horseshoes(wing, span_nums, chord_num; spacings = spacing)
-    camber_panels    = mesh_cambers(wing, span_nums, chord_num; spacings = spacing)
-    normals          = panel_normal.(camber_panels)
-
-    # Make horseshoes and collocation points
-    components = ComponentVector(wing = Horseshoe.(horseshoe_panels, normals))
-
-    # Evaluate case
-    system = solve_system(components, body_frame_velocity(freestream), freestream.omega, finite_core)
-
-    # Viscous drag evaluation
-    if viscous
-        # Compute profile drag via wetted-area equivalent skin-friction method
-        CDv = profile_drag_coefficient(wing, x_tr, refs.speed, refs.sound_speed, refs.area, refs.dynamic_viscosity)
-
-        # Compute profile drag using local dissipation based on power-balance method of Sato.
-        # u_es = surface_velocities(system)
-        # CDv = local_dissipation_drag(wing, panel_area.(camber_panels), ρ_es, u_es, x_tr, V, ρ, M, μ)
-
-        # Add profile and total drag coefficients
-        # nf_coeffs = [ nearfield_coeffs[1] + CDv; CDv; nearfield_coeffs ]
-        # ff_coeffs = [  farfield_coeffs[1] + CDv; CDv; farfield_coeffs  ]
-    else
-        # nf_coeffs = nearfield_coeffs
-        # ff_coeffs = farfield_coeffs
-    end
-
-    system
-end
-
 function solve_case(components, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false, finite_core = false)
     system = solve_system(components, freestream, refs, finite_core)
 
@@ -124,3 +84,44 @@ function print_derivatives(comp, name = ""; browser = false)
         pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true), vlines = :none, formatters = ft_round(8))
     end
 end
+
+
+# """
+#     solve_case(wing :: AbstractWing, freestream :: Freestream, ρ :: Real, r_ref; span_num :: Integer = 5, chord_num :: Integer = 10)
+
+# Evaluate a vortex lattice case given a `Wing` or `HalfWing` with a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments, ``n_s`` span-wise panels and ``n_c`` chord-wise panels.
+# """
+# function solve_case(wing :: AbstractWing, freestream :: Freestream, refs = References(); mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3, spacing = symmetric_spacing(wing))
+#     # Determine spanwise panel distribution and spacing
+#     span_nums = number_of_spanwise_panels(wing, span_num)
+
+#     # Compute panels and normals
+#     horseshoe_panels = mesh_horseshoes(wing, span_nums, chord_num; spacings = spacing)
+#     camber_panels    = mesh_cambers(wing, span_nums, chord_num; spacings = spacing)
+#     normals          = panel_normal.(camber_panels)
+
+#     # Make horseshoes and collocation points
+#     components = ComponentVector(wing = Horseshoe.(horseshoe_panels, normals))
+
+#     # Evaluate case
+#     system = solve_system(components, body_frame_velocity(freestream), freestream.omega, finite_core)
+
+#     # Viscous drag evaluation
+#     if viscous
+#         # Compute profile drag via wetted-area equivalent skin-friction method
+#         CDv = profile_drag_coefficient(wing, x_tr, refs.speed, refs.sound_speed, refs.area, refs.dynamic_viscosity)
+
+#         # Compute profile drag using local dissipation based on power-balance method of Sato.
+#         # u_es = surface_velocities(system)
+#         # CDv = local_dissipation_drag(wing, panel_area.(camber_panels), ρ_es, u_es, x_tr, V, ρ, M, μ)
+
+#         # Add profile and total drag coefficients
+#         # nf_coeffs = [ nearfield_coeffs[1] + CDv; CDv; nearfield_coeffs ]
+#         # ff_coeffs = [  farfield_coeffs[1] + CDv; CDv; farfield_coeffs  ]
+#     else
+#         # nf_coeffs = nearfield_coeffs
+#         # ff_coeffs = farfield_coeffs
+#     end
+
+#     system
+# end

@@ -13,7 +13,9 @@ x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
 ## Meshing and assembly
-wing_mesh    = WingMesh(wing, [12, 3], 6);
+wing_mesh    = WingMesh(wing, [12, 3], 6, 
+                        span_spacing = Cosine()
+                       );
 aircraft     = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
@@ -44,13 +46,13 @@ CFs, CMs = surface_coefficients(system; axes = ax)
 # Fs, Ms   = surface_dynamics(system; axes = ax) 
 
 ## Viscous drag prediction using empirical models
-x_tr        = 0.35
-M           = refs.speed / 330.
-μ           = 1.5e-5
-wing_panels = camber_panels(wing_mesh)
+x_tr        = [0.35, 0.35]              # Transition locations over sections
+M           = refs.speed / 330.         # Mach number
+μ           = 1.5e-5                    # Dynamic viscosity
+cam_panels  = camber_panels(wing_mesh)
 edge_speeds = surface_velocities(system).wing
 CDv_plate   = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, 330., refs.area, μ)
-CDv_diss    = local_dissipation_drag(wing, panel_area.(wing_panels), refs.density, edge_speeds, x_tr, refs.speed, refs.density, M, μ)
+# CDv_diss    = local_dissipation_drag(wing, panel_area.(cam_panels), refs.density, edge_speeds, [0.2, 0.35, 0.35, 0.2], refs.speed, refs.density, M, μ)
 
 ## Total force coefficients
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
@@ -137,19 +139,3 @@ plot!.(horseshoe_coords, color = :gray, label = :none)
 # scatter!(cz_pts, zcolor = vec(CLs), marker = 2, label = "CL (Exaggerated)")
 quiver!(hs_pts, quiver=(LL_loads[:,2], LL_loads[:,3], LL_loads[:,4]) .* 10)
 plot!(size = (800, 600))
-
-
-## Evaluate case
-# @time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normies, horses, Γs =
-# solve_case(wing, fs;
-#            rho_ref   = ρ,
-#            r_ref     = ref,
-#            area_ref  = S,
-#            span_ref  = b,
-#            chord_ref = c,
-#            span_num  = [25, 8],
-#            chord_num = 5,
-#            viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
-#            x_tr      = [0.3, 0.3],
-#           #  spacing   = Uniform()
-#           );
