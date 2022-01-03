@@ -3,7 +3,6 @@ using Zygote
 import Base: +, -, zero
 import Base.Iterators
 using StaticArrays
-using Revise
 
 ##
 struct Point

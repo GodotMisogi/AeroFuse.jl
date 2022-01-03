@@ -1,6 +1,5 @@
 ##
 using ReverseDiff: JacobianTape, JacobianConfig, GradientTape, GradientConfig, jacobian, jacobian!, gradient, gradient!, compile, DiffResults
-using Revise
 using AeroMDAO
 
 ## 2D doublet-source panel method

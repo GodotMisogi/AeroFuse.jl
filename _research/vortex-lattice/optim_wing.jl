@@ -1,5 +1,4 @@
 ## Optimisation tests
-using Revise
 using AeroMDAO
 using Optim
 

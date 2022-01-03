@@ -1,6 +1,5 @@
 using Zygote
 using StaticArrays
-using Revise
 using AeroMDAO
 
 ##

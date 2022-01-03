@@ -1,5 +1,4 @@
 ## Wing analysis case
-using Revise
 using AeroMDAO
 using ComponentArrays
 using LinearAlgebra

@@ -1,5 +1,4 @@
 ## TOTALLY not a ripoff of MIT's Dawn Solar HALE aircraft
-using Revise
 using AeroMDAO
 using LinearAlgebra
 using StaticArrays

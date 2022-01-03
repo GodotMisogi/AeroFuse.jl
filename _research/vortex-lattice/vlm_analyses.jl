@@ -1,5 +1,4 @@
 ## Nonlinear solution cases
-using Revise
 using AeroMDAO
 using NLsolve
 using DataFrames

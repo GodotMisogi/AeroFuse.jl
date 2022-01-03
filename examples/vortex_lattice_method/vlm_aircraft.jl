@@ -1,7 +1,6 @@
 ## Wing analysis case
-using Revise
 using AeroMDAO
-using LinearAlgebra
+import LinearAlgebra: norm
 
 ## Surfaces
 
@@ -82,7 +81,7 @@ refs    = References(speed    = 1.0,
                        );
 
     # Compute dynamics
-    ax       = Wind() # Stability(), Body()
+    ax       = Geometry() # Geometry, Stability(), Body()
     CFs, CMs = surface_coefficients(system; axes = ax)
     Fs       = surface_forces(system)
     # Fs, Ms   = surface_dynamics(system; axes = ax) 
