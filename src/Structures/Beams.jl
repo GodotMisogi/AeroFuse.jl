@@ -10,6 +10,10 @@ import SplitApplyCombine: combinedimsview
 
 abstract type AbstractBeam end
 
+struct Beam{T <: AbstractBeam}
+    section :: Vector{T}
+end
+
 ## Material definition
 #==========================================================================================#
 
@@ -29,6 +33,8 @@ function Material(E :: T, G :: T, σ_max :: T, ρ :: T) where T <: Real
     @assert E > 0. && G > 0. && σ_max > 0. && ρ > 0. "All quantities must be positive."
     Material{T}(E, G, σ_max, ρ)
 end
+
+Material(; elastic_modulus = 85e9, shear_modulus = 25e9, yield_stress = 350e6, density = 1.6e3) = Material(elastic_modulus, shear_modulus, yield_stress, density)
 
 elastic_modulus(mat :: Material) = mat.elastic_modulus
 shear_modulus(mat :: Material)   = mat.shear_modulus
@@ -166,8 +172,27 @@ end
 
 tube_stiffness_matrix(tubes :: Vector{<: Tube}) = tube_stiffness_matrix((elastic_modulus ∘ material).(tubes), (shear_modulus ∘ material).(tubes), area.(tubes), moment_of_inertia.(tubes), moment_of_inertia.(tubes), polar_moment_of_inertia.(tubes), length.(tubes))
 
+function sparse_stiffness_matrix(num_Ks, D_start, D_end, D_mid, D_12, D_21)
+    # Build sparse matrix
+    stiffness = spzeros(6 * (num_Ks + 2), 6 * (num_Ks + 2))
+    @views stiffness[7:12,7:12]           = D_start
+    @views stiffness[end-5:end,end-5:end] = D_end
+
+    for m in 1:num_Ks
+        mid_inds = 6(m+1)+1:6(m+1)+6
+        off_inds = 6(m)+1:6(m)+6
+        if m < num_Ks
+            @views stiffness[mid_inds,mid_inds] = D_mid[:,:,m]
+        end
+        @views stiffness[off_inds,mid_inds] = D_12[:,:,m]
+        @views stiffness[mid_inds,off_inds] = D_21[:,:,m]
+    end
+    
+    stiffness
+end
+
 function build_stiffness_matrix(D, constraint_indices)
-    # Temporary reshaping for sparse matrix construction
+    # Number of elements
     num_Ks = @views length(D[1,1,:])
 
     # First element
@@ -183,20 +208,7 @@ function build_stiffness_matrix(D, constraint_indices)
     D_12    = @views D[1:6,7:end,:]
     D_21    = @views D[7:end,1:6,:]
 
-    # Build sparse matrix
-    stiffness = spzeros(6 * (num_Ks + 2), 6 * (num_Ks + 2))
-    @views stiffness[7:12,7:12]           = D_start
-    @views stiffness[end-5:end,end-5:end] = D_end
-
-    for m in 1:num_Ks
-        mid_inds = 6(m+1)+1:6(m+1)+6
-        off_inds = 6(m)+1:6(m)+6
-        if m < num_Ks
-            @views stiffness[mid_inds,mid_inds] = D_mid[:,:,m]
-        end
-        @views stiffness[off_inds,mid_inds] = D_12[:,:,m]
-        @views stiffness[mid_inds,off_inds] = D_21[:,:,m]
-    end
+    stiffness = sparse_stiffness_matrix(num_Ks, D_start, D_end, D_mid, D_12, D_21)
 
     # Fixed boundary condition by constraining the locations.
     cons = 6 * (constraint_indices .+ 1)
@@ -218,7 +230,7 @@ function solve_cantilever_beam(Ks, loads, constraint_indices)
     K = build_stiffness_matrix(Ks, constraint_indices)
 
     # Build force vector with constraint
-    f = [ zeros(6); loads[:] ]
+    f = [ zeros(6); vec(loads) ]
 
     # Solve FEM system
     x = K \ f

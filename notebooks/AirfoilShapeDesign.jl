@@ -6,7 +6,7 @@ using InteractiveUtils
 
 # ╔═╡ 9c8e3e2e-4093-11eb-3e43-85d1fead00e5
 begin
-	using Revise
+	
 	using AeroMDAO
 	using NLsolve
 	using Plots

@@ -16,7 +16,7 @@ end
 
 plot_wing(wing :: AbstractWing) = plot_wing(coordinates(wing))
 
-plot_streams(freestream, points, horseshoes, Γs, length, num_steps) = reduce(hcat, streamlines(freestream, points, horseshoes, Γs, length, num_steps))
+plot_streamlines(system :: VLMSystem, points, length, num_steps) = Tuple.(streamlines(system, points, length, num_steps))
 
 plot_surface(wing :: AbstractWing, span_num = 5, chord_num = 30) = plot_panels(mesh_wing(wing, span_num, chord_num))
 

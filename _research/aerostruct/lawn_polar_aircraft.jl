@@ -1,12 +1,10 @@
 ## TOTALLY not a ripoff of MIT's Dawn Solar HALE aircraft
-using Revise
 using AeroMDAO
 using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
 using TimerOutputs
-using ComponentArrays
 using SparseArrays
 
 # Aerostructural analysis case
@@ -106,36 +104,35 @@ S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 ref      = [wing_mac[1], 0., 0.]
 V, α, β  = 25.0, 0.0, 0.0
 Ω        = zeros(3)
-fs       = Freestream(V, α, β, Ω)
-refs     = References(S, b, c, ρ, ref)
+fs       = Freestream(α, β, Ω)
+refs     = References(V, S, b, c, ρ, ref)
 
 ## Solve aerodynamic case for initial vector
-@time system =
-    solve_case(aircraft, fs, refs;
-            #    print_components = true,      # Prints the results for each component
-              );
+@time system = solve_case(aircraft, fs, refs;
+                          print_components = true,
+                         );
 
 ## Data collection
 # @time CFs, CMs = surface_coefficients(system);
 Fs = surface_forces(system)
 
 ## Wing FEM setup
-vlm_acs_wing    = bound_leg_center.(system.horseshoes.wing)
+vlm_acs_wing    = bound_leg_center.(system.vortices.wing)
 vlm_forces_wing = Fs.wing
 
 wing_beam_ratio = 0.40
 wing_fem_mesh   = make_beam_mesh(wing_mesh.vlm_mesh, wing_beam_ratio)
 
-aluminum = Material(       # Aluminum properties
-                    85e9,  # Elastic modulus, N/m²
-                    25e9,  # Shear modulus, N/m²,
-                    350e6, # Yield stress with factor of safety 2.5, N/m²,
-                    1.6e3, # Density, kg/m³
+aluminum = Material(# Aluminum properties
+                    elastic_modulus = 85e9,
+                    shear_modulus   = 25e9,
+                    yield_stress    = 350e6,
+                    density         = 1.6e3
                    )
 
-Ls_wing = norm.(diff(wing_fem_mesh))                              # Beam lengths, m
-rs_wing = range(5e-2, stop = 1e-2, length = length(Ls_wing) ÷ 2)  # Outer radius, m
-ts_wing = range(1e-2, stop = 6e-3, length = length(Ls_wing) ÷ 2)  # Thickness, m
+Ls_wing = norm.(diff(wing_fem_mesh))                 # Beam lengths, m
+rs_wing = LinRange(5e-2, 1e-2, length(Ls_wing) ÷ 2)  # Outer radius, m
+ts_wing = LinRange(1e-2, 6e-3, length(Ls_wing) ÷ 2)  # Thickness, m
 r_wing  = [ reverse(rs_wing); rs_wing ]
 t_wing  = [ reverse(ts_wing); ts_wing ]
 
@@ -146,19 +143,19 @@ stiffy_wing    = build_stiffness_matrix(Ks_wing, cons_wing)
 fem_loads_wing = compute_loads(vlm_acs_wing, vlm_forces_wing, wing_fem_mesh)
 
 dx_wing = solve_cantilever_beam(Ks_wing, fem_loads_wing, cons_wing)
-Δx_wing = [ zeros(6); dx_wing[:] ]
+Δx_wing = [ zeros(6); vec(dx_wing) ]
 
 ## Horizontal tail FEM setup
-vlm_acs_htail    = bound_leg_center.(system.horseshoes.htail)
+vlm_acs_htail    = bound_leg_center.(system.vortices.htail)
 vlm_forces_htail = Fs.htail
 
 htail_beam_ratio = 0.35
 htail_fem_mesh   = make_beam_mesh(htail_mesh.vlm_mesh, htail_beam_ratio)
 
 # Beam properties
-Ls_htail = norm.(diff(htail_fem_mesh))                              # Beam lengths, m
-rs_htail = range(8e-3, stop = 2e-3, length = length(Ls_htail) ÷ 2)  # Outer radius, m
-ts_htail = range(6e-4, stop = 2e-4, length = length(Ls_htail) ÷ 2)  # Thickness, m
+Ls_htail = norm.(diff(htail_fem_mesh))                 # Beam lengths, m
+rs_htail = LinRange(8e-3, 2e-3, length(Ls_htail) ÷ 2)  # Outer radius, m
+ts_htail = LinRange(6e-4, 2e-4, length(Ls_htail) ÷ 2)  # Thickness, m
 r_htail  = [ reverse(rs_htail); rs_htail ]
 t_htail  = [ reverse(ts_htail); ts_htail ]
 
@@ -169,10 +166,10 @@ stiffy_htail    = build_stiffness_matrix(Ks_htail, cons_htail)
 fem_loads_htail = compute_loads(vlm_acs_htail, vlm_forces_htail, htail_fem_mesh)
 
 dx_htail = solve_cantilever_beam(Ks_htail, fem_loads_htail, cons_htail)
-Δx_htail = [ zeros(6); dx_htail[:] ]
+Δx_htail = [ zeros(6); vec(dx_htail) ]
 
 ## Vertical tail FEM setup
-vlm_acs_vtail    = bound_leg_center.(system.horseshoes.vtail)
+vlm_acs_vtail    = bound_leg_center.(system.vortices.vtail)
 vlm_forces_vtail = Fs.vtail
 
 vtail_beam_ratio = 0.35
@@ -192,7 +189,7 @@ stiffy_vtail    = build_stiffness_matrix(Ks_vtail, cons_vtail)
 fem_loads_vtail = compute_loads(vlm_acs_vtail, vlm_forces_vtail, vtail_fem_mesh)
 
 dx_vtail = solve_cantilever_beam(Ks_vtail, fem_loads_vtail, cons_vtail)
-Δx_vtail = [ zeros(6); dx_vtail[:] ]
+Δx_vtail = [ zeros(6); vec(dx_vtail) ]
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -215,7 +212,7 @@ fem_meshes  = [ wing_fem_mesh, htail_fem_mesh, vtail_fem_mesh ]
 fem_weights = [ wing_beam_ratio, htail_beam_ratio, vtail_beam_ratio ]
 syms        = [ :wing, :htail, :vtail ]
 
-other_horsies = [ system.horseshoes.atail_l[:]; system.horseshoes.atail_r[:] ]
+other_horsies = [ system.vortices.atail_l[:]; system.vortices.atail_r[:] ]
 
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = (
@@ -241,16 +238,17 @@ solve_aerostructural_residual!(R, x) =
                             stiffy, weight, load_factor)
 
 ## Solve nonlinear system
-reset_timer!()
-@timeit "Solving Residuals" res_aerostruct =
+# reset_timer!()
+# @timeit "Solving Residuals" 
+@time res_aerostruct =
     nlsolve(solve_aerostructural_residual!, x0,
             method         = :newton,
-            show_trace     = true,
+            # show_trace     = true,
             # extended_trace = true,
-            store_trace    = true,
-            # autodiff       = :forward,
+            # store_trace    = true,
+            autodiff       = :forward,
            );
-print_timer()
+# print_timer()
 
 ## Get zero
 x_opt = res_aerostruct.zero
@@ -260,9 +258,8 @@ x_opt = res_aerostruct.zero
 
 ## Compute displacements
 Δs    = map((key, n) -> reshape(δ_opt[key][7:end], 6, n), valkeys(δ_opt), length.(fem_meshes))
-dx_Ts = translations_and_rotations.(Δs)
-dxs   = getindex.(dx_Ts, 1)
-Ts    = getindex.(dx_Ts, 2)
+dxs   = mesh_translation.(Δs)
+Ts    = mesh_rotation.(Δs)
 
 ## New VLM variables
 new_mesh.vlm_meshes = transfer_displacements.(dxs, Ts, vlm_meshes, fem_meshes)
@@ -357,7 +354,7 @@ seed    = [
             chop_coordinates(new_cam_meshes[1][1,:], 4)[1:2:end]; 
             # chop_coordinates(atail_l_cam_mesh[1,:], 4)[1:2:end] 
           ]
-streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 20);
+streams = streamlines(fs, seed, all_horsies, Γ_opt, 5, 20);
 
 ## Plot
 using Plots

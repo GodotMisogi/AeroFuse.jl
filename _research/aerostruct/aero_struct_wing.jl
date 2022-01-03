@@ -1,11 +1,9 @@
 ##
-using Revise
 using AeroMDAO
 using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
-using ComponentArrays
 using TimerOutputs
 
 # Case
@@ -35,23 +33,28 @@ wing_mesh = WingMesh(wing, [12], 6,
 aircraft = ComponentVector(wing = make_horseshoes(wing_mesh));
 
 ## Aerodynamic case
-ρ       = 0.98
-ref     = [ x_w, 0., 0. ]
-V, α, β = 25.0, 5.0, 0.0
-Ω       = [0.0, 0.0, 0.0]
-fs      = Freestream(V, α, β, Ω)
-refs    = References(density = 1.225, 
+
+# Freestream conditions
+fs      = Freestream(alpha = 1.0, 
+                     beta  = 0.0, 
+                     omega = [0.,0.,0.])
+
+# Reference values
+refs    = References(
+                     speed    = 15.0,
+                     density  = 0.98, 
                      area     = projected_area(wing),   
                      span     = span(wing), 
                      chord    = mean_aerodynamic_chord(wing), 
-                     location = [ x_w; 0.; 0. ])
+                     location = [ x_w; 0.; 0. ]
+                    )
 
 # Solve aerodynamic case for initial vector
 @time data = solve_case(aircraft, fs, refs; 
                         print = true);
 
 ## Aerodynamic forces and center locations
-vlm_acs    = bound_leg_center.(data.horseshoes.wing)
+vlm_acs    = bound_leg_center.(data.vortices.wing)
 vlm_forces = surface_forces(data).wing
 
 ## FEM mesh
@@ -123,31 +126,29 @@ x0 = ComponentArray(aerodynamics = data.circulations.wing,
                     load_factor  = deg2rad(α))
 
 ##
-using ForwardDiff
+# using ForwardDiff
 # using Zygote
 
-function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
-    x = copy(x0)
-    R = similar(x)
-    ∂R∂x = Matrix{eltype(x)}(undef, length(R), length(x))
-    ε = 1e5
-    i = 0
-    for i = 1:max_iters
-        ForwardDiff.jacobian!(∂R∂x, f!, R, x)
-        dx   = ∂R∂x \ -R
-        if ε <= tol return x end # Needs NAN checks and everything like NLsolve
-        ε    = LinearAlgebra.norm(dx)
-        @show (i, ε)
-        x  .+= dx
-        i   += 1
-    end
-    return x
-end
+# function newton_raphson(f!, x0; max_iters = 50, tol = 1e-9)
+#     x = copy(x0)
+#     R = similar(x)
+#     ∂R∂x = Matrix{eltype(x)}(undef, length(R), length(x))
+#     ε = 1e5
+#     i = 0
+#     for i = 1:max_iters
+#         ForwardDiff.jacobian!(∂R∂x, f!, R, x)
+#         dx   = ∂R∂x \ -R
+#         if ε <= tol return x end # Needs NAN checks and everything like NLsolve
+#         ε    = LinearAlgebra.norm(dx)
+#         @show (i, ε)
+#         x  .+= dx
+#         i   += 1
+#     end
+#     return x
+# end
 
-##
 # x = @time newton_raphson(solve_aerostruct!, x0)
 
-##
 # x = @time aerostruct_gauss_seidel(x0, V, deg2rad(β), ρ, Ω, wing_mesh.vlm_mesh, wing_mesh.cam_mesh, fem_mesh, stiffy, weight, load_factor; max_iters = 50, tol = 1e-9)
 
 ##
@@ -185,8 +186,8 @@ new_fs       = Freestream(V, rad2deg(α_opt), β, Ω)
 system       = solve_case(new_aircraft, new_fs, refs);
 
 ## Aerodynamic forces and center locations
-U_opt       = aircraft_velocity(new_fs)
-vlm_acs     = bound_leg_center.(system.horseshoes.wing)
+U_opt       = body_frame_velocity(new_fs)
+vlm_acs     = bound_leg_center.(system.vortices.wing)
 vlm_forces  = surface_forces(system).wing
 
 ## New beams and loads
@@ -267,7 +268,7 @@ nwing_plan = plot_wing(new_cam_mesh)
 
 # Streamlines
 seed    = chop_coordinates(new_cam_mesh[1,:], 3)
-streams = plot_streams(new_fs, seed, system.horseshoes, Γ_opt, 1, 100);
+streams = streamlines(new_fs, seed, system.vortices, Γ_opt, 1, 100);
 
 ## Plot
 using LaTeXStrings
@@ -293,15 +294,15 @@ new_wing_cp_points = extrapolate_point_mesh(new_cps.wing)
 ## Spanwise loads
 cl_loading(Γs, V, c) = vec(sum(Γs, dims = 1)) / (0.5 * V * c)
 
-hs_pts      = horseshoe_point.(data.horseshoes)
+hs_pts      = horseshoe_point.(data.vortices)
 wing_ys     = @view combinedimsview(hs_pts.wing[1,:])[2,:]
 
-new_hs_pts  = horseshoe_point.(system.horseshoes)
+new_hs_pts  = horseshoe_point.(system.vortices)
 new_wing_ys = @view combinedimsview(new_hs_pts.wing[1,:])[2,:]
 
-wing_ll     = lifting_line_loads(chord_panels(wing_mesh), CFs.wing, S)
+wing_ll     = span_loads(chord_panels(wing_mesh), CFs.wing, S)
 
-new_wing_ll = lifting_line_loads(make_panels(new_vlm_mesh), new_CFs.wing, S)
+new_wing_ll = span_loads(make_panels(new_vlm_mesh), new_CFs.wing, S)
 
 ## Mesh connectivities
 triangle_connectivities(inds) = @views [ inds[1:end-1,1:end-1][:] inds[1:end-1,2:end][:]   inds[2:end,2:end][:]   ;

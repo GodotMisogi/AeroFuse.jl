@@ -1,5 +1,4 @@
 ##
-using Revise
 using AeroMDAO
 using LinearAlgebra
 using StaticArrays
@@ -77,7 +76,7 @@ refs    = References(S, b, c, ρ, ref)
 CFs, CMs = surface_coefficients(system)
 
 ## Aerodynamic forces and center locations
-vlm_acs    = bound_leg_center.(system.horseshoes.wing)
+vlm_acs    = bound_leg_center.(system.vortices.wing)
 vlm_forces = force.(CFs.wing, dynamic_pressure(ρ, V), S)
 
 # FEM mesh
@@ -126,8 +125,8 @@ dx = solve_cantilever_beam(Ks, fem_loads, cons)
 ## Aerostructural residual
 #==========================================================================================#
 
-other_horsies = ComponentVector( htail = system.horseshoes.htail,
-                                 vtail = system.horseshoes.vtail )
+other_horsies = ComponentVector( htail = system.vortices.htail,
+                                 vtail = system.vortices.vtail )
 
 # Set up initial guess and function
 solve_aerostructural_residual!(R, x) =
@@ -252,7 +251,7 @@ vtail_plan = plot_wing(vtail)
 
 # Streamlines
 seed    = chop_coordinates(new_cam_mesh[end,:], 3)
-streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
+streams = streamlines(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
 using Plots

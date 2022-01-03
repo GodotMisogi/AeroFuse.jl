@@ -1,6 +1,14 @@
 ## Axis transformations
 #==========================================================================================#
 
+abstract type AbstractAxisSystem end
+
+struct Geometry <: AbstractAxisSystem end
+struct Body      <: AbstractAxisSystem end
+struct Stability <: AbstractAxisSystem end
+struct Wind      <: AbstractAxisSystem end
+
+
 function rotate_zy(theta1, theta2)
     sinθ₁, cosθ₁ = sincos(theta1)
     sinθ₂, cosθ₂ = sincos(theta2)
@@ -13,43 +21,45 @@ end
 
 
 """
-    body_to_stability_axes(coords, α)
+    geometry_to_stability_axes(coords, α)
 
 Convert coordinates into stability axes with angle ``\\alpha``.
 """
-body_to_stability_axes(coords, α :: T) where T <: Real = RotY{T}(α) * coords
+geometry_to_stability_axes(coords, α :: T) where T <: Real = RotY{T}(α) * coords
 
 """
-    body_to_stability_axes(coords, α)
+    geometry_to_stability_axes(coords, α)
 
 Convert coordinates into stability axes with angle ``\\alpha``.
 """
-stability_to_body_axes(coords, α :: T) where T <: Real = RotY{T}(-α) * coords
-                                            
+stability_to_geometry_axes(coords, α :: T) where T <: Real = RotY{T}(-α) * coords
+
+# Possible cancellation errors causing convergence issues in optimization?
+# geometry_to_wind_axes(coords, α, β) = let T = promote_type(eltype(α), eltype(β)); RotZY{T}(β, α) * coords end
+
 """
-    body_to_wind_axes(coords, α, β)
+    geometry_to_wind_axes(coords, α, β)
 
 Convert coordinates from body axes to wind axes with angles ``\\alpha,~ \\beta``.
 """
-# body_to_wind_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(β, α) * coords
-body_to_wind_axes(coords, α, β) = rotate_zy(β, α) * coords
+geometry_to_wind_axes(coords, α, β) = rotate_zy(β, α) * coords
 
 """
-    body_to_wind_axes(coords, α, β)
+    geometry_to_wind_axes(coords, α, β)
 
 Convert coordinates from wind axes to body axes with angles ``\\alpha,~ \\beta``.
 """
-wind_to_body_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(-α, -β) * coords
+wind_to_geometry_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(-α, -β) * coords
 
 ## Line methods
 #==========================================================================================#
 
 """
-    body_to_wind_axes(line, freestream)
+    geometry_to_wind_axes(line, freestream)
 
 Transform a Line from body to wind axes in a given `Freestream`.
 """
-body_to_wind_axes(line :: Line, α, β) = Line(body_to_wind_axes(r1(line), α, β), body_to_wind_axes(r2(line), α, β)) 
+geometry_to_wind_axes(line :: Line, α, β) = Line(geometry_to_wind_axes(r1(line), α, β), geometry_to_wind_axes(r2(line), α, β)) 
 
 
 ## Reflections and projections

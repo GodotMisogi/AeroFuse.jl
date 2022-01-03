@@ -1,6 +1,4 @@
 ## Optimisation tests
-using Revise
-using StaticArrays
 using AeroMDAO
 using Optim
 

@@ -80,12 +80,19 @@ aircraft = ComponentArray(
 
 ## Evaluate case
 ac_name = :aircraft
-ρ       = 1.225
-ref     = [ x_w, 0., 0. ]
-V, α, β = 1.0, 0.0, 0.0
-Ω       = [0.0, 0.0, 0.0]
-fs      = Freestream(V, α, β, Ω)
-refs    = References(S, b, c, ρ, ref)
+fs      = Freestream(alpha = 1.0, 
+                     beta  = 0.0, 
+                     omega = [0.,0.,0.])
+
+# Reference values
+refs    = References(
+                     speed    = 10.0,
+                     density  = 1.225, 
+                     area     = projected_area(wing),   
+                     span     = span(wing), 
+                     chord    = mean_aerodynamic_chord(wing), 
+                     location = mean_aerodynamic_center(wing)
+                    )
 
 @time dv_data =
 solve_stability_case(aircraft, fs, refs;

@@ -10,7 +10,7 @@ section_moments(vlm_acs, fem_pts, half_vlm_forces) = sum(x -> section_moment(x[1
 
 function compute_loads(vlm_acs, vlm_forces, fem_mesh)
     # Forces
-    @timeit "Sectional Forces" sec_forces   = sum(vlm_forces, dims = 1)[:] / 2
+    @timeit "Sectional Forces" sec_forces   = vec(sum(vlm_forces, dims = 1)) / 2
     @timeit "Beam Forces" beam_forces  = adjacent_adder(sec_forces / 2, sec_forces / 2)
 
     # Moments
@@ -23,7 +23,7 @@ function compute_loads(vlm_acs, vlm_forces, fem_mesh)
 end
 
 # Generate load vector for FEM system
-fem_load_vector(vlm_acs, vlm_forces, fem_mesh) = [ zeros(6); compute_loads(vlm_acs, vlm_forces, fem_mesh)[:] ]
+fem_load_vector(vlm_acs, vlm_forces, fem_mesh) = [ zeros(6); vec(compute_loads(vlm_acs, vlm_forces, fem_mesh)) ]
 
 
 ## Displacement transfer scheme
@@ -41,7 +41,8 @@ rotation_matrix(θs) = rotation_matrix.(θs[1,:], θs[2,:], θs[3,:])
 transfer_displacement(xyz, dx, rot, r) = xyz + dx + rot * (xyz - r)
 transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh) = permutedims(combinedimsview(map(xyz -> transfer_displacement.(xyz, dxs, Ts, fem_mesh), eachrow(vlm_mesh))))
 
-translations_and_rotations(δs) = @views SVector.(δs[1,:], δs[2,:], δs[3,:]), rotation_matrix(δs[4:6,:])
+mesh_translation(δs) = @views SVector.(δs[1,:], δs[2,:], δs[3,:])
+mesh_rotation(δs)    = @views rotation_matrix(δs[4:6,:])
 
 # Make new horseshoes
 function new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)

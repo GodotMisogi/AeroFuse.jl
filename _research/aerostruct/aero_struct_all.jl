@@ -1,12 +1,10 @@
 ##
-using Revise
 using AeroMDAO
 using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
 using TimerOutputs
-using ComponentArrays
 using SparseArrays
 
 # Case
@@ -78,7 +76,7 @@ refs     = References(S, b, c, ρ, ref)
 ## Data collection
 CFs, CMs = surface_coefficients(system)
 forces, moments   = surface_dynamics(system)
-hs_acs   = bound_leg_center.(system.horseshoes)
+hs_acs   = bound_leg_center.(system.vortices)
 
 
 ## Wing FEM setup
@@ -162,14 +160,23 @@ stiffy = blockdiag(stiffy_wing, stiffy_htail, stiffy_vtail)
 ## Aerostructural residual
 #==========================================================================================#
 
+vlm_meshes  = [ wing_mesh.vlm_mesh, htail_mesh.vlm_mesh, vtail_mesh.vlm_mesh ]
 cam_meshes  = [ wing_mesh.cam_mesh, htail_mesh.cam_mesh, vtail_mesh.cam_mesh ]
 fem_meshes  = [ wing_fem_mesh, htail_fem_mesh, vtail_fem_mesh ]
 fem_weights = [ wing_beam_ratio, htail_beam_ratio, vtail_beam_ratio ]
 syms        = [ :wing, :htail, :vtail ]
 
 # Initial guess as ComponentArray for the different equations
-x0 = ComponentArray(aerodynamics = (wing = Γ0_wing, htail = Γ0_htail, vtail = Γ0_vtail),
-                    structures   = (wing = Δx_wing, htail = Δx_htail, vtail = Δx_vtail),
+x0 = ComponentArray(aerodynamics = (
+                                    wing  = system.circulations.wing, 
+                                    htail = system.circulations.htail, 
+                                    vtail = system.circulations.vtail
+                                   ),
+                    structures   = (
+                                    wing  = Δx_wing, 
+                                    htail = Δx_htail, 
+                                    vtail = Δx_vtail
+                                   ),
                     load_factor  = deg2rad(α))
 
 # Set up initial guess and function
@@ -198,9 +205,8 @@ x_opt = res_aerostruct.zero
 
 ## Compute displacements
 Δs    = map((key, n) -> reshape(δ_opt[key][7:end], 6, n), valkeys(δ_opt), length.(fem_meshes))
-dx_Ts = translations_and_rotations.(Δs)
-dxs   = getindex.(dx_Ts, 1)
-Ts    = getindex.(dx_Ts, 2)
+dxs   = mesh_translation.(Δs)
+Ts    = mesh_rotation.(Δs)
 
 ## New VLM variables
 new_mesh.vlm_meshes = transfer_displacements.(dxs, Ts, vlm_meshes, fem_meshes)
@@ -284,7 +290,7 @@ nvtail_plan = plot_wing(new_mesh.cam_meshes[3])
 
 # Streamlines
 seed    = chop_coordinates(new_mesh.cam_meshes[1][end,:], 4)
-streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
+streams = streamlines(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
 using Plots

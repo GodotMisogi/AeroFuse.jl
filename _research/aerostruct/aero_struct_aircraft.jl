@@ -1,12 +1,10 @@
 ##
-using Revise
 using AeroMDAO
 using LinearAlgebra
 using StaticArrays
 using DataFrames
 using NLsolve
 using TimerOutputs
-using ComponentArrays
 
 # Case
 #==========================================================================================#
@@ -14,12 +12,12 @@ using ComponentArrays
 ## Aerodynamic variables
 
 # Define wing
-wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
-            chords    = [1.0, 0.6, 0.2],
-            twists    = [0.0, 0.0, 0.0],
-            spans     = [5.0, 0.3],
-            dihedrals = [0., 45.],
-            LE_sweeps = [5., 60.]);
+wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 2)),
+            chords    = [1.0, 0.6],
+            twists    = [0.0, 0.0],
+            spans     = [5.0],
+            dihedrals = [5.],
+            LE_sweeps = [15.]);
 
 # Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
@@ -46,9 +44,9 @@ vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 ## Meshing and assembly
 
 # Wing
-wing_mesh  = WingMesh(wing, [8,3], 6)
-htail_mesh = WingMesh(htail, [6], 6)
-vtail_mesh = WingMesh(vtail, [6], 6)
+wing_mesh  = WingMesh(wing, [6], 6)
+htail_mesh = WingMesh(htail, [6], 4)
+vtail_mesh = WingMesh(vtail, [6], 4)
 
 # Aircraft assembly
 aircraft = ComponentArray(
@@ -80,7 +78,7 @@ refs    = References(S, b, c, ρ, ref)
 Fs = surface_forces(data)
 
 ## Aerodynamic forces and center locations
-vlm_acs    = bound_leg_center.(data.horseshoes.wing)
+vlm_acs    = bound_leg_center.(data.vortices.wing)
 vlm_forces = Fs.wing
 
 # FEM mesh
@@ -130,8 +128,8 @@ dx = solve_cantilever_beam(Ks, fem_loads, cons)
 #==========================================================================================#
 
 other_horsies = ComponentVector(
-                                htail = data.horseshoes.htail,
-                                vtail = data.horseshoes.vtail
+                                htail = data.vortices.htail,
+                                vtail = data.vortices.vtail
                                )
 
 # Set up initial guess and function
@@ -258,7 +256,7 @@ vtail_plan = plot_wing(vtail)
 
 # Streamlines
 seed    = chop_coordinates(new_cam_mesh[end,:], 3)
-streams = plot_streams(fs, seed, all_horsies, Γ_opt, 5, 100);
+streams = streamlines(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
 using Plots

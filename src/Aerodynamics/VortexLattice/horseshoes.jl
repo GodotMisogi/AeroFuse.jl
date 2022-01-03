@@ -12,7 +12,7 @@ Compute the 3-quarter point between two points in the x-z plane.
 three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
 
 collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
-bound_leg(p1, p2, p3, p4) = [ quarter_point(p1, p2), quarter_point(p4, p3) ]
+bound_leg(p1, p2, p3, p4) = SVector(quarter_point(p1, p2), quarter_point(p4, p3))
 
 """
     bound_leg(panel :: Panel3D)
@@ -40,7 +40,7 @@ struct Line{T <: Real} <: AbstractLine
     r2 :: SVector{3,T}
 end
 
-Line(r1 :: AbstractVector{T}, r2 :: AbstractVector{T}) where T <: Real = Line{T}(r1, r2)
+Line(r1, r2) = let T = promote_type(eltype(r1), eltype(r2)); Line{T}(r1, r2) end
 Line((r1, r2)) = Line(r1, r2)
 
 r1(line :: Line) = line.r1
@@ -56,7 +56,7 @@ r1(r, line :: Line) = r - r1(line)
 r2(r, line :: Line) = r - r2(line)
 
 bound_leg_velocity(a, b, Γ)    = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
-trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × u / (norm(r) - dot(r, u))
+trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × normalize(u) / (norm(r) - dot(r, u))
 
 trailing_legs_velocities(a, b, Γ, u) = trailing_leg_velocity(a, Γ, u) - trailing_leg_velocity(b, Γ, u)
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
@@ -68,9 +68,6 @@ bound_velocity(r, line :: Line, Γ) = bound_leg_velocity(r1(r, line), r2(r, line
 ## Arrays of vortex lines
 #==========================================================================================#
 
-"""
-Placeholder. Vortex rings and horseshoes basically have the same methods, and are arrays of vortex lines.
-"""
 abstract type AbstractVortexArray end
 
 """
@@ -83,7 +80,7 @@ struct Horseshoe{T <: Real} <: AbstractVortexArray
     chord             :: T
 end
 
-Base.length(::Horseshoe{T}) where T <: Real = 1
+Base.length(::Horseshoe) = 1
 
 """
     bound_leg(horseshoe :: Horseshoe)

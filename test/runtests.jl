@@ -88,16 +88,24 @@ end
                 dihedrals = [5.],
                 LE_sweeps = [1.14])
 
-    # Define reference values
-    ρ   = 1.225
-    ref = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
-    Ω   = [0.0, 0.0, 0.0]
+    # Define freestream and reference values
+    fs   = Freestream(2.0, 2.0, [0.0, 0.0, 0.0])
+    refs = References(speed    = 1.0, 
+                      area     = projected_area(wing), 
+                      span     = span(wing), 
+                      chord    = mean_aerodynamic_chord(wing), 
+                      density  = 1.225, 
+                      location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.])
 
-    # Define freestream condition
-    uniform = Freestream(10.0, 2.0, 2.0, Ω)
+    aircraft = ComponentArray(wing = make_horseshoes(WingMesh(wing, [10], 5, span_spacing = Sine())))
 
     # Evaluate stability case
-    nf_coeffs, ff_coeffs, dv_coeffs = solve_stability_case(wing, uniform; rho_ref = ρ, r_ref = ref, span_num = 20, chord_num = 5)
+    dv_data = solve_stability_case(aircraft, fs, refs)
+
+    dcf = dv_data.wing
+    nfs = dcf.NF
+    ffs = dcf.FF
+    dvs = dcf.dNF
 
     # Test values
     nf_tests = [0.001189, -0.000228, 0.152203, -0.000242, -0.003486, -8.1e-5]
@@ -110,11 +118,11 @@ end
                 -0.002218 -0.002115  0.008263 -0.003817  0.001079]
 
     # Nearfield coefficients test
-    [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nf_coeffs, nf_tests) ]
+    [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
     # Farfield coefficients test
-    [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ff_coeffs, ff_tests) ]
+    [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
     # Stability derivatives' coefficients test
-    [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dv_coeffs, dv_tests) ]
+    [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
 end
 
 @testset "Vortex Lattice Method - Vanilla Aircraft" begin
@@ -160,19 +168,21 @@ end
                              )
 
     ## Reference quantities
-    ac_name = :aircraft
-    fs      = Freestream(1.0, 1.0, 1.0, zeros(3))
-    refs    = References(area     = projected_area(wing),
+    fs      = Freestream(alpha    = 1.0, 
+                         beta     = 1.0, 
+                         omega    = zeros(3))
+                         
+    refs    = References(speed    = 1.0,
+                         area     = projected_area(wing),
                          span     = span(wing),
                          chord    = mean_aerodynamic_chord(wing),
                          density  = 1.225,
                          location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.])
 
     ## Stability case
-    dv_data = solve_stability_case(aircraft, fs, refs;
-                                   name = ac_name);
+    dv_data = solve_stability_case(aircraft, fs, refs);
 
-    dcf = dv_data[ac_name]
+    dcf = dv_data.aircraft
     nfs = dcf.NF
     ffs = dcf.FF
     dvs = dcf.dNF

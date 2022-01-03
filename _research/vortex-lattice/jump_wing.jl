@@ -2,7 +2,6 @@
 using JuMP
 using Ipopt
 using AeroMDAO
-using ComponentArrays
 # using PlotlyJS
 
 # Wing setup
@@ -10,12 +9,12 @@ using ComponentArrays
 
 ## Helper functions
 function make_wing(x)
-    wing_right = HalfWing(Foil.(naca4((0,0,1,2)) for i = 1:5),
-                          [ x[1:5]... ],
-                          [0., 0., 0., 0., 0.],
-                          [0.2, 0.2, 0.2, 0.2],
-                          [0., 0., 0., 0.],
-                          [ x[6:end]... ])
+    wing_right = HalfWing(foils     = Foil.(naca4((0,0,1,2)) for i = 1:5),
+                          chords    = [ x[1:5]... ],
+                          twists    = [0., 0., 0., 0., 0.],
+                          spans     = [0.2, 0.2, 0.2, 0.2],
+                          dihedrals = [0., 0., 0., 0.],
+                          sweeps    = [ x[6:end]... ])
     Wing(wing_right, wing_right)
 end
 
@@ -41,7 +40,7 @@ evaluate_CDi(wing, V, α, ρ, span_num, chord_num) = run_case(wing, V, α, ρ, s
 function evaluate_cons(wing, V, α, ρ, span_num, chord_num)
     area   = projected_area(wing)
     nf, ff = run_case(wing, V, α, ρ, span_num, chord_num)
-    lift   = dynamic_pressure(ρ, V) * area * nf[5]
+    lift   = dynamic_pressure(ρ, V) * area * nf[3]
 
     lift
 end
@@ -144,24 +143,24 @@ plot(getindex.(bing, 1), getindex.(bing, 2))
 ## NACA-4 optimization
 #============================================#
 
-naca4_design = Model(with_optimizer(Ipopt.Optimizer))
+# naca4_design = Model(with_optimizer(Ipopt.Optimizer))
 
-@variable(naca4_design, 1e-4 <= digits[1:4] <= 1.)
+# @variable(naca4_design, 1e-4 <= digits[1:4] <= 1.)
 
-register(naca4_design, :optimize_cdi_naca4, 4, optimize_cdi_naca4, autodiff = true)
+# register(naca4_design, :optimize_cdi_naca4, 4, optimize_cdi_naca4, autodiff = true)
 
-register(naca4_design, :naca4_lift, 4, naca4_lift, autodiff = true)
+# register(naca4_design, :naca4_lift, 4, naca4_lift, autodiff = true)
 
-@NLobjective(naca4_design, Min, optimize_cdi_naca4(digits...))
-@NLconstraint(naca4_design, naca4_lift(digits...) == 5)
+# @NLobjective(naca4_design, Min, optimize_cdi_naca4(digits...))
+# @NLconstraint(naca4_design, naca4_lift(digits...) == 5)
 
-## Run optimization
-optimize!(naca4_design)
+# ## Run optimization
+# optimize!(naca4_design)
 
-## Print
-println("Digits: $(value.(chords)), Optimal CDi: $(objective_value(naca4_design))")
-digit_vals = value.(digits)
-cdi = optimize_cdi_chords(digit_vals...)
-lifter = lift(digit_vals...)
-println("CDi: $cdi")
-println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, 10.), projected_area(wing)))")
+# ## Print
+# println("Digits: $(value.(chords)), Optimal CDi: $(objective_value(naca4_design))")
+# digit_vals = value.(digits)
+# cdi = optimize_cdi_chords(digit_vals...)
+# lifter = lift(digit_vals...)
+# println("CDi: $cdi")
+# println("CL: $(force_coefficient(lifter, dynamic_pressure(1.225, 10.), projected_area(wing)))")
