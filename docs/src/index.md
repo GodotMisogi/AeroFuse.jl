@@ -1,6 +1,6 @@
 # AeroMDAO
 
-AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics, with aims to develop implementations in other relevant fields such as structures, propulsion, stability, etc.
+AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with aims to develop implementations in other relevant fields such as propulsion and flight dynamics.
 
 ![](https://godot-bloggy.xyz/post/diagrams/AerostructAircraft.svg)
 
@@ -16,7 +16,7 @@ AeroMDAO currently provides basic geometric tools for airfoil processing, and pa
 
 ![](https://godot-bloggy.xyz/post/diagrams/AircraftStream.svg)
 
-**Disclaimer**: The current implementation is a major work-in-progress, and hence the results may not be entirely accurate. Please exercise caution when interpreting the results until validation cases are added.
+**Disclaimer**: The current implementation is a major work-in-progress, and hence the results may not be entirely accurate. It has extensively avoided referring to other implementations for originality. Please exercise caution when interpreting the results until validation cases are added.
 
 ## Installation
 
@@ -25,10 +25,6 @@ julia> using Pkg; Pkg.add("AeroMDAO")
 julia> Pkg.test("AeroMDAO")
 julia> using AeroMDAO
 ```
-
-## Guide
-
-Refer to the [wiki](https://github.com/GodotMisogi/AeroMDAO.jl/wiki) to see how to get started!
 
 ## Citation
 
@@ -39,7 +35,29 @@ If you use AeroMDAO in your research, please cite the following until any releva
   author  = {Arjit Seth, Rhea P. Liem, Stephane Redonnet},
   title   = {AeroMDAO},
   url     = {https://github.com/GodotMisogi/AeroMDAO},
-  version = {0.2.4},
-  date    = {2021-06-19},
+  version = {0.3.0},
+  date    = {2021-01-04},
 }
+```
+
+<!-- ```@meta -->
+## To Do
+
+- [x] Airfoil and wing parametrization
+- [x] Doublet-source panel method in 2D
+- [x] Vortex lattice method
+- [ ] Doublet-source panel method in 3D
+- [o] Boundary layer solvers
+- [x] Stability analysis
+- [x] Performance analyses
+- [x] Beams for structural analyses
+- [o] Optimization problems
+- [o] Update documentation
+<!-- ``` -->
+
+## Contents
+
+```@contents
+Pages = ["aerodynamics.md", "api.md"]
+Depth =  5
 ```
