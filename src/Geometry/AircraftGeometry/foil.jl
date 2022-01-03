@@ -16,8 +16,9 @@ end
 
 coordinates(foil :: Foil) = [ foil.x foil.y ]
 
-Foil(coords, name = "Unnamed") where T <: Real = Foil{T}(getindex.(coords, 1), getindex.(coords, 2), name)
-Foil(coords :: AbstractMatrix{T}, name = "Unnamed") where T <: Real = @views Foil{T}(coords[:,1], coords[:,2], name)
+Foil(xs, ys, name = "Unnamed") = let T = promote_type(eltype(xs), eltype(ys)); Foil{T}(xs, ys, name) end
+Foil(coords :: Vector{<: FieldVector{2,<: Real}}, name = "Unnamed") = Foil(getindex.(coords, 1), getindex.(coords, 2), name)
+Foil(coords :: AbstractMatrix{<: Real}, name = "Unnamed") = @views Foil(coords[:,1], coords[:,2], name)
 
 arc_length(foil :: Foil) = let c = coordinates(foil); @views norm(c[2:end,:] .- c[1:end-1,:]) end
 
