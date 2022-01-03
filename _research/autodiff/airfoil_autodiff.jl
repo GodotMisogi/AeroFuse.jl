@@ -18,10 +18,10 @@ foil = Foil(xi[:,1], xi[:,2])
 len  = arc_length(foil)
 
 ##
-@benchmark ForwardDiff.gradient($(arc_length ∘ Foil), $xi)
+@time ForwardDiff.gradient((arc_length ∘ Foil), xi)
 
 ##
-@benchmark ReverseDiff.gradient($(arc_length ∘ Foil), $xi)
+@time ReverseDiff.gradient((arc_length ∘ Foil), xi)
 
 ##
 Zygote.gradient(arc_length ∘ Foil, xi)
@@ -32,7 +32,7 @@ function optimize_CST(coords)
     airfoil = Foil(coords)
     # airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), (0., 0.), 80)
     uniform = Uniform2D(1.0, 5.0)
-    solve_case(airfoil, uniform, num_panels = size(coords)[1])[1]
+    solve_case(airfoil, uniform, num_panels = size(coords)[1])[2]
 end
 
 alpha_u = fill(0.1, 60)
@@ -43,10 +43,10 @@ foil = Foil(xi)
 optimize_CST(xi)
 
 ## PASSES
-@benchmark ReverseDiff.gradient($optimize_CST, $xi)
+@time ForwardDiff.jacobian(optimize_CST, xi)
 
 ## PASSES
-@benchmark ForwardDiff.gradient($optimize_CST, $xi)
+@time ReverseDiff.jacobian(optimize_CST, xi)
 
 ## FAILS (due to binomial and SVector)
 # @time Zygote.jacobian(optimize_CST, xs)
