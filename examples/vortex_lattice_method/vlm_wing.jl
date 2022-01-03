@@ -13,8 +13,8 @@ x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
 ## Meshing and assembly
-wing_mesh = WingMesh(wing, [12, 3], 6);
-aircraft  = ComponentVector(wing = make_horseshoes(wing_mesh))
+wing_mesh    = WingMesh(wing, [12, 3], 6);
+aircraft     = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
 fs      = Freestream(alpha = 1.0, 
@@ -43,9 +43,21 @@ CFs, CMs = surface_coefficients(system; axes = ax)
 # Ms       = surface_moments(system)
 # Fs, Ms   = surface_dynamics(system; axes = ax) 
 
+## Viscous drag prediction using empirical models
+x_tr        = 0.35
+M           = refs.speed / 330.
+μ           = 1.5e-5
+wing_panels = camber_panels(wing_mesh)
+edge_speeds = surface_velocities(system).wing
+CDv_plate   = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, 330., refs.area, μ)
+CDv_diss    = local_dissipation_drag(wing, panel_area.(wing_panels), refs.density, edge_speeds, x_tr, refs.speed, refs.density, M, μ)
+
 ## Total force coefficients
-nf       = nearfield(system) 
-ff       = farfield(system)
+CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
+CDi_ff, CY_ff, CL_ff = ff = farfield(system)
+
+nf[1] = CDi_nf + CDv_plate
+ff[1] = CDi_ff + CDv_plate
 
 print_coefficients(nf, ff, :wing)
 

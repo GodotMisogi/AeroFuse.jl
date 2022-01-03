@@ -45,7 +45,7 @@ function local_dissipation_drag(wing :: Wing, wetted_areas, ρ_es, u_es, x_tr, V
     mean_chords = (fwdsum ∘ chords)(wing) / 2
 
     # Compute weighted wetted areas based on inviscid edge velocity distribution.
-    weighted_S_wets = sum(x -> x[1] * norm(x[2])^3 * x[3], zip(ρ_es, u_es, wetted_areas), dims = 1) ./ (ρ * V^3)
+    weighted_S_wets = sum(@. ρ_es * norm(u_es)^3 * wetted_areas; dims = 1) ./ (ρ * V^3)
 
     wetted_area_drag(mean_chords, weighted_S_wets, 1., x_tr, V, ρ, M, μ)
 end
