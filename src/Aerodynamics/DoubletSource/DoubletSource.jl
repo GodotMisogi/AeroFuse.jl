@@ -6,7 +6,6 @@ module DoubletSource
 using LinearAlgebra
 using Base.Iterators
 using StaticArrays
-using Statistics
 
 import ..MathTools: rotation, inverse_rotation, midpair_map
 

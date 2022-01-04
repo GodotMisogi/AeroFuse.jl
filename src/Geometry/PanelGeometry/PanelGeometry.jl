@@ -9,7 +9,7 @@ using StaticArrays
 using LinearAlgebra
 using Rotations
 using CoordinateTransformations
-import SplitApplyCombine: combinedimsview
+using SplitApplyCombine
 
 import ..MathTools: affine_2D, rotation, inverse_rotation, structtolist, sine_spacing, cosine_spacing, partition
 

@@ -1,12 +1,11 @@
 module VortexLattice
 
-# using LinearAlgebra
-import LinearAlgebra: norm, normalize, dot, ×
+using LinearAlgebra
 using StaticArrays
 using Rotations
 using ComponentArrays
+using SplitApplyCombine
 using TimerOutputs
-import SplitApplyCombine: combinedimsview
 
 ## Package imports
 #==========================================================================================#

@@ -43,11 +43,11 @@ function solve_stability_case(aircraft, fs :: Freestream, ref :: References; nam
     num_comps = length(names)
 
     y       = zeros(9, num_comps)
-    result  = DiffResults.JacobianResult(y, x)
-    ForwardDiff.jacobian!(result, freestream_derivatives, x)
+    result  = JacobianResult(y, x)
+    jacobian!(result, freestream_derivatives, x)
 
-    vars    = DiffResults.value(result)
-    derivs  = DiffResults.jacobian(result)
+    vars    = value(result)
+    derivs  = jacobian(result)
 
     # Reshaping
     data  = cat(vars, reshape(derivs, 9, num_comps, 5), dims = 3)
@@ -92,10 +92,10 @@ end
 
 #     # Set up Jacobian system and evaluate
 #     y = ifelse(viscous, zeros(13), zeros(9))
-#     result = DiffResults.JacobianResult(y, x)
+#     result = JacobianResult(y, x)
 #     result = ForwardDiff.jacobian!(result, stab, x)
-#     vars   = DiffResults.value(result)
-#     derivs = DiffResults.jacobian(result)
+#     vars   = value(result)
+#     derivs = jacobian(result)
 
 #     # Gather results
 #     nf  = ifelse(viscous, vars[1:8], vars[1:6])       # Nearfield coefficients

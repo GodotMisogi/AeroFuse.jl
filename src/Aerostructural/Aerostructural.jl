@@ -8,7 +8,7 @@ using LinearAlgebra
 using ComponentArrays
 using TimerOutputs
 using SparseArrays
-import SplitApplyCombine: combinedimsview, splitdimsview, filterview
+using SplitApplyCombine
 
 # Structures
 import ..Beams: tube_stiffness_matrix, AbstractBeam, Beam, Tube

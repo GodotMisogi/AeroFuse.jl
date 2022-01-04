@@ -10,7 +10,7 @@ using StaticArrays
 using CoordinateTransformations
 using Rotations
 using LinearAlgebra
-import SplitApplyCombine: combinedimsview
+using SplitApplyCombine
 
 # Math tools
 import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, fwdsum, fwddiv, fwddiff, weighted_vector, vectarray, extend_yz

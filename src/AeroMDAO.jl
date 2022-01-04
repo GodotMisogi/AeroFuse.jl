@@ -5,18 +5,21 @@ module AeroMDAO
 
 using LinearAlgebra
 using StaticArrays
-using CoordinateTransformations, Rotations
-using ForwardDiff, DiffResults
+using CoordinateTransformations
+using Rotations
+using ForwardDiff: jacobian!
+using DiffResults: JacobianResult, jacobian, value
 using PrettyTables
 using StructArrays
 
-import SplitApplyCombine: combinedimsview, combinedims
-
+using SplitApplyCombine: combinedimsview, combinedims
 export combinedimsview, combinedims
 
-using ComponentArrays
+using ComponentArrays: ComponentVector, ComponentArray, valkeys
+export ComponentVector, ComponentArray, valkeys
 
-export ComponentVector, ComponentArray
+## Methods to be extended in submodules
+#==========================================================================================#
 
 function velocity end
 

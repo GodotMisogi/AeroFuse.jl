@@ -83,8 +83,9 @@ refs    = References(speed    = 1.0,
     # Compute dynamics
     ax       = Geometry() # Geometry, Stability(), Body()
     CFs, CMs = surface_coefficients(system; axes = ax)
-    Fs       = surface_forces(system)
-    # Fs, Ms   = surface_dynamics(system; axes = ax) 
+    Fs, Ms   = surface_dynamics(system; axes = ax)
+    # Fs       = surface_forces(system; axes = ax)
+    # vels     = surface_velocities(system)
 
     nfs = nearfield_coefficients(system)
     ffs = farfield_coefficients(system)
