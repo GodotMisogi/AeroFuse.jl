@@ -64,7 +64,7 @@ ff[1] = CDi_ff + CDv_plate
 print_coefficients(nf, ff, :wing)
 
 ## Evaluate case with stability derivatives
-@time dv_data = solve_stability_case(aircraft, fs, refs;
+@time dv_data = solve_case_derivatives(aircraft, fs, refs;
                                       print = true
                                      );
 
