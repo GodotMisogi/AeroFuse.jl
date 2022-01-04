@@ -99,7 +99,7 @@ end
     aircraft = ComponentArray(wing = make_horseshoes(WingMesh(wing, [10], 5, span_spacing = Sine())))
 
     # Evaluate stability case
-    dv_data = solve_stability_case(aircraft, fs, refs)
+    dv_data = solve_case_derivatives(aircraft, fs, refs)
 
     dcf = dv_data.wing
     nfs = dcf.NF
@@ -179,7 +179,7 @@ end
                          location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.])
 
     ## Stability case
-    dv_data = solve_stability_case(aircraft, fs, refs);
+    dv_data = solve_case_derivatives(aircraft, fs, refs);
 
     dcf = dv_data.aircraft
     nfs = dcf.NF

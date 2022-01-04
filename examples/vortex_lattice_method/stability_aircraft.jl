@@ -95,7 +95,7 @@ refs    = References(
                     )
 
 @time dv_data =
-solve_stability_case(aircraft, fs, refs;
+solve_case_derivatives(aircraft, fs, refs;
                      print            = true,    # Prints the results for only the aircraft
                      print_components = true,    # Prints the results for all components
                     );
