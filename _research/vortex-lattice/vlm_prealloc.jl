@@ -73,7 +73,7 @@ end
 """
     panel_velocities!(vec, panels, φs, u)
 
-Compute the panel velocities given the pre-allocated `vec`, an array of `Panel2D`s, their associated doublet strengths ``\\phi``s, and a freestream velocity vector ``u``.
+Compute the panel velocities given the pre-allocated `vec`, an array of `Panel2D`s, their associated doublet strengths ``φ``s, and a freestream velocity vector ``\\vec u``.
 """
 function panel_velocities!(vec, panels, φs, u)
     vec[1] = panel_velocity(φs[2] - φs[1], panel_dist(panels[1], panels[2]), u, panel_tangent(panels[1]))
@@ -87,7 +87,7 @@ end
 """
     lift_coefficient_prealloc(panels, φs, u)
 
-Compute the lift coefficient using pre-allocation, given `Panel2D`s, their associated doublet strengths ``\\phi``s, and a freestream velocity vector ``u``.
+Compute the lift coefficient using pre-allocation, given `Panel2D`s, their associated doublet strengths ``φ``s, and a freestream velocity vector ``u``.
 """
 function lift_coefficient_prealloc(panels, φs, u)
     panel_dists = (zeros ∘ length)(panels)

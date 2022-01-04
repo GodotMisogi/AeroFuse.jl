@@ -52,7 +52,7 @@ lift_coefficient(wake_strength, speed) = 2. * wake_strength / speed
 """
     aerodynamic_coefficients(vels, Δrs, panel_angles, speed, α)
 
-Compute the lift, moment, and pressure coefficients given associated arrays of edge speeds, adjacent collocation point distances, panel angles, the freestream speed, and angle of attack ``\\alpha``.
+Compute the lift, moment, and pressure coefficients given associated arrays of edge speeds, adjacent collocation point distances, panel angles, the freestream speed, and angle of attack ``α``.
 """
 function eval_coefficients(vels, Δrs, xjs, panel_angles, speed, α)
     cps   = @. pressure_coefficient(speed, vels)

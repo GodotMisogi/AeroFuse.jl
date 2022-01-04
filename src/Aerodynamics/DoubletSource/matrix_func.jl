@@ -1,5 +1,5 @@
 """
-doublet_matrix(panels_1, panels_2)
+    doublet_matrix(panels_1, panels_2)
 
 Create the matrix of doublet potential influence coefficients between pairs of panels_1 and panels_2.
 """
@@ -38,7 +38,7 @@ source_matrix(panels_1, panels_2) = [ source_influence(panel_j, panel_i) for (pa
 """
     source_strengths(panels, freestream)
 
-Create the vector of source strengths for the Dirichlet boundary condition ``\\sigma = \\vec U_{\\infty} \\cdot \\hat{n}`` given Panel2Ds and a Uniform2D.
+Create the vector of source strengths for the Dirichlet boundary condition ``σ = \\vec U_{\\infty} \\cdot \\hat{n}`` given Panel2Ds and a Uniform2D.
 """
 source_strengths(panels, u) = dot.(Ref(u), panel_normal.(panels))
 
@@ -61,7 +61,7 @@ end
 """
     solve_strengths(panels, u, sources, bound)
 
-Solve the system of equations ``[AIC][\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` condition given the array of Panel2Ds, a velocity ``\\vec U``, a condition whether to disable source terms (``\\sigma = 0``), and an optional named bound for the length of the wake.
+Solve the system of equations ``[AIC][\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` condition given the array of Panel2Ds, a velocity ``\\vec U``, a condition whether to disable source terms (``σ = 0``), and an optional named bound for the length of the wake.
 """
 function solve_strengths(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     # Wake
@@ -83,7 +83,7 @@ end
 """
     tangential_velocities(panels, φs, u, sources :: Bool)
 
-Compute the tangential velocities and panel distances given the array of `Panel2D`s, their associated doublet strengths ``\\phi``s, the velocity ``u``, and a condition whether to disable source terms (``\\sigma = 0``).
+Compute the tangential velocities and panel distances given the array of `Panel2D`s, their associated doublet strengths ``φ``s, the velocity ``u``, and a condition whether to disable source terms (``σ = 0``).
 """
 function tangential_velocities(panels, φs, u, sources :: Bool)
     # Δrs   = midpair_map(panel_dist, panels)

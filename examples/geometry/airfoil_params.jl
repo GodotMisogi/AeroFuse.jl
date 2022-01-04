@@ -35,14 +35,14 @@ num_dv = 8
 
 # Coordinates fitting
 up, low  = split_foil(coords)
-alpha_u  = coords_to_CST(up, num_dv)
-alpha_l  = coords_to_CST(low, num_dv)
+alpha_u  = coordinates_to_CST(up, num_dv)
+alpha_l  = coordinates_to_CST(low, num_dv)
 cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.))
 
 doublet_source_case(cst_foil, uniform)
 
 ## Camber-thickness fitting
-alphas   = camthick_to_CST(cos_foil, num_dv)
+alphas   = camber_thickness_to_CST(cos_foil, num_dv)
 cam_foil = camber_CST(alphas..., (0., 0.), 0)
 
 doublet_source_case(cam_foil, uniform)

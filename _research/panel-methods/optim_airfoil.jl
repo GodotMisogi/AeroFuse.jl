@@ -85,7 +85,7 @@ println("Camber Cl: $camber_cl")
 
 ## Plot
 camber_test = camber_CST(α_ct0[1:num_cam], α_ct0[num_cam+1:end], 0., 0., 80)
-camthick_test = foil_camthick(camber_test)
+camthick_test = coordinates_to_camber_thickness(camber_test)
 plot(camber_test[:,1], camber_test[:,2],
      label = "Initial Surface", aspectratio = 1)
 # plot(camthick_test[:,1], camthick_test[:,2],
@@ -119,7 +119,7 @@ plot!(camber_opt[:,1], camber_opt[:,2],
 # savefig(surf_fig, "_research/tmp/surface.pdf")
 
 ##
-camthick_opt = foil_camthick(camber_opt)
+camthick_opt = coordinates_to_camber_thickness(camber_opt)
 camthick_fig = plot(aspectratio = 1, dpi = 300)
 plot!(camthick_test[:,1], camthick_test[:,2],
       label = "Initial Camber", aspectratio = 1)

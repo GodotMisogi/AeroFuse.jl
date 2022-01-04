@@ -23,14 +23,14 @@ end
 """
     geometry_to_stability_axes(coords, α)
 
-Convert coordinates into stability axes with angle ``\\alpha``.
+Convert coordinates into stability axes with angle ``α``.
 """
 geometry_to_stability_axes(coords, α :: T) where T <: Real = RotY{T}(α) * coords
 
 """
     geometry_to_stability_axes(coords, α)
 
-Convert coordinates into stability axes with angle ``\\alpha``.
+Convert coordinates into stability axes with angle ``α``.
 """
 stability_to_geometry_axes(coords, α :: T) where T <: Real = RotY{T}(-α) * coords
 
@@ -40,14 +40,14 @@ stability_to_geometry_axes(coords, α :: T) where T <: Real = RotY{T}(-α) * coo
 """
     geometry_to_wind_axes(coords, α, β)
 
-Convert coordinates from body axes to wind axes with angles ``\\alpha,~ \\beta``.
+Convert coordinates from body axes to wind axes for given angles of attack ``α`` and sideslip \\beta.``
 """
 geometry_to_wind_axes(coords, α, β) = rotate_zy(β, α) * coords
 
 """
     geometry_to_wind_axes(coords, α, β)
 
-Convert coordinates from wind axes to body axes with angles ``\\alpha,~ \\beta``.
+Convert coordinates from wind axes to body axes for given angles of attack ``α`` and sideslip \\beta.``
 """
 wind_to_geometry_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(-α, -β) * coords
 
@@ -55,9 +55,9 @@ wind_to_geometry_axes(coords, α :: T, β :: T) where T <: Real = RotZY{T}(-α, 
 #==========================================================================================#
 
 """
-    geometry_to_wind_axes(line, freestream)
+    geometry_to_wind_axes(line :: Line, α, β)
 
-Transform a Line from body to wind axes in a given `Freestream`.
+Transform a Line from body to wind axes for given angles of attack ``α`` and sideslip \\beta.``
 """
 geometry_to_wind_axes(line :: Line, α, β) = Line(geometry_to_wind_axes(r1(line), α, β), geometry_to_wind_axes(r2(line), α, β)) 
 
@@ -68,7 +68,7 @@ geometry_to_wind_axes(line :: Line, α, β) = Line(geometry_to_wind_axes(r1(line
 """
     reflect_xz(vector)
 
-Reflect the y-coordinate of a given 3-dimensional vector about the x-z plane.
+Reflect the ``y``-coordinate of a given 3-dimensional vector about the ``x``-``z`` plane.
 """
 reflect_xz(vector) = SVector(vector[1], -vector[2], vector[3])
 
@@ -94,13 +94,6 @@ Reflect a Horseshoe onto the ``x``-``z`` plane of its reference coordinate syste
 reflect_xz(horseshoe :: Horseshoe) = (Horseshoe ∘ reflect_xz ∘ bound_leg)(horseshoe)
 
 """
-    reflect_yz(panel :: Panel3D)
-
-Reflect a Panel3D onto the ``x``-``z`` plane of its reference coordinate system.
-"""
-reflect_xz(panel :: Panel3D) = Panel3D((reflect_xz ∘ p1)(panel), (reflect_xz ∘ p2)(panel), (reflect_xz ∘ p3)(panel), (reflect_xz ∘ p4)(panel))
-
-"""
     project_yz(line)
 
 Project a Line onto the ``y``-``z`` plane of its reference coordinate system.
@@ -110,6 +103,6 @@ project_yz(line :: Line) = Line((project_yz ∘ p1)(line), (project_yz ∘ p2)(l
 """
     stability_flip(vector)
 
-Reflect the x- and z- coordinates of a given 3-dimensional vector about the y-z and x-y planes respectively.
+Reflect the ``x``- and ``z``- coordinates of a given 3-dimensional vector about the ``y``-``z`` and ``x``-``y`` planes respectively.
 """
 stability_flip(vector) = SVector(-vector[1], vector[2], -vector[3])

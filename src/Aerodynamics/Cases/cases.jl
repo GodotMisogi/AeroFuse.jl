@@ -7,9 +7,9 @@
 Print the relevant geometric characteristics of a `HalfWing` or `Wing`.
 """
 function print_info(wing :: AbstractWing, head = ""; browser = false)
-    labels = [ "Span (m)", "Area (m²)", "MAC (m)", "Aspect Ratio"]
-    wing_info = [ info(wing)... ]
-    data = [ labels wing_info ]
+    labels = [ "Aspect Ratio", "Span (m)", "Area (m²)", "Mean Aerodynamic Chord (m)", "Mean Aerodynamic Center (m)" ]
+    wing_info = properties(wing)
+    data = Any[ labels wing_info ]
     header = [ head, "Value" ]
     h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true)
     if browser
@@ -89,7 +89,7 @@ end
 # """
 #     solve_case(wing :: AbstractWing, freestream :: Freestream, ρ :: Real, r_ref; span_num :: Integer = 5, chord_num :: Integer = 10)
 
-# Evaluate a vortex lattice case given a `Wing` or `HalfWing` with a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments, ``n_s`` span-wise panels and ``n_c`` chord-wise panels.
+# Evaluate a vortex lattice case given a `Wing` or `HalfWing` with a `Freestream`, reference density ``ρ`` and reference point ``r_\\text{ref}`` for moments, ``n_s`` span-wise panels and ``n_c`` chord-wise panels.
 # """
 # function solve_case(wing :: AbstractWing, freestream :: Freestream, refs = References(); mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3, spacing = symmetric_spacing(wing))
 #     # Determine spanwise panel distribution and spacing

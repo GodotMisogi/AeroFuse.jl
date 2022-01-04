@@ -73,7 +73,7 @@ panel_normal(panel :: Panel3D) = let p31 = p3(panel) - p1(panel), p42 = p4(panel
 """
     transform_normal(panel :: Panel3D, h_l, g_l)
 
-Compute the normal ``n_l``, the normal ``n_0`` of a `Panel3D` perturbed by the control gain ``\\delta_l`` about the hinge axis ``h_l``.
+Compute the normal ``n_l``, the normal ``n_0`` of a `Panel3D` perturbed by the control gain ``Δ_l`` about the hinge axis ``h_l``.
 """
 transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, panel_normal(panel))
 
@@ -84,4 +84,16 @@ Compute the (possibly non-planar, hence nonsensical) area of a Panel3D.
 """
 panel_area(panel :: Panel3D) = 1/2 * norm(panel_normal(panel)) # (norm ∘ cross)(average_chord(panel), average_width(panel))
 
+"""
+    panel_area(panels :: Array{Panel3D})
+
+Compute the total wetted area by summing the areas of an array of Panel3D.
+"""
 wetted_area(panels) = sum(panel -> panel_area(panel), panels)
+
+"""
+    reflect_yz(panel :: Panel3D)
+
+Reflect a Panel3D onto the ``x``-``z`` plane of its reference coordinate system.
+"""
+reflect_xz(panel :: Panel3D) = Panel3D((reflect_xz ∘ p1)(panel), (reflect_xz ∘ p2)(panel), (reflect_xz ∘ p3)(panel), (reflect_xz ∘ p4)(panel))

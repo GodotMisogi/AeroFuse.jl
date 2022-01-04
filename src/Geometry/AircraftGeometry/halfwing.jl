@@ -1,15 +1,18 @@
 """
-    HalfWing(foils      :: Vector{Foil},
-             chords     :: Vector{Real},
-             twists     :: Vector{Real},
-             spans      :: Vector{Real},
-             dihedrals  :: Vector{Real},
-             sweeps     :: Vector{Real})
+    HalfWing(; foils :: Vector{Foil}, 
+               chords, 
+               twists, 
+               spans, 
+               dihedrals, 
+               LE_sweeps,
+               position = zeros(3),
+               angle    = 0.
+               axis     = [0.,1.,0.])
 
-Definition for a `HalfWing` consisting of ``N+1`` airfoils and their associated chord lengths ``c``, twist angles ``\\iota``, for ``N`` sections with span lengths ``b``, dihedrals ``\\delta`` and sweep angles ``\\Lambda``, with all angles in degrees.
+Definition for a `HalfWing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and sweep angles ``Λ``, with all angles in degrees.
 """
-struct HalfWing{T, M <: AbstractFoil, N <: AbstractAffineMap} <: AbstractWing
-    foils      :: Vector{M}
+struct HalfWing{T <: Real, F <: AbstractFoil, N <: AbstractAffineMap} <: AbstractWing
+    foils      :: Vector{F}
     chords     :: Vector{T}
     twists     :: Vector{T}
     spans      :: Vector{T}
@@ -19,7 +22,7 @@ struct HalfWing{T, M <: AbstractFoil, N <: AbstractAffineMap} <: AbstractWing
 end
 
 function HalfWing(foils :: Vector{F}, chords, twists, spans, dihedrals, sweeps, position = zeros(3), angle = 0., axis = [0.,1.,0.], affine = AffineMap(AngleAxis(deg2rad(angle), axis...), position)) where F <: AbstractFoil
-    T = promote_type(eltype(foils), eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps))
+    T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps))
     N = typeof(affine)
     # Error handling
     check_wing(foils, chords, twists, spans, dihedrals, sweeps)
@@ -39,7 +42,29 @@ end
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
 HalfWing(; chords, twists, spans, dihedrals, LE_sweeps, foils = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = HalfWing(foils, chords, twists, spans, dihedrals, LE_sweeps, position, angle, axis)
 
-HalfWingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [sweep_LE], position, angle, axis)
+
+"""
+    HalfWingSection(; span, dihedral, LE_sweep, taper, root_chord,
+                      root_twist, tip_twist, root_foil, tip_foil,
+                      position, angle, axis)
+
+Define a `HalfWing` consisting of a single trapezoidal section.
+
+# Arguments
+- `span       :: Real         = 1.`: Span length 
+- `dihedral   :: Real         = 1.`: Dihedral angle (degrees)
+- `LE_sweep   :: Real         = 0.`: Leading-edge sweep angle (degrees)
+- `taper      :: Real         = 1.`: Taper ratio of tip to root chord
+- `root_chord :: Real         = 1.`: Root chord length
+- `root_twist :: Real         = 0.`: Twist angle at root (degrees)
+- `tip_twist  :: Real         = 0.`: Twist angle at tip (degrees)
+- `root_foil  :: Array{Real}  = naca4((0,0,1,2))`: Foil coordinates at root
+- `tip_foil   :: Array{Real}  = naca4((0,0,1,2))`: Foil coordinates at tip
+- `position   :: Vector{Real} = zeros(3)`: Position
+- `angle      :: Real         = 0.`: Angle of rotation (degrees)
+- `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
+"""
+HalfWingSection(; span = 1., dihedral = 0., LE_sweep = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [LE_sweep], position, angle, axis)
 
 # Getters
 foils(wing     :: HalfWing) = wing.foils
@@ -54,20 +79,10 @@ Base.position(wing :: HalfWing) = wing.affine.transformation
 orientation(wing :: HalfWing) = wing.affine.linear
 affine_transformation(wing :: HalfWing) = wing.affine
 
-"""
-    span(half_wing :: HalfWing)
-
-Compute the planform span of a `HalfWing`.
-"""
 span(wing :: HalfWing) = sum(wing.spans)
 
 taper_ratio(wing :: HalfWing) = last(wing.chords) / first(wing.chords)
 
-"""
-    projected_area(half_wing :: HalfWing)
-
-Compute the projected area of a `HalfWing` onto the ``x``-``y`` plane.
-"""
 function projected_area(wing :: HalfWing)
     mean_chords = fwdsum(wing.chords) / 2 # Mean chord lengths of sections.
     mean_twists = fwdsum(wing.twists) / 2 # Mean twist angles of sections
@@ -78,11 +93,6 @@ section_macs(wing :: HalfWing) = @views mean_aerodynamic_chord.(wing.chords[1:en
 
 section_projected_areas(wing :: HalfWing) = wing.spans .* fwdsum(wing.chords) / 2
 
-"""
-    mean_aerodynamic_chord(half_wing :: HalfWing)
-
-Compute the mean aerodynamic chord of a `HalfWing`.
-"""
 function mean_aerodynamic_chord(wing :: HalfWing)
     areas = section_projected_areas(wing)
     macs  = section_macs(wing)

@@ -14,14 +14,14 @@ Freestream(α_deg, β_deg, Ω_x, Ω_y, Ω_z) = Freestream(deg2rad(α_deg), deg2r
 """
     Freestream(U, Ω)
 
-A Freestream flow in Cartesian coordinates with vector ``U`` and quasi-steady rotation vector ``\\Omega``.
+A Freestream flow in Cartesian coordinates with vector ``U`` and quasi-steady rotation vector ``Ω``.
 """
 Freestream(U, Ω) = let (V, α, β) = cartesian_to_freestream(U); Freestream{T}(V, α, β, Ω) end
 
 """
     Freestream(V, α, β, Ω)
     
-A Freestream flow in spherical polar coordinates with magnitude ``V``, angle-of-attack ``α``, side-slip angle ``β``, and a quasi-steady rotation vector ``\\Omega``.
+A Freestream flow in spherical polar coordinates with magnitude ``V``, angle-of-attack ``α``, side-slip angle ``β``, and a quasi-steady rotation vector ``Ω``.
 """
 Freestream(; alpha = 0., beta = 0., omega = zeros(3)) = Freestream(alpha, beta, omega)
 

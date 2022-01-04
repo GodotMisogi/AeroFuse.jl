@@ -63,12 +63,12 @@ md"### Geometric Representations"
 md"You can convert these coordinates into the camber-thickness representation by calling:
 
 ```julia
-foil_camthick(coords, 						# Coordinates
+coordinates_to_camber_thickness(coords, 						# Coordinates
 			  num_points = 60 :: Integer)	# Number of points for distribution
 ```"
 
 # ╔═╡ 75955640-819a-11eb-3cee-57311a500d27
-xcamthick = foil_camthick(airfoil, 60)
+xcamthick = coordinates_to_camber_thickness(airfoil, 60)
 
 # ╔═╡ 759667b0-819a-11eb-3301-07897e9ad255
 md"You can do the inverse by feeding the abscissa, camber, and thickness distributions to:

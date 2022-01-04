@@ -1,3 +1,6 @@
+"""
+An abstract type to define custom spacing distributions.
+"""
 abstract type AbstractSpacing end
 
 struct Cosine  <: AbstractSpacing end

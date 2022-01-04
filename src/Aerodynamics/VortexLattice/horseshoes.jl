@@ -1,14 +1,8 @@
 ## Horseshoe methods
 #==========================================================================================#
 
-"""
-Compute the quarter point between two points in the x-z plane.
-"""
 quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(1/4, 0, 1/4))
 
-"""
-Compute the 3-quarter point between two points in the x-z plane.
-"""
 three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
 
 collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
@@ -33,7 +27,7 @@ abstract type AbstractLine end
 """
     Line(r1 :: SVector{3,<: Real}, r2 :: SVector{3,<: Real})
 
-A composite type consisting of two vectors to define a line.
+Define a line segment based on two 3-dimensional vectors.
 """
 struct Line{T <: Real} <: AbstractLine
     r1 :: SVector{3,T}
@@ -71,7 +65,9 @@ bound_velocity(r, line :: Line, Γ) = bound_leg_velocity(r1(r, line), r2(r, line
 abstract type AbstractVortexArray end
 
 """
-A horseshoe type consisting of a bound leg of type Line represening a vortex line.
+    Horseshoe(bound_leg, collocation_point, normal, chord)
+
+Define a horseshoe vortex based on a bound leg, a collocation point, a normal vector, and a "chord length".
 """
 struct Horseshoe{T <: Real} <: AbstractVortexArray
     bound_leg         :: Line{T}
@@ -95,7 +91,9 @@ r1(r, horseshoe :: Horseshoe) = r1(r, bound_leg(horseshoe))
 r2(r, horseshoe :: Horseshoe) = r2(r, bound_leg(horseshoe))
 
 """
-Create a `Horseshoe` corresponding to a `Panel3D` and normal vector.
+    Horseshoe(panel :: Panel3D, normal, drift = zeros(3))
+
+Generate a `Horseshoe` corresponding to a `Panel3D`, an associated normal vector, and a "drift velocity".
 """
 Horseshoe(panel :: Panel3D, normal, drift = SVector(0., 0., 0.)) =
     Horseshoe(Line(bound_leg(panel)), horseshoe_point(panel) + drift, normal, (norm ∘ average_chord)(panel))
@@ -113,7 +111,7 @@ bound_leg_vector(horseshoe :: Horseshoe) = (vector ∘ bound_leg)(horseshoe)
 """
     velocity(r, horseshoe, Γ, V_hat)
 
-Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``.
+Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``û``.
 """
 function velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat, finite_core = false) 
     if finite_core
@@ -128,7 +126,7 @@ end
 """
     trailing_velocity(r, horseshoe, Γ, V_hat)
 
-Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``\\hat V``, excluding the bound leg contribution.
+Compute the induced velocities at a point ``r`` of a given Horseshoe with constant strength ``Γ`` and trailing legs pointing in a given direction ``û``, excluding the bound leg contribution.
 """
 trailing_velocity(r, horseshoe :: Horseshoe, Γ, V) = trailing_legs_velocities(r1(r, horseshoe), r2(r, horseshoe), Γ, V)
 

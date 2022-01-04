@@ -10,7 +10,9 @@ surface_velocities(hs_comp, horseshoes, Γs, U, Ω) = map(h -> surface_velocity(
 """
     surface_forces(hs_comp, Γ_comp, horseshoes, Γs, U, Ω, ρ)
 
-Compute the surface forces via the local Kutta-Jowkowsky theorem given an array of horseshoes `hs_comp` to compute the forces on a component, their associated vortex strengths `Γ_comp`, the arrays of horseshoes and vortex strengths `Γs`  of the entire aircraft, the freestream flow vector ``U``, rotation rates ``\\Omega``, and a density ``\\rho``. The velocities are evaluated at the midpoint of the bound leg of each horseshoe, excluding the contribution of the bound leg.
+Compute the surface forces via the local Kutta-Jowkowsky theorem.
+ 
+For a given array of vortex type `hs_comp` and their associated vortex strengths ``Γ_c`` for which to compute the forces, the arrays of horseshoes and vortex strengths ``Γ``s  of the entire aircraft, the freestream flow vector ``U``, rotation rates ``Ω``, and a density ``ρ``, the velocities are evaluated at the midpoint of the bound leg of each horseshoe, excluding the contribution of the bound leg.
 """
 surface_forces(hs_comp, Γ_comp, horseshoes, Γs, U, Ω, ρ) = map((h, Γ) -> kutta_joukowsky(ρ, surface_velocity(h, horseshoes, Γs, U, Ω), bound_leg_vector(h), Γ), hs_comp, Γ_comp)
 

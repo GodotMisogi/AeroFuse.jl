@@ -18,6 +18,8 @@ import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacin
 # Panel geometry
 import ..PanelGeometry: Panel2D, Panel3D, panel_area, panel_normal, transform, make_panels
 
+import ..AeroMDAO: properties
+
 ## Types
 #==========================================================================================#
 
@@ -51,8 +53,59 @@ include("wing.jl")
 include("mesh_tools.jl")
 include("mesh_wing.jl")
 
+
+
+"""
+    span(wing :: AbstractWing)
+
+Compute the planform span of an `AbstractWing`.
+"""
+span(wing :: AbstractWing) = span(wing)
+
+"""
+    projected_area(wing :: AbstractWing)
+
+Compute the projected area of an `AbstractWing`` by summing the trapezoidal areas.
+"""
+projected_area(wing :: AbstractWing) = projected_area(wing)
+
+
+"""
+    mean_aerodynamic_chord(wing :: AbstractWing)
+
+Compute the mean aerodynamic chord of an `AbstractWing`.
+"""
+mean_aerodynamic_chord(wing :: AbstractWing) = mean_aerodynamic_chord(wing)
+
+"""
+    mean_aerodynamic_chord(wing :: AbstractWing)
+
+Compute the coordinates of the mean aerodynamic center of an `AbstractWing`.
+"""
+mean_aerodynamic_center(wing :: AbstractWing) = mean_aerodynamic_center(wing)
+
+"""
+    aspect_ratio(wing :: AbstractWing)
+
+Compute the aspect ratio of an `AbstractWing`.
+"""
 aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
 
-info(wing :: AbstractWing) = [ span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing) ]
+"""
+    properties(wing :: AbstractWing)
+
+Compute the generic properties of interest (span, area, etc.) of an `AbstractWing`.
+"""
+properties(wing :: AbstractWing) = [ span(wing), projected_area(wing), aspect_ratio(wing), mean_aerodynamic_chord(wing), mean_aerodynamic_center(wing) ]
+
+function Base.show(io :: IO, wing :: AbstractWing)
+    AR, b, S, c, mac = properties(wing)
+    println("$(typeof(wing))")
+    println("Aspect Ratio: $AR")
+    println("Span (m): $b")
+    println("Projected Area (m): $S")
+    println("Mean Aerodynamic Chord (m): $c")
+    println("Mean Aerodynamic Center (m): $mac")
+end
 
 end

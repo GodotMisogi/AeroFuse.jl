@@ -1,7 +1,27 @@
 """
-    Wing(left :: HalfWing, right :: HalfWing)
+    Wing(; foils, chords, twists, 
+           spans, dihedrals, LE_sweeps,
+           position, angle, axis)
 
-A composite type consisting of two `HalfWing`s with fields `left` and `right` for constructing a wing.
+    Wing(left :: HalfWing, right :: HalfWing)
+    Wing(half :: HalfWing)
+
+
+A composite type consisting of fields `left` and `right`, each a `HalfWing` for constructing a wing.
+
+A single argument generates a symmetric `Wing`.
+
+# Arguments
+- `foils :: Vector{Foil}`
+- `chords`
+- `twists`
+- `spans`
+- `dihedrals`
+- `LE_sweeps `
+- `position = zeros(3) `
+- `angle    = 0 `
+- `axis     = [0.,1.,0.] `
+
 """
 struct Wing{M <: AbstractWing} <: AbstractWing
     left  :: M
@@ -14,7 +34,7 @@ end
 #     Wing{T}(left, right)
 # end
 
-Wing(bing :: HalfWing) = Wing(bing, bing)
+Wing(bing :: HalfWing)  = Wing(bing, bing)
 
 left(wing :: Wing)      = wing.left
 right(wing :: Wing)     = wing.right
@@ -33,30 +53,35 @@ affine_transformation(wing :: Wing) = affine_transformation(right(wing))
 # Symmetric wing
 Wing(; chords, twists, spans, dihedrals, LE_sweeps, foils = fill(Foil(naca4((0,0,1,2))), length(chords)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = let w = HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, LE_sweeps = LE_sweeps, position = position, angle = angle, axis = axis); Wing(w, w) end
 
-# Single section for convenience
-WingSection(; span = 1., dihedral = 0., sweep_LE = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = let w = HalfWingSection(span = span / 2, dihedral = dihedral, sweep_LE = sweep_LE, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis); Wing(w, w) end
-
 """
-    span(wing :: Wing)
+    WingSection(; span, dihedral, LE_sweep, taper, root_chord,
+                  root_twist, tip_twist, root_foil, tip_foil,
+                  position, angle, axis)
 
-Compute the span of a `Wing`.
+Define a `Wing` consisting of two trapezoidal sections with one plane of symmetry.
+
+# Arguments
+- `span       :: Real         = 1.`: Span length 
+- `dihedral   :: Real         = 1.`: Dihedral angle (degrees)
+- `LE_sweep   :: Real         = 0.`: Leading-edge sweep angle (degrees)
+- `taper      :: Real         = 1.`: Taper ratio of tip to root chord
+- `root_chord :: Real         = 1.`: Root chord length
+- `root_twist :: Real         = 0.`: Twist angle at root (degrees)
+- `tip_twist  :: Real         = 0.`: Twist angle at tip (degrees)
+- `root_foil  :: Array{Real}  = naca4((0,0,1,2))`: Foil coordinates at root
+- `tip_foil   :: Array{Real}  = naca4((0,0,1,2))`: Foil coordinates at tip
+- `position   :: Vector{Real} = zeros(3)`: Position
+- `angle      :: Real         = 0.`: Angle of rotation (degrees)
+- `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
+WingSection(; span = 1., dihedral = 0., LE_sweep = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = let w = HalfWingSection(span = span / 2, dihedral = dihedral, LE_sweep = LE_sweep, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis); Wing(w, w) end
+
 span(wing :: Wing) = (span ∘ left)(wing) + (span ∘ right)(wing)
 
 taper_ratio(wing :: Wing) = (taper_ratio ∘ left)(wing), (taper_ratio ∘ right)(wing)
 
-"""
-    projected_area(wing :: Wing)
-
-Compute the projected_area of a `Wing`.
-"""
 projected_area(wing :: Wing) = (projected_area ∘ left)(wing) + (projected_area ∘ right)(wing)
 
-"""
-    mean_aerodynamic_chord(wing :: Wing)
-
-Compute the mean aerodynamic chord of a `Wing`.
-"""
 mean_aerodynamic_chord(wing :: Wing) = ((mean_aerodynamic_chord ∘ left)(wing) + (mean_aerodynamic_chord ∘ right)(wing)) / 2
 
 """

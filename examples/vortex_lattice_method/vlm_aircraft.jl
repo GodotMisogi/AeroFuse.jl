@@ -60,7 +60,6 @@ aircraft = ComponentArray(
                          );
 
 ## Case
-ac_name = :aircraft
 fs      = Freestream(alpha = 0.0, 
                      beta  = 0.0, 
                      omega = [0., 0., 0.]);

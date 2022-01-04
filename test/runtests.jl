@@ -32,8 +32,8 @@ end
 
     # Convert coordinates to Kulfan CST variables
     num_dv   = 4
-    alpha_u = coords_to_CST(up, num_dv)
-    alpha_l = coords_to_CST(low, num_dv)
+    alpha_u = coordinates_to_CST(up, num_dv)
+    alpha_l = coordinates_to_CST(low, num_dv)
 
     # Generate same airfoil using Kulfan CST parametrisation
     cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.))
@@ -66,9 +66,12 @@ end
                           LE_sweeps = [5., 5.]);
 
     # Get wing info
-    b, S, c, AR = info(wing_right)
-    λ           = taper_ratio(wing_right)
-    wing_mac    = mean_aerodynamic_center(wing_right)
+    b        = span(wing_right)
+    S        = projected_area(wing_right)
+    c        = mean_aerodynamic_chord(wing_right)
+    AR       = aspect_ratio(wing_right)
+    λ        = taper_ratio(wing_right)
+    wing_mac = mean_aerodynamic_center(wing_right)
 
     @test b        ≈ 5.50000000                    atol = 1e-6
     @test S        ≈ 4.19939047                    atol = 1e-6

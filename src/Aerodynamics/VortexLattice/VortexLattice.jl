@@ -46,7 +46,7 @@ include("residuals.jl")
 """
     solve_linear(horseshoes, normals, U, Ω) 
 
-Evaluate and return the vortex strengths ``\\Gamma``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``\\Omega``.
+Evaluate and return the vortex strengths ``Γ``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``Ω``.
 """
 function solve_linear(horseshoes, U, Ω, finite_core = false)
     AIC  = influence_matrix(horseshoes, -normalize(U), finite_core)

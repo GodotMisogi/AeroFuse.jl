@@ -1,4 +1,4 @@
-# AeroMDAO
+# AeroMDAO -- Aircraft Design Platform
 
 AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with aims to develop implementations in other relevant fields such as propulsion and flight dynamics.
 
@@ -40,20 +40,20 @@ If you use AeroMDAO in your research, please cite the following until any releva
 }
 ```
 
-<!-- ```@meta -->
 ## To Do
 
-- [x] Airfoil and wing parametrization
-- [x] Doublet-source panel method in 2D
-- [x] Vortex lattice method
+- [×] Airfoil and wing parametrization
+- [×] Doublet-source panel method in 2D
+- [×] Vortex lattice method
+- [×] Stability analysis
+- [•] Performance analyses
+- [•] Boundary layer solvers
 - [ ] Doublet-source panel method in 3D
-- [o] Boundary layer solvers
-- [x] Stability analysis
-- [x] Performance analyses
-- [x] Beams for structural analyses
-- [o] Optimization problems
-- [o] Update documentation
-<!-- ``` -->
+- [×] Beams for structural analyses
+- [•] Aerostructural analyses
+- [•] Flight dynamics engine
+- [•] Optimization problems
+- [•] Update documentation
 
 ## Contents
 

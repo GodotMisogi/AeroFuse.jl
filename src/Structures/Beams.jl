@@ -27,7 +27,7 @@ end
 """
     Material(E, J, σ_max, ρ)
 
-Define a `Material` with positive, real elastic modulus ``E``, shear modulus ``G``, yield stress ``\\sigma_\\max``, and density ``\\rho``.
+Define a `Material` with positive, real elastic modulus ``E``, shear modulus ``G``, yield stress ``σ_\\max``, and density ``ρ``.
 """
 function Material(E :: T, G :: T, σ_max :: T, ρ :: T) where T <: Real
     @assert E > 0. && G > 0. && σ_max > 0. && ρ > 0. "All quantities must be positive."

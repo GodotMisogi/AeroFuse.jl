@@ -4,7 +4,7 @@
 """
     influence_coefficient(r, horseshoe, normal, V_hat, symmetry)
 
-Compute the influence coefficient of the velocity of a Horseshoe with trailing lines in a given direction ``\\hat V`` at a point ``r`` projected to a normal vector.
+Compute the influence coefficient of the velocity of a Horseshoe with trailing lines in a given direction ``û`` at a point ``r`` projected to a normal vector.
 """
 influence_coefficient(horseshoe :: Horseshoe, horseshoe_j, V_hat, finite_core = false) = dot(velocity(horseshoe_point(horseshoe_j), horseshoe, 1., V_hat, finite_core), horseshoe_normal(horseshoe_j))
 

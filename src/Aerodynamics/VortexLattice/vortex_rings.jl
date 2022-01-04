@@ -1,7 +1,9 @@
 """
-A vortex ring type consisting of vortex lines. TODO: Consider if better fields are "bound_vortices" and "trailing_vortices"
+    VortexRing{T <: Real}(left_leg, bound_leg, back_leg, right_leg)
+
+A vortex ring type consisting of four finite vortex line filaments connected in a loop.
 """
-struct VortexRing{T} <: AbstractVortexArray
+struct VortexRing{T <: Real} <: AbstractVortexArray
     left_leg  :: Line{T}
     bound_leg :: Line{T}
     back_leg  :: Line{T}
@@ -31,9 +33,9 @@ Constructor for vortex rings on a Panel3D using Lines. The following convention 
 ```
     p1 —bound_leg→ p4
     |               |
-left_line       right_line
+left_leg       right_leg
     ↓               ↓
-    p2 —back_line→ p3
+    p2 —back_leg→ p3
 ```
 """
 function VortexRing(panel :: Panel3D{T}) where T <: Real
@@ -50,11 +52,13 @@ end
 Base.length(::VortexRing) = 1
 
 """
-Sums the velocities evaluated at a point `r` of vortex lines with constant strength Γ.
+    sum_vortices(r, vortex_lines :: Array{Line}, Γ)
+
+Sums the velocities evaluated at a point ``r`` of Lines with constant strength ``Γ``.
 """
 sum_vortices(r, vortex_lines :: Array{<: Line}, Γ) = sum(line -> bound_velocity(r, line, Γ), vortex_lines)
 
 """
-Computes the induced velocities at a point `r` of a Vortex Ring with constant strength Γ.
+Computes the induced velocities at a point ``r`` of a VortexRing with constant strength ``Γ``.
 """
 velocity(r, vortex_ring :: VortexRing, Γ) = sum_vortices(r, structtolist(vortex_ring), Γ)
