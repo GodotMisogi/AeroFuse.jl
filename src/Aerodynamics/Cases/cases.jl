@@ -24,15 +24,25 @@ function solve_case(components, freestream :: Freestream, refs :: References; na
 
     # Printing if needed
     if print_components
-        nf_c = nearfield_coefficients(system)
-        ff_c = farfield_coefficients(system) 
-        print_coefficients(nearfield(system), farfield(system), name)
-        [ print_coefficients(nf_c[key], ff_c[key], key) for key in keys(components) ]
+        print_coefficients(system, name, components = true)
     elseif print
-        print_coefficients(nearfield(system), farfield(system), name)
+        print_coefficients(system, name)
     end
 
     system
+end
+
+function print_coefficients(system :: VLMSystem, name = :aircraft; components = false)
+    if components 
+        nf_c = nearfield_coefficients(system)
+        ff_c = farfield_coefficients(system) 
+        print_coefficients(nearfield(system), farfield(system), name)
+        [ print_coefficients(nf_c[key], ff_c[key], key) for key in keys(system.vortices) ]
+    else
+        print_coefficients(nearfield(system), farfield(system), name)
+    end
+
+    nothing
 end
 
 ## Placeholder for functions I'm not sure where to put
