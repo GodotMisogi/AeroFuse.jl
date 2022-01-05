@@ -65,11 +65,11 @@ fs      = Freestream(alpha = 0.0,
                      omega = [0., 0., 0.]);
 
 refs    = References(speed    = 1.0, 
+                     density  = 1.225,
                      area     = projected_area(wing),
                      span     = span(wing),
                      chord    = mean_aerodynamic_chord(wing),
-                     density  = 1.225,
-                     location = [ x_w, 0., 0.])
+                     location = mean_aerodynamic_center(wing))
 
 ##
 @time begin 

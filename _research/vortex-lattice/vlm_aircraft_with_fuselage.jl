@@ -12,7 +12,7 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
             LE_sweeps = [5., 30.]);
 
 # Horizontal tail
-htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
              spans     = [1.25],
@@ -23,7 +23,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+vtail = HalfWing(foils     = Foil.(fill(naca4(0,0,0,9), 2)),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
@@ -38,76 +38,58 @@ print_info(wing, "Wing")
 print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
-## Assembly
-wing_panels, wing_normals  = panel_wing(wing,                 # Wing or HalfWing type
-                                        [20, 3],              # Number of spanwise panels for half-wing
-                                        10;                   # Chordwise panels
-                                        # spacing = "cosine"  # Spacing distribution: Default works well for symmetric
-                                       )
-
-htail_panels, htail_normals = panel_wing(htail, [6], 6;
-                                         spacing  = Uniform()
-                                        )
-
-vtail_panels, vtail_normals = panel_wing(vtail, [6], 5;
-                                         spacing  = Uniform()
-                                        )
-
-wing_horses  = Horseshoe.(wing_panels,  wing_normals)
-htail_horses = Horseshoe.(htail_panels, htail_normals)
-vtail_horses = Horseshoe.(vtail_panels, vtail_normals)
-
-aircraft_panels = ComponentArray(
-                                 wing  = wing_panels,
-                                 htail = htail_panels,
-                                 vtail = vtail_panels
-                                )
+## WingMesh type
+wing_mesh  = WingMesh(wing, [12, 4], 6, 
+                      span_spacing = Cosine()
+                     )
+htail_mesh = WingMesh(htail, [12], 6, 
+                      span_spacing = Cosine()
+                     )
+vtail_mesh = WingMesh(vtail, [12], 6, 
+                      span_spacing = Cosine()
+                     )
 
 aircraft = ComponentArray(
-                          wing  = wing_horses,
-                          htail = htail_horses,
-                          vtail = vtail_horses
-                         )
-
-wing_mac = mean_aerodynamic_center(wing)
-x_w      = wing_mac[1]
+                          wing  = make_horseshoes(wing_mesh),
+                          htail = make_horseshoes(htail_mesh),
+                          vtail = make_horseshoes(vtail_mesh)
+                         );
 
 ## Case
-ac_name = "My Aircraft"
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
-ρ       = 1.225
-ref     = [ x_w, 0., 0.]
-V, α, β = 1.0, 5.0, 5.0
-Ω       = [0.0, 0.0, 0.0]
-fs      = Freestream(V, α, β, Ω)
+fs      = Freestream(alpha = 0.0, 
+                     beta  = 0.0, 
+                     omega = [0., 0., 0.]);
 
-@time data =
-    solve_case(aircraft, fs;
-               rho_ref     = ρ,         # Reference density
-               r_ref       = ref,       # Reference point for moments
-               area_ref    = S,         # Reference area
-               span_ref    = b,         # Reference span
-               chord_ref   = c,         # Reference chord
-               name        = ac_name,   # Aircraft name
-               print       = true,      # Prints the results for the entire aircraft
-               print_components = true, # Prints the results for each component
-              );
+refs    = References(speed    = 1.0, 
+                     density  = 1.225,
+                     area     = projected_area(wing),
+                     span     = span(wing),
+                     chord    = mean_aerodynamic_chord(wing),
+                     location = mean_aerodynamic_center(wing))
 
-## Data collection
-comp_names = (collect ∘ keys)(data) # Gets aircraft component names from analysis
-comp  = comp_names[1]               # Pick your component
-nf_coeffs, ff_coeffs, CFs, CMs, Γs = data[comp]; #  Get the nearfield, farfield, force and moment coefficients, and other data for post-processing
-print_coefficients(nf_coeffs, ff_coeffs, comp)
+##
+@time begin 
+    system = solve_case(aircraft, fs, refs;
+                        print            = true, # Prints the results for only the aircraft
+                        print_components = true, # Prints the results for all components
+                      #   finite_core      = true
+                       );
+
+    # Compute dynamics
+    ax       = Geometry() # Geometry, Stability(), Body()
+    CFs, CMs = surface_coefficients(system; axes = ax)
+    Fs, Ms   = surface_dynamics(system; axes = ax)
+    # Fs       = surface_forces(system; axes = ax)
+    # vels     = surface_velocities(system)
+
+    nfs = nearfield_coefficients(system)
+    ffs = farfield_coefficients(system)
+
+    nf  = nearfield(system) 
+    ff  = farfield(system)
+end;
 
 ## Streamlines
-
-# Chordwise distribution
-# using StaticArrays
-
-# num_points = 100
-# max_z = 2
-# y = span(wing) / 10
-# seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
 
 # Spanwise distribution
 span_points = 10
@@ -116,9 +98,9 @@ dx, dy, dz  = 0, 0, 1e-3
 seed        = [ init .+ Ref([dx, dy, dz]) ;
                 init .+ Ref([dx, dy,-dz]) ];
 
-distance = 8
-num_stream_points = 200
-streams = streamlines(fs, seed, horses, Γs, distance, num_stream_points);
+distance = 5
+num_stream_points = 100
+streams = streamlines(system, seed, distance, num_stream_points);
 
 ## Fuselage definition
 lens = [0.0, 0.05,0.02,  0.3, 0.6, 0.8, 1.0]
@@ -140,14 +122,17 @@ gr(size = (1280, 720), dpi = 300)
 # plotlyjs(dpi = 150)
 
 ##
+aircraft_panels   = ComponentArray(wing  = chord_panels(wing_mesh),
+                                   htail = chord_panels(htail_mesh),
+                                   vtail = chord_panels(vtail_mesh))
 panel_coordinates = plot_panels(aircraft_panels)
-horseshoe_points = Tuple.(horseshoe_point.(aircraft_panels))[:];
+horseshoe_points  = Tuple.(horseshoe_point.(aircraft_panels))[:];
 
 wing_coords  = plot_wing(wing)
 htail_coords = plot_wing(htail)
 vtail_coords = plot_wing(vtail)
 
-z_limit = b
+z_limit = span(wing)
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      camera = (30, 60),
     #  xlim = (-z_limit/2, z_limit/2),
@@ -160,7 +145,7 @@ plot!(wing_coords, label = "Wing")
 plot!(htail_coords, label = "Horizontal Tail")
 plot!(vtail_coords, label = "Vertical Tail")
 # scatter!(horseshoe_points, marker = 1, color = :black, label = :none)
-plot!.(streams, color = :green, label = :none)
+[ plot!(Tuple.(stream), color = :green, label = :none) for stream in eachcol(streams) ]
 plot!()
 
 [ plot!(circ[:,1], circ[:,2], circ[:,3], color = :gray, label = :none) for circ in circs ] 
