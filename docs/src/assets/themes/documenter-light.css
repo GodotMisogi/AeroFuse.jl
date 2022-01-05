@@ -7429,7 +7429,7 @@ li.no-marker {
   display: flex;
   flex-direction: column;
   color: #ffffff;
-  background-color: #2a5398;
+  background-color: #4371a7;
   border-right: 1px solid #dbdbdb;
   padding: 0;
   flex: 0 0 18rem;
@@ -7518,10 +7518,10 @@ li.no-marker {
       padding: 0.5rem 0.5rem; }
       #documenter .docs-sidebar ul.docs-menu .tocitem, #documenter .docs-sidebar ul.docs-menu .tocitem:hover {
         color: #ffffff;
-        background: #2a5398; }
+        background: #4371a7; }
     #documenter .docs-sidebar ul.docs-menu a.tocitem:hover, #documenter .docs-sidebar ul.docs-menu label.tocitem:hover {
       color: #ffffff;
-      background-color: #1d3968; }
+      background-color: #31537b; }
     #documenter .docs-sidebar ul.docs-menu li.is-active {
       border-top: 1px solid #dbdbdb;
       border-bottom: 1px solid #dbdbdb;
@@ -7530,7 +7530,7 @@ li.no-marker {
         background-color: #ffffff;
         color: #202020; }
       #documenter .docs-sidebar ul.docs-menu li.is-active ul.internal .tocitem:hover {
-        background-color: #aec4e9;
+        background-color: #d1deed;
         color: #202020; }
     #documenter .docs-sidebar ul.docs-menu > li.is-active:first-child {
       border-top: none; }
@@ -7563,9 +7563,9 @@ li.no-marker {
         background: none; }
       #documenter .docs-sidebar ul.docs-menu::-webkit-scrollbar-thumb {
         border-radius: 5px 0px 0px 5px;
-        background: #214278; }
+        background: #375d8a; }
       #documenter .docs-sidebar ul.docs-menu::-webkit-scrollbar-thumb:hover {
-        background: #183058; } }
+        background: #2c4a6d; } }
   @media screen and (max-width: 1055px) {
     #documenter .docs-sidebar {
       overflow-y: auto;
@@ -7575,9 +7575,9 @@ li.no-marker {
         background: none; }
       #documenter .docs-sidebar::-webkit-scrollbar-thumb {
         border-radius: 5px 0px 0px 5px;
-        background: #214278; }
+        background: #375d8a; }
       #documenter .docs-sidebar::-webkit-scrollbar-thumb:hover {
-        background: #183058; } }
+        background: #2c4a6d; } }
 
 #documenter .docs-main #documenter-search-info {
   margin-bottom: 1rem; }
@@ -7821,8 +7821,8 @@ code.hljs {
   box-shadow: 0.24rem 0rem 0.4rem #bbb; }
   #documenter .docs-sidebar form.docs-search > input {
     color: #ffffff;
-    background-color: #214278;
-    border-color: #183058;
+    background-color: #375d8a;
+    border-color: #2c4a6d;
     margin-top: 1.0rem;
     margin-bottom: 1.0rem; }
     #documenter .docs-sidebar form.docs-search > input::placeholder {

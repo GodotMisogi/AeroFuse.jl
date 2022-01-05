@@ -6,7 +6,7 @@ $boldcolor: $maincolor; // darken-color($maincolor, 1);
 $body-background-color: $mainwhite; // main page background
 
 // Sidebar
-$documenter-sidebar-background: $maincolor; //background color for sidebar
+$documenter-sidebar-background: $sidebarcolor; //background color for sidebar
 $documenter-sidebar-color: $mainwhite; //font color all sidebar
 $documenter-sidebar-menu-hover-color: $documenter-sidebar-color; // text color
 $documenter-sidebar-menu-hover-background: darken-color($documenter-sidebar-background, 1.5);

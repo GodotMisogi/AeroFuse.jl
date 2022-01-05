@@ -1,6 +1,6 @@
 # AeroMDAO -- Aircraft Design Platform
 
-AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with aims to develop implementations in other relevant fields such as propulsion and flight dynamics.
+AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
 
 ![](https://godot-bloggy.xyz/post/diagrams/AerostructAircraft.svg)
 
@@ -14,7 +14,7 @@ AeroMDAO currently provides basic geometric tools for airfoil processing, and pa
 
 ![](../../plots/VortexLattice.svg)
 
-**Disclaimer**: The current implementation is a major work-in-progress, and hence the results may not be entirely accurate. It has extensively avoided referring to other implementations for originality. Please exercise caution when interpreting the results until validation cases are added.
+**Disclaimer**: The current implementation is a major work-in-progress, and hence the results may not be entirely accurate. Please exercise caution when interpreting the results until validation cases are added.
 
 ## Installation
 
