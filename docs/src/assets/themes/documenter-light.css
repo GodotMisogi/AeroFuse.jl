@@ -316,7 +316,7 @@ code,
 pre {
   -moz-osx-font-smoothing: auto;
   -webkit-font-smoothing: auto;
-  font-family: "Source Code Pro", monospace; }
+  font-family: "Fira Code", monospace; }
 
 body {
   color: #202020;
@@ -334,7 +334,7 @@ a {
     color: #884013; }
 
 code {
-  background-color: #e7eef8;
+  background-color: rgba(1, 0, 0, 0.05);
   color: #000000;
   font-size: 0.875em;
   font-weight: normal;
@@ -371,7 +371,7 @@ fieldset {
 
 pre {
   -webkit-overflow-scrolling: touch;
-  background-color: #e7eef8;
+  background-color: rgba(1, 0, 0, 0.05);
   color: #202020;
   font-size: 0.875em;
   overflow-x: auto;
@@ -862,10 +862,10 @@ a.has-text-danger:hover, a.has-text-danger:focus {
   font-family: "Montserrat", sans-serif !important; }
 
 .is-family-monospace {
-  font-family: "Source Code Pro", monospace !important; }
+  font-family: "Fira Code", monospace !important; }
 
 .is-family-code {
-  font-family: "Source Code Pro", monospace !important; }
+  font-family: "Fira Code", monospace !important; }
 
 .is-block {
   display: block !important; }
@@ -7197,9 +7197,9 @@ h1:hover .docs-heading-anchor-permalink, h2:hover .docs-heading-anchor-permalink
   color: #202020;
   padding: 1em 1.25em; }
   .admonition-body pre {
-    background-color: #e7eef8; }
+    background-color: rgba(1, 0, 0, 0.05); }
   .admonition-body code {
-    background-color: #e7eef8; }
+    background-color: rgba(1, 0, 0, 0.05); }
 
 .docstring {
   margin-bottom: 1em;

@@ -24,7 +24,7 @@ $darkbg: #1b1f28;      // dark theme main page background
 //         ],
 //     ),
 $family-sans-serif: 'Montserrat', sans-serif;
-$family-monospace: 'Source Code Pro', monospace;
+$family-monospace: 'Fira Code', monospace;
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
@@ -76,8 +76,8 @@ $text-strong: $boldcolor;
 
 // Code text color:
 $code: #000000;
-//$code-background: 
-$codebg: rgba(0.5,0,0, 0.05); // lighten-color($maincolor, 7);
+//$code-background: rgba(0.5,0,0, 0.05);
+$codebg: rgba(0.5,0,0, 0.05); // lighten-color($maincolor, 8);
 // $codebg: lighten-color($secondcolor, 8);
 $code-background: $codebg; // for inline code
 $pre-background: $codebg;  // for code blocks

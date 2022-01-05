@@ -124,7 +124,9 @@ c  = mean_aerodynamic_chord(wing)
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 ```
 
-#### Convenience Methods
+#### Additional Methods
+
+Wings with single sections can be defined with the following constructors and keywords.
 
 ```julia
 HalfWingSection(; span, dihedral, LE_sweep, taper, root_chord,
@@ -146,7 +148,7 @@ WingSection(; span, dihedral, LE_sweep, taper, root_chord,
 - `root_foil  :: Array{Real}  = naca4((0,0,1,2))`: Foil coordinates at root
 - `tip_foil   :: Array{Real}  = naca4((0,0,1,2))`: Foil coordinates at tip
 - `position   :: Vector{Real} = zeros(3)`: Position
-- `angle      :: Real         = 0.`: Angle of rotation
+- `angle      :: Real         = 0.`: Angle of rotation (degrees)
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 
 ### Example

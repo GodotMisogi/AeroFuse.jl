@@ -113,7 +113,7 @@ WingMesh(wing      :: AbstractWing,     # Wing type
 
 ```julia
 wing_mesh = WingMesh(wing, [12, 3], 6);
-wing_mesh.cam_mesh
+wing_mesh.camber_mesh
 ```
 
 ### Aircraft Definition

@@ -2,11 +2,6 @@
 
 The theory described is meant to be minimal, with mainly the equations presented for reference when reading the code.
 
-### References
-
-1. Mark Drela. _Flight Vehicle Aerodynamics_. MIT Press, 2014.
-2. Joseph Katz and Allen Plotkin. _Low-Speed Aerodynamics, Second Edition_. Cambridge University Press, 2001.
-
 ## Aerodynamics
 
 The aerodynamic analyses in AeroMDAO mainly utilize potential flow theory and solve problems using a _boundary element method_. This essentially is the following Laplace equation problem with a Neumann boundary condition:
@@ -104,3 +99,8 @@ A standard six degrees-of-freedom rigid body model is used for performing flight
 ```math
 
 ```
+
+## References
+
+1. Mark Drela. _Flight Vehicle Aerodynamics_. MIT Press, 2014.
+2. Joseph Katz and Allen Plotkin. _Low-Speed Aerodynamics, Second Edition_. Cambridge University Press, 2001.

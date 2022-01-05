@@ -1,3 +1,36 @@
-# Structural Analyses
+# Structures
 
-## Beams
+```@setup aeromdao
+using AeroMDAO
+using StaticArrays
+using Plots
+using LaTeXStrings
+gr()
+```
+
+## Euler-Bernoulli Beam Model
+
+### Example
+
+```@example aeromdao
+# Deflection stiffness matrix
+K = bending_stiffness_matrix([1., 1.], [1., 1.], [2., 2.], :z)
+
+## 1. Fixed hinged beam subjected to force and moment at the center
+A = K[[3,4,6],[3,4,6]]  # v2, φ2, φ3
+b = [-1000, 1000, 0]    # F2, M2, M3
+
+x = A \ b
+
+## Forces
+F1 = K * [ 0.; 0.; x[1:2]; 0.; x[3] ]
+
+## 2. Propped cantilever beam with force at one end
+A = K[[1,2,4],[1,2,4]] # v1, φ1, φ2
+b = [10, 0, 0]
+
+x = A \ b
+
+## Forces
+F2 = K * [ x[1:2]; 0.; x[3]; 0.; 0. ]
+```
