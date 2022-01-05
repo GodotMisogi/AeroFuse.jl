@@ -17,7 +17,9 @@ end
 ## Material definition
 #==========================================================================================#
 
-struct Material{T}
+abstract type AbstractMaterial end
+
+struct Material{T} <: AbstractMaterial
     elastic_modulus :: T
     shear_modulus   :: T
     yield_stress    :: T
@@ -26,10 +28,20 @@ end
 
 """
     Material(E, J, σ_max, ρ)
+    Material(; elastic_modulus, shear_modulus, yield_stress, density) 
 
-Define a `Material` with positive, real elastic modulus ``E``, shear modulus ``G``, yield stress ``σ_\\max``, and density ``ρ``.
+Define a `Material` with positive, real elastic modulus ``E``, shear modulus ``G``, yield stress ``σ_{\\max}``, and density ``ρ``.
+
+The default assignments for the named variables are set to the properties of aluminium?
+
+# Arguments
+- `elastic_modulus :: Real = 85e9`: Elastic modulus.
+- `shear_modulus :: Real = 25e9`: Shear modulus.
+- `yield_stress :: Real = 350e6`: Yield stress.
+- `density :: Real = 1.6e3`: Density.
 """
-function Material(E :: T, G :: T, σ_max :: T, ρ :: T) where T <: Real
+function Material(E, G, σ_max, ρ)
+    T = promote_type(eltype(E), eltype(G), eltype(σ_max), eltype(ρ))
     @assert E > 0. && G > 0. && σ_max > 0. && ρ > 0. "All quantities must be positive."
     Material{T}(E, G, σ_max, ρ)
 end
@@ -45,15 +57,22 @@ density(mat :: Material)         = mat.density
 ## Tube definition
 #==========================================================================================#
 
+"""
+    Tube(material :: Material, length, radius, thickness)
+
+Define a hollow tube of fixed radius with a given material, length, and thickness.
+"""
 struct Tube{T <: Real} <: AbstractBeam
     material  :: Material{T}
     length    :: T
     radius    :: T
     thickness :: T
-    function Tube(material :: Material{T}, length :: T, radius :: T, thickness :: T) where T <: Real
-        @assert length > 0. && radius > 0. && thickness > 0. "Length, outer radius and thickness must be positive."
-        new{T}(material, length, radius, thickness)
-    end
+end
+
+function Tube(material :: Material, length, radius, thickness)
+    T = promote_type(eltype(length), eltype(radius), eltype(thickness))
+    @assert length > 0. && radius > 0. && thickness > 0. "Length, outer radius and thickness must be positive."
+    Material{T}(material, length, radius, thickness)
 end
 
 Base.length(tube :: Tube) = tube.length
@@ -152,7 +171,7 @@ end
     tube_stiffness_matrix(tube :: Vector{Tube})
     tube_stiffness_matrix(x :: Matrix{Real})
 
-Generate the stiffness matrix for the properties of a tube. 
+Generate the stiffness matrix using the properties of a tube. 
     
 The required properties are the elastic modulus ``E``, shear modulus ``G``, area ``A``, moments of inertia about the ``y-`` and ``z-`` axes ``I_{yy}, I_{zz}``, polar moment of inertia ``J``, length ``L``. A composite stiffness matrix is generated with a specified number of elements.
 """

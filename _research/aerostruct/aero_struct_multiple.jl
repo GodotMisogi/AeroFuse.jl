@@ -1,5 +1,4 @@
 ##
-
 using AeroMDAO
 using LinearAlgebra
 using DataFrames
@@ -174,7 +173,7 @@ x0 = ComponentArray(aerodynamics = (
                                     wing  = Δx_wing, 
                                     htail = Δx_htail
                                    ),
-                    load_factor  = deg2rad(α))
+                    load_factor  = fs.alpha)
 
 # Set up initial guess and function
 function aerostructural_problem(V, β, ρ, Ω, syms, chord_meshes, camber_meshes, fem_meshes, horsies, stiffy, weight, load_factor)
