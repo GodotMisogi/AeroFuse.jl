@@ -118,12 +118,12 @@ function aerostructural_problem(V, β, ρ, Ω, wing_mesh, fem_mesh, stiffy, weig
                                 weight, load_factor) # Load factor variables
 end
 
-solve_aerostruct! = aerostructural_problem(V, deg2rad(β), ρ, Ω, wing_mesh, fem_mesh, stiffy, weight, load_factor)
+solve_aerostruct! = aerostructural_problem(refs.speed, fs.beta, refs.density, fs.omega, wing_mesh, fem_mesh, stiffy, weight, load_factor)
 
 # Initial guess as ComponentArray for the different equations
 x0 = ComponentArray(aerodynamics = data.circulations.wing,
                     structures   = Δx,
-                    load_factor  = deg2rad(α))
+                    load_factor  = fs.alpha)
 
 ##
 # using ForwardDiff

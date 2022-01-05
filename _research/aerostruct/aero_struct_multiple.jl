@@ -57,15 +57,20 @@ aircraft = ComponentVector(
 
 ## Aerodynamic case
 
+# Freestream conditions
+fs      = Freestream(alpha = 3.0, 
+                     beta  = 0.0, 
+                     omega = [0.,0.,0.])
+
 # Reference values
-wing_mac = mean_aerodynamic_center(wing);
-S, b, c  = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
-ρ        = 0.98
-ref      = [wing_mac[1], 0., 0.]
-V, α, β  = 25.0, 3.0, 0.0
-Ω        = zeros(3)
-fs       = Freestream(α, β, Ω)
-refs     = References(V, S, b, c, ρ, ref)
+refs    = References(
+                     speed    = 25.0,
+                     density  = 0.98, 
+                     area     = projected_area(wing),   
+                     span     = span(wing), 
+                     chord    = mean_aerodynamic_chord(wing), 
+                     location = mean_aerodynamic_center(wing)
+                    )
 
 ## Solve aerodynamic case for initial vector
 @time system = solve_case(aircraft, fs, refs;
@@ -73,7 +78,7 @@ refs     = References(V, S, b, c, ρ, ref)
                          )
 
 ## Data collection
-Fs = surface_forces(system);
+@time Fs = surface_forces(system);
 
 ## Wing FEM setup
 vlm_acs_wing    = bound_leg_center.(system.vortices.wing)
@@ -180,10 +185,10 @@ function aerostructural_problem(V, β, ρ, Ω, syms, chord_meshes, camber_meshes
                                 horsies, stiffy, weight, load_factor)
 end
 
-@code_warntype aerostructural_problem(V, deg2rad(β), ρ, Ω, syms, chord_meshes, camber_meshes, fem_meshes, aircraft.vtail, stiffy, weight, load_factor)
+@code_warntype aerostructural_problem(refs.speed, fs.beta, refs.density, fs.omega, syms, chord_meshes, camber_meshes, fem_meshes, aircraft.vtail, stiffy, weight, load_factor)
 
 ## Closure
-solve_aerostruct! = aerostructural_problem(V, deg2rad(β), ρ, Ω, syms, chord_meshes, camber_meshes, fem_meshes, aircraft.vtail, stiffy, weight, load_factor)
+solve_aerostruct! = aerostructural_problem(refs.speed, fs.beta, refs.density, fs.omega, syms, chord_meshes, camber_meshes, fem_meshes, aircraft.vtail, stiffy, weight, load_factor)
 
 ## Solve nonlinear system
 using ForwardDiff, ReverseDiff
@@ -213,18 +218,18 @@ R = similar(x0)
 @code_warntype solve_aerostruct!(R, x0)
 
 ##
-# reset_timer!()
+reset_timer!()
 
-# @timeit "Solving Residuals" res_aerostruct =
-    @time newton_raphson(solve_aerostruct!, x0)
-    # nlsolve(solve_aerostruct!, x0,
-            # method         = :newton,
-            # autodiff       = :forward,
-            # show_trace     = true,
+@timeit "Solving Residuals" res_aerostruct =
+    # @time newton_raphson(solve_aerostruct!, x0)
+    nlsolve(solve_aerostruct!, x0,
+            method         = :newton,
+            autodiff       = :forward,
+            show_trace     = true,
             # extended_trace = true,
-            # )
-
-# print_timer()
+            )
+# 
+print_timer()
 
 ## Get zero
 x_opt = res_aerostruct.zero

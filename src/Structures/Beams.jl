@@ -145,11 +145,24 @@ function axial_stiffness_matrix(Es, Is, Ls)
     sparse(mat)
 end
 
+"""
+    tube_stiffness_matrix(E, G, A, Iyy, Izz, J, L)
+    tube_stiffness_matrix(E, G, A, Iyy, Izz, J, L, num)
+    tube_stiffness_matrix(tube :: Tube)
+    tube_stiffness_matrix(tube :: Vector{Tube})
+    tube_stiffness_matrix(x :: Matrix{Real})
+
+Generate the stiffness matrix for the properties of a tube. 
+    
+The required properties are the elastic modulus ``E``, shear modulus ``G``, area ``A``, moments of inertia about the ``y-`` and ``z-`` axes ``I_{yy}, I_{zz}``, polar moment of inertia ``J``, length ``L``. A composite stiffness matrix is generated with a specified number of elements.
+"""
+function tube_stiffness_matrix end
+
 ## Full stiffness matrix for one element
-tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J :: Real, L :: Real) = blockdiag((sparse ∘ Iyy_coeffs)(E, Iy, L), (sparse ∘ Izz_coeffs)(E, Iz, L), (sparse ∘ J_coeffs)(E, A, L), (sparse ∘ J_coeffs)(G, J, L))
+tube_stiffness_matrix(E, G, A, Iy, Iz, J, L) = blockdiag((sparse ∘ Iyy_coeffs)(E, Iy, L), (sparse ∘ Izz_coeffs)(E, Iz, L), (sparse ∘ J_coeffs)(E, A, L), (sparse ∘ J_coeffs)(G, J, L))
 
 ## Composite stiffness matrix for adjacent tube finite elements
-function tube_stiffness_matrix(Es :: AbstractVector, Gs :: AbstractVector, As :: AbstractVector, Iys :: AbstractVector, Izs :: AbstractVector, Js :: AbstractVector, Ls :: AbstractVector)
+function tube_stiffness_matrix(Es :: Vector{T}, Gs :: Vector{T}, As :: Vector{T}, Iys :: Vector{T}, Izs :: Vector{T}, Js :: Vector{T}, Ls :: Vector{T}) where T <: Real
     # Check if sizes match
     @assert length(Es) == (length ∘ zip)(Gs, Iys, Izs, Js, Ls) "Lengths of coefficients must be the same as the dimension."
 
@@ -161,11 +174,11 @@ function tube_stiffness_matrix(Es :: AbstractVector, Gs :: AbstractVector, As ::
     blockdiag(Iys, Iys, As, Js)
 end
 
-tube_stiffness_matrix(E :: Real, G :: Real, A :: Real, Iy :: Real, Iz :: Real, J :: Real, L :: Real, num :: Integer) = tube_stiffness_matrix(fill(E, num), fill(G, num), fill(A, num), fill(Iy, num), fill(Iz, num), fill(J, num), fill(L / num, num))
+tube_stiffness_matrix(E, G, A, Iy, Iz, J, L, num :: Integer) = tube_stiffness_matrix(fill(E, num), fill(G, num), fill(A, num), fill(Iy, num), fill(Iz, num), fill(J, num), fill(L / num, num))
 
 tube_stiffness_matrix(tube :: Tube) = tube_stiffness_matrix(elastic_modulus(material(tube)), shear_modulus(material(tube)), area(tube), moment_of_inertia(tube), moment_of_inertia(tube), polar_moment_of_inertia(tube), length(tube))
 
-function tube_stiffness_matrix(x :: AbstractMatrix)
+function tube_stiffness_matrix(x :: Matrix{<: Real})
     @assert size(x)[2] == 7 "Input must have 7 columns."
     @views tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
 end
