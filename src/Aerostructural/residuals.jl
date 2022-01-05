@@ -24,7 +24,7 @@ function coupled_residuals!(R, all_horsies, Γs, U, Ω, speed, stiffness_matrix,
 end
 
 # Residual setup for multiple aerostructural surfaces and multiple aerodynamic surfaces
-function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}, vlm_meshes, cam_meshes, fem_meshes, other_horsies, stiffness_matrix, weight, load_factor)
+function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}, chord_meshes, camber_meshes, fem_meshes, other_horsies, stiffness_matrix, weight, load_factor)
     # Unpack aerodynamic and structural variables
     Γs = x.aerodynamics
     δs = x.structures
@@ -39,7 +39,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
     # @timeit "Get Rotations" Ts    = 
 
     # New VLM variables
-    @timeit "New Horseshoes" new_horsies = @. new_horseshoes(mesh_translation(Δs), mesh_rotation(Δs), vlm_meshes, cam_meshes, fem_meshes)
+    @timeit "New Horseshoes" new_horsies = @. new_horseshoes(mesh_translation(Δs), mesh_rotation(Δs), chord_meshes, camber_meshes, fem_meshes)
 
     # Compute component forces for structural residual
     @timeit "Get Circulations" new_Γs       = getindex.(Ref(Γs), syms) 
@@ -67,7 +67,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}
 end
 
 # Residual setup for single aerostructural surface
-function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fem_mesh, stiffness_matrix, weight, load_factor)
+function solve_coupled_residual!(R, x, speed, β, ρ, Ω, chord_mesh, camber_mesh, fem_mesh, stiffness_matrix, weight, load_factor)
     # Unpack aerodynamic and structural variables
     Γ = x.aerodynamics
     δ = x.structures
@@ -82,7 +82,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
     Ts  = mesh_rotation(Δs)
 
     # New VLM variables
-    @timeit "New Horseshoes" new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
+    @timeit "New Horseshoes" new_horsies = new_horseshoes(dxs, Ts, chord_mesh, camber_mesh, fem_mesh)
 
     # Compute aerodynamic forces
     @timeit "Surface Forces" vlm_forces = surface_forces(new_horsies, Γ, U, Ω, ρ)
@@ -100,7 +100,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fe
 end
 
 # # Residual setup for single aerostructural surface and multiple aerodynamic surfaces
-# function solve_coupled_residual!(R, x, speed, β, ρ, Ω, vlm_mesh, cam_mesh, other_horsies, fem_mesh, stiffness_matrix, weight, load_factor)
+# function solve_coupled_residual!(R, x, speed, β, ρ, Ω, chord_mesh, camber_mesh, other_horsies, fem_mesh, stiffness_matrix, weight, load_factor)
 #     # Unpack aerodynamic and structural variables
 #     Γ = x.aerodynamics
 #     δ = x.structures
@@ -120,7 +120,7 @@ end
 #     Ts  = mesh_rotation(Δs)
 
 #     # New VLM variables
-#     new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
+#     new_horsies = new_horseshoes(dxs, Ts, chord_mesh, camber_mesh, fem_mesh)
 #     @timeit "Combine Horseshoes" all_horsies = [ vec(new_horsies); other_horsies ]
 
 #     # Compute aerodynamic residual and loads
@@ -141,7 +141,7 @@ end
 # end
 
 # Residual setup for multiple aerostructural surfaces (NEED TO REDUCE REDUNDANCIES)
-# function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}, vlm_meshes, cam_meshes, fem_meshes, stiffness_matrix, weight, load_factor)
+# function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}, chord_meshes, camber_meshes, fem_meshes, stiffness_matrix, weight, load_factor)
 #     # Unpack aerodynamic and structural variables
 #     Γs = x.aerodynamics
 #     δs = x.structures
@@ -156,7 +156,7 @@ end
 #     Ts    = mesh_rotation.(Δs)
 
 #     # New VLM variables
-#     new_horsies  = new_horseshoes.(dxs, Ts, vlm_meshes, cam_meshes, fem_meshes)
+#     new_horsies  = new_horseshoes.(dxs, Ts, chord_meshes, camber_meshes, fem_meshes)
 #     all_horsies  = mapreduce(vec, vcat, new_horsies)
 
 #     # Compute component forces for structural residual
@@ -180,7 +180,7 @@ end
 ## Nonlinear block Gauss-Seidel
 #==========================================================================================#
 
-function aerostruct_gauss_seidel(x0, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fem_mesh, stiffness_matrix, weight, load_factor; max_iters = 50, tol = 1e-9)
+function aerostruct_gauss_seidel(x0, speed, β, ρ, Ω, chord_mesh, camber_mesh, fem_mesh, stiffness_matrix, weight, load_factor; max_iters = 50, tol = 1e-9)
     x = deepcopy(x0)
     ε = 1e5
     for i = 1:max_iters
@@ -201,7 +201,7 @@ function aerostruct_gauss_seidel(x0, speed, β, ρ, Ω, vlm_mesh, cam_mesh, fem_
         Ts  = mesh_rotation(δs)
 
         # New geometric variables
-        new_horsies = new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
+        new_horsies = new_horseshoes(dxs, Ts, chord_mesh, camber_mesh, fem_mesh)
 
         # Solve circulations
         Γ = reshape(influence_matrix(vec(new_horsies), -U / speed) \ boundary_condition(quasi_steady_freestream(vec(new_horsies), U, Ω), horseshoe_normal.(vec(new_horsies))), size(new_horsies))

@@ -52,7 +52,7 @@ print_coefficients(aero_surfs[1], aero_state);
 #==========================================================================================#
 
 ## Mesh setup
-vlm_mesh = chord_coordinates(wing, [span_num], chord_num, spacings = [Cosine()])
+chord_mesh = chord_coordinates(wing, [span_num], chord_num, spacings = [Cosine()])
 
 ## Aerodynamic forces
 vlm_forces = surface_forces(aero_surfs[1])
@@ -69,7 +69,7 @@ section_moments(vlm_acs, fem_mesh, half_vlm_forces) = sum(x -> (x[1] .- fem_mesh
 adjacent_joiner(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
 
 ## FEM beam node locations as Matrix
-make_beam_mesh(vlm_mesh, fem_w = 0.35) =  (1 - fem_w) * vlm_mesh[1,:] + fem_w * vlm_mesh[end,:]
+make_beam_mesh(chord_mesh, fem_w = 0.35) =  (1 - fem_w) * chord_mesh[1,:] + fem_w * chord_mesh[end,:]
 
 function compute_loads(vlm_acs, vlm_forces, fem_mesh)
     # Forces
@@ -99,7 +99,7 @@ t     = 8e-3  # Thickness, m
 
 # Make FEM mesh
 fem_w     = 0.35
-fem_mesh  = make_beam_mesh(vlm_mesh, fem_w)
+fem_mesh  = make_beam_mesh(chord_mesh, fem_w)
 Ls        = norm.(diff(fem_mesh))
 
 # Create material and tubes
@@ -185,13 +185,13 @@ rotation_matrix(Ωx, Ωy, Ωz) = @SMatrix [  0  -Ωz  Ωy ;
                                           Ωz  0  -Ωx ;
                                          -Ωy  Ωx  0  ]
 
-transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh) = permutedims(reduce(hcat, map(xyz -> xyz + dxs + Ts .* (xyz - fem_mesh), eachrow(vlm_mesh))))
+transfer_displacements(dxs, Ts, chord_mesh, fem_mesh) = permutedims(reduce(hcat, map(xyz -> xyz + dxs + Ts .* (xyz - fem_mesh), eachrow(chord_mesh))))
 
 ##
 θx, θy, θz = df_xs[!,4], df_xs[!,5], df_xs[!,6]
 T          = rotation_matrix.(θx, θy, θz)
 dxs        = SVector.(df_xs[!,1], df_xs[!,2], df_xs[!,3])
-new_mesh   = transfer_displacements(dxs, T, vlm_mesh, fem_mesh)
+new_mesh   = transfer_displacements(dxs, T, chord_mesh, fem_mesh)
 
 ## Plotting
 #==========================================================================================#

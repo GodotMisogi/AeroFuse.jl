@@ -39,14 +39,14 @@ rotation_matrix(θs) = rotation_matrix.(θs[1,:], θs[2,:], θs[3,:])
 
 # Transfer states by summing the displacements including rotations.
 transfer_displacement(xyz, dx, rot, r) = xyz + dx + rot * (xyz - r)
-transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh) = permutedims(combinedimsview(map(xyz -> transfer_displacement.(xyz, dxs, Ts, fem_mesh), eachrow(vlm_mesh))))
+transfer_displacements(dxs, Ts, chord_mesh, fem_mesh) = permutedims(combinedimsview(map(xyz -> transfer_displacement.(xyz, dxs, Ts, fem_mesh), eachrow(chord_mesh))))
 
 mesh_translation(δs) = @views SVector.(δs[1,:], δs[2,:], δs[3,:])
 mesh_rotation(δs)    = @views rotation_matrix(δs[4:6,:])
 
 # Make new horseshoes
-function new_horseshoes(dxs, Ts, vlm_mesh, cam_mesh, fem_mesh)
-    new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
-    new_cam_mesh = transfer_displacements(dxs, Ts, cam_mesh, fem_mesh)
-    Horseshoe.(make_panels(new_vlm_mesh), panel_normal.(make_panels(new_cam_mesh)))
+function new_horseshoes(dxs, Ts, chord_mesh, camber_mesh, fem_mesh)
+    new_chord_mesh = transfer_displacements(dxs, Ts, chord_mesh, fem_mesh)
+    new_camber_mesh = transfer_displacements(dxs, Ts, camber_mesh, fem_mesh)
+    Horseshoe.(make_panels(new_chord_mesh), panel_normal.(make_panels(new_camber_mesh)))
 end

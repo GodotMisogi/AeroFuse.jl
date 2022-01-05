@@ -162,16 +162,20 @@ mutable struct WingMesh{M <: AbstractWing, N <: Integer, P, Q, T} <: AbstractWin
     num_chord     :: N
     chord_spacing :: P
     span_spacing  :: Q
-    vlm_mesh      :: Matrix{T}
-    cam_mesh      :: Matrix{T}
+    chord_mesh    :: Matrix{T}
+    camber_mesh   :: Matrix{T}
 end
 
-function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: N; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surf)) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}} 
-    vlm_mesh =  chord_coordinates(surf, n_span, n_chord; spacings = span_spacing)
-    cam_mesh = camber_coordinates(surf, n_span, n_chord; spacings = span_spacing)
-    T = promote_type(eltype(vlm_mesh), eltype(cam_mesh))
-    WingMesh{M,N,P,Q,T}(surf, n_span, n_chord, chord_spacing, span_spacing, vlm_mesh, cam_mesh)
+function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: N; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surf)) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}}
+    check_definition(surf, n_span)
+    chord_mesh =  chord_coordinates(surf, n_span, n_chord; spacings = span_spacing)
+    camber_mesh = camber_coordinates(surf, n_span, n_chord; spacings = span_spacing)
+    T = promote_type(eltype(chord_mesh), eltype(camber_mesh))
+    WingMesh{M,N,P,Q,T}(surf, n_span, n_chord, chord_spacing, span_spacing, chord_mesh, camber_mesh)
 end
+
+check_definition(surf :: HalfWing, n_span) = @assert length(n_span) == length(surf.spans) "The spanwise number vector's length must be the same as the number of sections of the surface."
+check_definition(surf :: Wing, n_span) = @assert length(n_span) == length(surf.right.spans) == length(surf.left.spans) "The spanwise number vector's length must be the same as the number of sections of the surface."
 
 ##
 chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = chord_coordinates(wing.surf, n_span, n_chord)
@@ -180,6 +184,17 @@ surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num
 
 surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
 
-chord_panels(wing :: WingMesh)    = make_panels(wing.vlm_mesh)
-camber_panels(wing :: WingMesh)   = make_panels(wing.cam_mesh)
+chord_panels(wing :: WingMesh)    = make_panels(wing.chord_mesh)
+camber_panels(wing :: WingMesh)   = make_panels(wing.camber_mesh)
 normal_vectors(wing :: WingMesh)  = panel_normal.(camber_panels(wing))
+
+function Base.show(io :: IO, mesh :: WingMesh)
+    n_c, n_s = size(mesh.chord_mesh)
+    println(io, "WingMesh —")
+    println(io, "Spanwise panels: $n_s")
+    println(io, "Chordwise panels: $n_c")
+    println(io, "Spanwise spacing: $(mesh.span_spacing)")
+    println(io, "Chordwise spacing: $(mesh.chord_spacing)")
+
+    nothing
+end

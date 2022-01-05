@@ -1,5 +1,5 @@
 # Create the FEM mesh for the beam based on the VLM mesh
-make_beam_mesh(vlm_mesh, fem_w) =  (1 - fem_w) * vlm_mesh[1,:] + fem_w * vlm_mesh[end,:]
+make_beam_mesh(chord_mesh, fem_w) =  (1 - fem_w) * chord_mesh[1,:] + fem_w * chord_mesh[end,:]
 
 # Axis transformation
 function axis_transformation(stream, normie) 
@@ -11,7 +11,7 @@ function axis_transformation(stream, normie)
 end
 
 # Compute local beam axes' transformation matrices using meshes (useless now?)
-axis_transformation(fem_mesh :: Vector{SVector{3,T}}, vlm_mesh :: Array{SVector{3,T}}) where T <: Real = @. axis_transformation(fem_mesh[2:end] - fem_mesh[1:end-1], (vlm_mesh[end,2:end] - vlm_mesh[1,1:end-1]) × (vlm_mesh[1,2:end] - vlm_mesh[end,1:end-1]))
+axis_transformation(fem_mesh :: Vector{SVector{3,T}}, chord_mesh :: Array{SVector{3,T}}) where T <: Real = @. axis_transformation(fem_mesh[2:end] - fem_mesh[1:end-1], (chord_mesh[end,2:end] - chord_mesh[1,1:end-1]) × (chord_mesh[1,2:end] - chord_mesh[end,1:end-1]))
 
 # Simultaneous permutations of rows and columns of the stiffness matrix
 permute_stiffy(K) = let inds = [9,1,5,11,6,2,10,3,7,12,8,4]; @view K[inds,:][:,inds] end
@@ -24,4 +24,4 @@ permute_stiffy(K) = let inds = [9,1,5,11,6,2,10,3,7,12,8,4]; @view K[inds,:][:,i
 transform_stiffy(K, axis) = let trans = kron(I(4), axis); permutedims(permutedims(trans) * permute_stiffy(K) * trans) end
 
 # Simultaneously compute, permute and transform the stiffness matrices
-build_big_stiffy(tubes, fem_mesh, vlm_mesh) = @views combinedimsview(@. transform_stiffy(tube_stiffness_matrix(tubes), axis_transformation(fem_mesh[2:end] - fem_mesh[1:end-1], (vlm_mesh[end,2:end] - vlm_mesh[1,1:end-1]) × (vlm_mesh[1,2:end] - vlm_mesh[end,1:end-1]))))
+build_big_stiffy(tubes, fem_mesh, chord_mesh) = @views combinedimsview(@. transform_stiffy(tube_stiffness_matrix(tubes), axis_transformation(fem_mesh[2:end] - fem_mesh[1:end-1], (chord_mesh[end,2:end] - chord_mesh[1,1:end-1]) × (chord_mesh[1,2:end] - chord_mesh[end,1:end-1]))))

@@ -99,7 +99,7 @@ htail_ll = span_loads(chord_panels(htail_mesh), CFs.htail, S)
 vtail_ll = span_loads(chord_panels(vtail_mesh), CFs.vtail, S);
 
 ## Plotting
-using GLMakie
+using CairoMakie
 using LaTeXStrings
 
 set_theme!(
@@ -119,14 +119,14 @@ seed        = init # [ init .+ Ref([dx, dy,  dz])
 
 distance = 5
 num_stream_points = 100
-streams = streamlines(data, seed, distance, num_stream_points);
+streams = streamlines(system, seed, distance, num_stream_points);
 
-wing_cam_connec  = triangle_connectivities(LinearIndices(wing_mesh.cam_mesh))
-htail_cam_connec = triangle_connectivities(LinearIndices(htail_mesh.cam_mesh))
-vtail_cam_connec = triangle_connectivities(LinearIndices(vtail_mesh.cam_mesh));
+wing_cam_connec  = triangle_connectivities(LinearIndices(wing_mesh.camber_mesh))
+htail_cam_connec = triangle_connectivities(LinearIndices(htail_mesh.camber_mesh))
+vtail_cam_connec = triangle_connectivities(LinearIndices(vtail_mesh.camber_mesh));
 
 ## Surface velocities
-vels = surface_velocities(data);
+vels = surface_velocities(system);
 sps  = norm.(vels)
 
 wing_sp_points  = extrapolate_point_mesh(sps.wing)
@@ -146,9 +146,9 @@ fig1  = Figure(resolution = (1280, 720))
 scene = LScene(fig1[1:4,1])
 ax    = fig1[1:4,2] = GridLayout()
 
-ax_cd = GLMakie.Axis(ax[1,1:2], ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
-ax_cy = GLMakie.Axis(ax[2,1:2], ylabel = L"C_Y",)
-ax_cl = GLMakie.Axis(ax[3,1:2], xlabel = L"y", ylabel = L"C_L")
+ax_cd = Axis(ax[1,1:2], ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
+ax_cy = Axis(ax[2,1:2], ylabel = L"C_Y",)
+ax_cl = Axis(ax[3,1:2], xlabel = L"y", ylabel = L"C_L")
 
 # Spanload plot
 function plot_spanload!(ax, ll_loads, name = "Wing")
@@ -168,9 +168,9 @@ Legend(ax[4,1:2], ax_cl)
 fig1[0, :] = Label(fig1, LS("Vortex Lattice Analysis"), textsize = 20)
 
 # Surface pressure meshes
-m1 = poly!(scene, vec(wing_mesh.cam_mesh),  wing_cam_connec,  color = vec(wing_cp_points))
-m2 = poly!(scene, vec(htail_mesh.cam_mesh), htail_cam_connec, color = vec(htail_cp_points))
-m3 = poly!(scene, vec(vtail_mesh.cam_mesh), vtail_cam_connec, color = vec(vtail_cp_points))
+m1 = poly!(scene, vec(wing_mesh.camber_mesh),  wing_cam_connec,  color = vec(wing_cp_points))
+m2 = poly!(scene, vec(htail_mesh.camber_mesh), htail_cam_connec, color = vec(htail_cp_points))
+m3 = poly!(scene, vec(vtail_mesh.camber_mesh), vtail_cam_connec, color = vec(vtail_cp_points))
 
 # Airfoil meshes
 # wing_surf = surface_coordinates(wing_mesh, wing_mesh.n_span, 60)
@@ -183,9 +183,9 @@ lines!(scene, plot_wing(wing))
 lines!(scene, plot_wing(htail))
 lines!(scene, plot_wing(vtail))
 
-l1 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(wing_mesh))  ]
-l2 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(htail_mesh)) ]
-l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(vtail_mesh)) ]
+# l1 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(wing_mesh))  ]
+# l2 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(htail_mesh)) ]
+# l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(vtail_mesh)) ]
 
 # Streamlines
 [ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]
@@ -193,7 +193,7 @@ l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(vt
 fig1.scene
 
 ## Save figure
-# save("plots/VortexLattice.png", fig1, px_per_unit = 1.5)
+save("plots/VortexLattice.svg", fig1, px_per_unit = 1.5)
 
 ## Animation settings
 pts = [ Node(Point3f0[stream]) for stream in streams[1,:] ]

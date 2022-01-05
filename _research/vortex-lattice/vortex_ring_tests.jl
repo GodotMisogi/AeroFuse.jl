@@ -121,9 +121,9 @@ distance = 5
 num_stream_points = 100
 streams = streamlines(fs, seed, data.vortices, data.circulations, distance, num_stream_points);
 
-wing_cam_connec  = triangle_connectivities(LinearIndices(wing_mesh.cam_mesh))
-htail_cam_connec = triangle_connectivities(LinearIndices(htail_mesh.cam_mesh))
-vtail_cam_connec = triangle_connectivities(LinearIndices(vtail_mesh.cam_mesh));
+wing_cam_connec  = triangle_connectivities(LinearIndices(wing_mesh.camber_mesh))
+htail_cam_connec = triangle_connectivities(LinearIndices(htail_mesh.camber_mesh))
+vtail_cam_connec = triangle_connectivities(LinearIndices(vtail_mesh.camber_mesh));
 
 ## Surface velocities
 vels = surface_velocities(data);
@@ -146,9 +146,9 @@ fig1  = Figure(resolution = (1280, 720))
 scene = LScene(fig1[1:4,1])
 ax    = fig1[1:4,2] = GridLayout()
 
-ax_cd = GLMakie.Axis(ax[1,1:2], ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
-ax_cy = GLMakie.Axis(ax[2,1:2], ylabel = L"C_Y",)
-ax_cl = GLMakie.Axis(ax[3,1:2], xlabel = L"y", ylabel = L"C_L")
+ax_cd = Axis(ax[1,1:2], ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
+ax_cy = Axis(ax[2,1:2], ylabel = L"C_Y",)
+ax_cl = Axis(ax[3,1:2], xlabel = L"y", ylabel = L"C_L")
 
 # Spanload plot
 function plot_spanload!(ax, ll_loads, name = "Wing")
@@ -168,9 +168,9 @@ Legend(ax[4,1:2], ax_cl)
 fig1[0, :] = Label(fig1, LS("Vortex Lattice Analysis"), textsize = 20)
 
 # Surface pressure meshes
-m1 = poly!(scene, wing_mesh.cam_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
-m2 = poly!(scene, htail_mesh.cam_mesh[:], htail_cam_connec, color = htail_cp_points[:])
-m3 = poly!(scene, vtail_mesh.cam_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
+m1 = poly!(scene, wing_mesh.camber_mesh[:],  wing_cam_connec,  color =  wing_cp_points[:])
+m2 = poly!(scene, htail_mesh.camber_mesh[:], htail_cam_connec, color = htail_cp_points[:])
+m3 = poly!(scene, vtail_mesh.camber_mesh[:], vtail_cam_connec, color = vtail_cp_points[:])
 
 # Airfoil meshes
 # wing_surf = surface_coordinates(wing_mesh, wing_mesh.n_span, 60)

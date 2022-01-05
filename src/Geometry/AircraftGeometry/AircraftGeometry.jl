@@ -100,12 +100,14 @@ properties(wing :: AbstractWing) = [ span(wing), projected_area(wing), aspect_ra
 
 function Base.show(io :: IO, wing :: AbstractWing)
     AR, b, S, c, mac = properties(wing)
-    println("$(typeof(wing))")
-    println("Aspect Ratio: $AR")
-    println("Span (m): $b")
-    println("Projected Area (m): $S")
-    println("Mean Aerodynamic Chord (m): $c")
-    println("Mean Aerodynamic Center (m): $mac")
+    println(io, "$(typeof(wing))")
+    println(io, "Aspect Ratio: $AR")
+    println(io, "Span (m): $b")
+    println(io, "Projected Area (m): $S")
+    println(io, "Mean Aerodynamic Chord (m): $c")
+    println(io, "Mean Aerodynamic Center (m): $mac")
+
+    nothing
 end
 
 end

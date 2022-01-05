@@ -80,7 +80,7 @@ vlm_forces = force.(CFs.wing, dynamic_pressure(ρ, V), S)
 
 # FEM mesh
 fem_w    = 0.40
-fem_mesh = make_beam_mesh(wing_mesh.vlm_mesh, fem_w)
+fem_mesh = make_beam_mesh(wing_mesh.chord_mesh, fem_w)
 
 ## Weight variables (FOR FUTURE USE)
 
@@ -112,7 +112,7 @@ t     = [ reverse(ts); ts ]
 tubes    = Tube.(Ref(aluminum), Ls, r, t)
 
 ## Stiffness matrices, loads and constraints
-Ks        = build_big_stiffy(tubes, fem_mesh, wing_mesh.vlm_mesh)
+Ks        = build_big_stiffy(tubes, fem_mesh, wing_mesh.chord_mesh)
 cons      = [length(fem_mesh) ÷ 2]
 stiffy    = build_stiffness_matrix(Ks, cons)
 fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
@@ -131,7 +131,7 @@ other_horsies = ComponentVector( htail = system.vortices.htail,
 solve_aerostructural_residual!(R, x) =
     solve_coupled_residual!(R, x,
                             V, deg2rad(β), ρ, Ω, # Aerodynamic state
-                            wing_mesh.vlm_mesh, wing_mesh.cam_mesh,  # Aerodynamic variables
+                            wing_mesh.chord_mesh, wing_mesh.camber_mesh,  # Aerodynamic variables
                             other_horsies,       # Other aerodynamic parameters
                             fem_mesh, stiffy,    # Structural variables
                             weight, load_factor) # Load factor variables
@@ -165,11 +165,11 @@ dxs = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
 Ts  = rotation_matrix(dx[4:6,:])
 
 ## Perturb VLM and camber meshes
-new_vlm_mesh = transfer_displacements(dxs, Ts, vlm_mesh, fem_mesh)
-new_panels   = make_panels(new_vlm_mesh)
+new_chord_mesh = transfer_displacements(dxs, Ts, chord_mesh, fem_mesh)
+new_panels   = make_panels(new_chord_mesh)
 
-new_cam_mesh   = transfer_displacements(dxs, Ts, cam_mesh, fem_mesh)
-new_cam_panels = make_panels(new_cam_mesh)
+new_camber_mesh   = transfer_displacements(dxs, Ts, camber_mesh, fem_mesh)
+new_cam_panels = make_panels(new_camber_mesh)
 new_normals    = panel_normal.(new_cam_panels)
 
 ##
@@ -184,7 +184,7 @@ vlm_forces = surface_forces(Γ_wing, new_horsies, Γ_opt, all_horsies, U_opt, Ω
 all_forces = surface_forces(Γ_opt, all_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
 
 ## New beams and loads
-new_fem_mesh = make_beam_mesh(new_vlm_mesh, fem_w)
+new_fem_mesh = make_beam_mesh(new_chord_mesh, fem_w)
 fem_loads    = compute_loads(vlm_acs, vlm_forces, new_fem_mesh)
 
 ## Compute stresses
@@ -231,12 +231,12 @@ cam_plot     = plot_panels(wing_cambers[:])
 new_cam_plot = plot_panels(new_cam_panels)
 
 # Displacements
-new_vlm_mesh_plot = reduce(hcat, new_vlm_mesh)
+new_chord_mesh_plot = reduce(hcat, new_chord_mesh)
 new_panel_plot    = plot_panels(new_panels)
 
 # Axes
 xs_plot   = reduce(hcat, (fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
-axes      = axis_transformation(fem_mesh, vlm_mesh)
+axes      = axis_transformation(fem_mesh, chord_mesh)
 axes_plot = reshape(reduce(hcat, axes), 3, 3, length(axes))
 cs_plot   = axes_plot[:,1,:]
 ss_plot   = axes_plot[:,2,:]
@@ -244,12 +244,12 @@ ns_plot   = axes_plot[:,3,:]
 
 # Planforms
 wing_plan  = plot_wing(wing)
-nwing_plan = plot_wing(new_cam_mesh)
+nwing_plan = plot_wing(new_camber_mesh)
 htail_plan = plot_wing(htail)
 vtail_plan = plot_wing(vtail)
 
 # Streamlines
-seed    = chop_coordinates(new_cam_mesh[end,:], 3)
+seed    = chop_coordinates(new_camber_mesh[end,:], 3)
 streams = streamlines(fs, seed, all_horsies, Γ_opt, 5, 100);
 
 ## Plot
