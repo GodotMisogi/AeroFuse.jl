@@ -11,23 +11,21 @@
 
 Definition for a `HalfWing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and sweep angles ``Λ``, with all angles in degrees.
 """
-struct HalfWing{T <: Real, F <: AbstractFoil, N <: AbstractAffineMap} <: AbstractWing
-    foils      :: Vector{F}
-    chords     :: Vector{T}
-    twists     :: Vector{T}
-    spans      :: Vector{T}
-    dihedrals  :: Vector{T}
-    sweeps     :: Vector{T}
+struct HalfWing{S <: AbstractVector{<: Real}, F <: AbstractVector{<: AbstractFoil}, N <: AbstractAffineMap} <: AbstractWing
+    foils      :: F
+    chords     :: S
+    twists     :: S
+    spans      :: S
+    dihedrals  :: S
+    sweeps     :: S
     affine     :: N
 end
 
-function HalfWing(foils :: Vector{F}, chords, twists, spans, dihedrals, sweeps, position = zeros(3), angle = 0., axis = [0.,1.,0.], affine = AffineMap(AngleAxis(deg2rad(angle), axis...), position)) where F <: AbstractFoil
-    T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps))
-    N = typeof(affine)
+function HalfWing(foils, chords, twists, spans, dihedrals, sweeps, position = zeros(3), angle = 0., axis = [0.,1.,0.], affine = AffineMap(AngleAxis(deg2rad(angle), axis...), position))
     # Error handling
     check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     # Convert angles to radians, adjust twists to leading edge, and generate HalfWing
-    HalfWing{T,F,N}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), affine)
+    HalfWing(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), affine)
 end
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
