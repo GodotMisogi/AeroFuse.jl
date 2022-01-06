@@ -2,17 +2,35 @@
 
 AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
 
-![](https://godot-bloggy.xyz/post/diagrams/AerostructAircraft.svg)
+![](assets/logo.svg)
 
-### Aims
+## Objectives
 
 The current focus is to enable tutorials in computation for undergraduates in an aerospace educational curriculum, particularly at The Hong Kong University of Science and Technology. For this purpose, the code is written in a functional style replicating the mathematics presented in textbooks as much as possible.
 
+An additional aim is to write code compatible with automatic differentiation libraries written in Julia.
+
 ## Features
 
-AeroMDAO currently provides basic geometric tools for airfoil processing, and panel methods for inviscid 2D analyses. A vortex lattice method presented in Mark Drela's *Flight Vehicle Aerodynamics* has also been implemented for inviscid 3D analyses with some traditional viscous drag prediction methods.
+Functioning:
+
+- Basic geometric tools for airfoil processing and wing design. 
+- Steady, inviscid, incompressible, isentropic 2D and 3D aerodynamic analyses.
+  - 2D - Doublet-source panel method
+  - 3D - Vortex lattice method with derivatives
+- Empirical viscous drag prediction methods for wings.
+- Finite-element beam model based on Euler-Bernoulli theory for structural analysis.
+
+In progress:
+
+- Aeroelastic analyses coupling vortex lattice and beam element models.
+- 2D integral boundary layer solver for viscous-inviscid analyses.
+- Generic, flexible and efficient flight dynamics integrator in 2 and 3 dimensions.
+- Fuselage geometry parametrization and aerodynamic implementation.
 
 ![](../../plots/VortexLattice.svg)
+
+![](https://godot-bloggy.xyz/post/diagrams/AerostructAircraft.svg)
 
 **Disclaimer**: The current implementation is a major work-in-progress, and hence the results may not be entirely accurate. Please exercise caution when interpreting the results until validation cases are added.
 
@@ -37,23 +55,6 @@ If you use AeroMDAO in your research, please cite the following until any releva
   date    = {2021-01-04},
 }
 ```
-
-## To Do
-
-Key: × - Working, ∘ - In progress
-
-- [×] Airfoil and wing parametrization
-- [×] Doublet-source panel method in 2D
-- [×] Vortex lattice method
-- [×] Stability analysis
-- [∘] Performance analyses
-- [∘] Boundary layer solvers
-- [ ] Doublet-source panel method in 3D
-- [×] Beams for structural analyses
-- [∘] Aerostructural analyses
-- [∘] Flight dynamics engine
-- [∘] Optimization problems
-- [∘] Update documentation
 
 ## Contents
 

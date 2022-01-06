@@ -1,22 +1,42 @@
 # AeroMDAO
 
-AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics, with aims to develop implementations in other relevant fields such as structures, propulsion, stability, etc.
+<p align="center">
+<img width="60%", src="docs/build/assets/logo.svg">
+</p>
 
-![](https://godot-bloggy.xyz/post/diagrams/AerostructAircraft.svg)
+AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
 
-## Aims
+
+
+## Objectives
 
 The current focus is to enable tutorials in computation for undergraduates in an aerospace educational curriculum, particularly at The Hong Kong University of Science and Technology. For this purpose, the code is written in a functional style replicating the mathematics presented in textbooks as much as possible.
 
-**Aside**: This also turns out to develop very efficient (and more readable!) code without the need for functions that modify their arguments in-place (read mutation), which is against functional style. Of course, the code is not written in a higher-order Haskellian style using monads or any other category theory constructs, although that would probably be very interesting and pleasing to implement! *Hint*: Lists are secretly monads.
+An additional aim is to write code compatible with automatic differentiation libraries written in Julia.
 
 ## Features
 
-AeroMDAO currently provides basic geometric tools for airfoil processing, and panel methods for inviscid 2D analyses. A vortex lattice method presented in Mark Drela's *Flight Vehicle Aerodynamics* has also been implemented for inviscid 3D analyses with some traditional viscous drag prediction methods.
+Functioning:
 
-![](https://godot-bloggy.xyz/post/diagrams/AircraftStream.svg)
+- Basic geometric tools for airfoil processing and wing design. 
+- Steady, inviscid, incompressible, isentropic 2D and 3D aerodynamic analyses.
+  - 2D - Doublet-source panel method
+  - 3D - Vortex lattice method with derivatives
+- Empirical viscous drag prediction methods for wings.
+- Finite-element beam model based on Euler-Bernoulli theory for structural analysis.
 
-**Disclaimer**: The current implementation is a major work-in-progress, and hence the results may not be entirely accurate. Please exercise caution when interpreting the results until validation cases are added.
+In progress:
+
+- Aeroelastic analyses coupling vortex lattice and beam element models.
+- 2D integral boundary layer solver for viscous-inviscid analyses.
+- Generic, flexible and efficient flight dynamics integrator in 2 and 3 dimensions.
+- Fuselage geometry parametrization and aerodynamic implementation.
+
+![](plots/VortexLattice.svg)
+
+![](https://godot-bloggy.xyz/post/diagrams/AerostructAircraft.svg)
+
+**Disclaimer**: The implementations are work-in-progress, and hence the results may not be entirely accurate. Please exercise caution when interpreting the results until validation cases are added.
 
 ## Installation
 
@@ -39,7 +59,12 @@ If you use AeroMDAO in your research, please cite the following until any releva
   author  = {Arjit Seth, Rhea P. Liem, Stephane Redonnet},
   title   = {AeroMDAO},
   url     = {https://github.com/GodotMisogi/AeroMDAO},
-  version = {0.2.4},
-  date    = {2021-06-19},
+  version = {0.3.0},
+  date    = {2021-01-04},
 }
 ```
+
+## References
+
+1. Mark Drela. _Flight Vehicle Aerodynamics_. MIT Press, 2014.
+2. Joseph Katz and Allen Plotkin. _Low-Speed Aerodynamics, Second Edition_. Cambridge University Press, 2001.

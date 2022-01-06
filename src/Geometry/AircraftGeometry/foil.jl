@@ -132,9 +132,9 @@ bernstein_basis(x, n, k)   = binomial(n, k) * bernstein_class(x, k, n - k)
 
 """
     kulfan_CST(alpha_u, alpha_l,
-               (Δz_u, Δz_l) :: NTuple{2, Real},
-               (LE_u, LE_l) = 0,
-               n :: Integer = 40)
+               (Δz_u, Δz_l) = (0., 0.),
+               (LE_u, LE_l) = (0., 0.),
+               n            = 40)
 
 Define a cosine-spaced foil with ``2n`` points using the Class Shape Transformation method on a Bernstein polynomial basis for the upper and lower coordinates.
 
@@ -156,7 +156,7 @@ function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l) = (0., 0.), (LE_u, LE_l) = (0
              xs           lower_surf           ]
 end
 """
-    kulfan_CST(α_c, α_t,
+    camber_CST(α_c, α_t,
                (Δz_u, Δz_l) :: NTuple{2, Real},
                coeff_LE = 0.,
                n :: Integer = 40)

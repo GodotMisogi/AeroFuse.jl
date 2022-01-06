@@ -22,16 +22,16 @@ naca4(digits :: NTuple{4, Real};  # Digits, e.g. (2,4,1,2)
 ```
 
 ```julia
-airfoil = naca4((2,4,1,2))
+airfoil = naca4(2,4,1,2)
 ```
 
 *Kulfan Class Shape Transformation (CST) Method*
 ```julia
-kulfan_CST(alpha_u      :: Vector{Real},    # Upper surface parameters
-           alpha_l      :: Vector{Real},    # Lower surface parameters
-           dzs          :: NTuple{2, Real}, # Upper and lower trailing edge points
-           coeff_LE = 0 :: Real,            # Leading-edge modification coefficient
-           n = 40       :: Integer)         # Number of points on each surface
+kulfan_CST(alpha_u                 :: Vector{Real},    # Upper surface parameters
+           alpha_l                 :: Vector{Real},    # Lower surface parameters
+           (dz_u, dz_l) = (0., 0.) :: NTuple{2, Real}, # Upper and lower trailing edge points
+           (LE_u, LE_l) = (0., 0.) :: NTuple{2, Real}, # Leading-edge modification coefficient
+           n = 40                  :: Integer)         # Number of points on each surface
 ```
 
 ```julia

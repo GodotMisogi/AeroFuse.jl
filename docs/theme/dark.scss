@@ -13,7 +13,7 @@ $sidebarcolor: #4371a7;
                        // it is used as-is for links in light theme
 $mainwhite: #ffffff;      // color representing white
 $mainblack: #202020;   // color representing black
-$darkbg: #1b1f28;      // dark theme main page background
+$darkbg: #2c2e33;      // dark theme main page background
 
 // These commands set up the fonts for the main text and code blocks.
 // the fonds must be included into the assets of the `makdocs` command, with e.g.
@@ -72,7 +72,7 @@ $pre-background: $codebg;  // for code blocks
 $documenter-docstring-header-background: lighten-color($body-background-color, 0.5);
 
 // Sidebar
-$documenter-sidebar-background: darken-color($maincolor, 1.5); //background color for sidebar
+$documenter-sidebar-background: $sidebarcolor; //background color for sidebar
 $documenter-sidebar-color: $text; //font color for sidebar
 $documenter-sidebar-menu-hover-color: $documenter-sidebar-color;
 $documenter-sidebar-menu-hover-background: darken-color($documenter-sidebar-background, 1.2);
