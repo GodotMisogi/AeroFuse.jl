@@ -12,6 +12,8 @@ using DiffResults: JacobianResult, jacobian, value
 using PrettyTables
 using StructArrays
 
+using Statistics: mean
+
 using SplitApplyCombine: combinedimsview, combinedims
 export combinedimsview, combinedims
 
@@ -97,9 +99,9 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, span_loads
+import .VortexLattice: Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity
 
-export Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, span_loads
+export Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity
 
 ## Profile drag estimation
 
@@ -121,7 +123,7 @@ include("Aerodynamics/Cases/cases.jl")
 include("Aerodynamics/Cases/stability_cases.jl")
 include("Aerodynamics/Cases/foil_cases.jl")
 
-export solve_case, solve_case_derivatives, streamlines, print_case, print_info, print_coefficients, print_derivatives, 
+export solve_case, solve_case_derivatives, streamlines, print_case, print_info, print_coefficients, print_derivatives, span_loads,
 triangle_connectivities, extrapolate_point_mesh
 
 ## Structural analyses

@@ -19,6 +19,8 @@ References(; speed = 1., density = 1., span = 1., chord = 1., area = 1., locatio
 force_coefficient(force, refs :: References) = force_coefficient(force, dynamic_pressure(refs.density, refs.speed), refs.area)
 moment_coefficient(moment, refs :: References) = moment_coefficient(moment, dynamic_pressure(refs.density, refs.speed), refs.area, refs.span, refs.chord)
 
+rate_coefficient(fs :: Freestream, refs :: References) = rate_coefficient(fs.omega, refs.speed, refs.span, refs.chord)
+
 ## System
 #==========================================================================================#
 
@@ -30,6 +32,11 @@ struct VLMSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
     freestream        :: P
     reference         :: Q
 end
+
+# Miscellaneous
+rate_coefficient(system :: VLMSystem) = rate_coefficient(system.freestream, system.reference)
+
+# Velocities
 
 surface_velocities(system :: VLMSystem) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega)
 

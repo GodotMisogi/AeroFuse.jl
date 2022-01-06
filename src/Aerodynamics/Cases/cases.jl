@@ -48,6 +48,25 @@ end
 ## Placeholder for functions I'm not sure where to put
 #==========================================================================================#
 
+## Span-loading
+function span_loads(panels, CFs_wind, S)
+    CFs  = combinedimsview(CFs_wind)
+    CDis = @views CFs[1,:,:]
+    CYs  = @views CFs[2,:,:]
+    CLs  = @views CFs[3,:,:]
+
+    area_scale = S ./ vec(sum(panel_area, panels, dims = 1))
+    span_CDis  = vec(sum(CDis, dims = 1)) .* area_scale
+    span_CYs   = vec(sum(CYs,  dims = 1)) .* area_scale
+    span_CLs   = vec(sum(CLs,  dims = 1)) .* area_scale
+
+    ys = @views vec(mean(x -> midpoint(x)[2], panels, dims = 1))
+
+    [ ys span_CDis span_CYs span_CLs ]
+end
+
+span_loads(wing :: WingMesh, CFs_wind, S) = span_loads(chord_panels(wing), CFs_wind, S)
+
 ## Mesh connectivities
 triangle_connectivities(inds) = @views [ 
                                          vec(inds[1:end-1,1:end-1]) vec(inds[1:end-1,2:end]) vec(inds[2:end,2:end])    ;

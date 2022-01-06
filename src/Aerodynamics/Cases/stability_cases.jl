@@ -3,7 +3,7 @@ function scale_inputs(fs :: Freestream, refs :: References)
     # Building input vector
     x0 = [ fs.alpha;
            fs.beta;
-           rate_coefficient(fs.omega, refs.speed, refs.span, refs.chord) ]
+           rate_coefficient(fs, refs) ]
 
     # Unscaling non-dimensional rate coefficients
     scale = 2 * refs.speed * 1. ./ [refs.span, refs.chord, refs.span]

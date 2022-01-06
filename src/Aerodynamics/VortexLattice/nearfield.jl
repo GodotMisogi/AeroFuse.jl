@@ -24,22 +24,6 @@ horseshoe_moment(horseshoe, force, r_ref) = (bound_leg_center(horseshoe) - r_ref
 
 surface_moments(horseshoes, forces, r_ref) = map((hs, f) -> horseshoe_moment(hs, f, r_ref), horseshoes, forces)
 
-function span_loads(panels, CFs, S)
-    CFs  = combinedimsview(CFs)
-    CDis = @views CFs[1,:,:]
-    CYs  = @views CFs[2,:,:]
-    CLs  = @views CFs[3,:,:]
-
-    area_scale  = S ./ vec(sum(panel_area, panels, dims = 1))
-    span_CDis   = vec(sum(CDis, dims = 1)) .* area_scale
-    span_CYs    = vec(sum(CYs,  dims = 1)) .* area_scale
-    span_CLs    = vec(sum(CLs,  dims = 1)) .* area_scale
-
-    ys = vec(map(x -> midpoint(x)[2], panels[1,:]))
-
-    [ ys span_CDis span_CYs span_CLs ]
-end
-
 ## Finite-core versions
 #==========================================================================================#
 
