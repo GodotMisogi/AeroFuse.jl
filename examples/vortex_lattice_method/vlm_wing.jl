@@ -52,9 +52,9 @@ M           = refs.speed / 330.         # Mach number
 cam_panels  = camber_panels(wing_mesh)
 edge_speeds = surface_velocities(system).wing
 CDv_plate   = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, 330., refs.area, μ)
-# CDv_diss    = local_dissipation_drag(wing, panel_area.(cam_panels), refs.density, edge_speeds, [0.2, 0.35, 0.35, 0.2], refs.speed, refs.density, M, μ)
+CDv_diss    = local_dissipation_drag(wing, panel_area.(cam_panels), refs.density, edge_speeds, [0.2, 0.35, 0.35, 0.2], refs.speed, refs.density, M, μ) / system.reference.area
 
-## Total force coefficients
+## Total force coefficients with viscous drag prediction
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
 CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 

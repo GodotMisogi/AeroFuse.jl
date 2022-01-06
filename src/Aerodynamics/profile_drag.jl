@@ -10,6 +10,8 @@ function form_factor(wing :: HalfWing, M)
     Kf  = form_factor_wing.(xcs, tcs, sweeps, M)
 end
 
+form_factor(wing :: Wing, M) = (form_factor(wing.left, M) + form_factor(wing.right, M)) / 2
+
 # Schlichting averaged skin-friction coefficients
 cf_lam(Re_c, k_lam = 1.) = 1.328 / √(Re_c * k_lam)
 cf_turb(Re_c, M) = 0.455 / log10(Re_c)^2.58 / (1 + 0.144M^2)^0.65
@@ -39,6 +41,21 @@ function wetted_area_drag(wing :: HalfWing, x_tr, V, ρ, a_ref = 330., μ = 1.5e
     wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
 end
 
+function wetted_area_drag(wing :: WingMesh, x_tr, V, ρ, a_ref = 330., μ = 1.5e-5)
+    # Chord processing
+    mean_chords = (fwdsum ∘ chords)(wing.surf) / 2
+
+    # Wetted areas
+    surf_pans = camber_panels(wing)
+    S_wets    = sum(panel_area, surf_pans, dims = 1)
+
+    # Form factors
+    M       = V / a_ref
+    K_fs    = form_factor(wing.surf, M)
+
+    wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
+end
+
 # Sato's local-friction and local-dissipation based on power balance method from Mark Drela, Flight Vehicle Aerodynamics, eq. 4.115.
 function local_dissipation_drag(wing :: Wing, wetted_areas, ρ_es, u_es, x_tr, V, ρ, M, μ)
     # Chord processing
@@ -50,5 +67,22 @@ function local_dissipation_drag(wing :: Wing, wetted_areas, ρ_es, u_es, x_tr, V
     wetted_area_drag(mean_chords, weighted_S_wets, 1., x_tr, V, ρ, M, μ)
 end
 
+function local_dissipation_drag(wing :: WingMesh, ρ_es, u_es, x_tr, V, ρ, M, μ)
+    # Chord processing
+    mean_chords = (fwdsum ∘ chords)(wing.surf) / 2
+
+    # Compute weighted wetted areas based on inviscid edge velocity distribution.
+    S_wets = panel_area.(camber_panels(wing))
+    weighted_S_wets = sum(@. ρ_es * u_es^3 * S_wets; dims = 1) ./ (ρ * V^3)
+
+    wetted_area_drag(mean_chords, weighted_S_wets, 1., x_tr, V, ρ, M, μ)
+end
+
+abstract type AbstractProfileDrag end
+
+struct FormFactor <: AbstractProfileDrag end
+struct Dissipation <: AbstractProfileDrag end
+
 profile_drag_coefficient(wing :: HalfWing, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
+profile_drag_coefficient(wing :: WingMesh, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
 profile_drag_coefficient(wing :: Wing, x_tr, V, rho_ref, a_ref, area_ref, μ) = profile_drag_coefficient(wing.left, x_tr, V, rho_ref, a_ref, area_ref, μ) + profile_drag_coefficient(wing.right, x_tr, V, rho_ref, a_ref, area_ref, μ)
