@@ -1,7 +1,7 @@
 # AeroMDAO
 
 <p align="center">
-<img width="60%", src="docs/build/assets/logo.svg">
+<img width="60%", src="https://raw.githubusercontent.com/GodotMisogi/AeroMDAO.jl/develop/docs/src/assets/logo.svg">
 </p>
 
 AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
