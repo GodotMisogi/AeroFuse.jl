@@ -96,7 +96,7 @@ aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
 
 Compute the generic properties of interest (span, area, etc.) of an `AbstractWing`.
 """
-properties(wing :: AbstractWing) = [ span(wing), projected_area(wing), aspect_ratio(wing), mean_aerodynamic_chord(wing), mean_aerodynamic_center(wing) ]
+properties(wing :: AbstractWing) = [ aspect_ratio(wing), span(wing), projected_area(wing), mean_aerodynamic_chord(wing), mean_aerodynamic_center(wing) ]
 
 function Base.show(io :: IO, wing :: AbstractWing)
     AR, b, S, c, mac = properties(wing)
