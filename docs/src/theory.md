@@ -1,13 +1,13 @@
 # Theory
 
-The theory described is meant to be minimal, with mainly the equations presented for reference when reading the code.
+The following theory described is meant to be minimal, with mainly the equations presented for reference when reading the code.
 
 ## Aerodynamics
 
 The aerodynamic analyses in AeroMDAO mainly utilize potential flow theory and solve problems using a _boundary element method_. This essentially is the following Laplace equation problem with a Neumann boundary condition:
 
 ```math
-\nabla^2 \phi = 0, \quad \mathbf V \equiv \nabla \phi \cdot \hat{\mathbf n} = 0
+\nabla^2 \phi = 0, \quad \mathbf V \equiv \nabla \phi \cdot \hat{\mathbf n} = 0, \quad \lim_{\mathbf r \to \infty} \phi(\mathbf r) \to 0
 ```
 
 Implementations for viscous-inviscid analyses are in progress.
@@ -72,24 +72,6 @@ The linear system consisting of the stiffness matrix $\mathbf K$ and load vector
 ## Aeroelasticity
 
 The vortex lattice method and beam element model are combined into a coupled system to perform static aeroelastic analyses. The analysis is made nonlinear by making the angle of attack $\alpha$ a variable by specifying the load factor $n$ with a given weight $W$ at fixed sideslip angle $\beta$.
-
-Define $\mathbf x = [\boldsymbol\Gamma, \boldsymbol\delta, \alpha]$ as the state vector satisfying the residual equations:
-
-```math
-\begin{align*}
-    \mathcal R_A(\mathbf x) & = \mathbf A(\boldsymbol\delta) \boldsymbol\Gamma - \mathbf V_\infty(\alpha) \cdot [\mathbf n_i(\boldsymbol\delta)]_{i = 1,\ldots, N} \\
-    \mathcal R_S(\mathbf x) & = \mathbf K \boldsymbol\delta - \mathbf f(\boldsymbol\delta, \boldsymbol\Gamma, \alpha) \\
-    \mathcal R_L(\mathbf x) & = L(\boldsymbol\delta, \boldsymbol\Gamma, \alpha) - n W \\
-\end{align*}
-```
-
-where the total lift $L$ is obtained by computing the forces via the Kutta-Jowkowski theorem. The forces are expressed in wind axes by the linear transformation $\mathbf R_G^W$.
-
-```math
-[D, Y, L] = \mathbf R_G^W(\alpha, \beta)\left(\sum_{i = 1}^N \rho \mathbf V_i \times \boldsymbol\Gamma_i \boldsymbol \ell_i(\boldsymbol\delta)\right)
-```
-
-and the structural load vector $\mathbf f$ is obtained from conservative and consistent load averaging of Kutta-Jowkowski forces:
 
 
 ## Flight Dynamics

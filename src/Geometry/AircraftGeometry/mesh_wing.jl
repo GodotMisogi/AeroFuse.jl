@@ -43,6 +43,17 @@ function camber_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, ch
     affine_transformation(wing).(chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip))
 end
 
+number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* spans(wing) / span(wing))
+
+function number_of_spanwise_panels(wing :: HalfWing, span_num :: Vector{<: Integer})
+    @assert (length ∘ spans)(wing) > 1 "Provide a positive integer of spanwise panels for 1 wing section."
+    span_num
+end
+
+# Spacing
+symmetric_spacing(wing :: HalfWing) = [ Sine(); fill(Cosine(), (length ∘ spans)(wing) - 1) ]
+
+
 ## Wing variants
 #==========================================================================================#
 
@@ -67,29 +78,18 @@ function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord
     [ left_coord[:,1:end-1] right_coord ]
 end
 
-## Spanwise distribution processing
-#==========================================================================================#
+number_of_spanwise_panels(wing :: Wing, span_num :: Integer) = number_of_spanwise_panels(right(wing), span_num ÷ 2)
 
-# Numbering
-number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* spans(wing) / span(wing))
-number_of_spanwise_panels(wing :: Wing,     span_num :: Integer) = number_of_spanwise_panels(right(wing), span_num ÷ 2)
-
-function number_of_spanwise_panels(wing :: HalfWing, span_num :: Vector{<: Integer})
-    @assert (length ∘ spans)(wing) > 1 "Provide a positive integer of spanwise panels for 1 wing section."
-    span_num
-end
+symmetric_spacing(wing :: Wing)     = [ Sine(); fill(Cosine(), (length ∘ spans ∘ right)(wing) - 1) ]
 
 function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer})
     @assert (length ∘ spans ∘ right)(wing) > 1 "Provide a positive integer of spanwise panels for 1 wing section."
     span_num .÷ 2
 end
 
-# Spacing
-symmetric_spacing(wing :: HalfWing) = [ Sine(); fill(Cosine(), (length ∘ spans)(wing)         - 1) ]
-symmetric_spacing(wing :: Wing)     = [ Sine(); fill(Cosine(), (length ∘ spans ∘ right)(wing) - 1) ]
-
 # Coordinates
 chord_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = chord_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
+
 camber_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = camber_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
 
 ## Panelling

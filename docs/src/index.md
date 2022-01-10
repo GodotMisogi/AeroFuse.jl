@@ -12,6 +12,8 @@ An additional aim is to write code compatible with automatic differentiation lib
 
 ## Features
 
+**Disclaimer**: The implementations are work-in-progress, and hence the results may not be entirely accurate. Please exercise caution when interpreting the results until validation cases are added.
+
 Functioning:
 
 - Basic geometric tools for airfoil processing and wing design. 
@@ -21,6 +23,8 @@ Functioning:
 - Empirical viscous drag prediction methods for wings.
 - Finite-element beam model based on Euler-Bernoulli theory for structural analysis.
 
+![](../../plots/VortexLattice.svg)
+
 In progress:
 
 - Aeroelastic analyses coupling vortex lattice and beam element models.
@@ -28,11 +32,7 @@ In progress:
 - Generic, flexible and efficient flight dynamics integrator in 2 and 3 dimensions.
 - Fuselage geometry parametrization and aerodynamic implementation.
 
-![](../../plots/VortexLattice.svg)
-
 ![](https://godot-bloggy.xyz/post/diagrams/AerostructAircraft.svg)
-
-**Disclaimer**: The current implementation is a major work-in-progress, and hence the results may not be entirely accurate. Please exercise caution when interpreting the results until validation cases are added.
 
 ## Installation
 

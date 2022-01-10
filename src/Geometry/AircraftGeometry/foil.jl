@@ -60,13 +60,15 @@ cosine_foil(foil :: Foil, num :: Integer) = Foil(cosine_foil(coordinates(foil), 
 
 Compute the camber-thickness distribution of a Foil with cosine spacing.
 """
-camber_thickness(foil :: Foil, num :: Integer = 40) = coordinates_to_camber_thickness(cosine_foil(coordinates(foil)), num + 1)
+camber_thickness(foil :: Foil, num = 40) = coordinates_to_camber_thickness(cosine_foil(coordinates(foil)), num + 1)
 
 function max_thickness_to_chord_ratio_location(coords)
     @views xs, thiccs = coords[:,1], coords[:,3]
     max_thick_arg = argmax(thiccs)
     @views xs[max_thick_arg], thiccs[max_thick_arg]
 end
+
+split_foil(foil :: Foil) = split_foil(coordinates(foil))
 
 ## Foil processing
 #==========================================================================================#
@@ -78,6 +80,7 @@ Read a '.dat' file consisting of 2D coordinates, for an airfoil as an array of `
 """
 read_foil(path :: String; header = true) = readdlm(path, skipstart = header ? 1 : 0)
 
+# This is type-unstable (obviously -_-)
 function split_foil(coords)
     # display(coords)
     for (i, ((xp, yp), (x, y), (xn, yn))) ∈ (enumerate ∘ adj3 ∘ collect ∘ eachrow)(coords)

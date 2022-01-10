@@ -17,12 +17,16 @@ cf_lam(Re_c, k_lam = 1.) = 1.328 / √(Re_c * k_lam)
 cf_turb(Re_c, M) = 0.455 / log10(Re_c)^2.58 / (1 + 0.144M^2)^0.65
 cf_schlichting(Re, Re_xtr, M) = max(cf_lam(Re), cf_turb(Re, M) - (Re_xtr / 320 - 39) / Re)
 
-function wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
+function skin_friction_coefficients(mean_chords, x_tr, V, ρ, M, μ)
     # Skin-friction coefficients
     Re_c    = reynolds_number.(ρ, V, mean_chords, μ)
     Re_xtr  = reynolds_number.(ρ, V, mean_chords .* x_tr, μ)
     cfs     = cf_schlichting.(Re_c, Re_xtr, M)
+end
 
+function wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
+    cfs = skin_friction_coefficients(mean_chords, x_tr, V, ρ, M, μ)
+    
     # Profile drag
     Dp_by_q = sum(@. cfs * S_wets * K_fs)
 end
@@ -86,3 +90,10 @@ struct Dissipation <: AbstractProfileDrag end
 profile_drag_coefficient(wing :: HalfWing, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
 profile_drag_coefficient(wing :: WingMesh, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
 profile_drag_coefficient(wing :: Wing, x_tr, V, rho_ref, a_ref, area_ref, μ) = profile_drag_coefficient(wing.left, x_tr, V, rho_ref, a_ref, area_ref, μ) + profile_drag_coefficient(wing.right, x_tr, V, rho_ref, a_ref, area_ref, μ)
+
+
+function wave_drag(M, Λ, t_by_c, Cl, κ_A)
+    M_drag_divergence = κ_A / cos(Λ) - t_by_c / cos(Λ)^2 - Cl / (10 * cos(Λ)^3) # Drag divergence Mach number
+    M_crit   = M_drag_divergnece - (0.1 / 80)^(1/3) # Critical Mach number
+    CD_wave = ifelse(M > M_crit, 20 * (Mach - M_crit)^4, 0.)
+end

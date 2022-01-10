@@ -62,7 +62,11 @@ Define a `HalfWing` consisting of a single trapezoidal section.
 - `angle      :: Real         = 0.`: Angle of rotation (degrees)
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
-HalfWingSection(; span = 1., dihedral = 0., LE_sweep = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [LE_sweep], position, angle, axis)
+HalfWingSection(; span = 1., dihedral = 0., LE_sweep = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(0., 1., 0.)) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [LE_sweep], position, angle, axis)
+
+# function HalfWingSection(area, aspect_ratio, taper)
+
+# end
 
 # Getters
 foils(wing     :: HalfWing) = wing.foils
@@ -122,9 +126,9 @@ max_thickness_to_chord_ratio_location(wing :: HalfWing, num) = max_thickness_to_
 
 function max_thickness_to_chord_ratio_sweeps(wing :: HalfWing, num)
     xs_max_tbyc = max_thickness_to_chord_ratio_location(wing, num)
-    max_tbyc    = last.(xs_max_tbyc)
-    xs_temp     = first.(xs_max_tbyc)
-    xs          = first.(leading_edge(wing)) .+ wing.chords .* first.(xs_temp)
+    max_tbyc    = getindex.(xs_max_tbyc, 2)
+    xs_temp     = getindex.(xs_max_tbyc, 1)
+    xs          = getindex.(leading_edge(wing), 1) .+ wing.chords .* getindex.(xs_temp, 1)
     ds          = fwddiff(xs)
     widths      = @. wing.spans / cos(wing.dihedrals)
 

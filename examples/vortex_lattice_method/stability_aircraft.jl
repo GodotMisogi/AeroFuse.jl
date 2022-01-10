@@ -25,7 +25,7 @@ htail = WingSection(span       = 2.0,
                     tip_twist  = 0.0,
                     root_foil  = naca4(0,0,1,2),
                     tip_foil   = naca4(0,0,0,9),
-                    position   = [5., 0., 0.],
+                    position   = [5., 0., -0.1],
                     angle      = 0.,
                     axis       = [0., 1., 0.]);
 
@@ -128,8 +128,8 @@ dvs_htail = dv_data.htail.dNF
 CL_α_h    = dvs_htail[3,1]
 
 # Locations
-x_np = [ ref[1] .+ np; zeros(2) ]  # Neutral point
-x_cp = [ ref[1] .+ cp; zeros(2) ]  # Center of pressure
+x_np = [ refs.location[1] .+ np; zeros(2) ]  # Neutral point
+x_cp = [ refs.location[1] .+ cp; zeros(2) ]  # Center of pressure
 
 println("Aerodynamic Center x_ac: $(x_w[1]) m")
 println("Neutral Point      x_np: $(x_np[1]) m")
@@ -167,3 +167,38 @@ scatter!(Tuple(x_np), color = :orange, label = "Neutral Point")
 scatter!(Tuple(x_cp), color = :brown, label = "Center of Pressure")
 # savefig(aircraft_plot, "Aircraft.png")
 plot!()
+
+
+## Alpha sweep
+function alpha_sweep(aircraft, refs, α)
+    ## Evaluate case
+    fs      = Freestream(alpha = α, 
+                         beta  = 0.0, 
+                         omega = [0.,0.,0.])
+
+    dv_data = solve_case_derivatives(aircraft, fs, refs; 
+                                    #  print_components = true
+                                    )
+end
+
+##
+αs  = -8:0.5:8
+res = @time map(α -> alpha_sweep(aircraft, refs, α), αs)
+
+## Data processing
+Cm_αs = [ re.aircraft.dNF[5,1] for re in res ]
+
+##
+plot(αs, Cm_αs, ls = :solid, xlabel = "α", ylabel = "Cm_α")
+
+##
+CL_αs  = [ re.aircraft.NF[3] for re in res ]
+
+##
+# plot(CL_αs, Cm_αs, ls = :solid, xlabel = "CL_α", ylabel = "Cm_α")
+
+##
+Cm_CLs = Cm_αs ./ CL_αs
+
+##
+plot(αs, Cm_CLs, ls = :solid, xlabel = "α", ylabel = "Cm/CL")
