@@ -39,19 +39,7 @@ makedocs(
 
 ## Deployment
 deploydocs(
-    # root = "<current-directory>",
-    target = "build",
-    # dirname = "",
     repo = "github.com/GodotMisogi/AeroMDAO.jl.git",
-    branch = "gh-pages",
-    # deps = nothing | <Function>,
-    # make = nothing | <Function>,
-    devbranch = "doc-tests",
-    # devurl = "dev",
+    devbranch = "develop",
     versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
-    # forcepush = false,
-    # deploy_config = auto_detect_deploy_system(),
-    # push_preview = false,
-    # repo_previews = repo,
-    # branch_previews = branch,
 )
