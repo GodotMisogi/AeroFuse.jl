@@ -36,3 +36,8 @@ makedocs(
                             # highlightjs = "theme/highlight.js",
                             )
 )
+
+## Deployment
+deploydocs(
+    repo = "github.com/GodotMisogi/AeroMDAO.jl.git",
+)
