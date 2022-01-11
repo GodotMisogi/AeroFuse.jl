@@ -9,7 +9,8 @@
 ////////////////////////////////////////////////////////////////////////
 $maincolor: #2a5398;   // main color of the org theme
 $secondcolor: #ac5118; // secondary color that serves as accents
-$sidebarcolor: #4371a7;
+$sidebarlightcolor: #e7e7e7;
+$sidebardarkcolor: #1d1d1d;
                        // it is used as-is for links in light theme
 $mainwhite: #ffffff;      // color representing white
 $mainblack: #202020;   // color representing black
@@ -72,7 +73,7 @@ $pre-background: $codebg;  // for code blocks
 $documenter-docstring-header-background: lighten-color($body-background-color, 0.5);
 
 // Sidebar
-$documenter-sidebar-background: $sidebarcolor; //background color for sidebar
+$documenter-sidebar-background: $sidebardarkcolor; //background color for sidebar
 $documenter-sidebar-color: $text; //font color for sidebar
 $documenter-sidebar-menu-hover-color: $documenter-sidebar-color;
 $documenter-sidebar-menu-hover-background: darken-color($documenter-sidebar-background, 1.2);

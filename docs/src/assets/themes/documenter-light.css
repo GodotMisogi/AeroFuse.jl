@@ -7428,8 +7428,8 @@ li.no-marker {
 #documenter .docs-sidebar {
   display: flex;
   flex-direction: column;
-  color: #ffffff;
-  background-color: #4371a7;
+  color: #202020;
+  background-color: #e7e7e7;
   border-right: 1px solid #dbdbdb;
   padding: 0;
   flex: 0 0 18rem;
@@ -7468,7 +7468,7 @@ li.no-marker {
     #documenter .docs-sidebar .docs-package-name .docs-autofit {
       max-width: 16.2rem; }
     #documenter .docs-sidebar .docs-package-name a, #documenter .docs-sidebar .docs-package-name a:hover {
-      color: #ffffff; }
+      color: #202020; }
   #documenter .docs-sidebar .docs-version-selector {
     border-top: 1px solid #dbdbdb;
     display: none;
@@ -7517,11 +7517,11 @@ li.no-marker {
       display: block;
       padding: 0.5rem 0.5rem; }
       #documenter .docs-sidebar ul.docs-menu .tocitem, #documenter .docs-sidebar ul.docs-menu .tocitem:hover {
-        color: #ffffff;
-        background: #4371a7; }
+        color: #202020;
+        background: #e7e7e7; }
     #documenter .docs-sidebar ul.docs-menu a.tocitem:hover, #documenter .docs-sidebar ul.docs-menu label.tocitem:hover {
-      color: #ffffff;
-      background-color: #31537b; }
+      color: #202020;
+      background-color: #c8c8c8; }
     #documenter .docs-sidebar ul.docs-menu li.is-active {
       border-top: 1px solid #dbdbdb;
       border-bottom: 1px solid #dbdbdb;
@@ -7530,7 +7530,7 @@ li.no-marker {
         background-color: #ffffff;
         color: #202020; }
       #documenter .docs-sidebar ul.docs-menu li.is-active ul.internal .tocitem:hover {
-        background-color: #d1deed;
+        background-color: white;
         color: #202020; }
     #documenter .docs-sidebar ul.docs-menu > li.is-active:first-child {
       border-top: none; }
@@ -7563,9 +7563,9 @@ li.no-marker {
         background: none; }
       #documenter .docs-sidebar ul.docs-menu::-webkit-scrollbar-thumb {
         border-radius: 5px 0px 0px 5px;
-        background: #375d8a; }
+        background: lightgray; }
       #documenter .docs-sidebar ul.docs-menu::-webkit-scrollbar-thumb:hover {
-        background: #2c4a6d; } }
+        background: #bebebe; } }
   @media screen and (max-width: 1055px) {
     #documenter .docs-sidebar {
       overflow-y: auto;
@@ -7575,9 +7575,9 @@ li.no-marker {
         background: none; }
       #documenter .docs-sidebar::-webkit-scrollbar-thumb {
         border-radius: 5px 0px 0px 5px;
-        background: #375d8a; }
+        background: lightgray; }
       #documenter .docs-sidebar::-webkit-scrollbar-thumb:hover {
-        background: #2c4a6d; } }
+        background: #bebebe; } }
 
 #documenter .docs-main #documenter-search-info {
   margin-bottom: 1rem; }
@@ -7821,8 +7821,8 @@ code.hljs {
   box-shadow: 0.24rem 0rem 0.4rem #bbb; }
   #documenter .docs-sidebar form.docs-search > input {
     color: #ffffff;
-    background-color: #375d8a;
-    border-color: #2c4a6d;
+    background-color: lightgray;
+    border-color: #bebebe;
     margin-top: 1.0rem;
     margin-bottom: 1.0rem; }
     #documenter .docs-sidebar form.docs-search > input::placeholder {
