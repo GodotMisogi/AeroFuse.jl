@@ -3,8 +3,7 @@ name: Documentation
 on:
   push:
     branches:
-      - master
-      - develop
+      - doc-tests
     tags: '*'
   pull_request:
 
@@ -22,4 +21,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # If authenticating with GitHub Actions token
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
+          GKSwstype: "100" # https://discourse.julialang.org/t/generation-of-documentation-fails-qt-qpa-xcb-could-not-connect-to-display/60988
         run: julia --project=docs/ docs/make.jl
