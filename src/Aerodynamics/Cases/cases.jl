@@ -33,11 +33,11 @@ function solve_case(components, freestream :: Freestream, refs :: References; na
 end
 
 function print_coefficients(system :: VLMSystem, name = :aircraft; components = false)
-    if components 
+    if components
         nf_c = nearfield_coefficients(system)
         ff_c = farfield_coefficients(system) 
-        print_coefficients(nearfield(system), farfield(system), name)
         [ print_coefficients(nf_c[key], ff_c[key], key) for key in keys(system.vortices) ]
+        print_coefficients(nearfield(system), farfield(system), name)
     else
         print_coefficients(nearfield(system), farfield(system), name)
     end

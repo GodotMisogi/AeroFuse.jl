@@ -4,8 +4,6 @@ AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently pro
 
 **Authors**: Arjit Seth, Rhea P. Liem, and Stephane Redonnet
 
-![](assets/logo.svg)
-
 ## Objectives
 
 The current focus is to enable tutorials in computation for undergraduates in an aerospace educational curriculum, particularly at The Hong Kong University of Science and Technology. For this purpose, the code is written in a functional style replicating the mathematics presented in textbooks as much as possible.
@@ -25,7 +23,7 @@ Functioning:
 - Empirical viscous drag prediction methods for wings.
 - Finite-element beam model based on Euler-Bernoulli theory for structural analysis.
 
-![](../../plots/VortexLattice.svg)
+![](https://raw.githubusercontent.com/GodotMisogi/AeroMDAO.jl/develop/plots/VortexLattice.svg)
 
 In progress:
 

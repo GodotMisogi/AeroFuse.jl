@@ -86,7 +86,7 @@ x_lower, y_lower = lower[:,1], lower[:,2] #hide
 get_surface_values(panels, vals, surf = "lower") = [ (collocation_point(panel)[1], val) for (val, panel) in zip(vals, panels) if panel_location(panel) == surf ] #hide
 cp_lower = get_surface_values(panels, cps, "lower") #hide
 cp_upper = get_surface_values(panels, cps, "upper") #hide
-plot(aspect_ratio = 1, yflip = true, xlabel=L"(x/c)", ylabel = L"$C_p$") #hide
+plot(yflip = true, xlabel=L"(x/c)", ylabel = L"$C_p$") #hide
 plot!(cp_upper, ls = :dash, lw = 2, c = :cornflowerblue, label = "Upper") #hide
 plot!(cp_lower, ls = :dash, lw = 2, c = :orange, label = "Lower") #hide
 plot!(x_upper, -y_upper,  #hide
@@ -104,10 +104,11 @@ The vortex lattice method used in AeroMDAO follows Mark Drela's *Flight Vehicle 
 The geometry "engine" generates panels for horseshoes and the camber distribution using the airfoil data in the definition of the wing.
 
 ```julia
-WingMesh(wing      :: AbstractWing,     # Wing type
-         span_num  :: Vector{Integer},  # Number of spanwise panels
-         chord_num :: Integer,          # Number of chordwise panels
-         spacing   = Cosine())
+WingMesh(wing                    :: AbstractWing,     # Wing type
+         span_num                :: Vector{Integer},  # Number of spanwise panels
+         chord_num               :: Integer,          # Number of chordwise panels
+         span_spacing = Cosine() :: AbstractSpacing   # Spanwise distribution
+        )
 ```
 
 ```julia
@@ -119,7 +120,7 @@ wing_mesh.camber_mesh
 
 Aircraft analysis by definition of multiple lifting surfaces using the `HalfWing` or `Wing` types are also supported, but is slightly more complex due to the increases in user specifications. Particularly, you will have to mesh the different components by yourself by specifying the number of chordwise panels, spanwise panels and their associated spacings.
 
-This method returns the horseshoe panels for the analysis, and the associated normal vectors based on the camber distribution of the wing. Consider a case in which you have a wing, horizontal tail, and vertical tail.
+This method returns the horseshoe panels for the analysis, and the associated normal vectors based on the camber distribution of the wing. Consider a "vanilla" aircraft, in which you have a wing, horizontal tail, and vertical tail.
 
 ```julia
 # Wing
@@ -156,7 +157,7 @@ vtail = HalfWing(foils     = Foil.(fill(naca4(0,0,0,9), 2)),
                  axis      = [1., 0., 0.])
 
 # Print info
-print_info(wing, "Wing")
+print_info(wing,  "Wing")
 print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
@@ -172,21 +173,25 @@ vtail_mesh = WingMesh(vtail, [12], 6,
                      )
 ```
 
-To prepare the analyses, you will have to assemble this information using the exported `ComponentArray`, in which the components are the horseshoes generated using the `make_horseshoes` function.
+The horseshoes for the analysis are generated using the `make_horseshoes` function.
 
 ```julia
-aircraft = ComponentArray(
-                          wing  = make_horseshoes(wing_mesh),
-                          htail = make_horseshoes(htail_mesh),
-                          vtail = make_horseshoes(vtail_mesh)
-                         );
+wing_horsies = make_horseshoes(wing_mesh),
 ```
 
-Very similarly to the wing-only case, there is an associated `solve_case()` method which takes a dictionary of the panels and normal vectors, and the reference data for computing the non-dimensional coefficients:
+To run analyses with multiple components, you will have to assemble this information using the exported `ComponentVector` (built by [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl)). This names the components using a symbolic tag, and all the components are treated as a single vector.
+
+```julia
+aircraft = ComponentVector(
+                           wing  = wing_horsies,
+                           htail = make_horseshoes(htail_mesh),
+                           vtail = make_horseshoes(vtail_mesh)
+                          );
+```
 
 ### Freestream Condition
 
-This geometry is analysed at given freestream angles of attack and sideslip, which define the boundary conditions of the problem.
+This geometry is analysed at given freestream angles of attack and sideslip (in degrees), which define the boundary conditions of the problem.
 
 ```julia
 fs  = Freestream(alpha = 0.0, 
@@ -211,18 +216,19 @@ refs = References(speed    = 1.0,
 
 ```julia
 system = solve_case(
-                    aircraft, fs, refs;      # Aircraft, Freestream, and References
-                    print            = true, # Prints the results for only the aircraft
-                    print_components = true, # Prints the results for all components
+                    aircraft   :: Vector{Horseshoe}, # Horseshoes on the aircraft surface
+                    fs         :: Freestream,        # Freestream values
+                    refs       :: References;        # Reference values
+                    print            = true,         # Prints the results for only the aircraft
+                    print_components = true,         # Prints the results for all components
                    );
 ```
 
-It returns a system which can be used to determine quantities of interest such as the dynamics."
+It returns a system which can be used to determine quantities of interest such as the dynamics.
 
 ### Dynamics
 
-The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces and a Trefftz plane integration for farfield forces, of which the latter is usually more accurate. You can specify the axis system for the nearfield forces, with choices of `Geometry(), Body(), Wind(), Stability()`. The wind axes are used by default.
-
+The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of `Geometry(), Body(), Wind(), Stability()`. The wind axes are used by default.
 
 ```julia
 # Compute dynamics
@@ -232,29 +238,58 @@ Fs       = surface_forces(system)
 Fs, Ms   = surface_dynamics(system; axes = ax) 
 ```
 
-To obtain the nearfield and farfield coefficients of the components (in the wind frame by definition), the following functions can be used.
+A Trefftz plane integration is employed to obtain farfield forces.
+
+!!! note
+    The farfield forces are usually more accurate compared to nearfield forces, as the components do not interact as in the evaluation of the Biot-Savart integrals for the latter.
+
+To obtain the nearfield and farfield coefficients of the components (in wind axes by definition):
 
 ```julia
 nfs = nearfield_coefficients(system)
 ffs = farfield_coefficients(system)
+```
 
+To obtain the total nearfield and farfield force coefficients:
+
+```julia
 nf  = nearfield(system) 
 ff  = farfield(system)
 ```
 
+### Derivatives
+
+AeroMDAO uses the [ForwardDiff.jl](https://github.com/JuliaDiff/ForwardDiff.jl) package, which leverages forward-mode automatic differentiation to obtain derivatives of certain quantities of interest. Particularly, with respect to the angles of attack and sideslip, and the non-dimensionalized roll rates at low computational cost for stability analyses. A unique feature which is not easily obtained from other implementations is the stability derivatives of each component. To obtain these quantities, simply replace `solve_case()` with `solve_case_derivatives()`, which will return data consisting of the nearfield, farfield and stability derivative coefficients.
+
+!!! note
+    This is due to limitations of using closures in `ForwardDiff`, and hence only these quantities are provided using this function.
+
+```julia
+solve_case_derivatives(
+                       aircraft, fs, refs;
+                       print            = true,    # Prints the results for only the aircraft
+                       print_components = true,    # Prints the results for all components
+                      );
+```
+
+You can pretty-print the stability derivatives with the following function, whose first argument again provides the name of the wing:
+
+```julia
+print_derivatives(dv_data.wing, "My Wing")
+```
+
 #### Example
 
-```@example aeromdao
+```@repl
+using AeroMDAO
+
 # Wing
 wing = Wing(foils     = Foil.(fill(naca4(2,4,1,2), 2)),
             chords    = [1.0, 0.6],
             twists    = [2.0, 0.0],
             spans     = [4.0],
             dihedrals = [5.],
-            LE_sweeps = [5.]);
-
-x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+            LE_sweeps = [5.])
 
 # Horizontal tail
 htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
@@ -278,12 +313,12 @@ vtail = HalfWing(foils     = Foil.(fill(naca4(0,0,0,9), 2)),
                  angle     = 90.,
                  axis      = [1., 0., 0.])
 
-# Print info
+# Printing information
 print_info(wing, "Wing")
 print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
-## WingMesh type
+# Meshing
 wing_mesh  = WingMesh(wing, [12], 6, 
                       span_spacing = Cosine()
                      )
@@ -294,46 +329,36 @@ vtail_mesh = WingMesh(vtail, [12], 6,
                       span_spacing = Cosine()
                      )
 
+# Aircraft assembly
 aircraft = ComponentArray(
                           wing  = make_horseshoes(wing_mesh),
                           htail = make_horseshoes(htail_mesh),
                           vtail = make_horseshoes(vtail_mesh)
                          );
 
-## Case
-fs      = Freestream(alpha = 0.0, 
-                     beta  = 0.0, 
-                     omega = [0., 0., 0.]);
+# Define freestream condition
+fs  = Freestream(alpha = 0.0, 
+                 beta  = 0.0, 
+                 omega = [0., 0., 0.]);
 
-refs    = References(speed    = 1.0, 
-                     area     = projected_area(wing),
-                     span     = span(wing),
-                     chord    = mean_aerodynamic_chord(wing),
-                     density  = 1.225,
-                     location = [ x_w, 0., 0.])
+# Define reference values
+refs = References(speed    = 1.0, 
+                  area     = projected_area(wing),
+                  span     = span(wing),
+                  chord    = mean_aerodynamic_chord(wing),
+                  density  = 1.225,
+                  location = mean_aerodynamic_center(wing));
 
-system = solve_case(aircraft, fs, refs;
-                    print            = true, # Prints the results for only the aircraft
-                    print_components = true, # Prints the results for all components
-                   )
-```
+# Solve case
+system = solve_case(
+        aircraft, fs, refs;
+        print            = true, # Prints the results for only the aircraft
+        print_components = true, # Prints the results for all components
+    );
 
-### Derivatives
-
-AeroMDAO uses the [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl) package, which leverages forward-mode automatic differentiation to obtain derivatives of certain quantities of interest. Particularly, with respect to the angles of attack and sideslip, and the non-dimensionalized roll rates at low computational cost for stability analyses. A unique feature which is not easily obtained from other implementations is the stability derivatives of each component. To obtain these quantities, simply replace `solve_case()` with `solve_case_derivatives()`, which will return the data consisting of the nearfield, farfield and stability derivative coefficients.
-
-*Note:* This is due to limitations of using closures in `ForwardDiff`, and hence no post-processing values are provided using this function.
-
-```julia
-@time dv_data = solve_case_derivatives(
-                     aircraft, fs, refs;
-                     print            = true,    # Prints the results for only the aircraft
-                     print_components = true,    # Prints the results for all components
-                    );
-```
-
-You can pretty-print the stability derivatives with the following function, whose first argument again provides the name of the wing:
-
-```julia
-print_derivatives(dv_data.wing, "My Wing")
+dv_data = solve_case_derivatives(
+        aircraft, fs, refs;
+        # print            = true, # Prints the results for only the aircraft
+        print_components   = true, # Prints the results for all components
+    );
 ```

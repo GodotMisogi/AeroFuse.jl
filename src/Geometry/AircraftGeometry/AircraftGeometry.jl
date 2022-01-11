@@ -99,8 +99,8 @@ Compute the generic properties of interest (span, area, etc.) of an `AbstractWin
 properties(wing :: AbstractWing) = [ aspect_ratio(wing), span(wing), projected_area(wing), mean_aerodynamic_chord(wing), mean_aerodynamic_center(wing) ]
 
 function Base.show(io :: IO, wing :: AbstractWing)
+    println(io, "$(supertype(typeof(wing))) with $(length(spans(wing))) spanwise section(s).")
     AR, b, S, c, mac = properties(wing)
-    println(io, "$(typeof(wing))")
     println(io, "Aspect Ratio: $AR")
     println(io, "Span (m): $b")
     println(io, "Projected Area (m): $S")
