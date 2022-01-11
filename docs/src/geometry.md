@@ -2,7 +2,6 @@
 
 ```@setup aeromdao
 using AeroMDAO
-using StaticArrays
 using Plots
 using LaTeXStrings
 gr()
