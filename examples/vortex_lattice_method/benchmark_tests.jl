@@ -52,12 +52,12 @@ function aeromdao_steady_vlm()
                                              spacing  = Cosine()
                                             )
 
-    # Aircraft assembly
-    aircraft = ComponentArray(
-                              wing  = Horseshoe.(wing_panels,  wing_normals),
-                              htail = Horseshoe.(htail_panels, htail_normals),
-                              vtail = Horseshoe.(vtail_panels, vtail_normals),
-                             );
+    # Aircraft assembly (ComponentVectors are death)
+    aircraft = [
+                Horseshoe.(wing_panels,  wing_normals)[:];
+                Horseshoe.(htail_panels, htail_normals)[:];
+                Horseshoe.(vtail_panels, vtail_normals)[:];
+               ]
 
 
     # display(size.([ wing_panels[1], htail_panels[1], vtail_panels[1] ])) # Checking sizes
@@ -76,9 +76,10 @@ function aeromdao_steady_vlm()
 
     # @timeit "Computing Forces" Fs = surface_forces(data)
     CFs, CMs = surface_coefficients(data)
-    FFs      = farfield_coefficients(data)
+    # FFs      = farfield_coefficients(data)
 
-    nearfield(data), farfield(data)
+    sum(CFs), sum(CMs)
+    # nearfield(data), farfield(data)
     # print_timer()
 end
 
@@ -178,12 +179,12 @@ function byu_steady_vlm()
 
     CF, CM = body_forces(system; frame=VortexLattice.Wind())
 
-    CDiff = far_field_drag(system)
+    # CDiff = far_field_drag(system)
 
     # dCF_b, dCM_b = body_derivatives(system)
     # dCF_s, dCM_s = stability_derivatives(system)
 
-    CF, CM, CDiff #, dCF_b, dCM_b, dCF_s, dCM_s
+    # CF, CM, CDiff #, dCF_b, dCM_b, dCF_s, dCM_s
 end
 
-t2 = @benchmark byu_steady_vlm()
+t2 = byu_steady_vlm();
