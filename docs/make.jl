@@ -46,7 +46,7 @@ deploydocs(
     branch = "gh-pages",
     # deps = nothing | <Function>,
     # make = nothing | <Function>,
-    devbranch = "develop",
+    devbranch = "doc-tests",
     # devurl = "dev",
     versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
     # forcepush = false,
