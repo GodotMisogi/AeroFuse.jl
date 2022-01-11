@@ -40,4 +40,5 @@ makedocs(
 ## Deployment
 deploydocs(
     repo = "github.com/GodotMisogi/AeroMDAO.jl.git",
+    branch = "doc-tests",
 )
