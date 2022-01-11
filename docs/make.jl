@@ -48,7 +48,7 @@ deploydocs(
     # make = nothing | <Function>,
     devbranch = "develop",
     # devurl = "dev",
-    versions = ["stable" => "v^", "v#.#", devurl => "dev",
+    versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
     # forcepush = false,
     # deploy_config = auto_detect_deploy_system(),
     # push_preview = false,
