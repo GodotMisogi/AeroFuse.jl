@@ -78,7 +78,7 @@ function aeromdao_steady_vlm()
     CFs, CMs = surface_coefficients(data)
     # FFs      = farfield_coefficients(data)
 
-    sum(CFs), sum(CMs)
+    # sum(CFs), sum(CMs)
     # nearfield(data), farfield(data)
     # print_timer()
 end

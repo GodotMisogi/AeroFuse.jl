@@ -51,10 +51,10 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; n
 
     # Reshaping
     data  = cat(vars, reshape(derivs, 9, num_comps, 5), dims = 3)
-    comps = @views NamedTuple(names[i] => ComponentArray(NF  = data[1:6,i,1],
-                                                         dNF = data[1:6,i,2:end], 
-                                                         FF  = data[7:end,i,1], 
-                                                         dFF = data[7:end,i,2:end]) 
+    comps = @views NamedTuple(names[i] => (NF  = data[1:6,i,1],
+                                           dNF = data[1:6,i,2:end], 
+                                           FF  = data[7:end,i,1], 
+                                           dFF = data[7:end,i,2:end]) 
                               for i in axes(data, 2))
 
     # Printing

@@ -182,7 +182,7 @@ new_camber_mesh = transfer_displacements(dxs, Ts, wing_mesh.camber_mesh, fem_mes
 # new_normals    = panel_normal.(new_cam_panels)
 
 new_aircraft = ComponentArray(wing = Horseshoe.(make_panels(new_chord_mesh), panel_normal.(make_panels(new_camber_mesh))))
-new_fs       = Freestream(V, rad2deg(α_opt), β, Ω)
+new_fs       = Freestream(rad2deg(α_opt), rad2deg(fs.beta), fs.omega)
 system       = solve_case(new_aircraft, new_fs, refs);
 
 ## Aerodynamic forces and center locations
@@ -206,7 +206,7 @@ load_fac = lift * cos(α_opt) / weight
 println("Load factor: $load_fac")
 println("Weight: $weight N")
 println("Lift: $lift N")
-println("Speed: $V m/s")
+println("Speed: $(refs.speed) m/s")
 println("Angle of attack: $(rad2deg(α_opt))ᵒ")
 
 ## Generate DataFrame
