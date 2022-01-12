@@ -144,13 +144,13 @@ farfield(system :: VLMSystem)  = let ff = farfield_coefficients(system); vec(sum
 # Made out of annoyance and boredom
 function Base.show(io :: IO, sys :: VLMSystem)     
     println(io, "VLMSystem -")
-    println(io, "Elements: $(length(sys.vortices)) $(eltype(sys.vortices))")
+    println(io, "Elements: ", length(sys.vortices), " ", eltype(sys.vortices))
     print(io, "Freestream: ")
     for fname in fieldnames(typeof(sys.freestream))
-        print(io, "$fname = $(getfield(sys.freestream, fname)), ")
+        print(io, fname, " = ", getfield(sys.freestream, fname), ", ")
     end
     print(io, "\nReferences: ")
     for fname in fieldnames(typeof(sys.reference))
-        print(io, "$fname = $(getfield(sys.reference, fname)), ")
+        print(io, fname, " = ", getfield(sys.reference, fname), ", ")
     end
 end

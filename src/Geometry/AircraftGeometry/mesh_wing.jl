@@ -191,10 +191,10 @@ normal_vectors(wing :: WingMesh)  = panel_normal.(camber_panels(wing))
 function Base.show(io :: IO, mesh :: WingMesh)
     n_c, n_s = size(mesh.chord_mesh) .- 1
     println(io, "WingMesh —")
-    println(io, "Spanwise panels: $n_s")
-    println(io, "Chordwise panels: $n_c")
-    println(io, "Spanwise spacing: $(mesh.span_spacing)")
-    println(io, "Chordwise spacing: $(mesh.chord_spacing)")
+    println(io, "Spanwise panels: ", n_s)
+    println(io, "Chordwise panels: ", n_c)
+    println(io, "Spanwise spacing: ", mesh.span_spacing)
+    println(io, "Chordwise spacing: ", mesh.chord_spacing)
 
     nothing
 end
