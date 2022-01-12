@@ -7210,7 +7210,7 @@ html.theme--documenter-dark {
     display: flex;
     flex-direction: column;
     color: #fbfbfb;
-    background-color: #1d1d1d;
+    background-color: #1a1a1a;
     border-right: 1px solid #dbdbdb;
     padding: 0;
     flex: 0 0 18rem;
@@ -7299,10 +7299,10 @@ html.theme--documenter-dark {
         padding: 0.5rem 0.5rem; }
         html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu .tocitem, html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu .tocitem:hover {
           color: #fbfbfb;
-          background: #1d1d1d; }
+          background: #1a1a1a; }
       html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu a.tocitem:hover, html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu label.tocitem:hover {
         color: #fbfbfb;
-        background-color: #050505; }
+        background-color: #020202; }
       html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active {
         border-top: 1px solid #dbdbdb;
         border-bottom: 1px solid #dbdbdb;
@@ -7311,7 +7311,7 @@ html.theme--documenter-dark {
           background-color: #2c2e33;
           color: #ffffff; }
         html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu li.is-active ul.internal .tocitem:hover {
-          background-color: #090909;
+          background-color: #060606;
           color: #ffffff; }
       html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu > li.is-active:first-child {
         border-top: none; }
@@ -7344,7 +7344,7 @@ html.theme--documenter-dark {
           background: none; }
         html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu::-webkit-scrollbar-thumb {
           border-radius: 5px 0px 0px 5px;
-          background: #090909; }
+          background: #060606; }
         html.theme--documenter-dark #documenter .docs-sidebar ul.docs-menu::-webkit-scrollbar-thumb:hover {
           background: black; } }
     @media screen and (max-width: 1055px) {
@@ -7356,7 +7356,7 @@ html.theme--documenter-dark {
           background: none; }
         html.theme--documenter-dark #documenter .docs-sidebar::-webkit-scrollbar-thumb {
           border-radius: 5px 0px 0px 5px;
-          background: #090909; }
+          background: #060606; }
         html.theme--documenter-dark #documenter .docs-sidebar::-webkit-scrollbar-thumb:hover {
           background: black; } }
   html.theme--documenter-dark #documenter .docs-main #documenter-search-info {
@@ -7381,7 +7381,7 @@ html.theme--documenter-dark {
     box-shadow: 0.24rem 0rem 0.4rem #444444; }
     html.theme--documenter-dark #documenter .docs-sidebar form.docs-search > input {
       color: #ffffff;
-      background-color: #090909;
+      background-color: #060606;
       border-color: black;
       margin-top: 1.0rem;
       margin-bottom: 1.0rem; }
