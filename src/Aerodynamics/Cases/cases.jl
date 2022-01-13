@@ -11,7 +11,7 @@ function print_info(wing :: AbstractWing, head = ""; browser = false)
     wing_info = properties(wing)
     data = Any[ labels wing_info ]
     header = [ head, "Value" ]
-    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true)
+    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
     if browser
         pretty_table(String, data, header, alignment = [:c, :c], tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(font_weight = "bold")), formatters = ft_round(8))
     else
@@ -94,7 +94,7 @@ function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: Abstrac
     coeffs = [ ifelse(length(nf_coeffs) == 8, ["CD", "CDp"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn" ] ]
     data = [ coeffs nf_coeffs [ ff_coeffs; fill("—", 3) ] ]
     head = [ name, "Nearfield", "Farfield" ]
-    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true)
+    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
     if browser
         pretty_table(HTML, data, head, alignment = [:c, :c, :c], tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(font_weight = "bold")), formatters = ft_round(8))
     else
@@ -110,7 +110,7 @@ function print_derivatives(comp, name = ""; browser = false)
     if browser
         pretty_table(HTML, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
     else
-        pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true), vlines = :none, formatters = ft_round(8))
+        pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), vlines = :none, formatters = ft_round(8))
     end
 end
 
