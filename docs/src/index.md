@@ -2,7 +2,7 @@
 
 AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
 
-**Authors**: Arjit Seth, Rhea P. Liem, and Stephane Redonnet
+**Authors**: Arjit Seth, Stephane Redonnet, and Rhea P. Liem
 
 ## Objectives
 
