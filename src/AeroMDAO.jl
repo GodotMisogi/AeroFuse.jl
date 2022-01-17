@@ -21,6 +21,7 @@ using ComponentArrays: ComponentVector, ComponentArray, valkeys
 export ComponentVector, ComponentArray, valkeys
 
 using Setfield
+using LabelledArrays
 
 ## Methods to be extended in submodules
 #==========================================================================================#

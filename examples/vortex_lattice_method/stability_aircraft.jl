@@ -83,8 +83,6 @@ ac_name = :aircraft
 fs      = Freestream(alpha = 1.0, 
                      beta  = 0.0, 
                      omega = [0.,0.,0.])
-
-# Reference values
 refs    = References(
                      speed    = 10.0,
                      density  = 1.225, 
@@ -96,44 +94,31 @@ refs    = References(
 
 @time dv_data =
 solve_case_derivatives(aircraft, fs, refs;
-                     print            = true,    # Prints the results for only the aircraft
-                     print_components = true,    # Prints the results for all components
-                    );
+                       name             = ac_name,
+                       print            = true,    # Prints the results for only the aircraft
+                       print_components = true,    # Prints the results for all components
+                      );
 
 ## Aerodynamic quantities of aircraft
-nf_plane  = dv_data.aircraft.NF
-ff_plane  = dv_data.aircraft.NF
-dvs_plane = dv_data.aircraft.dNF
+ac_dvs = dv_data[ac_name]
 
-# Center of pressure
-Cm   = nf_plane[5]  # Moment coefficient
-CL   = nf_plane[3]  # Lift coefficient
-cp   = -c * Cm / CL
-
-# Neutral point
-Cm_α = dvs_plane[5,1]
-CL_α = dvs_plane[3,1]
-np   = -c * Cm_α / CL_α
+# Longitudinal stability
+x_cp = refs.chord * ac_dvs.Cm / ac_dvs.CL              # Center of pressure 
+x_np = -refs.chord * ac_dvs.Cm_alpha / ac_dvs.CL_alpha # Neutral point
 
 # Spiral stability
-Cl_β = dvs_plane[4,2]
-Cl_r = dvs_plane[4,5]
-Cn_r = dvs_plane[6,5]
-Cn_β = dvs_plane[6,2]
-
-γ    = Cl_β * Cn_r / (Cl_r * Cn_β) # Check degree-radian issue
+γ = ac_dvs.Cl_beta * ac_dvs.Cn_rbar / (ac_dvs.Cl_rbar * ac_dvs.Cn_beta)
 
 ## Other quantities
-dvs_htail = dv_data.htail.dNF
-CL_α_h    = dvs_htail[3,1]
+htail_dvs = dv_data.htail
 
 # Locations
-x_np = [ refs.location[1] .+ np; zeros(2) ]  # Neutral point
-x_cp = [ refs.location[1] .+ cp; zeros(2) ]  # Center of pressure
+x_np, y_np, z_np = loc_np = [ refs.location[1] .+ x_np; zeros(2) ]  # Neutral point
+x_cp, y_cp, z_cp = loc_cp = [ refs.location[1] .+ x_cp; zeros(2) ]  # Center of pressure
 
-println("Aerodynamic Center x_ac: $(x_w[1]) m")
-println("Neutral Point      x_np: $(x_np[1]) m")
-println("Center of Pressure x_cp: $(x_cp[1]) m")
+println("Aerodynamic Center x_ac: $(x_w) m")
+println("Neutral Point      x_np: $(x_np) m")
+println("Center of Pressure x_cp: $(x_cp) m")
 println("Spiral Stability      γ: $γ")
 
 ## Plotting everything
@@ -151,7 +136,7 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      xlim = (0, z_limit),
     #  ylim = (-z_limit/2, z_limit/2),
      zlim = (-z_limit/2, z_limit/2),
-     size = (1920, 1080),
+    #  size = (1920, 1080),
     #  legend = false
     )
 
@@ -163,8 +148,8 @@ scatter!(Tuple(wing_mac),  color = :blue,  label = "Wing MAC")
 scatter!(Tuple(htail_mac), color = :red,   label = "Horizontal Tail MAC")
 scatter!(Tuple(vtail_mac), color = :green, label = "Vertical Tail MAC")
 
-scatter!(Tuple(x_np), color = :orange, label = "Neutral Point")
-scatter!(Tuple(x_cp), color = :brown, label = "Center of Pressure")
+scatter!(Tuple(loc_np), color = :orange, label = "Neutral Point")
+scatter!(Tuple(loc_cp), color = :brown, label = "Center of Pressure")
 # savefig(aircraft_plot, "Aircraft.png")
 plot!()
 

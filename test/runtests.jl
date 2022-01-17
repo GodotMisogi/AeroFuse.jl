@@ -105,9 +105,9 @@ end
     dv_data = solve_case_derivatives(aircraft, fs, refs)
 
     dcf = dv_data.wing
-    nfs = dcf.NF
-    ffs = dcf.FF
-    dvs = dcf.dNF
+    nfs = @views dcf[1:6,1]
+    ffs = @views dcf[7:9,1]
+    dvs = @views dcf[1:6,3:end]
 
     # Test values
     nf_tests = [0.001189, -0.000228, 0.152203, -0.000242, -0.003486, -8.1e-5]
@@ -185,9 +185,9 @@ end
     dv_data = solve_case_derivatives(aircraft, fs, refs);
 
     dcf = dv_data.aircraft
-    nfs = dcf.NF
-    ffs = dcf.FF
-    dvs = dcf.dNF
+    nfs = @views dcf[1:6,1]
+    ffs = @views dcf[7:9,1]
+    dvs = @views dcf[1:6,3:end]
 
     nf_tests = [0.000258, -0.006642, 0.074301, -0.003435, 0.075511, 0.001563]
     ff_tests = [0.000375, -0.006685, 0.074281]

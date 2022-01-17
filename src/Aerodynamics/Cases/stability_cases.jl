@@ -12,16 +12,6 @@ function scale_inputs(fs :: Freestream, refs :: References)
     x0, scale
 end
 
-function print_case(nf, ff, derivs, comp)
-    print_coefficients(nf, ff, comp)
-    print_derivatives(derivs, comp)
-end
-
-function print_case(data, comp)
-    nf, ff, derivs = data[comp]
-    print_case(nf, ff, derivs, comp)
-end
-
 """
     solve_case_derivatives(components :: Vector{Horseshoe}, fs :: Freestream, refs :: References;
                            name = :aircraft :: Symbol, 
@@ -37,9 +27,9 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; n
     # Closure to generate results with input vector
     function freestream_derivatives(x)
         # @set ref.speed = x[1]
-        ref  = References(x[1], ref.area, ref.span, ref.chord, ref.density, ref.location)
-        fs   = Freestream(rad2deg(x[2]), rad2deg(x[3]), x[4:end] ./ scale)
-        system = solve_case(aircraft, fs, ref,
+        ref_c  = setproperties(ref, speed = x[1])
+        fs_c   = setproperties(fs, alpha = rad2deg(x[2]), beta = rad2deg(x[3]), omega = x[4:end] ./ scale)
+        system = solve_case(aircraft, fs_c, ref_c,
                             name      = name)
 
         NFs = nearfield_coefficients(system)
@@ -62,11 +52,11 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; n
 
     # Reshaping
     data  = cat(vars, reshape(derivs, 9, num_comps, 6), dims = 3)
-    comps = @views NamedTuple(names[i] => (NF  = data[1:6,i,1],
-                                           dNF = data[1:6,i,2:end], 
-                                           FF  = data[7:end,i,1], 
-                                           dFF = data[7:end,i,2:end]) 
-                              for i in axes(data, 2))
+
+    # Labelled array for convenience
+    Comp = @SLArray (9,7) (:CD,:CY,:CL,:Cl,:Cm,:Cn,:CD_ff,:CY_ff,:CL_ff,:CD_speed,:CY_speed,:CL_speed,:Cl_speed,:Cm_speed,:Cn_speed,:CD_ff_speed,:CY_ff_speed,:CL_ff_speed,:CD_alpha,:CY_alpha,:CL_alpha,:Cl_alpha,:Cm_alpha,:Cn_alpha,:CD_ff_alpha,:CY_ff_alpha,:CL_ff_alpha,:CD_beta,:CY_beta,:CL_beta,:Cl_beta,:Cm_beta,:Cn_beta,:CD_ff_beta,:CY_ff_beta,:CL_ff_beta,:CD_pb,:CY_pbar,:CL_pbar,:Cl_pbar,:Cm_pbar,:Cn_pbar,:CD_ff_pbar,:CY_ff_pbar,:CL_ff_pbar,:CD_qbar,:CY_qbar,:CL_qbar,:Cl_qbar,:Cm_qbar,:Cn_qbar,:CD_ff_qbar,:CY_ff_qbar,:CL_ff_qbar,:CD_rbar,:CY_rbar,:CL_rbar,:Cl_rbar,:Cm_rbar,:Cn_rbar,:CD_ff_rbar,:CY_ff_rbar,:CL_ff_rbar)
+
+    comps = @views NamedTuple(names[i] => Comp(data[:,i,:]) for i in axes(data, 2))
 
     # Printing
     if print_components
@@ -78,11 +68,23 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; n
     comps
 end
 
+## Printing
+#==========================================================================================#
+
+function print_case(nf, ff, derivs, comp)
+    print_coefficients(nf, ff, comp)
+    print_derivatives(derivs, comp)
+end
+
+function print_case(data, comp)
+    nf, ff, derivs = data[comp]
+    print_case(nf, ff, derivs, comp)
+end
 
 function print_derivatives(comp, name = ""; browser = false)
     coeffs  = ["CD", "CY", "CL", "Cl", "Cm", "Cn", "CD_ff", "CY_ff", "CL_ff"]
-    nf_vars = [ "$name" "Values" "" "" "Aerodynamic" "Derivatives" "" "" ; "" "" "∂U, m⁻¹s" "∂α, 1/rad" "∂β, 1/rad" "∂p̄" "∂q̄" "∂r̄" ]
-    nf_rows = [ coeffs [ [comp.NF; comp.FF] [ comp.dNF; comp.dFF ] ] ]
+    nf_vars = [ "$name" "Values" "" "" "Aerodynamic" "Derivatives" "" "" ; "" "" "∂/∂U, m⁻¹s" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ]
+    nf_rows = [ coeffs comp ]
 
     if browser
         pretty_table(HTML, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
@@ -90,44 +92,3 @@ function print_derivatives(comp, name = ""; browser = false)
         pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), vlines = :none, formatters = ft_round(8))
     end
 end
-
-# function solve_case_derivatives(wing :: AbstractWing, fs :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [ 0.25 * chord_ref, 0., 0.], span_ref = span(wing), span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, name = "Wing", viscous = false, x_tr = 0.3, print = false, spacing = symmetric_spacing(wing))
-#     # Reference values and scaling inputs
-#     S, b, c = area_ref, span_ref, chord_ref
-#     x, scale = scale_inputs(fs, ref)
-
-#     # Closure to generate results with input vector
-#     function stab(x)
-#         fs   = Freestream(rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
-#         data = solve_case(wing, fs;
-#                           rho_ref   = rho_ref,
-#                           r_ref     = r_ref,
-#                           area_ref  = S,
-#                           span_ref  = b,
-#                           chord_ref = c,
-#                           chord_num = chord_num,
-#                           span_num  = span_num,
-#                           viscous   = viscous,
-#                           x_tr      = x_tr,
-#                           spacing   = spacing)
-
-#         [ data[1]; data[2] ] # Concatenate nearfield and farfield coefficients for DiffResults value
-#     end
-
-#     # Set up Jacobian system and evaluate
-#     y = ifelse(viscous, zeros(13), zeros(9))
-#     result = JacobianResult(y, x)
-#     result = ForwardDiff.jacobian!(result, stab, x)
-#     vars   = value(result)
-#     derivs = jacobian(result)
-
-#     # Gather results
-#     nf  = ifelse(viscous, vars[1:8], vars[1:6])       # Nearfield coefficients
-#     ff  = ifelse(viscous, vars[9:end], vars[7:end])  # Farfield coefficients
-#     dvs = ifelse(viscous, derivs[[1,4:8...],:], derivs[1:6,:])  # Nearfield stability derivatives, uses total drag for viscous cases just in case of generalisations
-
-#     # Print if needed
-#     if print; print_case(nf, ff, derivs, name) end
-
-#     nf, ff, dvs
-# end
