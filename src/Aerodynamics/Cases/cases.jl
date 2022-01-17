@@ -19,6 +19,14 @@ function print_info(wing :: AbstractWing, head = ""; browser = false)
     end
 end
 
+"""
+    solve_case(components :: Vector{Horseshoe}, fs :: Freestream, refs :: References;
+               name = :aircraft :: Symbol, 
+               print = false :: Boolean,
+               print_components = false :: Boolean)
+
+Perform a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `Reference` values.
+"""
 function solve_case(components, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false, finite_core = false)
     system = solve_system(components, freestream, refs, finite_core)
 
@@ -99,18 +107,6 @@ function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: Abstrac
         pretty_table(HTML, data, head, alignment = [:c, :c, :c], tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(font_weight = "bold")), formatters = ft_round(8))
     else
         pretty_table(data, head, alignment = [:c, :c, :c], tf = tf_compact, highlighters = h1, vlines = :none, formatters = ft_round(8))
-    end
-end
-
-function print_derivatives(comp, name = ""; browser = false)
-    coeffs = ["CD", "CY", "CL", "Cl", "Cm", "Cn", "CD_ff", "CY_ff", "CL_ff"]
-    nf_vars = [ "$name" "Values" "" "" "Derivatives" "" "" ; "" "" "∂α, 1/rad" "∂β, 1/rad" "∂p̄" "∂q̄" "∂r̄" ]
-    nf_rows = [ coeffs [ [comp.NF; comp.FF] [ comp.dNF; comp.dFF ] ] ]
-
-    if browser
-        pretty_table(HTML, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
-    else
-        pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), vlines = :none, formatters = ft_round(8))
     end
 end
 

@@ -20,6 +20,8 @@ export combinedimsview, combinedims
 using ComponentArrays: ComponentVector, ComponentArray, valkeys
 export ComponentVector, ComponentArray, valkeys
 
+using Setfield
+
 ## Methods to be extended in submodules
 #==========================================================================================#
 

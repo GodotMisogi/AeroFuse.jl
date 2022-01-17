@@ -7,7 +7,7 @@ struct Freestream{T} <: AbstractFreestream
 end
 
 
-Freestream(α_deg, β_deg, Ω) = let T = promote_type(eltype(α_deg), eltype(β_deg)); Freestream{T}(deg2rad(α_deg), deg2rad(β_deg), Ω) end
+Freestream(α_deg, β_deg, Ω) = let T = promote_type(eltype(α_deg), eltype(β_deg), eltype(Ω)); Freestream{T}(deg2rad(α_deg), deg2rad(β_deg), Ω) end
 
 Freestream(α_deg, β_deg, Ω_x, Ω_y, Ω_z) = Freestream(deg2rad(α_deg), deg2rad(β_deg), SVector(Ω_x, Ω_y, Ω_z))
 

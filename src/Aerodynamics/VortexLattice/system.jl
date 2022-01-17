@@ -12,7 +12,7 @@ struct References{T} <: AbstractReferences
     location :: SVector{3,T}
 end
 
-References(V, S, b, c, ρ, ref :: AbstractVector{T}) where T <: Real = References{T}(V, S, b, c, ρ, ref)
+References(V, S, b, c, ρ, ref) = let T = promote_type(eltype(V), eltype(S), eltype(b), eltype(c), eltype(ρ), eltype(ref)); References{T}(V, S, b, c, ρ, ref) end
 
 References(; speed = 1., density = 1., span = 1., chord = 1., area = 1., location = zeros(3)) = References(speed, area, span, chord, density, location)
 

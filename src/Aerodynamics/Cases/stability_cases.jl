@@ -1,12 +1,13 @@
 ## Stability derivative cases
 function scale_inputs(fs :: Freestream, refs :: References)
-    # Building input vector
-    x0 = [ fs.alpha;
-           fs.beta;
-           rate_coefficient(fs, refs) ]
+    # Scaling rate coefficients
+    scale = [refs.span, refs.chord, refs.span] ./ (2 * refs.speed)
 
-    # Unscaling non-dimensional rate coefficients
-    scale = 2 * refs.speed * 1. ./ [refs.span, refs.chord, refs.span]
+    # Building input vector
+    x0 = [ refs.speed;
+           fs.alpha;
+           fs.beta;
+           fs.omega .* scale ]
 
     x0, scale
 end
@@ -21,13 +22,23 @@ function print_case(data, comp)
     print_case(nf, ff, derivs, comp)
 end
 
+"""
+    solve_case_derivatives(components :: Vector{Horseshoe}, fs :: Freestream, refs :: References;
+                           name = :aircraft :: Symbol, 
+                           print = false :: Boolean,
+                           print_components = false :: Boolean)
+
+Obtain the values and derivatives of a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `Reference` values.
+"""
 function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; name = :aircraft, print = false, print_components = false)
     # Reference values and scaling inputs
     x, scale = scale_inputs(fs, ref)
 
     # Closure to generate results with input vector
     function freestream_derivatives(x)
-        fs   = Freestream(rad2deg(x[1]), rad2deg(x[2]), x[3:end] .* scale)
+        # @set ref.speed = x[1]
+        ref  = References(x[1], ref.area, ref.span, ref.chord, ref.density, ref.location)
+        fs   = Freestream(rad2deg(x[2]), rad2deg(x[3]), x[4:end] ./ scale)
         system = solve_case(aircraft, fs, ref,
                             name      = name)
 
@@ -50,7 +61,7 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; n
     derivs  = jacobian(result)
 
     # Reshaping
-    data  = cat(vars, reshape(derivs, 9, num_comps, 5), dims = 3)
+    data  = cat(vars, reshape(derivs, 9, num_comps, 6), dims = 3)
     comps = @views NamedTuple(names[i] => (NF  = data[1:6,i,1],
                                            dNF = data[1:6,i,2:end], 
                                            FF  = data[7:end,i,1], 
@@ -65,6 +76,19 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; n
     end
 
     comps
+end
+
+
+function print_derivatives(comp, name = ""; browser = false)
+    coeffs  = ["CD", "CY", "CL", "Cl", "Cm", "Cn", "CD_ff", "CY_ff", "CL_ff"]
+    nf_vars = [ "$name" "Values" "" "" "Aerodynamic" "Derivatives" "" "" ; "" "" "∂U, m⁻¹s" "∂α, 1/rad" "∂β, 1/rad" "∂p̄" "∂q̄" "∂r̄" ]
+    nf_rows = [ coeffs [ [comp.NF; comp.FF] [ comp.dNF; comp.dFF ] ] ]
+
+    if browser
+        pretty_table(HTML, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
+    else
+        pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), vlines = :none, formatters = ft_round(8))
+    end
 end
 
 # function solve_case_derivatives(wing :: AbstractWing, fs :: Freestream; rho_ref = 1.225, area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), r_ref = [ 0.25 * chord_ref, 0., 0.], span_ref = span(wing), span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, name = "Wing", viscous = false, x_tr = 0.3, print = false, spacing = symmetric_spacing(wing))
