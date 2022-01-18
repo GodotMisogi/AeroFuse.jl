@@ -25,12 +25,13 @@ fs      = Freestream(alpha = 1.0,
 
 # Reference values
 refs    = References(
-                     speed    = 10.0,
-                     density  = 1.225, 
-                     area     = projected_area(wing),   
-                     span     = span(wing), 
-                     chord    = mean_aerodynamic_chord(wing), 
-                     location = mean_aerodynamic_center(wing)
+                     speed     = 10.0,
+                     density   = 1.225,
+                     viscosity = 1.5e-5,
+                     area      = projected_area(wing),
+                     span      = span(wing), 
+                     chord     = mean_aerodynamic_chord(wing), 
+                     location  = mean_aerodynamic_center(wing)
                     )
 
 ## Solve system
@@ -46,27 +47,33 @@ CFs, CMs = surface_coefficients(system; axes = ax)
 # Fs, Ms   = surface_dynamics(system; axes = ax) 
 
 ## Viscous drag prediction using empirical models
+
+## Equivalent flat-plate skin-friction estimation
 x_tr        = [0.35, 0.35]              # Transition locations over sections
-M           = refs.speed / 330.         # Mach number
-μ           = 1.5e-5                    # Dynamic viscosity
+CDv_plate   = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, 330., refs.area, refs.viscosity)
+
+## Local-dissipation drag estimation (WRONG???)
 cam_panels  = camber_panels(wing_mesh)
 edge_speeds = surface_velocities(system).wing
-CDv_plate   = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, 330., refs.area, μ)
-CDv_diss    = local_dissipation_drag(wing, panel_area.(cam_panels), refs.density, edge_speeds, [0.2, 0.35, 0.35, 0.2], refs.speed, refs.density, M, μ) / system.reference.area
+M           = mach_number(system.reference)  # Mach number
+CDv_diss    = local_dissipation_drag(wing, panel_area.(cam_panels), refs.density, edge_speeds, [0.2, 0.35, 0.35, 0.2], refs.speed, refs.density, M, refs.viscosity) / system.reference.area
+
+## Viscous drag coefficient
+CDv = CDv_plate
 
 ## Total force coefficients with viscous drag prediction
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
 CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 
-nf[1] = CDi_nf + CDv_plate
-ff[1] = CDi_ff + CDv_plate
+nf_v = [ CDi_nf + CDv; CDv; nf ]
+ff_v = [ CDi_ff + CDv; CDv; ff ]
+print_coefficients(nf_v, ff_v, :wing)
 
-print_coefficients(nf, ff, :wing)
 
 ## Evaluate case with stability derivatives
 @time dv_data = solve_case_derivatives(aircraft, fs, refs;
-                                      print = true
-                                     );
+                                       print = true
+                                      );
 
 ## Plotting
 # using StaticArrays
@@ -106,6 +113,7 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
      camera = (30, 60),
      zlim = (-0.1, z_limit),
      size = (800, 600))
+# plot!(wing_coords[:,1], wing_coords[:,2], wing_coords[:,3])
 plot!.(horseshoe_coords, color = :black, label = :none)
 scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
 [ plot!(stream, color = :green, label = :none) for stream in eachcol(Tuple.(streams)) ]

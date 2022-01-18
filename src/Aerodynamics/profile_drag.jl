@@ -90,7 +90,7 @@ struct Dissipation <: AbstractProfileDrag end
 profile_drag_coefficient(wing :: HalfWing, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
 profile_drag_coefficient(wing :: WingMesh, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
 profile_drag_coefficient(wing :: Wing, x_tr, V, rho_ref, a_ref, area_ref, μ) = profile_drag_coefficient(wing.left, x_tr, V, rho_ref, a_ref, area_ref, μ) + profile_drag_coefficient(wing.right, x_tr, V, rho_ref, a_ref, area_ref, μ)
-
+profile_drag_coefficient(wing :: AbstractWing, x_tr, refs :: References) = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, refs.sound_speed, refs.area, refs.viscosity)
 
 function wave_drag(M, Λ, t_by_c, Cl, κ_A)
     M_drag_divergence = κ_A / cos(Λ) - t_by_c / cos(Λ)^2 - Cl / (10 * cos(Λ)^3) # Drag divergence Mach number

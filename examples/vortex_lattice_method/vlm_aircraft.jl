@@ -64,12 +64,13 @@ fs      = Freestream(alpha = 0.0,
                      beta  = 0.0, 
                      omega = [0., 0., 0.]);
 
-refs    = References(speed    = 1.0, 
-                     density  = 1.225,
-                     area     = projected_area(wing),
-                     span     = span(wing),
-                     chord    = mean_aerodynamic_chord(wing),
-                     location = mean_aerodynamic_center(wing))
+refs    = References(speed     = 1.0, 
+                     density   = 1.225,
+                     viscosity = 1.5e-5,
+                     area      = projected_area(wing),
+                     span      = span(wing),
+                     chord     = mean_aerodynamic_chord(wing),
+                     location  = mean_aerodynamic_center(wing))
 
 ##
 @time begin 
@@ -93,32 +94,33 @@ end;
 ## Viscous drag prediction
 
 # Equivalent flat-plate skin friction estimation
-M = system.reference.speed / 330. # Mach number
-μ = 1.5e-5 # Dynamic viscosity
-
-CDv_wing  = profile_drag_coefficient(wing_mesh, [0.8, 0.8], system.reference.speed, system.reference.density, 330., system.reference.area, μ)
-CDv_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], system.reference.speed, system.reference.density, 330., system.reference.area, μ)
-CDv_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], system.reference.speed, system.reference.density, 330., system.reference.area, μ)
+CDv_wing  = profile_drag_coefficient(wing_mesh, [0.8, 0.8], system.reference)
+CDv_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], system.reference)
+CDv_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], system.reference)
 
 CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 
 ## Local dissipation form factor friction estimation
+M = mach_number(system.reference) # Mach number
 edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
 
-CDvd_wing   = local_dissipation_drag(wing_mesh, system.reference.density, edge_speeds.wing, [0.8, 0.8], system.reference.speed, refs.density, M, μ) / system.reference.area
-CDvd_htail  = local_dissipation_drag(htail_mesh, refs.density, edge_speeds.htail, [0.6, 0.6], refs.speed, refs.density, M, μ) / system.reference.area
-CDvd_vtail  = local_dissipation_drag(vtail_mesh, system.reference.density, edge_speeds.vtail, [0.6, 0.6], system.reference.speed, system.reference.density, M, μ) / system.reference.area
+CDvd_wing   = local_dissipation_drag(wing_mesh, system.reference.density, edge_speeds.wing, [0.8, 0.8], system.reference.speed, refs.density, M, system.reference.viscosity) / system.reference.area
+CDvd_htail  = local_dissipation_drag(htail_mesh, refs.density, edge_speeds.htail, [0.6, 0.6], refs.speed, refs.density, M, system.reference.viscosity) / system.reference.area
+CDvd_vtail  = local_dissipation_drag(vtail_mesh, system.reference.density, edge_speeds.vtail, [0.6, 0.6], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
 
 CDv_diss    = CDvd_wing + CDvd_htail + CDvd_vtail
+
+# Viscous drag coefficient
+CDv = CDv_diss
 
 ## Total force coefficients with viscous drag prediction
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
 CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 
-nf[1] += CDv_plate
-ff[1] += CDv_plate
+nf_v = [ CDi_nf + CDv; CDv; nf ]
+ff_v = [ CDi_ff + CDv; CDv; ff ]
 
-print_coefficients(nf, ff, :aircraft)
+print_coefficients(nf_v, ff_v, :aircraft)
 
 ## Spanwise forces/lifting line loads
 wing_ll  = span_loads(chord_panels(wing_mesh), CFs.wing, S)
@@ -127,13 +129,14 @@ vtail_ll = span_loads(chord_panels(vtail_mesh), CFs.vtail, S);
 
 ## Plotting
 using CairoMakie
-using LaTeXStrings
+CairoMakie.activate!()
 
 set_theme!(
             # theme_black()
             # theme_light()
           )
 
+using LaTeXStrings
 const LS = LaTeXString
 
 ## Streamlines
