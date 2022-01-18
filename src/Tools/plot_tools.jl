@@ -11,10 +11,10 @@ function plot_wing(mesh :: Matrix{SVector{3,T}}) where T <: Real
                         mesh[end:-1:1,1] 
                     ]
                     
-    wing_coords .|> coords -> tuple(coords...)
+    wing_coords # .|> coords -> tuple(coords...)
 end
 
-plot_wing(wing :: AbstractWing) = plot_wing(coordinates(wing))
+plot_wing(wing :: AbstractWing) = permutedims(combinedimsview(plot_wing(coordinates(wing))))
 
 plot_streamlines(system :: VLMSystem, points, length, num_steps) = Tuple.(streamlines(system, points, length, num_steps))
 
