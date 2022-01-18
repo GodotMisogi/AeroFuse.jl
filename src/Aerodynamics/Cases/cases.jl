@@ -78,23 +78,17 @@ function print_info(wing :: AbstractWing, head = ""; browser = false)
     data = Any[ labels wing_info ]
     header = [ head, "Value" ]
     h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
-    if browser
-        pretty_table(String, data, header, alignment = [:c, :c], tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(font_weight = "bold")), formatters = ft_round(8))
-    else
-        pretty_table(data, header, alignment = [:c, :c], tf = tf_compact, highlighters = h1, vlines = :none, formatters = ft_round(8))
-    end
+
+    pretty_table(data, header, alignment = [:c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
 end
 
-function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: AbstractVector{T}, name = ""; browser = false) where T <: Real
-    coeffs = [ ifelse(length(nf_coeffs) == 8, ["CD", "CDp"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn" ] ]
+function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: AbstractVector{T}, name = "") where T <: Real
+    coeffs = [ ifelse(length(nf_coeffs) == 8, ["CD", "CDv"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn" ] ]
     data = [ coeffs nf_coeffs [ ff_coeffs; fill("—", 3) ] ]
     head = [ name, "Nearfield", "Farfield" ]
     h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
-    if browser
-        pretty_table(HTML, data, head, alignment = [:c, :c, :c], tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(font_weight = "bold")), formatters = ft_round(8))
-    else
-        pretty_table(data, head, alignment = [:c, :c, :c], tf = tf_compact, highlighters = h1, vlines = :none, formatters = ft_round(8))
-    end
+
+    pretty_table(data, head, alignment = [:c, :c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
 end
 
 function print_coefficients(system :: VLMSystem, name = :aircraft; components = false)

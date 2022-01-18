@@ -1,4 +1,6 @@
-## Stability derivative cases
+## Stability derivatives prediction
+#==========================================================================================#
+
 function scale_inputs(fs :: Freestream, refs :: References)
     # Scaling rate coefficients
     scale = [refs.span, refs.chord, refs.span] ./ (2 * refs.speed)
@@ -13,14 +15,16 @@ function scale_inputs(fs :: Freestream, refs :: References)
 end
 
 """
-    solve_case_derivatives(components :: Vector{Horseshoe}, fs :: Freestream, refs :: References;
-                           name = :aircraft :: Symbol, 
-                           print = false :: Boolean,
-                           print_components = false :: Boolean)
+    solve_case_derivatives(components :: Vector{Horseshoe}, 
+                           fs :: Freestream, 
+                           refs :: References;
+                           name = :aircraft, 
+                           print = false,
+                           print_components = false)
 
 Obtain the values and derivatives of a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `Reference` values.
 """
-function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; name = :aircraft, print = false, print_components = false)
+function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; axes = Wind(), name = :aircraft, print = false, print_components = false)
     # Reference values and scaling inputs
     x, scale = scale_inputs(fs, ref)
 
@@ -32,12 +36,13 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; n
         system = solve_case(aircraft, fs_c, ref_c,
                             name      = name)
 
-        NFs = nearfield_coefficients(system)
+        CFs, CMs = surface_coefficients(system; axes = axes)
         FFs = farfield_coefficients(system)
-
-        # Creates array of nearfield and farfield coefficients for each component as a row vector.
-        comp_coeffs = mapreduce(name -> [ NFs[name]; FFs[name] ], hcat, valkeys(system.vortices))
-        all_coeffs  = [ comp_coeffs sum(comp_coeffs, dims = 2) ] # Append sum of all forces for aircraft
+        
+        # Create array of nearfield and farfield coefficients for each component as a row vector.
+        comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, valkeys(system.vortices))
+        
+        [ comp_coeffs sum(comp_coeffs, dims = 2) ] # Append sum of all forces for aircraft
     end
 
     names     = [ reduce(vcat, keys(aircraft)); name ]
@@ -47,16 +52,14 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; n
     result  = JacobianResult(y, x)
     jacobian!(result, freestream_derivatives, x)
 
-    vars    = value(result)
-    derivs  = jacobian(result)
-
-    # Reshaping
-    data  = cat(vars, reshape(derivs, 9, num_comps, 6), dims = 3)
+    values = value(result)
+    derivs = jacobian(result)
+    data   = cat(values, reshape(derivs, 9, num_comps, 6), dims = 3) # Reshaping
 
     # Labelled array for convenience
-    Comp = @SLArray (9,7) (:CD,:CY,:CL,:Cl,:Cm,:Cn,:CD_ff,:CY_ff,:CL_ff,:CD_speed,:CY_speed,:CL_speed,:Cl_speed,:Cm_speed,:Cn_speed,:CD_ff_speed,:CY_ff_speed,:CL_ff_speed,:CD_alpha,:CY_alpha,:CL_alpha,:Cl_alpha,:Cm_alpha,:Cn_alpha,:CD_ff_alpha,:CY_ff_alpha,:CL_ff_alpha,:CD_beta,:CY_beta,:CL_beta,:Cl_beta,:Cm_beta,:Cn_beta,:CD_ff_beta,:CY_ff_beta,:CL_ff_beta,:CD_pb,:CY_pbar,:CL_pbar,:Cl_pbar,:Cm_pbar,:Cn_pbar,:CD_ff_pbar,:CY_ff_pbar,:CL_ff_pbar,:CD_qbar,:CY_qbar,:CL_qbar,:Cl_qbar,:Cm_qbar,:Cn_qbar,:CD_ff_qbar,:CY_ff_qbar,:CL_ff_qbar,:CD_rbar,:CY_rbar,:CL_rbar,:Cl_rbar,:Cm_rbar,:Cn_rbar,:CD_ff_rbar,:CY_ff_rbar,:CL_ff_rbar)
+    Comp = @SLArray (9,7) (:CX,:CY,:CZ,:Cl,:Cm,:Cn,:CX_ff,:CY_ff,:CL_ff,:CX_speed,:CY_speed,:CZ_speed,:Cl_speed,:Cm_speed,:Cn_speed,:CX_ff_speed,:CY_ff_speed,:CL_ff_speed,:CX_alpha,:CY_alpha,:CZ_alpha,:Cl_alpha,:Cm_alpha,:Cn_alpha,:CX_ff_alpha,:CY_ff_alpha,:CL_ff_alpha,:CX_beta,:CY_beta,:CZ_beta,:Cl_beta,:Cm_beta,:Cn_beta,:CX_ff_beta,:CY_ff_beta,:CL_ff_beta,:CX_pb,:CY_pbar,:CZ_pbar,:Cl_pbar,:Cm_pbar,:Cn_pbar,:CX_ff_pbar,:CY_ff_pbar,:CL_ff_pbar,:CX_qbar,:CY_qbar,:CZ_qbar,:Cl_qbar,:Cm_qbar,:Cn_qbar,:CX_ff_qbar,:CY_ff_qbar,:CL_ff_qbar,:CX_rbar,:CY_rbar,:CZ_rbar,:Cl_rbar,:Cm_rbar,:Cn_rbar,:CX_ff_rbar,:CY_ff_rbar,:CL_ff_rbar)
 
-    comps = @views NamedTuple(names[i] => Comp(data[:,i,:]) for i in axes(data, 2))
+    comps = @views NamedTuple(names[i] => Comp(data[:,i,:]) for i in Base.axes(data, 2))
 
     # Printing
     if print_components
@@ -67,6 +70,63 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; n
 
     comps
 end
+
+## Linear stability analysis
+#==========================================================================================#
+
+function longitudinal_stability_derivatives(dvs, U, m, I, Q, S, c)
+    QS = Q * S
+    c1 = QS / (m * U) 
+    c2 = QS / (I.yy * U)
+
+    X_u = c1 * dvs.CX_speed
+    Z_u = c1 * dvs.CZ_speed
+    M_u = c2 * dvs.Cm_speed * c
+
+    X_w = c1 * dvs.CX_alpha
+    Z_w = c1 * dvs.CZ_alpha
+    M_w = c2 * dvs.Cm_alpha * c
+
+    X_q = c1 / 2 * dvs.CX_qbar
+    Z_q = c1 / 2 * dvs.CZ_qbar
+    M_q = c2 / 2 * dvs.Cm_qbar * c
+
+    X_u, Z_u, M_u, X_w, Z_w, M_w, X_q, Z_q, M_q
+end
+
+longitudinal_stability_matrix(X_u, Z_u, M_u, X_w, Z_w, M_w, X_q, Z_q, M_q, U₀, g) = 
+    @SMatrix [ X_u X_w    0     -g
+               Z_u Z_w U₀ + Z_q  0
+               M_u M_w   M_q     0
+                0   0     1      0 ]
+
+function lateral_stability_derivatives(dvs, U, m, I, Q, S, b)
+    QS = Q * S
+    c1 = QS / (m * U) 
+    c2 = QS / (I.xx * U)
+    c3 = QS / (I.zz * U)
+
+    Y_v = c1 * dvs.CY_beta
+    L_v = c2 / 2 * dvs.Cl_beta * b
+    N_v = c3 / 2 * dvs.Cn_beta * b
+
+    Y_p = c1 * dvs.CY_pbar * b
+    L_p = c2 / 2 * dvs.Cl_pbar * b^2
+    N_p = c3 * dvs.Cn_pbar * b^2
+
+    Y_r = c1 * dvs.CY_rbar * b
+    L_r = c2 / 2 * dvs.Cl_rbar * b^2
+    N_r = c3 / 2 * dvs.Cn_rbar * b^2
+
+    Y_v, L_v, N_v, Y_p, L_p, N_p, Y_r, L_r, N_r
+end
+
+lateral_stability_matrix(Y_v, L_v, N_v, Y_p, L_p, N_p, Y_r, L_r, N_r, U₀, θ₀, g) =
+    @SMatrix [ Y_v Y_p (Y_r - U₀) (g * cos(θ₀))
+               L_v L_p     L_r         0      
+               N_v N_p     N_r         0      
+                0   1       0          0       ]
+
 
 ## Printing
 #==========================================================================================#
@@ -81,14 +141,10 @@ function print_case(data, comp)
     print_case(nf, ff, derivs, comp)
 end
 
-function print_derivatives(comp, name = ""; browser = false)
-    coeffs  = ["CD", "CY", "CL", "Cl", "Cm", "Cn", "CD_ff", "CY_ff", "CL_ff"]
-    nf_vars = [ "$name" "Values" "" "" "Aerodynamic" "Derivatives" "" "" ; "" "" "∂/∂U, m⁻¹s" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ]
-    nf_rows = [ coeffs comp ]
+function print_derivatives(comp, name = ""; axes = "")
+    coeffs  = ["CX", "CY", "CZ", "Cℓ", "Cm", "Cn"]
+    nf_vars = [ "$name" "Values" "" "" "Aerodynamic" "Derivatives" "" "" ; "" "$axes" "∂/∂U, m⁻¹s" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ]
+    nf_rows = @views [ coeffs comp[1:6,:] ]
 
-    if browser
-        pretty_table(HTML, nf_rows, nf_vars, alignment = :c, tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(color = "blue", font_weight = "bold")), formatters = ft_round(8))
-    else
-        pretty_table(nf_rows, nf_vars, alignment = :c, tf = tf_compact, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), vlines = :none, formatters = ft_round(8))
-    end
+    pretty_table(nf_rows, nf_vars, alignment = :c, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), vlines = :none, formatters = ft_round(8))
 end

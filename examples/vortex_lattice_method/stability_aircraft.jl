@@ -79,7 +79,6 @@ aircraft = ComponentArray(
                          );
 
 ## Evaluate case
-ac_name = :aircraft
 fs      = Freestream(alpha = 1.0, 
                      beta  = 0.0, 
                      omega = [0.,0.,0.])
@@ -92,8 +91,10 @@ refs    = References(
                      location = mean_aerodynamic_center(wing)
                     )
 
-@time dv_data =
-solve_case_derivatives(aircraft, fs, refs;
+ac_name = :aircraft
+@time dv_data = solve_case_derivatives(
+                       aircraft, fs, refs;
+                       axes             = Wind(),
                        name             = ac_name,
                        print            = true,    # Prints the results for only the aircraft
                        print_components = true,    # Prints the results for all components
@@ -102,11 +103,11 @@ solve_case_derivatives(aircraft, fs, refs;
 ## Aerodynamic quantities of aircraft
 ac_dvs = dv_data[ac_name]
 
-# Longitudinal stability
-x_cp = refs.chord * ac_dvs.Cm / ac_dvs.CL              # Center of pressure 
-x_np = -refs.chord * ac_dvs.Cm_alpha / ac_dvs.CL_alpha # Neutral point
+## Longitudinal stability
+x_cp = refs.chord * ac_dvs.Cm / ac_dvs.CZ_beta         # Center of pressure 
+x_np = -refs.chord * ac_dvs.Cm_alpha / ac_dvs.CZ_alpha # Neutral point
 
-# Spiral stability
+## Spiral stability
 γ = ac_dvs.Cl_beta * ac_dvs.Cn_rbar / (ac_dvs.Cl_rbar * ac_dvs.Cn_beta)
 
 ## Other quantities
@@ -168,10 +169,10 @@ end
 
 ##
 αs  = -8:0.5:8
-res = @time map(α -> alpha_sweep(aircraft, refs, α), αs)
+@time res = map(α -> alpha_sweep(aircraft, refs, α), αs);
 
 ## Data processing
-Cm_αs = [ re.aircraft.dNF[5,1] for re in res ]
+Cm_αs = [ re.aircraft.Cm_alpha for re in res ]
 
 ##
 plot(αs, Cm_αs, ls = :solid, xlabel = "α", ylabel = "Cm_α")
