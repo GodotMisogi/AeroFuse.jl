@@ -73,11 +73,23 @@ end
 rate_coefficient(system :: VLMSystem) = rate_coefficient(system.freestream, system.reference)
 
 # Velocities
+"""
+    surface_velocities(system :: VLMSystem; 
+                       axes   :: AbstractAxisSystem = Geometry())
 
-surface_velocities(system :: VLMSystem) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega)
+Compute the velocities on the surface given the `VLMSystem` after performing an analysis, and the reference axis system.
+"""
+surface_velocities(system :: VLMSystem; axes = Geometry()) = surface_velocities(system, axes)
+
+surface_velocities(system :: VLMSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega)
+
+surface_velocities(system :: VLMSystem, ::Body) = geometry_to_body_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+
+surface_velocities(system :: VLMSystem, ::Stability) = geometry_to_stability_axes.(surface_velocities(system, Geometry()), system.freestream.alpha)
+
+surface_velocities(system :: VLMSystem, ::Wind) = geometry_to_wind_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
 
 ## Forces
-
 """
     surface_forces(system :: VLMSystem; 
                    axes   :: AbstractAxisSystem = Geometry())
@@ -101,18 +113,24 @@ surface_forces(system :: VLMSystem, ::Wind) = geometry_to_wind_axes.(surface_for
 
 Compute the moments on the surface given the `VLMSystem` after performing an analysis, and the reference axis system.
 """
-surface_moments(system :: VLMSystem, ::Geometry) = surface_moments(system.vortices, surface_forces(system, Geometry()), system.reference.location)
-
-surface_moments(system :: VLMSystem, ::Body) = surface_moments(system.vortices, body_axes.(surface_forces(system, Body())), system.reference.location)
-
-surface_moments(system :: VLMSystem, ::Stability) = surface_moments(system.vortices, body_axes.(surface_forces(system, Stability())), system.reference.location)
-
-surface_moments(system :: VLMSystem, ::Wind) = surface_moments(system.vortices, surface_forces(system, Wind()), system.reference.location)
-
 surface_moments(system; axes :: AbstractAxisSystem = Geometry()) = surface_moments(system, axes)
 
-## Dynamics
+surface_moments(system :: VLMSystem, ::Geometry) = surface_moments(system.vortices, surface_forces(system, Geometry()), system.reference.location)
 
+surface_moments(system :: VLMSystem, ::Body) = surface_moments(system.vortices, surface_forces(system, Body()), system.reference.location)
+
+surface_moments(system :: VLMSystem, ::Stability) = surface_moments(system.vortices, flip_xz.(surface_forces(system, Stability())), system.reference.location)
+
+surface_moments(system :: VLMSystem, ::Wind) =  surface_moments(system.vortices, flip_xz.(surface_forces(system, Wind())), system.reference.location)
+
+
+## Dynamics
+"""
+    surface_dynamics(system :: VLMSystem; 
+                     axes   :: AbstractAxisSystem = Geometry())
+
+Compute the forces and moments on the surface given the `VLMSystem` after performing an analysis, and the reference axis system.
+"""
 function surface_dynamics(system :: VLMSystem)
     # Compute nearfield forces and moments
     surf_forces  = surface_forces(system)
@@ -143,7 +161,7 @@ function surface_dynamics(system :: VLMSystem, ::Stability)
 
     # Transform to stability axes
     stability_forces  = @. geometry_to_stability_axes(surface_forces, α)
-    stability_moments = @. geometry_to_stability_axes(surface_moments, α)
+    stability_moments = @. geometry_to_stability_axes(flip_xz(surface_moments), α)
 
     stability_forces, stability_moments
 end
@@ -158,7 +176,7 @@ function surface_dynamics(system :: VLMSystem, ::Wind)
 
     # Transform to wind axes
     wind_forces  = @. geometry_to_wind_axes(surface_forces, α, β)
-    wind_moments = @. geometry_to_wind_axes(surface_moments, α, β)
+    wind_moments = @. geometry_to_wind_axes(flip_xz(surface_moments), α, β)
 
     wind_forces, wind_moments
 end

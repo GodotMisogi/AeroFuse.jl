@@ -55,51 +55,11 @@ function extrapolate_point_mesh(mesh, weight = 0.75)
     m, n   = size(mesh)
     points = zeros(eltype(mesh), m + 1, n + 1)
 
-    # The quantities are measured at the bound leg (0.25×)
+    # The quantities are measured at the bound leg of a Horseshoe by default (0.25×)
     @views points[1:end-1,1:end-1] += weight       / 2 * mesh
     @views points[1:end-1,2:end]   += weight       / 2 * mesh
     @views points[2:end,1:end-1]   += (1 - weight) / 2 * mesh
     @views points[2:end,2:end]     += (1 - weight) / 2 * mesh
 
     points
-end
-
-## Printing
-#==========================================================================================#
-
-"""
-    print_info(wing :: AbstractWing)
-
-Print the relevant geometric characteristics of a `HalfWing` or `Wing`.
-"""
-function print_info(wing :: AbstractWing, head = ""; browser = false)
-    labels = [ "Aspect Ratio", "Span (m)", "Area (m²)", "Mean Aerodynamic Chord (m)", "Mean Aerodynamic Center (m)" ]
-    wing_info = properties(wing)
-    data = Any[ labels wing_info ]
-    header = [ head, "Value" ]
-    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
-
-    pretty_table(data, header, alignment = [:c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
-end
-
-function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: AbstractVector{T}, name = "") where T <: Real
-    coeffs = [ ifelse(length(nf_coeffs) == 8, ["CD", "CDv"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn" ] ]
-    data = [ coeffs nf_coeffs [ ff_coeffs; fill("—", 3) ] ]
-    head = [ name, "Nearfield", "Farfield" ]
-    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
-
-    pretty_table(data, head, alignment = [:c, :c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
-end
-
-function print_coefficients(system :: VLMSystem, name = :aircraft; components = false)
-    if components
-        nf_c = nearfield_coefficients(system)
-        ff_c = farfield_coefficients(system) 
-        [ print_coefficients(nf_c[key], ff_c[key], key) for key in keys(system.vortices) ]
-        print_coefficients(nearfield(system), farfield(system), name)
-    else
-        print_coefficients(nearfield(system), farfield(system), name)
-    end
-
-    nothing
 end

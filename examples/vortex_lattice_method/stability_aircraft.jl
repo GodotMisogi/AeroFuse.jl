@@ -103,9 +103,13 @@ ac_name = :aircraft
 ## Aerodynamic quantities of aircraft
 ac_dvs = dv_data[ac_name]
 
-## Longitudinal stability
-x_cp = refs.chord * ac_dvs.Cm / ac_dvs.CZ_beta         # Center of pressure 
-x_np = -refs.chord * ac_dvs.Cm_alpha / ac_dvs.CZ_alpha # Neutral point
+# Longitudinal stability
+
+## Center of pressure
+x_cp = -refs.chord * ac_dvs.Cm / ac_dvs.CZ
+
+## Neutral point
+x_np = -refs.chord * ac_dvs.Cm_alpha / ac_dvs.CZ_alpha
 
 ## Spiral stability
 γ = ac_dvs.Cl_beta * ac_dvs.Cn_rbar / (ac_dvs.Cl_rbar * ac_dvs.Cn_beta)
@@ -141,9 +145,9 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
     #  legend = false
     )
 
-plot!(wing_plan,  label = "Wing")
-plot!(htail_plan, label = "Horizontal Tail")
-plot!(vtail_plan, label = "Vertical Tail")
+plot!(wing_plan[:,1], wing_plan[:,2], wing_plan[:,3],  label = "Wing")
+plot!(htail_plan[:,1], htail_plan[:,2], htail_plan[:,3], label = "Horizontal Tail")
+plot!(vtail_plan[:,1], vtail_plan[:,2], vtail_plan[:,3], label = "Vertical Tail")
 
 scatter!(Tuple(wing_mac),  color = :blue,  label = "Wing MAC")
 scatter!(Tuple(htail_mac), color = :red,   label = "Horizontal Tail MAC")
@@ -172,19 +176,28 @@ end
 @time res = map(α -> alpha_sweep(aircraft, refs, α), αs);
 
 ## Data processing
-Cm_αs = [ re.aircraft.Cm_alpha for re in res ]
+
+## Lift coefficient
+CLs = [ re.aircraft.CZ for re in res ]
+
+plot(αs, CLs, xlabel = "α", ylabel = "CL")
+
+## Moment coefficient
+Cms = [ re.aircraft.Cm for re in res ]
+
+plot(αs, Cms, xlabel = "α", ylabel = "Cm")
+
+# Cm-CL (only relevant for non-linear CL-α variation)
+# plot(CLs, Cms, xlabel = "CL", ylabel = "Cm")
 
 ##
-plot(αs, Cm_αs, ls = :solid, xlabel = "α", ylabel = "Cm_α")
+Cm_αs  = [ re.aircraft.Cm_alpha for re in res ]
+CL_αs  = [ re.aircraft.CZ_alpha for re in res ]
 
 ##
-CL_αs  = [ re.aircraft.NF[3] for re in res ]
+plot(CL_αs, Cm_αs, xlabel = "CL_α", ylabel = "Cm_α")
 
 ##
-# plot(CL_αs, Cm_αs, ls = :solid, xlabel = "CL_α", ylabel = "Cm_α")
+∂Cm_∂CLs = Cm_αs ./ CL_αs
 
-##
-Cm_CLs = Cm_αs ./ CL_αs
-
-##
-plot(αs, Cm_CLs, ls = :solid, xlabel = "α", ylabel = "Cm/CL")
+plot(αs, ∂Cm_∂CLs, ls = :solid, xlabel = "α", ylabel = "Cm/CL")

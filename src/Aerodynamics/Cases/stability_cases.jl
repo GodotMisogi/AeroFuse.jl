@@ -77,7 +77,7 @@ end
 function longitudinal_stability_derivatives(dvs, U, m, I, Q, S, c)
     QS = Q * S
     c1 = QS / (m * U) 
-    c2 = QS / (I.yy * U)
+    c2 = QS / (I[2] * U)
 
     X_u = c1 * dvs.CX_speed
     Z_u = c1 * dvs.CZ_speed
@@ -103,8 +103,8 @@ longitudinal_stability_matrix(X_u, Z_u, M_u, X_w, Z_w, M_w, X_q, Z_q, M_q, U₀,
 function lateral_stability_derivatives(dvs, U, m, I, Q, S, b)
     QS = Q * S
     c1 = QS / (m * U) 
-    c2 = QS / (I.xx * U)
-    c3 = QS / (I.zz * U)
+    c2 = QS / (I[1] * U)
+    c3 = QS / (I[3] * U)
 
     Y_v = c1 * dvs.CY_beta
     L_v = c2 / 2 * dvs.Cl_beta * b
@@ -126,25 +126,3 @@ lateral_stability_matrix(Y_v, L_v, N_v, Y_p, L_p, N_p, Y_r, L_r, N_r, U₀, θ�
                L_v L_p     L_r         0      
                N_v N_p     N_r         0      
                 0   1       0          0       ]
-
-
-## Printing
-#==========================================================================================#
-
-function print_case(nf, ff, derivs, comp)
-    print_coefficients(nf, ff, comp)
-    print_derivatives(derivs, comp)
-end
-
-function print_case(data, comp)
-    nf, ff, derivs = data[comp]
-    print_case(nf, ff, derivs, comp)
-end
-
-function print_derivatives(comp, name = ""; axes = "")
-    coeffs  = ["CX", "CY", "CZ", "Cℓ", "Cm", "Cn"]
-    nf_vars = [ "$name" "Values" "" "" "Aerodynamic" "Derivatives" "" "" ; "" "$axes" "∂/∂U, m⁻¹s" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ]
-    nf_rows = @views [ coeffs comp[1:6,:] ]
-
-    pretty_table(nf_rows, nf_vars, alignment = :c, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), vlines = :none, formatters = ft_round(8))
-end

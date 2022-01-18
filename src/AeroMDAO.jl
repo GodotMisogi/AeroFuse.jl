@@ -122,12 +122,19 @@ export BoundaryLayer2D, solve_inviscid_doublets, solve_inviscid_vortices, defect
 
 ## Cases
 
-include("Aerodynamics/Cases/cases.jl")
-include("Aerodynamics/Cases/stability_cases.jl")
-include("Aerodynamics/Cases/foil_cases.jl")
+include("Aerodynamics/Cases/printing.jl")
 
-export solve_case, solve_case_derivatives, streamlines, print_case, print_info, print_coefficients, print_derivatives, span_loads,
-triangle_connectivities, extrapolate_point_mesh
+export print_case, print_info, print_coefficients, print_derivatives
+
+include("Aerodynamics/Cases/cases.jl")
+
+export solve_case, span_loads, triangle_connectivities, extrapolate_point_mesh
+
+include("Aerodynamics/Cases/stability_cases.jl")
+
+export solve_case_derivatives, longitudinal_stability_derivatives, longitudinal_stability_matrix
+
+include("Aerodynamics/Cases/foil_cases.jl")
 
 ## Structural analyses
 #==========================================================================================#
