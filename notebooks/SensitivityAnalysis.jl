@@ -152,14 +152,8 @@ The above definition, called a _forward-difference_ formula is first-order accur
 
 """
 
-# ╔═╡ 68a6a855-8668-4210-b594-b125604ba67a
-h_value = @bind h Slider(10. .^ (-16:2), default = 0.1, show_value=true)
-
 # ╔═╡ 82515d5c-c87f-4de2-aaa6-e60e9b366050
 forward_fd(f, x, h) = (f(x + h) - f(x)) / h
-
-# ╔═╡ 7a3d0f95-5a94-4745-b223-4aafb207f433
-fwd_fs = map(x -> forward_fd(f, x, h), xs)
 
 # ╔═╡ ebf92d9b-1ae5-416f-9103-dbc38652f6cb
 md"""
@@ -167,7 +161,7 @@ This prescription is not unique, and the order of accuracy depends on the differ
 
 For example, the _central-difference_ scheme,
 
-$$\frac{df}{dx} \approx \frac{f\left(x + h\right) - f\left(x - h\right)}{2h}$$
+$$\frac{df}{dx} \approx \frac{f\left(x + h\right) - f\left(x - h\right)}{2h},$$
 
 is second-order accurate, denoted $\mathcal O(h^2)$.
 """
@@ -175,14 +169,20 @@ is second-order accurate, denoted $\mathcal O(h^2)$.
 # ╔═╡ 9b718d40-dca6-4319-aaff-a1d967d1060a
 central_fd(f, x, h) = (f(x + h) - f(x - h)) / 2h
 
-# ╔═╡ 6b32fa8b-e5cf-4003-b688-a04d60d6a04f
-cnt_fs = map(x -> central_fd(f, x, h), xs)
-
 # ╔═╡ deb87cd1-11f9-4163-a20c-cbc4ab7f029d
 md"""
 !!! warning
 	Finite differences suffer from numerical errors due to the subtractive cancellation of numbers, hence they do not provide accurate derivatives for very small step sizes.
 """
+
+# ╔═╡ 68a6a855-8668-4210-b594-b125604ba67a
+h_value = @bind h Slider(10. .^ (-16:2), default = 0.1, show_value=true)
+
+# ╔═╡ 7a3d0f95-5a94-4745-b223-4aafb207f433
+fwd_fs = map(x -> forward_fd(f, x, h), xs)
+
+# ╔═╡ 6b32fa8b-e5cf-4003-b688-a04d60d6a04f
+cnt_fs = map(x -> central_fd(f, x, h), xs)
 
 # ╔═╡ 36cea322-ed4f-4bba-910e-4d0567e165ee
 begin
@@ -1737,13 +1737,13 @@ version = "0.9.1+5"
 # ╟─941c4581-5ab7-4605-b2a9-b3a2df1a0e87
 # ╟─f4f8b418-419c-4c1d-8dcb-99f8408663a3
 # ╟─40f93ea4-c7b1-48c4-85ca-9d2dd58bf58c
-# ╠═68a6a855-8668-4210-b594-b125604ba67a
 # ╠═82515d5c-c87f-4de2-aaa6-e60e9b366050
 # ╠═7a3d0f95-5a94-4745-b223-4aafb207f433
 # ╟─ebf92d9b-1ae5-416f-9103-dbc38652f6cb
 # ╠═9b718d40-dca6-4319-aaff-a1d967d1060a
 # ╠═6b32fa8b-e5cf-4003-b688-a04d60d6a04f
 # ╟─deb87cd1-11f9-4163-a20c-cbc4ab7f029d
+# ╠═68a6a855-8668-4210-b594-b125604ba67a
 # ╟─36cea322-ed4f-4bba-910e-4d0567e165ee
 # ╟─6ea20d60-787a-11ec-2e10-db153a28e4c1
 # ╟─78b031e7-b1cf-430d-a41a-6b6adb761836

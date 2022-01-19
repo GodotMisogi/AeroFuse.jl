@@ -38,8 +38,8 @@ Print a pretty table of the aerodynamic coefficients and derivatives with an opt
 """
 function print_derivatives(comp, name = ""; axes = "")
     coeffs  = ["CX", "CY", "CZ", "Cℓ", "Cm", "Cn"]
-    nf_vars = [ "$name" "Values" "" "" "Aerodynamic" "Derivatives" "" "" ; "" "$axes" "∂/∂U, m⁻¹s" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ]
-    nf_rows = @views [ coeffs comp[1:6,:] ]
+    nf_vars = [ "$name" "Values" "" "" "Derivatives" "" "" ; "" "$axes" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ]
+    nf_rows = @views [ coeffs comp[1:6,[1,3,4,5,6,7]] ]
 
     pretty_table(nf_rows, nf_vars, alignment = :c, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), vlines = :none, formatters = ft_round(8))
 end
