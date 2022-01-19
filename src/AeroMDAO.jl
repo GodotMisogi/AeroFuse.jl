@@ -17,7 +17,8 @@ using Statistics: mean
 using SplitApplyCombine: combinedimsview, combinedims
 export combinedimsview, combinedims
 
-using ComponentArrays: ComponentVector, ComponentArray, valkeys
+using ComponentArrays
+
 export ComponentVector, ComponentArray, valkeys
 
 using Setfield
