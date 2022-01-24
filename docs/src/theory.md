@@ -1,6 +1,18 @@
+```@meta
+EditURL = "<unknown>/docs/src/theory.jl"
+```
+
 # Theory
 
 The following theory described is meant to be minimal, with mainly the equations presented for reference when reading the code.
+
+## Geometry
+
+### Wing Parametrization
+
+A **half-wing** is defined in terms of a nested trapezoid. A single trapezoid is called a **section**. A section consists of two foil profiles, and their associated chord lengths and twist angles. Between them is their span length with associated _leading-edge_ dihedral and sweep angles. So a general half-wing consisting of ``n`` sections will have ``n`` entries for foils, chords, and twists, and ``n - 1`` entries for spans, dihedrals, sweeps for some ``n \in \mathbb N``. The following illustration should help visualize the concept.
+
+![](https://godot-bloggy.xyz/post/diagrams/WingGeometry.svg)
 
 ## Aerodynamics
 
@@ -14,14 +26,13 @@ Implementations for viscous-inviscid analyses are in progress.
 
 ### Doublet-Source Panel Method
 
-The doublet-source panel method predicts **inviscid, incompressible, irrotational, isentropic** external flow over surfaces in 2 dimensions. 
+The doublet-source panel method predicts **inviscid, incompressible, irrotational, isentropic** external flow over surfaces in 2 dimensions.
 
-Source and doublet singularities are placed on the surface, and boundary conditions are imposed on their induced velocity to obtain a well-posed problem. The induced velocity is evaluated by the corresponding free-field Green function for each singularity. 
+Source and doublet singularities are placed on the surface, and boundary conditions are imposed on their induced velocity to obtain a well-posed problem. The induced velocity is evaluated by the corresponding free-field Green function for each singularity.
 
 ```math
 
 ```
-
 
 As the system is linear, the velocities are added together to obtain the total induced velocity at a point $\mathbf r$.
 
@@ -31,7 +42,7 @@ As the system is linear, the velocities are added together to obtain the total i
 
 ### Vortex Lattice Method
 
-The vortex lattice method predicts **inviscid, incompressible, irrotational, isentropic** external flow over "thin" surfaces in 3 dimensions. 
+The vortex lattice method predicts **inviscid, incompressible, irrotational, isentropic** external flow over "thin" surfaces in 3 dimensions.
 
 Vortex filaments are placed on the surface, and boundary conditions are imposed on their induced velocity to obtain a well-posed problem. The induced velocity is evaluated by the Biot-Savart integral for a vortex line of length $\ell$ with a constant circulation strength $\Gamma$.
 
@@ -39,7 +50,14 @@ Vortex filaments are placed on the surface, and boundary conditions are imposed 
 \mathbf V(\mathbf r, \mathbf r') = \frac{\Gamma}{4\pi} \int_0^\ell \frac{d\boldsymbol\ell' \times (\mathbf r - \mathbf r')}{|\mathbf r - \mathbf r'|^3}
 ```
 
-The vortices can be set up in various configurations consisting of bound or semi-infinite filaments, commonly in the form of _horseshoes_ or _vortex rings_. A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\boldsymbol\Omega$ (in the body's frame) is imposed for the external flow. The induced velocity at a point is given by:
+The vortices can be set up in various configurations consisting of bound or semi-infinite filaments, commonly in the form of _horseshoes_ or _vortex rings_.
+
+> 1. Horseshoe elements
+>
+> 2. Vortex rings
+>
+
+A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\boldsymbol\Omega$ (in the body's frame) is imposed for the external flow. The induced velocity at a point is given by:
 
 ```math
 \mathbf V_{\infty}(\mathbf r) = - (\mathbf U + \boldsymbol\Omega \times \mathbf r)
@@ -59,7 +77,7 @@ Imposing the Neumann boundary condition $\mathbf V \cdot \hat{\mathbf n} = 0$ de
 
 ## Structures
 
-The structural analyses in AeroMDAO utilize _linear finite-element methods_. 
+The structural analyses in AeroMDAO utilize _linear finite-element methods_.
 
 Particularly, a $2$-dimensional beam element model has been implemented following the standard formulation using cubic Hermite shape functions based on **Euler-Bernoulli beam theory**. These are embedded into a $3$-dimensional local coordinate system in the vortex lattice method without loss of generality.
 
@@ -121,7 +139,7 @@ A standard three degrees-of-freedom rigid body model is used for performing flig
         (M_A(\alpha, \delta_e, \hat Q) - T\Delta_{zT}) / I_{yy} \\
         u_b \cos\Theta - w_b \sin\Theta \\
         u_b \sin\Theta + w_b \cos\Theta \\
-        Q \\ 
+        Q \\
         g(\mathbf x, t) \\
         -c_T T
     \end{bmatrix}
@@ -141,3 +159,8 @@ A standard six degrees-of-freedom rigid body model is used for performing flight
 
 1. Mark Drela. _Flight Vehicle Aerodynamics_. MIT Press, 2014.
 2. Joseph Katz and Allen Plotkin. _Low-Speed Aerodynamics, Second Edition_. Cambridge University Press, 2001.
+
+---
+
+*This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
+

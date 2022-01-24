@@ -1,33 +1,40 @@
-using Documenter, AeroMDAO
+using AeroMDAO
+using Documenter
 using DocumenterTools: Themes
+using Literate
 
-##
+## Generate theme
 for w in ("light", "dark")
     header = read(joinpath(@__DIR__, "theme/style.scss"), String)
     theme = read(joinpath(@__DIR__, "theme/$(w)defs.scss"), String)
     write(joinpath(@__DIR__, "theme/$(w).scss"), header*"\n"*theme)
 end
-using DocumenterTools: Themes
+
 Themes.compile(joinpath(@__DIR__, "theme/light.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-light.css"))
 Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
+
+## Generate Markdown files using Literate.jl
+Literate.markdown("src/tutorials.jl")
+Literate.markdown("src/howto.jl")
+Literate.markdown("src/theory.jl")
 
 ## Generate documentation
 makedocs(
     # modules = [AeroMDAO, AeroMDAO.VortexLattice],
     sitename = "AeroMDAO",
-    authors  = "Arjit Seth, Rhea P. Liem, and Stephane Redonnet",
+    authors  = "Arjit Seth, Stephane Redonnet, and Rhea P. Liem",
     # repo = "https://github.com/GodotMisogi/AeroMDAO.jl",
     pages = [
-                "Home"   => "index.md",
-                "Tutorials"     => "tutorials.md",
-                "How-to Guide"  => "howtoguide.md",
+                "Home"          => "index.md"
+                "Tutorials"     => "tutorials.md"
+                "How-to Guide"  => "howto.md"
+                "Theory"        => "theory.md"
                 "Reference"     => [
-                                    "Geometry"      => "geometry.md"
-                                    "Aerodynamics"  => "aerodynamics.md"
-                                    "Structures"    => "structures.md"
-                                    ],
-                "Explanation"   => "theory.md",
-                "API"    => "api.md"
+                                    "Geometry API"      => "geometry.md"
+                                    "Aerodynamics API"  => "aerodynamics.md"
+                                    "Structures API"    => "structures.md"
+                                    "In-Progress API"   => "development.md"
+                                    ]
             ],
     format = Documenter.HTML(
                             # /prettyurls = CI,
@@ -36,7 +43,7 @@ makedocs(
                                 asset("https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&display=swap", class=:css),
                                 ],
                             # highlightjs = "theme/highlight.js",
-                            )
+                            ),
 )
 
 ## Deployment

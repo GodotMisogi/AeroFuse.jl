@@ -15,7 +15,7 @@ wing  = WingSection(span       = 8.0,
                     tip_foil   = naca4(2,4,1,2),
                     position   = [0., 0., 0.])
 
-# Horiontal tail
+# Horizontal tail
 htail = WingSection(span       = 2.0,
                     dihedral   = 0.0,
                     LE_sweep   = 15.0,
