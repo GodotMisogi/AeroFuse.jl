@@ -94,11 +94,11 @@ reflect_mapper(f, xs) = @views [ f(xs[:,end:-1:1]) xs ]
 ## Difference operations
 #===========================================================================#
 
-fwddiff_matrix(n) = [ I zeros(n) ] - [ zeros(n) I ]
+forward_difference_matrix(n) = [ I zeros(n) ] - [ zeros(n) I ]
 
-fwdsum(xs)   = @views @. xs[2:end] + xs[1:end-1]
-fwddiff(xs)  = @views @. xs[2:end] - xs[1:end-1]
-fwddiv(xs)   = @views @. xs[2:end] / xs[1:end-1]
+forward_sum(xs)   = @views @. xs[2:end] + xs[1:end-1]
+forward_difference(xs)  = @views @. xs[2:end] - xs[1:end-1]
+forward_division(xs)   = @views @. xs[2:end] / xs[1:end-1]
 ord2diff(xs) = @views @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
 
 adj3(xs) = @views zip(xs[1:end-2,:], xs[2:end-1,:], xs[3:end,:])

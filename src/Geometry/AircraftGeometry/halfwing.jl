@@ -30,7 +30,7 @@ end
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     # Check if number of sections match up with number of edges (NEEDS WORK)
-    @assert (length ∘ zip)(foils, chords, twists) == (length ∘ zip)(spans, dihedrals, sweeps) + 1 "N+1 foil sections, chords and twists are required for N section(s)."
+    @assert (length ∘ zip)(foils, chords, twists) == (length ∘ zip)(spans, dihedrals, sweeps) + 1 "N+1 foils, chords and twists are required for N section(s)."
     # Check if lengths are positive
     @assert any(x -> x >= 0., chords) || any(x -> x >= 0., spans) "Chord and span lengths must be positive."
     # Check if dihedrals and sweeps are within bounds
@@ -86,14 +86,14 @@ span(wing :: HalfWing) = sum(wing.spans)
 taper_ratio(wing :: HalfWing) = last(wing.chords) / first(wing.chords)
 
 function projected_area(wing :: HalfWing)
-    mean_chords = fwdsum(wing.chords) / 2 # Mean chord lengths of sections.
-    mean_twists = fwdsum(wing.twists) / 2 # Mean twist angles of sections
+    mean_chords = forward_sum(wing.chords) / 2 # Mean chord lengths of sections.
+    mean_twists = forward_sum(wing.twists) / 2 # Mean twist angles of sections
     sum(@. wing.spans * mean_chords * cos(mean_twists))
 end
 
-section_macs(wing :: HalfWing) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], fwddiv(wing.chords))
+section_macs(wing :: HalfWing) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], forward_division(wing.chords))
 
-section_projected_areas(wing :: HalfWing) = wing.spans .* fwdsum(wing.chords) / 2
+section_projected_areas(wing :: HalfWing) = wing.spans .* forward_sum(wing.chords) / 2
 
 function mean_aerodynamic_chord(wing :: HalfWing)
     areas = section_projected_areas(wing)
@@ -129,12 +129,12 @@ function max_thickness_to_chord_ratio_sweeps(wing :: HalfWing, num)
     max_tbyc    = getindex.(xs_max_tbyc, 2)
     xs_temp     = getindex.(xs_max_tbyc, 1)
     xs          = getindex.(leading_edge(wing), 1) .+ wing.chords .* getindex.(xs_temp, 1)
-    ds          = fwddiff(xs)
+    ds          = forward_difference(xs)
     widths      = @. wing.spans / cos(wing.dihedrals)
 
     sweeps      = @. atan(ds, widths)
-    xs          = fwdsum(xs_temp) / 2
-    tbycs       = fwdsum(max_tbyc) / 2
+    xs          = forward_sum(xs_temp) / 2
+    tbycs       = forward_sum(max_tbyc) / 2
 
     xs, tbycs, sweeps
 end

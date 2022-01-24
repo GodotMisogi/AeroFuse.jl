@@ -22,7 +22,7 @@ b = @time neumann_boundary_condition(panels, velocity(uniform))
 γs = A \ b
 
 ##
-cl = 2 * sum((fwdsum(γs) / 2) .* panel_length.(panels)) / uniform.magnitude
+cl = 2 * sum((forward_sum(γs) / 2) .* panel_length.(panels)) / uniform.magnitude
 
 ## Velocities and pressure coefficient
 # panel_vels = [ velocity(uniform) .+ sum(vortex_velocity.(γs[1:end-1], γs[2:end], panels, Ref(panel_i))) for panel_i in panels ]

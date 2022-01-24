@@ -13,7 +13,7 @@ using LinearAlgebra
 using SplitApplyCombine
 
 # Math tools
-import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, fwdsum, fwddiv, fwddiff, weighted_vector, vectarray, extend_yz
+import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, forward_sum, forward_division, forward_difference, weighted_vector, vectarray, extend_yz
 
 # Panel geometry
 import ..PanelGeometry: Panel2D, Panel3D, panel_area, panel_normal, transform, make_panels

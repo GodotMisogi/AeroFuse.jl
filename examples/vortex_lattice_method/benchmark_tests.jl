@@ -59,16 +59,19 @@ function aeromdao_steady_vlm()
                 Horseshoe.(vtail_panels, vtail_normals)[:];
                ]
 
-
     # display(size.([ wing_panels[1], htail_panels[1], vtail_panels[1] ])) # Checking sizes
-
-    ρ       = 1.225
-    x_ref   = [0.5, 0., 0.]
-    V, α, β = 1.0, 5.0, 0.0
-    Ω       = [0.0, 0.0, 0.0]
-    fs      = AeroMDAO.Freestream(α, β, Ω)
-    S, b, c = 9.0, 10.0, 0.9
-    refs    = References(V, S, b, c, ρ, x_ref)
+    α, β = 5.0, 0.0
+    Ω    = [0.0, 0.0, 0.0]
+    fs   = AeroMDAO.Freestream(α, β, Ω)
+    refs = References(
+                         speed     = 10.0,
+                         density   = 1.225,
+                         viscosity = 1.5e-5,
+                         area      = 9.0,
+                         span      = 10.0,
+                         chord     = 0.9,
+                         location  = [0.5, 0., 0.]
+                     )
 
     # reset_timer!()
     # @timeit "Solving Case" 

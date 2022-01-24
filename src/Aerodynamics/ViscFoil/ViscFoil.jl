@@ -1,6 +1,6 @@
 module ViscFoil
 
-import ..MathTools: midpair_map, fwddiff, fwdsum, weighted_vector
+import ..MathTools: midpair_map, forward_difference, forward_sum, weighted_vector
 
 import ..Laplace: Uniform2D, velocity
 
@@ -94,7 +94,7 @@ function solve_system(x_in, panels, all_lengths, C, U_invs, n_crit)
     Ts = x_in[2n+2:end] # N + N_w
 
     # Forward differencing mass defects
-    Δms  = fwddiff(ms) # N + N_w + 1 -> N + N_w
+    Δms  = forward_difference(ms) # N + N_w + 1 -> N + N_w
 
     # println(size(U_invs), size(ms), size(θs), size(Ts))
     # println(size(Δms), size(all_lengths))

@@ -95,10 +95,10 @@ function longitudinal_stability_derivatives(dvs, U, m, I, Q, S, c)
 end
 
 longitudinal_stability_matrix(X_u, Z_u, M_u, X_w, Z_w, M_w, X_q, Z_q, M_q, U₀, g) = 
-    @SMatrix [ X_u X_w    0     -g
-               Z_u Z_w U₀ + Z_q  0
-               M_u M_w   M_q     0
-                0   0     1      0 ]
+    [ X_u X_w        0         -g
+      Z_u Z_w     U₀ + Z_q      0
+      M_u M_w       M_q         0
+       0   0         1          0 ]
 
 function lateral_stability_derivatives(dvs, U, m, I, Q, S, b)
     QS = Q * S
@@ -122,7 +122,7 @@ function lateral_stability_derivatives(dvs, U, m, I, Q, S, b)
 end
 
 lateral_stability_matrix(Y_v, L_v, N_v, Y_p, L_p, N_p, Y_r, L_r, N_r, U₀, θ₀, g) =
-    @SMatrix [ Y_v Y_p (Y_r - U₀) (g * cos(θ₀))
-               L_v L_p     L_r         0      
-               N_v N_p     N_r         0      
-                0   1       0          0       ]
+    [ Y_v Y_p (Y_r - U₀) (g * cos(θ₀))
+      L_v L_p     L_r         0      
+      N_v N_p     N_r         0      
+       0   1       0          0       ]

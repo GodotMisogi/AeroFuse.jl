@@ -19,12 +19,14 @@ makedocs(
     # repo = "https://github.com/GodotMisogi/AeroMDAO.jl",
     pages = [
                 "Home"   => "index.md",
-                "Guide"  => [ 
-                                "Geometry"      => "geometry.md"
-                                "Aerodynamics"  => "aerodynamics.md"
-                                "Structures"    => "structures.md"
-                                "Theory"        => "theory.md"
-                            ],
+                "Tutorials"     => "tutorials.md",
+                "How-to Guide"  => "howtoguide.md",
+                "Reference"     => [
+                                    "Geometry"      => "geometry.md"
+                                    "Aerodynamics"  => "aerodynamics.md"
+                                    "Structures"    => "structures.md"
+                                    ],
+                "Explanation"   => "theory.md",
                 "API"    => "api.md"
             ],
     format = Documenter.HTML(

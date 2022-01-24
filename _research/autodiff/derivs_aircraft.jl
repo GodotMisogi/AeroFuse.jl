@@ -41,12 +41,12 @@ HalfWingTest(chords :: AbstractVector{T}, twists :: AbstractVector{T}, spans :: 
 
 ##
 AeroMDAO.AircraftGeometry.mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
-section_macs(wing :: HalfWingTest) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], fwddiv(wing.chords))
-section_projected_areas(wing :: HalfWingTest) = wing.spans .* fwdsum(wing.chords) / 2
+mean_aerodynamic_chords(wing :: HalfWingTest) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], forward_division(wing.chords))
+projected_areas(wing :: HalfWingTest) = wing.spans .* forward_sum(wing.chords) / 2
 
 function AeroMDAO.AircraftGeometry.mean_aerodynamic_chord(wing :: HalfWingTest)
-    areas = section_projected_areas(wing)
-    macs  = section_macs(wing)
+    areas = projected_areas(wing)
+    macs  = mean_aerodynamic_chords(wing)
     sum(macs .* areas) / sum(areas)
 end
 

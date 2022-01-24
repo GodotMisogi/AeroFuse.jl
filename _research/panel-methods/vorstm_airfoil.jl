@@ -30,7 +30,7 @@ lift(ρ, u, γs, cs) = ρ * u * (γs[1:end-1] .+ γs[2:end]) ./ 2 .* cs
 
 L = sum(ΔLs)
 # Cl = L / (0.5 * 1.225 * V^2)
-Cl = 2 * sum(fwdsum(γs) / 2 .* panel_length.(panels)) / uniform.magnitude
+Cl = 2 * sum(forward_sum(γs) / 2 .* panel_length.(panels)) / uniform.magnitude
 println("Lift Coefficient: $Cl")
 
 ##

@@ -11,7 +11,7 @@ function Fuselage(L :: T, weights :: AbstractVector{T}, radii :: AbstractVector{
     Fuselage{T}(L, weights, radii[perms], position)
 end
 
-projected_area(fuse :: Fuselage) = fwdsum(fuse.radii) / 2 .* fuse.weights
+projected_area(fuse :: Fuselage) = forward_sum(fuse.radii) / 2 .* fuse.weights
 Base.length(fuse :: Fuselage) = fuse.length
 
 function coordinates(fuse :: Fuselage, n)
