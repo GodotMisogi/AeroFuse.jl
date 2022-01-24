@@ -25,7 +25,7 @@ end
     coo_foil  = naca4(2,4,1,2)
 
     # Cosine spacing
-    cos_foil = cosine_foil(coo_foil, 61)
+    cos_foil = cosine_spacing(coo_foil, 61)
 
     # Split airfoil
     up, low  = split_foil(cos_foil)

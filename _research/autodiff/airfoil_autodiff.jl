@@ -12,7 +12,7 @@ using StaticArrays
 n_dim = 200
 
 xs = naca4((2,4,1,2))
-xi = cosine_foil(xs, n_dim)
+xi = cosine_spacing(xs, n_dim)
 
 foil = Foil(xi[:,1], xi[:,2])
 len  = arc_length(foil)

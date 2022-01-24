@@ -26,7 +26,7 @@ function cavity_length_foil(foil :: Foil, cavity_start, cavity_end, N_panels = 4
 
     leading_cav_upper, wetted_cav_upper, cav_trailing_upper, leading_cav_lower, wetted_cav_lower, cav_trailing_lower = cavity_split_foil(foil, cavity_start, cavity_end)
 
-    wet_foil = cosine_foil(wetted_cav_lower, N_cavpanels)
+    wet_foil = cosine_spacing(wetted_cav_lower, N_cavpanels)
 
     # Upper: Leading (cavity) to trailing
     wu = cosine_interp(wetted_cav_upper, Int(trunc(N_cavpanels)))

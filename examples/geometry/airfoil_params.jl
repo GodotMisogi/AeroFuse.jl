@@ -20,7 +20,7 @@ coords = naca4(2,4,1,2) # NACA 4-digit
 doublet_source_case(coords, uniform)
 
 ## Cosine spacing
-cos_foil = cosine_foil(coords, 60)
+cos_foil = cosine_spacing(coords, 60)
 
 doublet_source_case(cos_foil, uniform)
 

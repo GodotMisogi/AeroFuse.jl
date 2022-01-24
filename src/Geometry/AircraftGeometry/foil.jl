@@ -17,7 +17,13 @@ struct Foil{T <: Real} <: AbstractFoil
     name   :: String
 end
 
-Foil(xs, ys, name = "Unnamed") = let T = promote_type(eltype(xs), eltype(ys)); Foil{T}(xs, ys, name) end
+function Foil(xs, ys, name = "Unnamed")
+    @assert length(xs) == length(ys) "Lengths of xs and ys must match!"
+
+    T = promote_type(eltype(xs), eltype(ys))
+    Foil{T}(xs, ys, name) 
+end
+
 Foil(coords :: Vector{<: FieldVector{2,<: Real}}, name = "Unnamed") = Foil(getindex.(coords, 1), getindex.(coords, 2), name)
 
 function Foil(coords :: AbstractMatrix{<: Real}, name = "Unnamed") 
@@ -26,6 +32,9 @@ function Foil(coords :: AbstractMatrix{<: Real}, name = "Unnamed")
     @views Foil(coords[:,1], coords[:,2], name)
 end
 
+function Base.show(io :: IO, foil :: Foil)
+    print(io, foil.name, " ", typeof(foil), " with ", length(foil.x), " points.")
+end
 
 """
     coordinates(foil :: Foil)
@@ -44,23 +53,30 @@ arc_length(foil :: Foil) = let c = coordinates(foil); @views norm(c[2:end,:] .- 
 """
     scale_foil(foil :: Foil, scale)
 
-Scale the coordinates of a Foil to a scaling value.
+Scale the coordinates of a `Foil` to a scaling value.
 """
 scale_foil(foil :: Foil, scale) = Foil(scale .* coordinates(foil))
 
 """
-    cosine_foil(foil :: Foil, num :: Integer)
+    cosine_spacing(foil :: Foil, num :: Integer)
 
-Return a Foil with cosine spacing for a given number of points.
+Return a `Foil` with cosine spacing for a given number of points.
 """
-cosine_foil(foil :: Foil, num :: Integer) = Foil(cosine_foil(coordinates(foil), num))
+cosine_spacing(foil :: Foil, num :: Integer) = Foil(cosine_spacing(coordinates(foil), num))
 
 """
     camber_thickness(foil :: Foil, num :: Integer)
 
-Compute the camber-thickness distribution of a Foil with cosine spacing.
+Compute the camber-thickness distribution of a `Foil` with cosine spacing.
 """
-camber_thickness(foil :: Foil, num = 40) = coordinates_to_camber_thickness(cosine_foil(coordinates(foil)), num + 1)
+camber_thickness(foil :: Foil, num = 40) = coordinates_to_camber_thickness(cosine_spacing(coordinates(foil)), num + 1)
+
+"""
+    split_foil(foil :: Foil)
+
+Split the `Foil` coordinates into upper and lower surfaces.
+"""
+split_foil(foil :: Foil) = split_foil(coordinates(foil))
 
 function max_thickness_to_chord_ratio_location(coords)
     @views xs, thiccs = coords[:,1], coords[:,3]
@@ -68,7 +84,6 @@ function max_thickness_to_chord_ratio_location(coords)
     @views xs[max_thick_arg], thiccs[max_thick_arg]
 end
 
-split_foil(foil :: Foil) = split_foil(coordinates(foil))
 
 ## Foil processing
 #==========================================================================================#
@@ -78,7 +93,7 @@ split_foil(foil :: Foil) = split_foil(coordinates(foil))
 
 Read a '.dat' file consisting of 2D coordinates, for an airfoil as an array of `SVector`s, with an optional argument to skip the header.
 """
-read_foil(path :: String; header = true) = readdlm(path, skipstart = header ? 1 : 0)
+read_foil(path :: String; header = true) = Foil(readdlm(path, skipstart = header ? 1 : 0))
 
 # This is type-unstable (obviously -_-)
 function split_foil(coords)
@@ -92,17 +107,17 @@ function split_foil(coords)
 end
 
 function paneller(foil :: Foil, num_panels :: Integer)
-    coords = cosine_foil(coordinates(foil), num_panels ÷ 2)
+    coords = cosine_spacing(coordinates(foil), num_panels ÷ 2)
     vecs   = SVector.(coords[:,1], coords[:,2])
     @views Panel2D.(vecs[2:end,:], vecs[1:end-1,:])[end:-1:1]
 end
 
 """
-    cosine_foil(coordinates, n = 40)
+    cosine_spacing(coordinates, n = 40)
 
 Interpolate a foil profile's coordinates by projecting the x-coordinates of a circle onto the geometry with ``2n`` points.
 """
-function cosine_foil(coords, n :: Integer = 40)
+function cosine_spacing(coords, n :: Integer = 40)
     upper, lower = split_foil(coords)
     n_upper = @views [ upper       ;
                        lower[1,:]' ] # Append leading edge point from lower to upper
@@ -206,7 +221,7 @@ end
 Convert 2-dimensional coordinates to its camber-thickness representation after cosine interpolation with ``2n`` points.
 """
 function coordinates_to_camber_thickness(coords, num :: Integer = 40)
-    upper, lower = split_foil(cosine_foil(coords, num))
+    upper, lower = split_foil(cosine_spacing(coords, num))
 
     # Getting abscissa and leading edge ordinate
     xs, y_LE         = lower[:,1], lower[1,2]

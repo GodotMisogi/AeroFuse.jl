@@ -28,7 +28,7 @@ Compute the surface coordinates of a `HalfWing` consisting of `Foil`s and releva
 """
 function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false)
     leading_xyz  = leading_edge(wing, flip)
-    scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_foil)(wing.foils, chord_num)
+    scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_spacing)(wing.foils, chord_num)
     affine_transformation(wing).(chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip))
 end
 
