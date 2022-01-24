@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>How-to Guide · AeroMDAO</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><script src="../../copy.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&amp;display=swap" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.svg" alt="AeroMDAO logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">AeroMDAO</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li><a class="tocitem" href="../tutorials/">Tutorials</a></li><li class="is-active"><a class="tocitem" href>How-to Guide</a><ul class="internal"><li><a class="tocitem" href="#Airfoil-Processing"><span>Airfoil Processing</span></a></li><li><a class="tocitem" href="#Wing-Geometry"><span>Wing Geometry</span></a></li><li><a class="tocitem" href="#Vortex-Lattice-Aerodynamic-Analyses"><span>Vortex Lattice Aerodynamic Analyses</span></a></li><li><a class="tocitem" href="#Aerodynamic-Stability-Analyses"><span>Aerodynamic Stability Analyses</span></a></li><li><a class="tocitem" href="#Euler-Bernoulli-Beam-Structural-Analysis"><span>Euler-Bernoulli Beam Structural Analysis</span></a></li></ul></li><li><a class="tocitem" href="../theory/">Theory</a></li><li><span class="tocitem">Reference</span><ul><li><a class="tocitem" href="../geometry/">Geometry API</a></li><li><a class="tocitem" href="../aerodynamics/">Aerodynamics API</a></li><li><a class="tocitem" href="../structures/">Structures API</a></li><li><a class="tocitem" href="../development/">In-Progress API</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>How-to Guide</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>How-to Guide</a></li></ul></nav><div class="docs-right"><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="How-to-Guide"><a class="docs-heading-anchor" href="#How-to-Guide">How-to Guide</a><a id="How-to-Guide-1"></a><a class="docs-heading-anchor-permalink" href="#How-to-Guide" title="Permalink"></a></h1><pre><code class="language-julia hljs">using AeroMDAO</code></pre><h2 id="Airfoil-Processing"><a class="docs-heading-anchor" href="#Airfoil-Processing">Airfoil Processing</a><a id="Airfoil-Processing-1"></a><a class="docs-heading-anchor-permalink" href="#Airfoil-Processing" title="Permalink"></a></h2><h3 id="Import-Coordinates"><a class="docs-heading-anchor" href="#Import-Coordinates">Import Coordinates</a><a id="Import-Coordinates-1"></a><a class="docs-heading-anchor-permalink" href="#Import-Coordinates" title="Permalink"></a></h3><p>Provide the path to the following function.</p><pre><code class="language- hljs"># Airfoil coordinates file path
+foilpath  = string(pwd(), &quot;\\..\\..\\data\\airfoil_database\\s1223.dat&quot;)
+
+# Read coordinates file
+my_foil    = read_foil(foilpath)</code></pre><h3 id="Interpolate-Coordinates"><a class="docs-heading-anchor" href="#Interpolate-Coordinates">Interpolate Coordinates</a><a id="Interpolate-Coordinates-1"></a><a class="docs-heading-anchor-permalink" href="#Interpolate-Coordinates" title="Permalink"></a></h3><pre><code class="language- hljs"># Cosine spacing with 51 points on upper and lower surfaces
+cos_foil  = cosine_spacing(my_foil, 51)</code></pre><h2 id="Wing-Geometry"><a class="docs-heading-anchor" href="#Wing-Geometry">Wing Geometry</a><a id="Wing-Geometry-1"></a><a class="docs-heading-anchor-permalink" href="#Wing-Geometry" title="Permalink"></a></h2><p>AeroMDAO provides a <code>HalfWing</code> constructor.</p><pre><code class="language-julia hljs">airfoil    = naca4((2,4,1,2))
+wing_right = HalfWing(foils     = Foil.(airfoil for i in 1:3),
+                      chords    = [0.4, 0.2, 0.1],
+                      twists    = [0., 2., 5.],
+                      spans     = [1.0, 0.1],
+                      dihedrals = [0., 60.],
+                      LE_sweeps = [0., 30.])
+
+wing = Wing(wing_right);
+
+print_info(wing, &quot;My Wing&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">────────────────────────────────────────────────────
+           My Wing                    Value
+────────────────────────────────────────────────────
+        Aspect Ratio                 7.68434
+          Span (m)                     2.2
+          Area (m²)                 0.629853
+ Mean Aerodynamic Chord (m)         0.303704
+ Mean Aerodynamic Center (m)  [0.0771478, 0.0, 0.0]
+────────────────────────────────────────────────────</code></pre><h2 id="Vortex-Lattice-Aerodynamic-Analyses"><a class="docs-heading-anchor" href="#Vortex-Lattice-Aerodynamic-Analyses">Vortex Lattice Aerodynamic Analyses</a><a id="Vortex-Lattice-Aerodynamic-Analyses-1"></a><a class="docs-heading-anchor-permalink" href="#Vortex-Lattice-Aerodynamic-Analyses" title="Permalink"></a></h2><h3 id="Meshing"><a class="docs-heading-anchor" href="#Meshing">Meshing</a><a id="Meshing-1"></a><a class="docs-heading-anchor-permalink" href="#Meshing" title="Permalink"></a></h3><pre><code class="language-julia hljs"># Wing
+wing  = WingSection(span       = 8.0,
+                    dihedral   = 5.0,
+                    LE_sweep   = 15.0,
+                    taper      = 0.4,
+                    root_chord = 2.0,
+                    root_twist = 0.0,
+                    tip_twist  = -2.0,
+                    root_foil  = naca4(2,4,1,2),
+                    tip_foil   = naca4(2,4,1,2),
+                    position   = [0., 0., 0.])
+
+# Horizontal tail
+htail = WingSection(span       = 2.0,
+                    dihedral   = 0.0,
+                    LE_sweep   = 15.0,
+                    taper      = 0.6,
+                    root_chord = 0.8,
+                    root_twist = 0.0,
+                    tip_twist  = 0.0,
+                    root_foil  = naca4(0,0,1,2),
+                    tip_foil   = naca4(0,0,0,9),
+                    position   = [5., 0., -0.1],
+                    angle      = 0.,
+                    axis       = [0., 1., 0.]);
+
+# Vertical tail
+vtail = HalfWingSection(span       = 0.8,
+                        dihedral   = 0.0,
+                        LE_sweep   = 8.0,
+                        taper      = 0.6,
+                        root_chord = 0.8,
+                        root_twist = 0.0,
+                        tip_twist  = 0.,
+                        root_foil  = naca4(0,0,0,9),
+                        tip_foil   = naca4(0,0,0,9),
+                        position   = [5., 0., 0.],
+                        angle      = 90.,
+                        axis       = [1., 0., 0.])
+# Define meshes
+wing_mesh  = WingMesh(wing, [20], 10)
+htail_mesh = WingMesh(htail, [10], 5)
+vtail_mesh = WingMesh(vtail, [10], 5)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WingMesh —
+Spanwise panels: 10
+Chordwise panels: 5
+Spanwise spacing: AbstractSpacing[Sine()]
+Chordwise spacing: Cosine()
+</code></pre><h3 id="Inviscid-Analysis"><a class="docs-heading-anchor" href="#Inviscid-Analysis">Inviscid Analysis</a><a id="Inviscid-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Inviscid-Analysis" title="Permalink"></a></h3><pre><code class="language-julia hljs">aircraft = ComponentArray(
+                          wing  = make_horseshoes(wing_mesh),
+                          htail = make_horseshoes(htail_mesh),
+                          vtail = make_horseshoes(vtail_mesh)
+                         );
+
+# Evaluate case
+fs      = Freestream(alpha = 1.0,
+                     beta  = 0.0,
+                     omega = [0.,0.,0.])
+refs    = References(
+                     speed    = 10.0,
+                     density  = 1.225,
+                     area     = projected_area(wing),
+                     span     = span(wing),
+                     chord    = mean_aerodynamic_chord(wing),
+                     location = mean_aerodynamic_center(wing)
+                    )
+
+system = solve_case(aircraft, fs, refs;
+                    print            = true, # Prints the results for only the aircraft
+                    print_components = true, # Prints the results for all components
+                   )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">VLMSystem -
+Elements: 550 Horseshoe{Float64}
+
+Freestream: 
+    alpha = 0.017453292519943295
+    beta = 0.0
+    omega = [0.0, 0.0, 0.0]
+
+References: 
+    speed = 10.0
+    density = 1.225
+    viscosity = 1.5e-5
+    sound_speed = 330.0
+    area = 11.198294185751582
+    span = 8.0
+    chord = 1.4857142857142858
+    location = [0.8307700441676391, 0.0, 0.0]
+</code></pre><h3 id="Dynamics"><a class="docs-heading-anchor" href="#Dynamics">Dynamics</a><a id="Dynamics-1"></a><a class="docs-heading-anchor-permalink" href="#Dynamics" title="Permalink"></a></h3><p>The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of <code>Geometry(), Body(), Wind(), Stability()</code>. The wind axes are used by default.</p><pre><code class="language-julia hljs"># Compute dynamics
+ax       = Wind() # Body(), Stability(), Geometry()
+CFs, CMs = surface_coefficients(system; axes = ax)
+Fs       = surface_forces(system)
+Fs, Ms   = surface_dynamics(system; axes = ax)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((wing = StaticArrays.SVector{3, Float64}[[0.00017079012853812875, -0.0006813890466719818, -0.008773501953917457] [0.0006693518888203666, -0.0028728657873838496, -0.036826938596368035] … [0.000669351888820413, 0.0028728657873838426, -0.03682693859636811] [0.00017079012853814062, 0.0006813890466719804, -0.008773501953917478]; [1.6990426941953902e-5, -1.622779905823733e-5, -0.0002471411373720845] [0.00025879729605747894, -0.0005215520410585659, -0.007057627498115353] … [0.00025879729605748745, 0.0005215520410585614, -0.007057627498115324] [1.699042694195339e-5, 1.6227799058236484e-5, -0.00024714113737207274]; … ; [4.769804961610481e-5, 0.00020420903211690032, 0.0021745527670381207] [0.00018910225419851282, 0.0008630610294354212, 0.009189503276325462] … [0.00018910225419849956, -0.0008630610294354258, 0.009189503276325511] [4.769804961610301e-5, -0.0002042090321169015, 0.002174552767038133]; [1.7076603880461645e-5, 6.121820315368324e-5, 0.0006503189183980222] [5.323818413817443e-5, 0.00021407358623845373, 0.0022723955236667944] … [5.323818413817149e-5, -0.0002140735862384549, 0.0022723955236668056] [1.707660388046102e-5, -6.121820315368388e-5, 0.000650318918398029]], htail = StaticArrays.SVector{3, Float64}[[-3.310647062445999e-5, -2.1126689686035997e-6, -0.0014316335865778814] [-0.0001419944570871014, -5.447984177008518e-6, -0.0069356618019834676] … [-0.00014199445707703266, 5.447984176019982e-6, -0.006935661801624223] [-3.310647062203322e-5, 2.11266896830312e-6, -0.0014316335865049924]; [-1.614892356086581e-5, -3.0850372869311166e-8, -0.0009170398787277606] [-8.561832824146475e-5, -6.728682517290151e-8, -0.004887335733933978] … [-8.561832823504687e-5, 6.72868248508797e-8, -0.004887335733651175] [-1.6148923559655763e-5, 3.085037280665822e-8, -0.0009170398786749509]; … ; [-5.1438045960193496e-6, 1.7176048898575405e-8, -0.0003202467998194649] [-1.8814720065088427e-5, 5.9113711975477976e-8, -0.0011658574154532716] … [-1.8814720064083775e-5, -5.911371198123172e-8, -0.001165857415404277] [-5.143804595732276e-6, -1.7176048899927938e-8, -0.000320246799805031]; [-1.6573982946043063e-6, -3.6122072816012374e-9, -0.00010205679943260329] [-4.298570364027699e-6, -9.477289601867344e-9, -0.00026490493117438895] … [-4.298570363840186e-6, 9.47728960266922e-9, -0.00026490493116522354] [-1.657398294517896e-6, 3.6122072818868e-9, -0.00010205679942821448]], vtail = StaticArrays.SVector{3, Float64}[[5.747615333255851e-22, 4.816985272373737e-11, -8.551996998055583e-23] [9.711506818220919e-23, 3.5754173089035224e-11, -1.4451649067959433e-23] … [-2.927359124180061e-25, 5.206398679460912e-13, 4.352332446683112e-26] [-6.214112697757722e-26, 1.0990948884315974e-13, 9.239042037631931e-27]; [1.888371324630266e-20, 3.298274024075634e-10, -1.7926030694085663e-21] [-6.604233276449102e-22, 6.398808607002112e-11, 6.268838180366373e-23] … [-2.4404633091257655e-25, 5.761614389126636e-13, 2.3131364352688412e-26] [3.803729680758326e-26, 1.5776584589443776e-13, -3.620458693118783e-27]; … ; [-1.340731049112643e-22, -2.3607866553977127e-11, -1.7224201798768415e-23] [-5.824350426901248e-23, -1.69369374904993e-11, -7.482061015305257e-24] … [5.26395140130959e-25, -8.659701324701703e-13, 6.768387660592535e-26] [8.685452966474796e-24, -1.4122275957328367e-12, 1.1159888189646269e-24]; [-7.602202939372735e-24, -3.2448408956629114e-12, -1.6152741581131432e-24] [-5.004405013355802e-24, -2.3602027083938717e-12, -1.063294706476384e-24] … [-2.7045001446635587e-24, -1.4664149281960977e-12, -5.746182426081175e-25] [1.6262473264184034e-22, -3.3955618856844613e-12, 3.4558047418519986e-23]]), (wing = StaticArrays.SVector{3, Float64}[[-0.03527517896424487, 0.0022553648095999706, -0.0005115256707721069] [-0.14715995247131888, 0.009206494097597795, -0.001956523484625427] … [0.1471599524713192, 0.00920649409759783, 0.0019565234846256126] [0.03527517896424495, 0.00225536480959998, 0.0005115256707721546]; [-0.0009926519347872448, 7.490408522946987e-5, -6.332434939588766e-5] [-0.02819248246201242, 0.002015605428496055, -0.0008848433991144315] … [0.0281924824620123, 0.0020156054284960496, 0.0008848433991144665] [0.000992651934787197, 7.49040852294664e-5, 6.332434939588586e-5]; … ; [0.008757907722114239, -0.0021254878826771633, -0.00039170304499924963] [0.03678204343659343, -0.008988663456394598, -0.0016011020423396826] … [-0.036782043436593616, -0.008988663456394652, 0.0016011020423396345] [-0.008757907722114287, -0.0021254878826771754, 0.0003917030449992436]; [0.002619231808262042, -0.0006656045665102625, -0.0001314350501197116] [0.009095929713758236, -0.0023296329563371547, -0.0004325671531887214] … [-0.009095929713758283, -0.0023296329563371678, 0.000432567153188711] [-0.0026192318082620693, -0.0006656045665102697, 0.00013143505011970976]], htail = StaticArrays.SVector{3, Float64}[[-0.0014224454919488049, 0.006368937063519475, 4.2292669129058444e-5] [-0.006722272388020073, 0.030807360538422632, 0.00016182499419972746] … [0.006722272387672006, 0.03080736053682643, -0.00016182499418557973] [0.001422445491876418, 0.006368937063195081, -4.229266912531109e-5]; [-0.0009113892236899799, 0.004138043191106277, 1.6188625410224326e-5] [-0.004737636489481023, 0.022027489208622332, 8.329910160127442e-5] … [0.004737636489206938, 0.022027489207347456, -8.329910159360273e-5] [0.0009113892236375065, 0.004138043190867928, -1.6188625408739216e-5]; … ; [-0.0003182785656008994, 0.0015312853598084695, 5.030062180926436e-6] [-0.001130160876092445, 0.005573556806848716, 1.795604385489666e-5] … [0.001130160876044952, 0.00557355680661445, -1.795604385389529e-5] [0.0003182785655865546, 0.0015312853597394425, -5.030062180634665e-6]; [-0.00010142788615810396, 0.0004983944122872182, 1.664824983867324e-6] [-0.00025678978108455424, 0.0012938515553273821, 4.2131761900353534e-6] … [0.0002567897810756694, 0.001293851555282609, -4.2131761898574985e-6] [0.00010142788615374213, 0.0004983944122657827, -1.6648249837828395e-6]], vtail = StaticArrays.SVector{3, Float64}[[-5.142229316880782e-13, 3.5278972092001944e-22, -2.0216780319011985e-10] [4.0269992854347195e-12, 7.185647235089035e-23, -1.5071542559495962e-10] … [3.6471371618204444e-13, -3.923364472344161e-25, -2.240205563225245e-12] [7.913925007240501e-14, -8.452464089139894e-26, -4.732371461843026e-13]; [-4.119270604177782e-12, 7.473964561099325e-21, -1.4185546622910631e-9] [7.0983232763273776e-12, -3.436129680020405e-22, -2.759560447200363e-10] … [4.0294660828281223e-13, -2.717260074966618e-25, -2.5169464834189846e-12] [1.134197683671889e-13, 4.316807049408922e-26, -6.894888121897707e-13]; … ; [4.733360956498279e-13, 8.422848636721374e-23, 1.1176095407381719e-10] [-1.7589613166820783e-12, 2.925259039116014e-23, 7.991078455847996e-11] … [-6.014902785425377e-13, 5.142164381725118e-26, 4.020040892999464e-12] [-1.0086268788517368e-12, 1.0253624026718815e-24, 6.552338260066969e-12]; [7.433531462874293e-14, 8.085508987700872e-24, 1.5892706479102756e-11] [-2.3879850539699377e-13, 4.6734771276887866e-24, 1.1497656987771343e-11] … [-1.0159009101744498e-12, 8.533772327891653e-25, 6.959245244155179e-12] [-2.4191065844189124e-12, -4.8000636961750263e-23, 1.6100322108504295e-11]]))</code></pre><p>A Trefftz plane integration is employed to obtain farfield forces.</p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>The farfield forces are usually more accurate compared to nearfield forces, as the components do not interact as in the evaluation of the Biot-Savart integrals for the latter.</p></div></div><p>To obtain the nearfield and farfield coefficients of the components (in wind axes by definition):</p><pre><code class="language-julia hljs">nfs = nearfield_coefficients(system)
+ffs = farfield_coefficients(system)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">ComponentVector{Float64}(wing = [0.0019056297979358325, -2.490999909646483e-16, 0.1850763129125857], htail = [1.1929164451583358e-5, -5.3523643414154865e-17, -0.0037523639248155474], vtail = [7.355814739991975e-25, 1.584631744788251e-13, -9.703070970411085e-30])</code></pre><p>To obtain the total nearfield and farfield force coefficients:</p><pre><code class="language-julia hljs">nf  = nearfield(system)
+ff  = farfield(system)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Float64}:
+ 0.0019175589623874158
+ 1.5816055084444629e-13
+ 0.18132394898777016</code></pre><h2 id="Aerodynamic-Stability-Analyses"><a class="docs-heading-anchor" href="#Aerodynamic-Stability-Analyses">Aerodynamic Stability Analyses</a><a id="Aerodynamic-Stability-Analyses-1"></a><a class="docs-heading-anchor-permalink" href="#Aerodynamic-Stability-Analyses" title="Permalink"></a></h2><pre><code class="language-julia hljs">ac_name = :aircraft
+@time dv_data = solve_case_derivatives(
+                       aircraft, fs, refs;
+                       axes             = Wind(),
+                       name             = ac_name,
+                       print            = true,    # Prints the results for only the aircraft
+                       print_components = true,    # Prints the results for all components
+                      )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(wing = 9×7 LabelledArrays.SLArray{Tuple{9, 7}, Float64, 2, 63, (:CX, :CY, :CZ, :Cl, :Cm, :Cn, :CX_ff, :CY_ff, :CL_ff, :CX_speed, :CY_speed, :CZ_speed, :Cl_speed, :Cm_speed, :Cn_speed, :CX_ff_speed, :CY_ff_speed, :CL_ff_speed, :CX_alpha, :CY_alpha, :CZ_alpha, :Cl_alpha, :Cm_alpha, :Cn_alpha, :CX_ff_alpha, :CY_ff_alpha, :CL_ff_alpha, :CX_beta, :CY_beta, :CZ_beta, :Cl_beta, :Cm_beta, :Cn_beta, :CX_ff_beta, :CY_ff_beta, :CL_ff_beta, :CX_pb, :CY_pbar, :CZ_pbar, :Cl_pbar, :Cm_pbar, :Cn_pbar, :CX_ff_pbar, :CY_ff_pbar, :CL_ff_pbar, :CX_qbar, :CY_qbar, :CZ_qbar, :Cl_qbar, :Cm_qbar, :Cn_qbar, :CX_ff_qbar, :CY_ff_qbar, :CL_ff_qbar, :CX_rbar, :CY_rbar, :CZ_rbar, :Cl_rbar, :Cm_rbar, :Cn_rbar, :CX_ff_rbar, :CY_ff_rbar, :CL_ff_rbar)} with indices SOneTo(9)×SOneTo(7):
+    :CX =&gt; 0.001625571931186267     …     :CX_rbar =&gt; 1.2578043278823519e-15
+    :CY =&gt; -2.7978371750536396e-17        :CY_rbar =&gt; -0.12441951589498469
+    :CZ =&gt; 0.18507025754074805            :CZ_rbar =&gt; -2.825010224935618e-14
+    :Cl =&gt; 1.5397682552543892e-16         :Cl_rbar =&gt; -0.3523278189274782
+    :Cm =&gt; -0.04986080761176419           :Cm_rbar =&gt; 6.301073012427057e-15
+    :Cn =&gt; 5.308957337056394e-17    …     :Cn_rbar =&gt; 0.014531996540047531
+ :CX_ff =&gt; 0.001905629797935901        :CX_ff_rbar =&gt; -5.970340610268557e-16
+ :CY_ff =&gt; -1.6296491826849783e-17     :CY_ff_rbar =&gt; -0.12075530096128764
+ :CL_ff =&gt; 0.18507631291258841         :CL_ff_rbar =&gt; -2.7163463502232324e-14, htail = 9×7 LabelledArrays.SLArray{Tuple{9, 7}, Float64, 2, 63, (:CX, :CY, :CZ, :Cl, :Cm, :Cn, :CX_ff, :CY_ff, :CL_ff, :CX_speed, :CY_speed, :CZ_speed, :Cl_speed, :Cm_speed, :Cn_speed, :CX_ff_speed, :CY_ff_speed, :CL_ff_speed, :CX_alpha, :CY_alpha, :CZ_alpha, :Cl_alpha, :Cm_alpha, :Cn_alpha, :CX_ff_alpha, :CY_ff_alpha, :CL_ff_alpha, :CX_beta, :CY_beta, :CZ_beta, :Cl_beta, :Cm_beta, :Cn_beta, :CX_ff_beta, :CY_ff_beta, :CL_ff_beta, :CX_pb, :CY_pbar, :CZ_pbar, :Cl_pbar, :Cm_pbar, :Cn_pbar, :CX_ff_pbar, :CY_ff_pbar, :CL_ff_pbar, :CX_qbar, :CY_qbar, :CZ_qbar, :Cl_qbar, :Cm_qbar, :Cn_qbar, :CX_ff_qbar, :CY_ff_qbar, :CL_ff_qbar, :CX_rbar, :CY_rbar, :CZ_rbar, :Cl_rbar, :Cm_rbar, :Cn_rbar, :CX_ff_rbar, :CY_ff_rbar, :CL_ff_rbar)} with indices SOneTo(9)×SOneTo(7):
+    :CX =&gt; -7.885047320123223e-5    …     :CX_rbar =&gt; -4.1018841471678936e-11
+    :CY =&gt; 2.2080603258457683e-15         :CY_rbar =&gt; 0.03472406208329348
+    :CZ =&gt; -0.0037481033505405207         :CZ_rbar =&gt; -1.1904729616376078e-11
+    :Cl =&gt; 1.3486941821788101e-14         :Cl_rbar =&gt; 0.23513325454383707
+    :Cm =&gt; 0.011180909804352024           :Cm_rbar =&gt; 3.75814520020383e-11
+    :Cn =&gt; -1.7749673787855078e-15  …     :Cn_rbar =&gt; -0.02839211291787521
+ :CX_ff =&gt; 1.192916445158282e-5        :CX_ff_rbar =&gt; 4.6115977643308595e-12
+ :CY_ff =&gt; 1.1816983712047038e-16      :CY_ff_rbar =&gt; 0.002083647593706456
+ :CL_ff =&gt; -0.0037523639248154676      :CL_ff_rbar =&gt; 1.877355858453095e-14, vtail = 9×7 LabelledArrays.SLArray{Tuple{9, 7}, Float64, 2, 63, (:CX, :CY, :CZ, :Cl, :Cm, :Cn, :CX_ff, :CY_ff, :CL_ff, :CX_speed, :CY_speed, :CZ_speed, :Cl_speed, :Cm_speed, :Cn_speed, :CX_ff_speed, :CY_ff_speed, :CL_ff_speed, :CX_alpha, :CY_alpha, :CZ_alpha, :Cl_alpha, :Cm_alpha, :Cn_alpha, :CX_ff_alpha, :CY_ff_alpha, :CL_ff_alpha, :CX_beta, :CY_beta, :CZ_beta, :Cl_beta, :Cm_beta, :Cn_beta, :CX_ff_beta, :CY_ff_beta, :CL_ff_beta, :CX_pb, :CY_pbar, :CZ_pbar, :Cl_pbar, :Cm_pbar, :Cn_pbar, :CX_ff_pbar, :CY_ff_pbar, :CL_ff_pbar, :CX_qbar, :CY_qbar, :CZ_qbar, :Cl_qbar, :Cm_qbar, :Cn_qbar, :CX_ff_qbar, :CY_ff_qbar, :CL_ff_qbar, :CX_rbar, :CY_rbar, :CZ_rbar, :Cl_rbar, :Cm_rbar, :Cn_rbar, :CX_ff_rbar, :CY_ff_rbar, :CL_ff_rbar)} with indices SOneTo(9)×SOneTo(7):
+    :CX =&gt; 5.4377313706622e-25      …     :CX_rbar =&gt; 2.4575152720271745e-11
+    :CY =&gt; -3.4960674066082903e-13        :CY_rbar =&gt; -6.462932037008066
+    :CZ =&gt; -1.388325835312335e-23         :CZ_rbar =&gt; -4.21809455860043e-10
+    :Cl =&gt; -1.2739578673403322e-14        :Cl_rbar =&gt; -0.2305967237386907
+    :Cm =&gt; 4.0809249161566306e-23         :Cm_rbar =&gt; 1.24523456652885e-9
+    :Cn =&gt; 1.4074058646483587e-13   …     :Cn_rbar =&gt; 2.7515837644436103
+ :CX_ff =&gt; 3.551580464092536e-24       :CX_ff_rbar =&gt; 1.4494644257816273e-10
+ :CY_ff =&gt; -3.492917159403777e-13      :CY_ff_rbar =&gt; -6.461587581285554
+ :CL_ff =&gt; 2.13879490947535e-29        :CL_ff_rbar =&gt; 3.956581274415821e-16, aircraft = 9×7 LabelledArrays.SLArray{Tuple{9, 7}, Float64, 2, 63, (:CX, :CY, :CZ, :Cl, :Cm, :Cn, :CX_ff, :CY_ff, :CL_ff, :CX_speed, :CY_speed, :CZ_speed, :Cl_speed, :Cm_speed, :Cn_speed, :CX_ff_speed, :CY_ff_speed, :CL_ff_speed, :CX_alpha, :CY_alpha, :CZ_alpha, :Cl_alpha, :Cm_alpha, :Cn_alpha, :CX_ff_alpha, :CY_ff_alpha, :CL_ff_alpha, :CX_beta, :CY_beta, :CZ_beta, :Cl_beta, :Cm_beta, :Cn_beta, :CX_ff_beta, :CY_ff_beta, :CL_ff_beta, :CX_pb, :CY_pbar, :CZ_pbar, :Cl_pbar, :Cm_pbar, :Cn_pbar, :CX_ff_pbar, :CY_ff_pbar, :CL_ff_pbar, :CX_qbar, :CY_qbar, :CZ_qbar, :Cl_qbar, :Cm_qbar, :Cn_qbar, :CX_ff_qbar, :CY_ff_qbar, :CL_ff_qbar, :CX_rbar, :CY_rbar, :CZ_rbar, :Cl_rbar, :Cm_rbar, :Cn_rbar, :CX_ff_rbar, :CY_ff_rbar, :CL_ff_rbar)} with indices SOneTo(9)×SOneTo(7):
+    :CX =&gt; 0.0015467214579850347    …     :CX_rbar =&gt; -1.644243094707931e-11
+    :CY =&gt; -3.474266587067338e-13         :CY_rbar =&gt; -6.5526274908197575
+    :CZ =&gt; 0.18132215419020753            :CZ_rbar =&gt; -4.3374243557866845e-10
+    :Cl =&gt; 9.013399739102176e-16          :Cl_rbar =&gt; -0.34779128812233184
+    :Cm =&gt; -0.03867989780741216           :Cm_rbar =&gt; 1.2828223196039008e-9
+    :Cn =&gt; 1.3901870865942093e-13   …     :Cn_rbar =&gt; 2.7377236480657827
+ :CX_ff =&gt; 0.001917558962387484        :CX_ff_rbar =&gt; 1.4955744330843257e-10
+ :CY_ff =&gt; -3.4918984259508407e-13     :CY_ff_rbar =&gt; -6.580259234653135
+ :CL_ff =&gt; 0.18132394898777296         :CL_ff_rbar =&gt; -7.994246790259792e-15)</code></pre><h2 id="Euler-Bernoulli-Beam-Structural-Analysis"><a class="docs-heading-anchor" href="#Euler-Bernoulli-Beam-Structural-Analysis">Euler-Bernoulli Beam Structural Analysis</a><a id="Euler-Bernoulli-Beam-Structural-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Euler-Bernoulli-Beam-Structural-Analysis" title="Permalink"></a></h2><pre><code class="language-julia hljs"># Deflection stiffness matrix
+K = bending_stiffness_matrix([1., 1.], [1., 1.], [2., 2.], :z)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6×6 SparseArrays.SparseMatrixCSC{Float64, Int64} with 26 stored entries:
+  1.5   1.5  -1.5   1.5    ⋅     ⋅ 
+  1.5   2.0  -1.5   1.0    ⋅     ⋅ 
+ -1.5  -1.5   3.0    ⋅   -1.5   1.5
+  1.5   1.0    ⋅    4.0  -1.5   1.0
+   ⋅     ⋅   -1.5  -1.5   1.5  -1.5
+   ⋅     ⋅    1.5   1.0  -1.5   2.0</code></pre><p>Fixed hinged beam subjected to force and moment at the center.</p><pre><code class="language-julia hljs"># Stiffness matrix
+A = K[[3,4,6],[3,4,6]]  # v2, φ2, φ3
+
+# Load vector
+b = [-1000, 1000, 0]    # F2, M2, M3
+
+# Solution
+x = A \ b
+
+# Forces
+F1 = K * [ 0.; 0.; x[1:2]; 0.; x[3] ]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{Float64}:
+   968.7500000000001
+   875.0000000000001
+ -1000.0000000000001
+  1000.0
+    31.25
+     0.0</code></pre><p>Propped cantilever beam with force at one end.</p><pre><code class="language-julia hljs"># Stiffness matrix
+A = K[[1,2,4],[1,2,4]] # v1, φ1, φ2
+
+# Load vector
+b = [10, 0, 0]
+
+# Solution
+x = A \ b
+
+# Forces
+F2 = K * [ x[1:2]; 0.; x[3]; 0.; 0. ]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">6-element Vector{Float64}:
+  10.000000000000014
+   5.329070518200751e-15
+ -25.00000000000003
+   7.105427357601002e-15
+  15.000000000000014
+ -10.000000000000009</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../tutorials/">« Tutorials</a><a class="docs-footer-nextpage" href="../theory/">Theory »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Monday 24 January 2022 18:20">Monday 24 January 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

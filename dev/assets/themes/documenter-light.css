@@ -7459,7 +7459,7 @@ li.no-marker {
   display: flex;
   flex-direction: column;
   color: #202020;
-  background-color: #ebeef1;
+  background-color: #e9ebec;
   border-right: 1px solid #dbdbdb;
   padding: 0;
   flex: 0 0 18rem;
@@ -7548,10 +7548,10 @@ li.no-marker {
       padding: 0.5rem 0.5rem; }
       #documenter .docs-sidebar ul.docs-menu .tocitem, #documenter .docs-sidebar ul.docs-menu .tocitem:hover {
         color: #202020;
-        background: #ebeef1; }
+        background: #e9ebec; }
     #documenter .docs-sidebar ul.docs-menu a.tocitem:hover, #documenter .docs-sidebar ul.docs-menu label.tocitem:hover {
       color: #202020;
-      background-color: #c7cfd8; }
+      background-color: #c8cdd0; }
     #documenter .docs-sidebar ul.docs-menu li.is-active {
       border-top: 1px solid #dbdbdb;
       border-bottom: 1px solid #dbdbdb;
@@ -7593,9 +7593,9 @@ li.no-marker {
         background: none; }
       #documenter .docs-sidebar ul.docs-menu::-webkit-scrollbar-thumb {
         border-radius: 5px 0px 0px 5px;
-        background: #d3dae0; }
+        background: #d3d7d9; }
       #documenter .docs-sidebar ul.docs-menu::-webkit-scrollbar-thumb:hover {
-        background: #bbc5cf; } }
+        background: #bdc3c6; } }
   @media screen and (max-width: 1055px) {
     #documenter .docs-sidebar {
       overflow-y: auto;
@@ -7605,9 +7605,9 @@ li.no-marker {
         background: none; }
       #documenter .docs-sidebar::-webkit-scrollbar-thumb {
         border-radius: 5px 0px 0px 5px;
-        background: #d3dae0; }
+        background: #d3d7d9; }
       #documenter .docs-sidebar::-webkit-scrollbar-thumb:hover {
-        background: #bbc5cf; } }
+        background: #bdc3c6; } }
 
 #documenter .docs-main #documenter-search-info {
   margin-bottom: 1rem; }
@@ -7851,8 +7851,8 @@ code.hljs {
   box-shadow: 0.24rem 0rem 0.4rem #bbb; }
   #documenter .docs-sidebar form.docs-search > input {
     color: #ffffff;
-    background-color: #d3dae0;
-    border-color: #bbc5cf;
+    background-color: #d3d7d9;
+    border-color: #bdc3c6;
     margin-top: 1.0rem;
     margin-bottom: 1.0rem; }
     #documenter .docs-sidebar form.docs-search > input::placeholder {
