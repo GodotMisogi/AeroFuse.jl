@@ -26,13 +26,12 @@ A single argument generates a symmetric `Wing`.
 struct Wing{M <: AbstractWing} <: AbstractWing
     left  :: M
     right :: M
+    # function Wing(left :: T, right :: T) where T <: AbstractWing
+    #     @assert first(left.chords) == first(right.chords) && first(left.twists) == first(right.twists) "Properties of first section must match."
+    #     # Add more conditions...
+    #     Wing{T}(left, right)
+    # end
 end
-
-# function Wing(left :: HalfWing{T}, right :: HalfWing{T}) where T <: Real
-#     @assert first(left.chords) == first(right.chords) "Properties of first section must match."
-#     # Add more conditions...
-#     Wing{T}(left, right)
-# end
 
 Wing(bing :: HalfWing)  = Wing(bing, bing)
 

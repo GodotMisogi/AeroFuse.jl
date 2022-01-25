@@ -13,10 +13,10 @@ Themes.compile(joinpath(@__DIR__, "theme/light.scss"), joinpath(@__DIR__, "src/a
 Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
 
 ## Generate Markdown files using Literate.jl
-# using Literate
-# Literate.markdown("docs/src/tutorials.jl", "/docs/src/")
-# Literate.markdown("docs/src/howto.jl", "/docs/src/")
-# Literate.markdown("docs/src/theory.jl", "/docs/src/")
+using Literate
+Literate.markdown("docs/src/tutorials.jl", string(pwd(), "/docs/src/"))
+Literate.markdown("docs/src/howto.jl", string(pwd(), "/docs/src/"))
+Literate.markdown("docs/src/theory.jl", string(pwd(), "/docs/src/"))
 
 ## Generate documentation
 makedocs(

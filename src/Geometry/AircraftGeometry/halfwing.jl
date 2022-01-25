@@ -38,7 +38,17 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 end
 
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
-HalfWing(; chords, twists, spans, dihedrals, LE_sweeps, foils = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = HalfWing(foils, chords, twists, spans, dihedrals, LE_sweeps, position, angle, axis)
+HalfWing(; 
+        chords, 
+        twists, 
+        spans, 
+        dihedrals, 
+        LE_sweeps, 
+        foils    = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), 
+        position = zeros(3), 
+        angle    = 0., 
+        axis     = SVector(1., 0., 0.)
+       ) = HalfWing(foils, chords, twists, spans, dihedrals, LE_sweeps, position, angle, axis)
 
 
 """
@@ -64,9 +74,13 @@ Define a `HalfWing` consisting of a single trapezoidal section.
 """
 HalfWingSection(; span = 1., dihedral = 0., LE_sweep = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(0., 1., 0.)) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [LE_sweep], position, angle, axis)
 
-# function HalfWingSection(area, aspect_ratio, taper)
+function HalfWingSection(S_ref, AR, λ, Λ_c4, δ, τ_r, τ_t)
+    b    = S_ref^2 / AR
+    c_r  = 2 * S_ref / (b * (1 + λ))
+    Λ_LE = atand(tand(Λ_c4) + (1 - λ) / (AR * (1 + λ)))
 
-# end
+    HalfWingSection(span = AR, dihedral = δ, LE_sweep = Λ_LE, taper = λ, root_chord = c_r, root_twist = τ_r, tip_twist = τ_t)
+end
 
 # Getters
 foils(wing     :: HalfWing) = wing.foils
