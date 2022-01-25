@@ -1,6 +1,5 @@
 # # How-to Guide
-
-using AeroMDAO
+using AeroMDAO # hide
 
 # ## Airfoil Processing
 
@@ -20,7 +19,7 @@ cos_foil  = cosine_spacing(my_foil, 51)
 
 # ## Wing Geometry
 # 
-# AeroMDAO provides a `HalfWing` constructor.
+# AeroMDAO provides a `HalfWing` constructor .
 airfoil    = naca4((2,4,1,2))
 wing_right = HalfWing(foils     = Foil.(airfoil for i in 1:3),
                       chords    = [0.4, 0.2, 0.1],
@@ -29,13 +28,28 @@ wing_right = HalfWing(foils     = Foil.(airfoil for i in 1:3),
                       dihedrals = [0., 60.],
                       LE_sweeps = [0., 30.])
 
-wing = Wing(wing_right);
+#md # !!! tip
+#md #     You can use [Setfield.jl](https://github.com/jw3126/Setfield.jl) to conveniently copy and modify properties.
+
+##
+using Setfield
+
+## 
+wing_left = @set wing_right.chords = [0.4, 0.1, 0.05]
+
+# To create an asymmetric wing, feed the left and right halves to `Wing` in the particular order.
+wing = Wing(wing_left, wing_right);
 
 print_info(wing, "My Wing")
 
+# ## Doublet-Source Aerodynamic Analyses
+
+
 # ## Vortex Lattice Aerodynamic Analyses
 # 
-# ### Meshing
+# How to run a generic aerodynamic analysis on a conventional aircraft configuration.
+#
+# ### Geometry 
 
 ## Wing
 wing  = WingSection(span       = 8.0,
@@ -76,43 +90,73 @@ vtail = HalfWingSection(span       = 0.8,
                         position   = [5., 0., 0.],
                         angle      = 90.,
                         axis       = [1., 0., 0.])
-## Define meshes
+
+# ### Meshing
+
+# The `WingMesh` type takes a `HalfWing` or `Wing` type with a vector of integers consisting of the spanwise panel distribution corresponding to the number of sections, and an integer for the chordwise distribution.
+
+## Wing meshes
 wing_mesh  = WingMesh(wing, [20], 10)
-htail_mesh = WingMesh(htail, [10], 5)
-vtail_mesh = WingMesh(vtail, [10], 5)
+
+# Optionally the type of spanwise spacing can be specified by the keyword `span_spacing` and providing types `Sine(), Cosine(), Uniform()` or a vector of the combination with length corresponding to the number of sections.
+
+## Horizontal tail
+htail_mesh = WingMesh(htail, [10], 5;
+                      span_spacing = Cosine()) # Uniform(), Sine()
+
+## Vertical tail
+vtail_mesh = WingMesh(vtail, [10], 5) # Vertical tail
 
 # ### Inviscid Analysis
+
+# The inviscid 3D analysis uses a vortex lattice method. The `WingMesh` type allows you to generate horseshoe elements easily.
+wing_horsies = make_horseshoes(wing_mesh)
+
+# For multiple lifting surfaces, it is most convenient to define a single vector consisting of all the components' horseshoes using [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl).
 aircraft = ComponentArray(
-                          wing  = make_horseshoes(wing_mesh),
+                          wing  = wing_horsies,
                           htail = make_horseshoes(htail_mesh),
                           vtail = make_horseshoes(vtail_mesh)
                          );
 
-## Evaluate case
-fs      = Freestream(alpha = 1.0, 
-                     beta  = 0.0, 
-                     omega = [0.,0.,0.])
-refs    = References(
-                     speed    = 10.0,
-                     density  = 1.225, 
-                     area     = projected_area(wing),   
-                     span     = span(wing), 
-                     chord    = mean_aerodynamic_chord(wing), 
-                     location = mean_aerodynamic_center(wing)
-                    )
+# To define boundary conditions, use the following `Freestream` type, which takes named arguments for angles of attack and sideslip (in degrees), and a quasi-steady rotation vector.
 
-system = solve_case(aircraft, fs, refs;
-                    print            = true, # Prints the results for only the aircraft
-                    print_components = true, # Prints the results for all components
-                   )
+## Define freestream conditions
+fs = Freestream(
+            alpha = 1.0, 
+            beta  = 0.0, 
+            omega = [0.,0.,0.]
+           )
+
+# To define reference values, use the following `References` type 
+
+## Define reference values
+refs = References(
+           speed     = 10.0,
+           density   = 1.225,
+           viscosity = 1.5e-5,
+           area      = projected_area(wing),
+           span      = span(wing), 
+           chord     = mean_aerodynamic_chord(wing), 
+           location  = mean_aerodynamic_center(wing)
+          )
+
+## Solve system
+system = solve_case(
+             aircraft, fs, refs;
+             print            = true, # Prints the results for only the aircraft
+             print_components = true, # Prints the results for all components
+            )
 
 # ### Dynamics
 # 
-# The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of `Geometry(), Body(), Wind(), Stability()`. The wind axes are used by default.
+# The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of geometry, body, wind, or stability. The wind axes are used by default.
 # 
 
 ## Compute dynamics
 ax       = Wind() # Body(), Stability(), Geometry()
+
+
 CFs, CMs = surface_coefficients(system; axes = ax)
 Fs       = surface_forces(system)
 Fs, Ms   = surface_dynamics(system; axes = ax) 
