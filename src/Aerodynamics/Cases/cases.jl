@@ -25,24 +25,37 @@ end
 ## Placeholder for functions I'm not sure where to put
 #==========================================================================================#
 
+spanwise_loading(CXs, weighted_areas) = vec(sum(CXs, dims = 1)) .* weighted_areas
+
 ## Span-loading
-function span_loads(panels, CFs_wind, S)
-    CFs  = combinedimsview(CFs_wind)
-    CDis = @views CFs[1,:,:]
-    CYs  = @views CFs[2,:,:]
-    CLs  = @views CFs[3,:,:]
+"""
+    span_loads(panels, CFs, S)
+    span_loads(mesh :: WingMesh, CFs, S)
 
-    area_scale = S ./ vec(sum(panel_area, panels, dims = 1))
-    span_CDis  = vec(sum(CDis, dims = 1)) .* area_scale
-    span_CYs   = vec(sum(CYs,  dims = 1)) .* area_scale
-    span_CLs   = vec(sum(CLs,  dims = 1)) .* area_scale
+Compute the spanwise loading of the forces given panels, associated force coefficients, and the reference area.
 
+Alternatively, provide a `WingMesh` type which gets the panels for you.
+"""
+function span_loads(panels, CFs, S)
+    # Get y-coordinates of spanwise strips
     ys = @views vec(mean(x -> midpoint(x)[2], panels, dims = 1))
 
-    [ ys span_CDis span_CYs span_CLs ]
+    # Compute weighted areas for spanwise strips
+    area_scale = S ./ vec(sum(panel_area, panels, dims = 1))
+
+    # Compute spanwise coefficients
+    CFs      = combinedimsview(CFs)
+    span_CXs = @views spanwise_loading(CFs[1,:,:], area_scale)
+    span_CYs = @views spanwise_loading(CFs[2,:,:], area_scale)
+    span_CZs = @views spanwise_loading(CFs[3,:,:], area_scale)
+    # span_Cls = spanwise_loading(Cls, area_scale)
+    # span_Cms = spanwise_loading(Cms, area_scale)
+    # span_Cns = spanwise_loading(Cns, area_scale)
+
+    [ ys span_CXs span_CYs span_CZs ] # span_Cls span_Cms span_Cns ]
 end
 
-span_loads(wing :: WingMesh, CFs_wind, S) = span_loads(chord_panels(wing), CFs_wind, S)
+span_loads(wing :: WingMesh, CFs, S) = span_loads(chord_panels(wing), CFs, S)
 
 ## Mesh connectivities
 triangle_connectivities(inds) = @views [ 
