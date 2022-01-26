@@ -14,9 +14,18 @@ Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/as
 
 ## Generate Markdown files using Literate.jl
 using Literate
-Literate.markdown("docs/src/tutorials.jl", string(pwd(), "/docs/src/"))
-Literate.markdown("docs/src/howto.jl", string(pwd(), "/docs/src/"))
-Literate.markdown("docs/src/theory.jl", string(pwd(), "/docs/src/"))
+
+lit = src = joinpath(@__DIR__, "src")
+
+for (root, _, files) ∈ walkdir(lit), file ∈ files
+    splitext(file)[2] == ".jl" || continue
+    ipath = joinpath(root, file)
+    opath = splitdir(replace(ipath, lit=>src))[1]
+    Literate.markdown(ipath, opath)
+end
+# Literate.markdown("docs/src/tutorials.jl", string(@__DIR__, "/docs/src/"))
+# Literate.markdown("docs/src/howto.jl", string(@__DIR__, "/docs/src/"))
+# Literate.markdown("docs/src/theory.jl", string(@__DIR__, "/docs/src/"))
 
 ## Generate documentation
 makedocs(
