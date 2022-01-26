@@ -86,10 +86,10 @@ end
 Compute the tangential velocities and panel distances given the array of `Panel2D`s, their associated doublet strengths ``φ``s, the velocity ``u``, and a condition whether to disable source terms (``σ = 0``).
 """
 function tangential_velocities(panels, φs, u, sources :: Bool)
-    # Δrs   = midpair_map(panel_dist, panels)
+    # Δrs   = midpair_map(distance, panels)
     # Δφs   = -midpair_map(-, φs[1:end-1])
 
-    Δrs      = @. panel_dist(panels[2:end], panels[1:end-1])
+    Δrs      = @. distance(panels[2:end], panels[1:end-1])
     Δφs      = @. φs[1:end-1] - φs[2:end]
     tangents = @. panel_tangent(panels[2:end])
 

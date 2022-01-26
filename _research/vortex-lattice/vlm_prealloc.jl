@@ -57,15 +57,15 @@ function solve_strengths_prealloc(panels, u, bound = 1e3)
 end
 
 """
-    panel_distances!(vec, panels, φs, u)
+    distanceances!(vec, panels, φs, u)
 
 Compute the distances between adjacent panels given the pre-allocated `vec`, and an array of `Panel2D`s.
 """
-function panel_distances!(vec, panels)
-    vec[1] = panel_dist(panels[1], panels[2])
-    vec[end] = panel_dist(panels[end-1], panels[end])
+function distanceances!(vec, panels)
+    vec[1] = distance(panels[1], panels[2])
+    vec[end] = distance(panels[end-1], panels[end])
     for i in 2:length(panels) - 1
-        vec[i] = panel_dist(panels[i-1], panels[i+1])
+        vec[i] = distance(panels[i-1], panels[i+1])
     end
     nothing
 end
@@ -76,10 +76,10 @@ end
 Compute the panel velocities given the pre-allocated `vec`, an array of `Panel2D`s, their associated doublet strengths ``φ``s, and a freestream velocity vector ``\\vec u``.
 """
 function panel_velocities!(vec, panels, φs, u)
-    vec[1] = panel_velocity(φs[2] - φs[1], panel_dist(panels[1], panels[2]), u, panel_tangent(panels[1]))
-    vec[end] = panel_velocity(φs[end] - φs[end-1], panel_dist(panels[end], panels[end-1]), u, panel_tangent(panels[end]))
+    vec[1] = panel_velocity(φs[2] - φs[1], distance(panels[1], panels[2]), u, panel_tangent(panels[1]))
+    vec[end] = panel_velocity(φs[end] - φs[end-1], distance(panels[end], panels[end-1]), u, panel_tangent(panels[end]))
     for i in 2:length(panels) - 1
-        vec[i] = panel_velocity(φs[i+1] - φs[i-1], panel_dist(panels[i+1], panels[i-1]), u, panel_tangent(panels[i]))
+        vec[i] = panel_velocity(φs[i+1] - φs[i-1], distance(panels[i+1], panels[i-1]), u, panel_tangent(panels[i]))
     end
     nothing
 end
@@ -90,14 +90,14 @@ end
 Compute the lift coefficient using pre-allocation, given `Panel2D`s, their associated doublet strengths ``φ``s, and a freestream velocity vector ``u``.
 """
 function lift_coefficient_prealloc(panels, φs, u)
-    panel_dists = (zeros ∘ length)(panels)
+    distances = (zeros ∘ length)(panels)
     panel_vels  = (zeros ∘ length)(panels)
     speed       = norm(u)
 
-    panel_distances!(panel_dists, panels)
+    distanceances!(distances, panels)
     panel_velocities!(panel_vels, panels, φs[1:end-1], u)
     cps = @. pressure_coefficient(speed, panel_vels)
-    cls = @. lift_coefficient(cps, panel_dists / 2, panel_angle(panels))
+    cls = @. lift_coefficient(cps, distances / 2, panel_angle(panels))
 
     cl = sum(cls)
 end

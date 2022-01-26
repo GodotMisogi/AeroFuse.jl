@@ -4,7 +4,7 @@ import ..MathTools: midpair_map, forward_difference, forward_sum, weighted_vecto
 
 import ..Laplace: Uniform2D, velocity
 
-import ..PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, panel_dist, panel_length, panel_angle, panel_tangent, panel_points, panel_location, collocation_point
+import ..PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, distance, panel_length, panel_angle, panel_tangent, panel_points, panel_location, collocation_point
 
 import ..DoubletSource: doublet_matrix, source_matrix, source_strengths, boundary_vector, tangential_velocities, solve_strengths, lift_coefficient, eval_coefficients
 
@@ -188,6 +188,6 @@ end
 # dP  = -midpair_map(-, P) # (N, N + N_w)  -> (N, N + N_w)
 
 # Constructing forward differences for mass defect
-# foil_lengths = panel_dist.(panels[1:end-1], panels[2:end])  # N  -> N - 1
-# all_lengths  = panel_dist.(all_panels[1:end-1], all_panels[2:end])  # N + N_w  -> N + N_w - 1
+# foil_lengths = distance.(panels[1:end-1], panels[2:end])  # N  -> N - 1
+# all_lengths  = distance.(all_panels[1:end-1], all_panels[2:end])  # N + N_w  -> N + N_w - 1
 # dP   = P[2:end,:] .- P[1:end-1,:]  # (N, N + N_w)  -> (N - 1, N + N_w)

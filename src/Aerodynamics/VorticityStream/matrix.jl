@@ -71,7 +71,7 @@ boundary(colpoints, uni) = - [ [ stream(uni, x, y) for (x, y) in colpoints ]; 0 
 #       speed = norm(u)
     
 #       vels  = sum(γs)
-#       Δrs   = midpair_map(panel_dist, panels)
+#       Δrs   = midpair_map(distance, panels)
 #       cps   = @. pressure_coefficient(speed, vels)
 #       cls   = @. lift_coefficient(cps, Δrs / 2, panel_angle(panels))
     
