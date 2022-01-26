@@ -34,26 +34,38 @@ BenchmarkTools.Trial: 54 samples with 1 evaluation.
 
 2. Desktop i7-8700, 3.2 GHz:
 
-AeroMDAO Aircraft Functional -
-BenchmarkTools.Trial: 104 samples with 1 evaluation.
- Range (min … max):  42.382 ms … 56.673 ms  ┊ GC (min … max): 0.00% … 12.80%
- Time  (median):     48.920 ms              ┊ GC (median):    5.90%
- Time  (mean ± σ):   48.429 ms ±  3.196 ms  ┊ GC (mean ± σ):  4.25% ±  3.63%
+AeroMDAO Aircraft -
+BenchmarkTools.Trial: 117 samples with 1 evaluation.
+ Range (min … max):  38.145 ms … 50.611 ms  ┊ GC (min … max): 0.00% … 14.44%
+ Time  (median):     42.109 ms              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   42.735 ms ±  2.676 ms  ┊ GC (mean ± σ):  2.04% ±  4.23%
 
-    ▁         ▁▃▃▆  ▁ ▁  ▁▁      █ ▁█  ▃▁   ▁  ▁   ▁ ▁
-  ▇▁█▄▇▁▁▁▄▄▄▇████▄▄█▁█▄▄██▄▄▁▇▄▄█▁██▇▇██▇▇▁█▄▇█▄▁▁█▇█▁▄▁▄▁▁▇ ▄
-  42.4 ms         Histogram: frequency by time        54.7 ms <
+          ▂ ▁    ▁▁ █      ▂                                   
+  ▃▁▃▅▃▁█▆█▅██▅▃▆████▆▆▆▆███▆▅▃▆▁▁▆▅▅▃▁▅▁▁▁▁▃▅▃▃▃▁▃▁▅▃▃▁▁▁▁▁▃ ▃
+  38.1 ms         Histogram: frequency by time        50.5 ms <
 
- Memory estimate: 25.92 MiB, allocs estimate: 30101.
+ Memory estimate: 7.74 MiB, allocs estimate: 25676.
+
+AeroMDAO Aircraft ComponentArrays.jl -
+BenchmarkTools.Trial: 105 samples with 1 evaluation.
+ Range (min … max):  41.043 ms … 56.288 ms  ┊ GC (min … max): 0.00% … 10.53%
+ Time  (median):     48.111 ms              ┊ GC (median):    6.18%
+ Time  (mean ± σ):   47.925 ms ±  3.472 ms  ┊ GC (mean ± σ):  4.63% ±  4.15%
+
+            ▆▁ █  ▁ ▃    ▁  ▃ ▁▆   ▃▁▃ █
+  ▄▄▁▄▄▁▄▄▁▇██▇█▄▇█▄█▇▄▄▄█▇▇█▄██▇▇▇███▇█▁▇▇▇▄▁▇▄▄▄▁▁▄▇▄▁▁▄▁▄▄ ▄
+  41 ms           Histogram: frequency by time        55.8 ms <
+
+ Memory estimate: 25.31 MiB, allocs estimate: 27353.
 
 BYU FLOW Lab VortexLattice.jl - 
 BenchmarkTools.Trial: 78 samples with 1 evaluation.
- Range (min … max):  59.961 ms … 73.346 ms  ┊ GC (min … max): 0.00% … 8.29%
- Time  (median):     63.398 ms              ┊ GC (median):    0.00%
- Time  (mean ± σ):   64.339 ms ±  3.008 ms  ┊ GC (mean ± σ):  2.06% ± 3.55%
+ Range (min … max):  59.888 ms … 74.836 ms  ┊ GC (min … max): 0.00% … 12.88%
+ Time  (median):     64.079 ms              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   64.720 ms ±  3.722 ms  ┊ GC (mean ± σ):  2.18% ±  3.87%
 
-       ▄   █▄▄   ▂      
-  ▄▁▁▄▁█▁▆▄███▆▆▆█▆███▆▆▆▁▄▁▄▄▄▆▄▁▁▁▄▄▁▄▁▆▆▄▁▁▄▄▄▄▁▁▁▄▄▁▄▁▁▁▄ ▁
-  60 ms           Histogram: frequency by time          72 ms <
+  ▁   ▁ ▁▆▆▁   ▁   ▁  █▁     ▁           ▁
+  █▄▇▇█▄████▇▄▁█▇▄▁█▇▄██▁▄▁▁▄█▇▄▁▄▁▇▁▁▁▇▁█▁▄▁▁▁▄▄▇▄▁▁▁▁▁▇▁▁▁▄ ▁
+  59.9 ms         Histogram: frequency by time        73.9 ms <
 
  Memory estimate: 10.44 MiB, allocs estimate: 72602.

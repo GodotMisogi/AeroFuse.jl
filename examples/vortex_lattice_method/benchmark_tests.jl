@@ -8,7 +8,7 @@ using TimerOutputs
 #=======================================================#
 using AeroMDAO
 
-println("AeroMDAO Aircraft Functional -")
+println("AeroMDAO Aircraft -")
 function aeromdao_steady_vlm()
     # Wing
     wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
@@ -87,6 +87,87 @@ function aeromdao_steady_vlm()
 end
 
 t1 = @benchmark aeromdao_steady_vlm()
+
+##
+println("AeroMDAO Aircraft ComponentArrays.jl -")
+function aeromdao_steady_vlm_components()
+    # Wing
+    wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+                chords    = [1.0, 0.6],
+                twists    = [2.0, 2.0],
+                spans     = [5.0],
+                dihedrals = [11.31],
+                LE_sweeps = [2.29]);
+
+    # Horizontal tail
+    htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+                 chords    = [0.7, 0.42],
+                 twists    = [0.0, 0.0],
+                 spans     = [1.25],
+                 dihedrals = [0.],
+                 LE_sweeps = [6.39],
+                 position  = [4., 0, 0],
+                 angle     = 0.,
+                 axis      = [0., 1., 0.])
+
+    # Vertical tail
+    vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+                     chords    = [0.7, 0.42],
+                     twists    = [0.0, 0.0],
+                     spans     = [1.0],
+                     dihedrals = [0.],
+                     LE_sweeps = [7.97],
+                     position  = [4., 0, 0],
+                     angle     = 90.,
+                     axis      = [1., 0., 0.])
+
+    wing_panels, wing_normals   = panel_wing(wing, 20, 10, 
+                                             spacing = Cosine()
+                                            )
+
+    htail_panels, htail_normals = panel_wing(htail, 12, 6;
+                                             spacing  = Cosine()
+                                            )
+
+    vtail_panels, vtail_normals = panel_wing(vtail, 10, 5;
+                                             spacing  = Cosine()
+                                            )
+
+    # Aircraft assembly (ComponentVectors are death)
+    aircraft = ComponentArray(
+                    wing  = Horseshoe.(wing_panels,  wing_normals),
+                    htail = Horseshoe.(htail_panels, htail_normals),
+                    vtail = Horseshoe.(vtail_panels, vtail_normals),
+                )
+
+    # display(size.([ wing_panels[1], htail_panels[1], vtail_panels[1] ])) # Checking sizes
+    α, β = 5.0, 0.0
+    Ω    = [0.0, 0.0, 0.0]
+    fs   = AeroMDAO.Freestream(α, β, Ω)
+    refs = References(
+                         speed     = 10.0,
+                         density   = 1.225,
+                         viscosity = 1.5e-5,
+                         area      = 9.0,
+                         span      = 10.0,
+                         chord     = 0.9,
+                         location  = [0.5, 0., 0.]
+                     )
+
+    # reset_timer!()
+    # @timeit "Solving Case" 
+    data = solve_case(aircraft, fs, refs;)
+
+    # @timeit "Computing Forces" Fs = surface_forces(data)
+    CFs, CMs = surface_coefficients(data)
+    # FFs      = farfield_coefficients(data)
+
+    # sum(CFs), sum(CMs)
+    # nearfield(data), farfield(data)
+    # print_timer()
+end
+
+t2 = @benchmark aeromdao_steady_vlm_components()
 
 ## BYU FLOW Lab tests: https://github.com/byuflowlab/VortexLattice.jl
 #=======================================================#
@@ -190,4 +271,4 @@ function byu_steady_vlm()
     # CF, CM, CDiff #, dCF_b, dCM_b, dCF_s, dCM_s
 end
 
-t2 = byu_steady_vlm();
+t2 = @benchmark byu_steady_vlm()
