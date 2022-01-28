@@ -45,14 +45,14 @@ function print_derivatives(comp, name = ""; axes = "")
 end
 
 """
-    print_coefficients(system :: VLMSystem, name = :aircraft;
+    print_coefficients(system :: VortexLatticeSystem, name = :aircraft;
                        components = false)
 
-Print a pretty table of the total nearfield and farfield coefficients of a `VLMSystem` with an optional name.
+Print a pretty table of the total nearfield and farfield coefficients of a `VortexLatticeSystem` with an optional name.
 
 A named Boolean argument `components` is provided to alsoenable the printing of any possible components.
 """
-function print_coefficients(system :: VLMSystem, name = :aircraft; components = false)
+function print_coefficients(system :: VortexLatticeSystem, name = :aircraft; components = false)
     if components
         nf_c = nearfield_coefficients(system)
         ff_c = farfield_coefficients(system) 

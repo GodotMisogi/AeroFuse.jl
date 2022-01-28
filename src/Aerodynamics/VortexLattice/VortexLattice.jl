@@ -74,7 +74,7 @@ include("system.jl")
 function solve_system(components, fs :: Freestream, refs :: References, finite_core = false)
     Γs, AIC, boco = solve_linear(components, body_frame_velocity(fs), fs.omega, finite_core)
 
-    VLMSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
+    VortexLatticeSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
 end
 
 ## Post-processing
