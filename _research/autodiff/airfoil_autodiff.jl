@@ -32,7 +32,7 @@ function optimize_CST(coords)
     airfoil = Foil(coords)
     fs = Uniform2D(1., 5.)
     solve_case(airfoil, fs, num_panels = length(airfoil.x) - 1)[1]
-    # airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, (0., 0.), (0., 0.), 80)
+    # airfoil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.), 80)
     # vecs   = SVector.(coords[:,1], coords[:,2])
     # panels = Panel2D(coords)
     

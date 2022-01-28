@@ -57,7 +57,7 @@ cl, cls, cms, cps, panels = solve_case(airfoil,
                                        wake_panels = 100,
                                        num_panels = 80)
 
-upper, lower = split_foil(coordinates(airfoil)); #hide
+upper, lower = split_surface(airfoil); #hide
 x_upper, y_upper = upper[:,1], upper[:,2] #hide
 x_lower, y_lower = lower[:,1], lower[:,2] #hide
 
@@ -79,7 +79,7 @@ cl, cls, cms, cps, panels = solve_case(airfoil, #hide
                                        wake_panels = 100, #hide
                                        num_panels = 80) #hide
 
-upper, lower = split_foil(coordinates(airfoil)); #hide
+upper, lower = split_surface(airfoil); #hide
 x_upper, y_upper = upper[:,1], upper[:,2] #hide
 x_lower, y_lower = lower[:,1], lower[:,2] #hide
 

@@ -22,7 +22,7 @@ import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coeff
 # Some tools
 import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
 
-import ..AeroMDAO: velocity, solve_linear
+import ..AeroMDAO: velocity, solve_system, solve_linear, surface_velocities, surface_coefficients
 
 ## Horseshoe setup
 #==========================================================================================#

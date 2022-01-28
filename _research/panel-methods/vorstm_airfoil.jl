@@ -10,7 +10,7 @@ uniform = Uniform2D(V, α)
 num_pans = 12
 num_wake = 28
 
-panels  = paneller(airfoil, num_pans);
+panels  = make_panels(airfoil, num_pans);
 wakes   = wake_panels(panels, 1.0, 1., num_wake);
 
 ##

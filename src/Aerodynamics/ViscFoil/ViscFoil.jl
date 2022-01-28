@@ -6,7 +6,7 @@ import ..Laplace: Uniform2D, velocity
 
 import ..PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, distance, panel_length, panel_angle, panel_tangent, panel_points, panel_location, collocation_point
 
-import ..DoubletSource: doublet_matrix, source_matrix, source_strengths, boundary_vector, tangential_velocities, solve_strengths, lift_coefficient, eval_coefficients
+import ..DoubletSource: doublet_matrix, source_matrix, source_strengths, boundary_vector, tangential_velocities, solve_linear, lift_coefficient, evaluate_coefficients
 
 import ..LinearVortexSource: vortex_influence_matrix, source_influence_matrix, linear_vortex_matrix, linear_source_matrix, neumann_boundary_condition
 

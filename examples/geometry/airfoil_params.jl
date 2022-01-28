@@ -2,10 +2,10 @@
 using AeroMDAO
 
 ## Test function
-function doublet_source_case(coords, uniform)
-    @time cl, cls, cms, cps, panels = solve_case(Foil(coords),
-                                             uniform;
-                                             num_panels = 80)
+function doublet_source_case(foil, uniform)
+    @time cl, cls, cms, cps, panels = solve_case(foil,
+                                                 uniform;
+                                                 num_panels = 80)
 
     println("Cl: $cl")
     println("Σᵢ Clᵢ: $(sum(cls))")
@@ -15,7 +15,7 @@ end
 uniform = Uniform2D(1., 5.)
 
 ## Foil processing
-coords = naca4(2,4,1,2) # NACA 4-digit
+coords = Foil(naca4(2,4,1,2)) # NACA 4-digit
 
 doublet_source_case(coords, uniform)
 
@@ -25,8 +25,8 @@ cos_foil = cosine_spacing(coords, 60)
 doublet_source_case(cos_foil, uniform)
 
 ## Camber-thickness transformations
-xcamthick = camber_thickness(Foil(cos_foil), 60)
-foiler = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
+xcamthick = camber_thickness(cos_foil, 60)
+foiler = Foil(camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3]))
 
 doublet_source_case(foiler, uniform)
 
@@ -34,7 +34,7 @@ doublet_source_case(foiler, uniform)
 num_dv = 8
 
 # Coordinates fitting
-up, low  = split_foil(coords)
+up, low  = split_surface(coords)
 alpha_u  = coordinates_to_CST(up, num_dv)
 alpha_l  = coordinates_to_CST(low, num_dv)
 cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.))

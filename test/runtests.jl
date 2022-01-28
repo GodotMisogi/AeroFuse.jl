@@ -22,18 +22,18 @@ end
 
 @testset "Airfoil Processing and Doublet-Source Panel Method" begin
     # Import and read airfoil coordinates
-    coo_foil  = naca4(2,4,1,2)
+    coo_foil = Foil(naca4(2,4,1,2))
 
     # Cosine spacing
     cos_foil = cosine_spacing(coo_foil, 61)
 
     # Split airfoil
-    up, low  = split_foil(cos_foil)
+    up, low  = split_surface(cos_foil)
 
     # Convert coordinates to Kulfan CST variables
     num_dv   = 4
-    alpha_u = coordinates_to_CST(up, num_dv)
-    alpha_l = coordinates_to_CST(low, num_dv)
+    alpha_u  = coordinates_to_CST(up, num_dv)
+    alpha_l  = coordinates_to_CST(low, num_dv)
 
     # Generate same airfoil using Kulfan CST parametrisation
     cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.))
@@ -41,17 +41,17 @@ end
     # Test coefficients
     uniform  = Uniform2D(1., 5.)
 
-    cl_coo, cls_coo, cms_coo = solve_case(Foil(coo_foil), uniform; num_panels = 80)[1:3]
+    cl_coo, cls_coo, cms_coo = solve_case(coo_foil, uniform; num_panels = 80)[1:3]
     @test cl_coo       ≈  0.83220516 atol = 1e-6
     @test sum(cls_coo) ≈  0.83291636 atol = 1e-6
     @test sum(cms_coo) ≈ -0.25899389 atol = 1e-6
 
-    cl_cos, cls_cos, cms_cos = solve_case(Foil(cos_foil), uniform; num_panels = 80)[1:3]
+    cl_cos, cls_cos, cms_cos = solve_case(cos_foil, uniform; num_panels = 80)[1:3]
     @test cl_cos       ≈  0.83178821 atol = 1e-6
     @test sum(cls_cos) ≈  0.83269773 atol = 1e-6
     @test sum(cms_cos) ≈ -0.25889408 atol = 1e-6
 
-    cl_cst, cls_cst, cms_cst = solve_case(Foil(cst_foil), uniform; num_panels = 80)[1:3]
+    cl_cst, cls_cst, cms_cst = solve_case(cst_foil, uniform; num_panels = 80)[1:3]
     @test cl_cst       ≈  0.83381613 atol = 1e-6
     @test sum(cls_cst) ≈  0.83408259 atol = 1e-6
     @test sum(cms_cst) ≈ -0.25986701 atol = 1e-6

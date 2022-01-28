@@ -1,38 +1,59 @@
 ```@meta
-EditURL = "<unknown>/docs/src/howto.jl"
+EditURL = "<unknown>/docs/lit/howto.jl"
 ```
 
 # How-to Guide
 
-```@example howto
+````@example howto
 using AeroMDAO # hide
-```
+````
 
 ## Airfoil Processing
 
 ### Import Coordinates
 Provide the path to the following function.
 
-```@example howto
+````@example howto
 # Airfoil coordinates file path
-foilpath  = string(pwd(), "\\..\\..\\data\\airfoil_database\\s1223.dat")
+foilpath = string(@__DIR__, "\\..\\..\\data\\airfoil_database\\s1223.dat")
 
 # Read coordinates file
-my_foil    = read_foil(foilpath)
-```
+my_foil = read_foil(foilpath)
+````
 
-### Interpolate Coordinates
+### Interpolate and Process Coordinates
 
-```@example howto
-# Cosine spacing with 51 points on upper and lower surfaces
-cos_foil  = cosine_spacing(my_foil, 51)
-```
+A basic cosine interpolation functionality is provided for foils.
+
+````@example howto
+# Cosine spacing with approx. 51 points on upper and lower surfaces each
+cos_foil = cosine_spacing(my_foil, 51)
+````
+
+The upper and lower surfaces can be obtained by the following variety of functions.
+
+````@example howto
+# Upper surface
+upper = upper_surface(my_foil)
+
+# Lower surface
+lower = lower_surface(my_foil)
+
+# Upper and lower surfaces
+upper, lower = split_surface(my_foil)
+````
+
+The camber-thickness distribution can be obtained as follows. It internally performs a cosine interpolation to standardize the `$x$--coordinates for both surfaces; hence the number of points for the interpolation can be specified.
+
+````@example howto
+xcamthick = camber_thickness(my_foil, 60)
+````
 
 ## Wing Geometry
 
 AeroMDAO provides a `HalfWing` constructor .
 
-```@example howto
+````@example howto
 airfoil    = naca4((2,4,1,2))
 wing_right = HalfWing(foils     = Foil.(airfoil for i in 1:3),
                       chords    = [0.4, 0.2, 0.1],
@@ -40,26 +61,26 @@ wing_right = HalfWing(foils     = Foil.(airfoil for i in 1:3),
                       spans     = [1.0, 0.1],
                       dihedrals = [0., 60.],
                       LE_sweeps = [0., 30.])
-```
+````
 
 !!! tip
     You can use [Setfield.jl](https://github.com/jw3126/Setfield.jl) to conveniently copy and modify properties.
 
-```@example howto
+````@example howto
 #
 using Setfield
 
 #
 wing_left = @set wing_right.chords = [0.4, 0.1, 0.05]
-```
+````
 
 To create an asymmetric wing, feed the left and right halves to `Wing` in the particular order.
 
-```@example howto
+````@example howto
 wing = Wing(wing_left, wing_right);
 
 print_info(wing, "My Wing")
-```
+````
 
 ## Doublet-Source Aerodynamic Analyses
 
@@ -69,7 +90,7 @@ How to run a generic aerodynamic analysis on a conventional aircraft configurati
 
 ### Geometry
 
-```@example howto
+````@example howto
 # Wing
 wing  = WingSection(span       = 8.0,
                     dihedral   = 5.0,
@@ -109,61 +130,61 @@ vtail = HalfWingSection(span       = 0.8,
                         position   = [5., 0., 0.],
                         angle      = 90.,
                         axis       = [1., 0., 0.])
-```
+````
 
 ### Meshing
 
 The `WingMesh` type takes a `HalfWing` or `Wing` type with a vector of integers consisting of the spanwise panel distribution corresponding to the number of sections, and an integer for the chordwise distribution.
 
-```@example howto
+````@example howto
 # Wing meshes
 wing_mesh  = WingMesh(wing, [20], 10)
-```
+````
 
 Optionally the type of spanwise spacing can be specified by the keyword `span_spacing` and providing types `Sine(), Cosine(), Uniform()` or a vector of the combination with length corresponding to the number of sections.
 
-```@example howto
+````@example howto
 # Horizontal tail
 htail_mesh = WingMesh(htail, [10], 5;
                       span_spacing = Cosine()) # Uniform(), Sine()
 
 # Vertical tail
 vtail_mesh = WingMesh(vtail, [10], 5) # Vertical tail
-```
+````
 
 ### Inviscid Analysis
 
 The inviscid 3D analysis uses a vortex lattice method. The `WingMesh` type allows you to generate horseshoe elements easily.
 
-```@example howto
+````@example howto
 wing_horsies = make_horseshoes(wing_mesh)
-```
+````
 
 For multiple lifting surfaces, it is most convenient to define a single vector consisting of all the components' horseshoes using [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl).
 
-```@example howto
+````@example howto
 aircraft = ComponentArray(
                           wing  = wing_horsies,
                           htail = make_horseshoes(htail_mesh),
                           vtail = make_horseshoes(vtail_mesh)
                          );
 nothing #hide
-```
+````
 
 To define boundary conditions, use the following `Freestream` type, which takes named arguments for angles of attack and sideslip (in degrees), and a quasi-steady rotation vector.
 
-```@example howto
+````@example howto
 # Define freestream conditions
 fs = Freestream(
             alpha = 1.0,
             beta  = 0.0,
             omega = [0.,0.,0.]
            )
-```
+````
 
 To define reference values, use the following `References` type
 
-```@example howto
+````@example howto
 # Define reference values
 refs = References(
            speed     = 10.0,
@@ -181,21 +202,25 @@ system = solve_case(
              print            = true, # Prints the results for only the aircraft
              print_components = true, # Prints the results for all components
             )
-```
+````
 
 ### Dynamics
 
 The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of geometry, body, wind, or stability. The wind axes are used by default.
 
-```@example howto
+````@example howto
 # Compute dynamics
 ax       = Wind() # Body(), Stability(), Geometry()
 
-
+# Compute non-dimensional coefficients
 CFs, CMs = surface_coefficients(system; axes = ax)
-Fs       = surface_forces(system)
+````
+
+Special functions are provided for directly retrieving the dimensionalized forces and moments.
+
+````@example howto
 Fs, Ms   = surface_dynamics(system; axes = ax)
-```
+````
 
 A Trefftz plane integration is employed to obtain farfield forces.
 
@@ -204,21 +229,21 @@ A Trefftz plane integration is employed to obtain farfield forces.
 
 To obtain the nearfield and farfield coefficients of the components (in wind axes by definition):
 
-```@example howto
+````@example howto
 nfs = nearfield_coefficients(system)
 ffs = farfield_coefficients(system)
-```
+````
 
 To obtain the total nearfield and farfield force coefficients:
 
-```@example howto
+````@example howto
 nf  = nearfield(system)
 ff  = farfield(system)
-```
+````
 
 ## Aerodynamic Stability Analyses
 
-```@example howto
+````@example howto
 ac_name = :aircraft
 @time dv_data = solve_case_derivatives(
                        aircraft, fs, refs;
@@ -227,18 +252,18 @@ ac_name = :aircraft
                        print            = true,    # Prints the results for only the aircraft
                        print_components = true,    # Prints the results for all components
                       )
-```
+````
 
 ## Euler-Bernoulli Beam Structural Analysis
 
-```@example howto
+````@example howto
 # Deflection stiffness matrix
 K = bending_stiffness_matrix([1., 1.], [1., 1.], [2., 2.], :z)
-```
+````
 
 Fixed hinged beam subjected to force and moment at the center.
 
-```@example howto
+````@example howto
 # Stiffness matrix
 A = K[[3,4,6],[3,4,6]]  # v2, φ2, φ3
 
@@ -250,11 +275,11 @@ x = A \ b
 
 # Forces
 F1 = K * [ 0.; 0.; x[1:2]; 0.; x[3] ]
-```
+````
 
 Propped cantilever beam with force at one end.
 
-```@example howto
+````@example howto
 # Stiffness matrix
 A = K[[1,2,4],[1,2,4]] # v1, φ1, φ2
 
@@ -266,7 +291,7 @@ x = A \ b
 
 # Forces
 F2 = K * [ x[1:2]; 0.; x[3]; 0.; 0. ]
-```
+````
 
 ---
 

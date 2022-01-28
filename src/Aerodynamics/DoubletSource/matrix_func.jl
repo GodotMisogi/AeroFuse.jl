@@ -59,11 +59,11 @@ function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<
 end
 
 """
-    solve_strengths(panels, u, sources, bound)
+    solve_linear(panels, u, sources, bound)
 
 Solve the system of equations ``[AIC][\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` condition given the array of Panel2Ds, a velocity ``\\vec U``, a condition whether to disable source terms (``σ = 0``), and an optional named bound for the length of the wake.
 """
-function solve_strengths(panels, u, α, r_te, sources :: Bool; bound = 1e2)
+function solve_linear(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     # Wake
     woke_panel  = wake_panel(panels, bound, α)
     woke_vector = wake_vector(woke_panel, panels)
@@ -77,38 +77,35 @@ function solve_strengths(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     # AIC   = influence_matrix(panels, woke_panel)
     # boco  = boundary_vector(ifelse(sources, panels, collocation_point.(panels)), u, r_te) - [ woke_vector; 0 ] .* dot(u, r_te)
 
-    AIC \ boco
+    AIC \ boco, AIC, boco
 end
 
 """
-    tangential_velocities(panels, φs, u, sources :: Bool)
+    surface_speeds(panels, φs, u, sources :: Bool)
 
-Compute the tangential velocities and panel distances given the array of `Panel2D`s, their associated doublet strengths ``φ``s, the velocity ``u``, and a condition whether to disable source terms (``σ = 0``).
+Compute the surface speeds and panel distances given the array of `Panel2D`s, their associated doublet strengths ``φ``s, the velocity ``u``, and a condition whether to disable source terms (``σ = 0``).
 """
-function tangential_velocities(panels, φs, u, sources :: Bool)
+function surface_speeds(φs, Δrs, θs, u, sources :: Bool)
     # Δrs   = midpair_map(distance, panels)
     # Δφs   = -midpair_map(-, φs[1:end-1])
 
-    Δrs      = @. distance(panels[2:end], panels[1:end-1])
-    Δφs      = @. φs[1:end-1] - φs[2:end]
-    tangents = @. panel_tangent(panels[2:end])
+    Δφs  = @views φs[1:end-1] - φs[2:end]
+    vels = map((Δφ, Δr, θ) -> Δφ / Δr + ifelse(sources, dot(u, θ), 0.), Δφs, Δrs, θs)
 
-    vels  = ifelse(sources, panel_velocity.(Δφs, Δrs, Ref(u), tangents), Δφs ./ Δrs)
-
-    vels, Δrs
+    vels
 end
 
 ## WAKE VERSIONS
 #==========================#
 
 """
-    solve_strengths(panels, u, wakes, bound)
+    solve_linear(panels, u, wakes, bound)
 
 Solve the system of equations ``[AIC][\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` condition given the array of Panel2Ds, a velocity ``\\vec U``, a vector of wake `Panel2D`s, and an optional named bound for the length of the wake.
 """
-function solve_strengths(panels, u, α, wakes; bound = 1e2)
-    AIC  = influence_matrix(panels, wake_panel(panels, bound, α))
-    boco = boundary_vector(panels, wakes, u)
+function solve_linear(panels, u, wakes)
+    AIC  = influence_matrix(panels, wakes)
+    boco = boundary_vector(panels, u)
 
-    AIC \ boco
+    AIC \ boco, AIC, boco
 end

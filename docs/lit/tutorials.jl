@@ -27,7 +27,7 @@ xcamthick = camber_thickness(airfoil, 60)
 coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
 
 # You can split the coordinates into their upper and lower surfaces.
-upper, lower = split_foil(coordinates(airfoil));
+upper, lower = split_surface(airfoil);
 
 x_upper, y_upper = @views upper[:,1], upper[:,2]
 x_lower, y_lower = @views lower[:,1], lower[:,2];

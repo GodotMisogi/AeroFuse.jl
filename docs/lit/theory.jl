@@ -18,7 +18,8 @@
 # \nabla^2 \phi = 0, \quad \mathbf V \equiv \nabla \phi \cdot \hat{\mathbf n} = 0, \quad \lim_{\mathbf r \to \infty} \phi(\mathbf r) \to 0
 # ```
 
-# Implementations for viscous-inviscid analyses are in progress.
+# !!! note
+#     Implementations of viscous-inviscid coupled analyses for drag prediction (á là XFOIL) are in progress.
 
 # ### Doublet-Source Panel Method
 
@@ -31,7 +32,7 @@
 # ```
 
 
-# As the system is linear, the velocities are added together to obtain the total induced velocity at a point $\mathbf r$.
+# The velocities are added to obtain the total induced velocity at a point $\mathbf r$.
 
 # ```math
 
@@ -49,10 +50,25 @@
 
 # The vortices can be set up in various configurations consisting of bound or semi-infinite filaments, commonly in the form of _horseshoes_ or _vortex rings_.
 
-# > 1. Horseshoe elements
-# > 
+# > 1. Horseshoe elements:
+# > These are defined by a finite _bound leg_ and two semi-infinite _trailing legs_. AeroMDAO encodes this using the following `Horseshoe`type.
+# > ```julia 
+# > struct Horseshoe{T <: Real} <: AbstractVortexArray
+# >     bound_leg         :: Line{T}
+# >     collocation_point :: SVector{3,T}
+# >     normal            :: SVector{3,T}
+# >     chord             :: T
+# > end
+# >
 # > 2. Vortex rings
-# > 
+# > These are defined by a four _bound legs_. AeroMDAO encodes this using the following `VortexRing` type.
+# > ```julia 
+# > struct Horseshoe{T <: Real} <: AbstractVortexArray
+# >     bound_leg         :: Line{T}
+# >     collocation_point :: SVector{3,T}
+# >     normal            :: SVector{3,T}
+# >     chord             :: T
+# > end
 
 # A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\boldsymbol\Omega$ (in the body's frame) is imposed for the external flow. The induced velocity at a point is given by:
 
@@ -60,7 +76,7 @@
 # \mathbf V_{\infty}(\mathbf r) = - (\mathbf U + \boldsymbol\Omega \times \mathbf r)
 # ```
 
-# As the system is linear, the velocities are added together to obtain the total induced velocity at a point $\mathbf r$.
+# The velocities are added to obtain the total induced velocity at a point $\mathbf r$.
 
 # ```math
 # \mathbf V(\mathbf r) = \sum_i \frac{\Gamma_i}{4\pi} \int_0^{\ell_i} \frac{d\boldsymbol\ell_i' \times (\mathbf r - \mathbf r_i')}{|\mathbf r - \mathbf r_i'|^3} + \mathbf V_\infty(\mathbf r)

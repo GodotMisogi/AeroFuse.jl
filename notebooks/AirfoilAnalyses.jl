@@ -85,7 +85,7 @@ coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthi
 md"You can split the coordinates into their upper and lower surfaces by calling:"
 
 # ╔═╡ 75ab9d5e-819a-11eb-25f8-d5afd5b178e1
-upper, lower = split_foil(airfoil);
+upper, lower = split_surface(airfoil);
 
 # ╔═╡ 75b25420-819a-11eb-34d7-7b01e05a2dd2
 md"### Plotting"
@@ -141,7 +141,7 @@ begin
 end;
 
 # ╔═╡ 6b2f1640-81af-11eb-0377-171002fee886
-cst_upper, cst_lower = split_foil(kulfan_airfoil);
+cst_upper, cst_lower = split_surface(kulfan_airfoil);
 
 # ╔═╡ 75cc44be-819a-11eb-0815-098288453926
 md"## Potential Flow Analysis

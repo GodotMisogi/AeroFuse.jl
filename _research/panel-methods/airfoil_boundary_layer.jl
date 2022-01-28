@@ -6,7 +6,7 @@ using LinearAlgebra
 alpha_u  = [0.2, 0.3, 0.2, 0.15, 0.2]
 alpha_l  = [-0.2, -0.1, -0.1, -0.001]
 dzs      = (0.,0.)
-# airfoil = (Foil ∘ kulfan_CST)(alpha_u, alpha_l, dzs, 0.0, 60);
+# airfoil = kulfan_CST(alpha_u, alpha_l, dzs, 0.0, 60);
 airfoil  = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = true))
 # airfoil = Foil(pts)
 V, α     = 6., 0.
@@ -32,7 +32,7 @@ solve_case(airfoil,
 
 ## Panel method setup
 airfoil = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = true))
-panels  = paneller(airfoil, num_pans);
+panels  = make_panels(airfoil, num_pans);
 wake    = wake_panel(panels, 1e5, deg2rad(α))
 wakes   = wake_panels(panels, 1.0, 1., num_wake)
 

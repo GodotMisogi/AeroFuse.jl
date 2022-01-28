@@ -9,7 +9,7 @@ using Plots
 
 # Objective function
 function optimize_CST(αs, α, n_upper :: Integer, le = (0., 0.))
-    airfoil = (Foil ∘ kulfan_CST)(αs[1:n_upper], αs[n_upper+1:end], (0., 0.), le, 80)
+    airfoil = kulfan_CST(αs[1:n_upper], αs[n_upper+1:end], (0., 0.), le, 80)
     uniform = Uniform2D(1.0, α)
     cl = solve_case(airfoil, uniform, num_panels = 60)[1]
 end
@@ -67,7 +67,7 @@ println("CST Cl: $CST_cl")
 
 # Camber optimization
 function optimize_camber_CST(αs, α, num_cam)
-    airfoil = (Foil ∘ camber_CST)(αs[1:num_cam], αs[num_cam+1:end], 0., 0., 80)
+    airfoil = camber_CST(αs[1:num_cam], αs[num_cam+1:end], 0., 0., 80)
     uniform = Uniform2D(1.0, α)
     cl = solve_case(airfoil, uniform, num_panels = 80)[1]
 end

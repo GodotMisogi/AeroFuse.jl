@@ -25,7 +25,7 @@ lift_coefficient(wake_strength, speed) = 2. * wake_strength / speed
 # export solve_problem
 
 # function solve_problem(panels :: Vector{<: Panel2D}, u, sources :: Bool, wake_length)
-#   φs        = solve_strengths(panels, u, sources; bound = wake_length)
+#   φs        = solve_linear(panels, u, sources; bound = wake_length)
 #   cps, cls  = aerodynamic_coefficients(panels, φs, u, sources)
 #   cl_wake   = lift_coefficient(last(φs), norm(u))
 
@@ -34,7 +34,7 @@ lift_coefficient(wake_strength, speed) = 2. * wake_strength / speed
 
 # function solve_problem(panels :: Vector{<: Panel2D}, u, num_wake :: Integer, wake_length)
 #   wakes     = wake_panels(panels, wake_length, num_wake)
-#   φs    = solve_strengths(panels, u, wakes; bound = wake_length)
+#   φs    = solve_linear(panels, u, wakes; bound = wake_length)
 #   cps, cls  = aerodynamic_coefficients(panels, φs, u, true)
 #   cl_wake   = lift_coefficient(last(φs), norm(u))
 

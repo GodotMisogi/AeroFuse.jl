@@ -6,12 +6,17 @@ module DoubletSource
 using LinearAlgebra
 using Base.Iterators
 using StaticArrays
+using SplitApplyCombine
 
 import ..MathTools: rotation, inverse_rotation, midpair_map
+
+import ..Laplace: Uniform2D, magnitude, angle, velocity
 
 import ..NonDimensional: pressure_coefficient
 
 import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector
+
+import ..AeroMDAO: solve_system, surface_coefficients, surface_speeds
 
 ## Doublet-source Dirichlet boundary condition
 #===========================================================================#
@@ -43,67 +48,116 @@ boundary_condition(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D, u) = 
 ## Aerodynamic coefficients
 #===========================================================================#
 
-panel_velocity(dφ, dr, u, α) = dφ / dr + dot(u, α)
+surface_velocity(dφ, dr, u, α) = dφ / dr + dot(u, α)
 
 lift_coefficient(cp, dist_colpoints, panel_angle) = - cp * dist_colpoints * cos(panel_angle)
 
-lift_coefficient(wake_strength, speed) = 2. * wake_strength / speed
+# """
+#     aerodynamic_coefficients(vels, Δrs, panel_angles, speed, α)
 
-"""
-    aerodynamic_coefficients(vels, Δrs, panel_angles, speed, α)
+# Compute the lift, moment, and pressure coefficients given associated arrays of edge speeds, adjacent collocation point distances, panel angles, the freestream speed, and angle of attack ``α``.
+# """
+# function evaluate_coefficients(vels, Δrs, xjs, panel_angles, speed, α)
+#     cps   = @. pressure_coefficient(speed, vels)
+#     cls   = @. lift_coefficient(cps, Δrs, panel_angles)
+#     cms   = @. -cls * xjs * cos(α)
 
-Compute the lift, moment, and pressure coefficients given associated arrays of edge speeds, adjacent collocation point distances, panel angles, the freestream speed, and angle of attack ``α``.
-"""
-function eval_coefficients(vels, Δrs, xjs, panel_angles, speed, α)
-    cps   = @. pressure_coefficient(speed, vels)
-    cls   = @. lift_coefficient(cps, Δrs, panel_angles)
-    cms   = @. -cls * xjs * cos(α)
-
-    cls, cms, cps
-end
+#     cls, cms, cps
+# end
 
 ## Matrix assembly
 #===========================================================================#
 
 include("matrix_func.jl")
 
-export solve_problem
+struct Aero2D{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVector{T}, O <: AbstractVector{<: AbstractPanel2D}, R <: WakePanel2D, P <: Uniform2D}
+    influence_matrix   :: M
+    boundary_condition :: N
+    singularities      :: N
+    surface_panels     :: O
+    wake_panels        :: R
+    freestream         :: P
+end
 
-function solve_problem(panels, u, α, sources :: Bool, wake_length)
-    speed           = norm(u)
-    xs              = getindex.(panel_points(panels)[2:end-1], 1)
+function solve_system(panels, uni :: Uniform2D, sources :: Bool, wake_length)
+    # Freestream conditions
+    u, α  = velocity(uni), uni.angle
+
+    # Build wake
+    wake_pan = wake_panel(panels, wake_length, α)
+
+    # speed           = norm(u)
+    # xs              = getindex.(panel_points(panels)[2:end-1], 1)
 
     # Blunt trailing edge tests
-    te_panel        = Panel2D((p2 ∘ last)(panels), (p1 ∘ first)(panels))
-    r_te            = panel_vector(te_panel)
-    φ_TE            = dot(u, r_te)
+    # te_panel        = Panel2D((p2 ∘ last)(panels), (p1 ∘ first)(panels))
+    # r_te            = panel_vector(te_panel)
+    # φ_TE            = dot(u, r_te)
+
+    
+    # Solve for doublet strengths
+    φs, AIC, boco   = solve_linear(panels, u, α, wakes; bound = wake_length)
+
+    Aero2D(AIC, boco, φs, panels, wakes, uni)
+
+    # # Evaluate inviscid edge velocities
+    # u_es, Δrs       = tangential_velocities(panels, φs, u, sources)
+
+    # # Compute coefficients
+    # cls, cms, cps   = evaluate_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
+
+    # # Evaluate lift coefficient from wake doublet strength
+    # cl_wake         = lift_coefficient(φs[end] - φs[1] + φ_TE, speed)
+
+    # cls, cms, cps, cl_wake
+end
+
+function solve_system(panels, uni :: Uniform2D, num_wake :: Integer, wake_length)
+    u, α  = velocity(uni), uni.angle
+
+    wake_pan = wake_panel(panels, wake_length, α)
+    # wakes = wake_panels(panels, wake_length, num_wake)
 
     # Solve for doublet strengths
-    φs              = solve_strengths(panels, u, α, r_te, sources; bound = wake_length)
+    φs, AIC, boco   = solve_linear(panels, u, wake_pan) # ; bound = wake_length)
 
-    # Evaluate inviscid edge velocities
-    u_es, Δrs       = tangential_velocities(panels, φs, u, sources)
-
-    # Compute coefficients
-    cls, cms, cps   = eval_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
-
-    # Evaluate lift coefficient from wake doublet strength
-    cl_wake         = lift_coefficient(φs[end] - φs[1] + φ_TE, speed)
-
-    cls, cms, cps, cl_wake
+    Aero2D(AIC, boco, φs, panels, wake_pan, uni)
 end
 
-function solve_problem(panels, u, α, num_wake :: Integer, wake_length)
-    speed           = norm(u)
-    xs              = getindex.(panel_points(panels)[2:end-1], 1)
-    wakes           = wake_panels(panels, wake_length, num_wake)
-    φs              = solve_strengths(panels, u, α, wakes; bound = wake_length)
-    u_es, Δrs       = tangential_velocities(panels, φs[1:end-1], u, false)
-    cls, cms, cps   = evaluate_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
-    cl_wake         = lift_coefficient(last(φs), speed)
-
-    cls, cms, cps, cl_wake
+function surface_speeds(prob :: Aero2D)
+    # Panel properties
+    ps   = prob.surface_panels
+    Δrs  = @views @. distance(ps[2:end], ps[1:end-1])
+    αs   = @views panel_tangent.(ps[2:end])
+    
+    @views surface_speeds(prob.singularities[1:end-1], Δrs, αs, velocity(prob.freestream), false)
 end
+
+function surface_coefficients(prob :: Aero2D)
+    # Panel properties
+    ps   = prob.surface_panels
+    Δrs  = @views @. distance(ps[2:end], ps[1:end-1])
+    xs   = @views combinedimsview(panel_points(ps)[2:end-1])[:,1]
+    θs   = @views panel_angle.(ps[2:end])
+
+    # Inviscid edge velocities
+    u_es = @views surface_speeds(prob)
+
+    # Aerodynamic coefficients
+    cps  = @. pressure_coefficient(prob.freestream.magnitude, u_es)
+    cls  = @. lift_coefficient(cps, Δrs, θs)
+    # cms  = @. -cls * xs * cos(prob.freestream.angle)
+
+    cls # , cms, cps
+end
+
+lift_coefficient(prob :: Aero2D) = 2 * last(prob.singularities) / prob.freestream.magnitude
+
+# u_es, Δrs       = tangential_velocities(panels, φs[1:end-1], u, false)
+# cls, cms, cps   = evaluate_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
+# cl_wake         = lift_coefficient(last(φs), speed)
+
+# cls, cms, cps, cl_wake
 
 
 end

@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "<unknown>/docs/src/tutorials.jl"
+EditURL = "<unknown>/docs/lit/tutorials.jl"
 ```
 
 # Tutorials
@@ -8,60 +8,60 @@ EditURL = "<unknown>/docs/src/tutorials.jl"
 
 Here we will teach you the basic functionality of AeroMDAO by showing you how to perform an aerodynamic analysis of a conventional aircraft. We will demonstrate this in a sequential process of complexity. For this, we will need to import some packages which will be convenient.
 
-```@example tutorials
+````@example tutorials
 using AeroMDAO      # Main package
 using Plots         # Plotting library
 gr(dpi = 300)       # Plotting backend
 using LaTeXStrings  # For LaTeX printing in plots
-```
+````
 
 ## Your First Airfoil
 
 You can define a NACA-4 airfoil using the following function. To analyze our airfoil, we must convert the coordinates into a `Foil` type defined in `AeroMDAO`.
 
-```@example tutorials
+````@example tutorials
 airfoil = Foil(naca4((2,4,1,2), 60), "NACA 2412")
-```
+````
 
 You can access the abscissa and ordinates as the following fields.
 
-```@example tutorials
+````@example tutorials
 airfoil.x, airfoil.y
-```
+````
 
 You can access the coordinates by calling the following function.
 
-```@example tutorials
+````@example tutorials
 coordinates(airfoil)
-```
+````
 
 ### Geometric Representations
 You can convert these coordinates into the camber-thickness representation.
 
-```@example tutorials
+````@example tutorials
 xcamthick = camber_thickness(airfoil, 60)
-```
+````
 
 You can also do the inverse transformation.
 
-```@example tutorials
+````@example tutorials
 coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
-```
+````
 
 You can split the coordinates into their upper and lower surfaces.
 
-```@example tutorials
-upper, lower = split_foil(coordinates(airfoil));
+````@example tutorials
+upper, lower = split_surface(airfoil);
 
 x_upper, y_upper = @views upper[:,1], upper[:,2]
 x_lower, y_lower = @views lower[:,1], lower[:,2];
 nothing #hide
-```
+````
 
 ### Plotting
 Let's plot everything!
 
-```@example tutorials
+````@example tutorials
 # Plot object
 af_plot = plot(aspect_ratio = 1, xlabel=L"(x/c)", ylabel = L"y")
 
@@ -80,7 +80,7 @@ plot!(xcamthick[:,1], xcamthick[:,2], label = "$(airfoil.name) Camber",
 # Thickness
 plot!(xcamthick[:,1], xcamthick[:,3], label = "$(airfoil.name) Thickness",
       ls = :dash, lw = 2, c = :grey)
-```
+````
 
 ## Your First 2D Aerodynamic Analysis
 
@@ -88,24 +88,24 @@ Now we have an airfoil, and we would like to analyze its aerodynamic characteris
 
 Our analysis also requires boundary conditions, which is the freestream flow defined by a magnitude ``V_\infty`` and angle of attack ``\alpha``. We provide these to the analysis by defining variables and feeding them to a `Uniform2D` type, corresponding to uniform flow in 2 dimensions.
 
-```@example tutorials
+````@example tutorials
 V       = 1.0
 alpha   = 4.0
 uniform = Uniform2D(V, alpha)
-```
+````
 
 Now that we have our airfoil and boundary conditions, we can call the `solve_case()` function, which in this case has an associated method with the specification of ``n`` panels given by the optional argument `num_panels`, which is 60 by default. This will run the analysis and return the lift coefficient, the sectional lift and pressure coefficients, and the panels for the given case.
 
-```@example tutorials
+````@example tutorials
 cl, cls, cms, cps, panels = solve_case(airfoil, uniform; wake_length = 1e4, num_panels = 60);
 nothing #hide
-```
+````
 
 Note the difference between the lift coefficient computed and the sum of the sectional lift coefficients; this is due to numerical errors in the solution procedure and modeling.
 
-```@example tutorials
+````@example tutorials
 cl, sum(cls)
-```
+````
 
 !!! info
     Support for drag prediction with boundary layer calculations will be added soon. For now, try out the amazing [Webfoil](http://webfoil.engin.umich.edu/) developed by the MDOLab at University of Michigan -- Ann Arbor!
@@ -114,27 +114,27 @@ cl, sum(cls)
 
 Let's see what the pressure and lift distribution curves look like over the airfoil. AeroMDAO provides more helper functions for post-processing data.
 
-```@example tutorials
+````@example tutorials
 pts      = collocation_point.(panels) # Collocation point
 tangents = panel_tangent.(panels)     # Tangents
 normals  = panel_normal.(panels)      # Normals
 locs     = panel_location.(panels);   # Upper or lower surface
 nothing #hide
-```
+````
 
 You can make your plots fancier by segregating the values depending on the locations of the panels.
 
-```@example tutorials
+````@example tutorials
 get_surface_values(panels, vals, surf = "lower") = [ (collocation_point(panel)[1], val) for (val, panel) in zip(vals, panels) if panel_location(panel) == surf ]
 
 cp_lower = get_surface_values(panels, cps, "lower")
 cp_upper = get_surface_values(panels, cps, "upper");
 nothing #hide
-```
+````
 
 Now let's plot the results.
 
-```@example tutorials
+````@example tutorials
 plot(yflip = true, xlabel = L"(x/c)", ylabel = L"C_p")
 plot!(cp_upper, label = "Upper",
       ls = :dash, lw = 2, c = :cornflowerblue)
@@ -144,11 +144,11 @@ plot!(x_upper, -y_upper, label = "$(airfoil.name) Upper",
       ls = :solid, lw = 2, c = :cornflowerblue)
 plot!(x_lower, -y_lower, label = "$(airfoil.name) Lower",
       ls = :solid, lw = 2, c = :orange)
-```
+````
 
 Lift distribution
 
-```@example tutorials
+````@example tutorials
 cl_upper = get_surface_values(panels, cls, "upper")
 cl_lower = get_surface_values(panels, cls, "lower")
 
@@ -157,7 +157,7 @@ plot!(x_upper, y_upper, lw = 2, c = :cornflowerblue, label = "Upper")
 plot!(x_lower, y_lower, lw = 2, c = :orange, label = "Lower")
 plot!(cl_upper, ls = :dash, lw = 2, c = :cornflowerblue, label = "Cl Upper")
 plot!(cl_lower, ls = :dash, lw = 2, c = :orange, label = "Cl Lower")
-```
+````
 
 ## Your First Wing
 
@@ -170,24 +170,24 @@ The following parametrization is used for the wing.
 
 First, we define a `Vector` of `Foil`s.
 
-```@example tutorials
+````@example tutorials
 # Define one airfoil
 airfoil_1 = Foil(naca4(4,4,1,2))
 
 # Define vector of airfoils
 airfoils  = [ airfoil_1, Foil(naca4(0,0,1,2)) ]
-```
+````
 
 Now that we have our airfoil profiles in the appropriate type, we can define our wing. The following function defines a symmetric wing and prints the relevant information.
 
-```@example tutorials
+````@example tutorials
 wing = Wing(foils     = airfoils,    # Foil profiles
             chords    = [1.0, 0.6],  # Chord lengths
             twists    = [2.0, 0.0],  # Twist angles
             spans     = [4.0],       # Section span lengths
             dihedrals = [5.],        # Dihedral angles
             LE_sweeps = [5.])        # Leading-edge sweep angles
-```
+````
 
 !!! note
     See the how-to guide on how to define an asymmetric wing.
@@ -204,21 +204,21 @@ sweeps(wing)
 
 There is also a convenient function for pretty-printing information, in which the first argument takes the `Wing` type and the second takes a name (as a `String` or `Symbol`).
 
-```@example tutorials
+````@example tutorials
 print_info(wing, "Wing")
-```
+````
 
 ### Visualization
 
 The following function generates the coordinates of the wing's outline.
 
-```@example tutorials
+````@example tutorials
 wing_outline = plot_wing(wing)
-```
+````
 
 Now let's plot it.
 
-```@example tutorials
+````@example tutorials
 plt = plot(
            wing_outline[:,1], wing_outline[:,2], wing_outline[:,3],
            label = "Wing",
@@ -227,7 +227,7 @@ plt = plot(
            camera = (30, 45),
            zlim = (-0.1, span(wing) / 2),
           )
-```
+````
 
 ## Your First 3D Aerodynamic Analysis
 

@@ -2,20 +2,21 @@ using AeroMDAO
 using Documenter
 
 ## Generate theme
-using DocumenterTools: Themes
-for w in ("light", "dark")
-    header = read(joinpath(@__DIR__, "theme/style.scss"), String)
-    theme = read(joinpath(@__DIR__, "theme/$(w)defs.scss"), String)
-    write(joinpath(@__DIR__, "theme/$(w).scss"), header*"\n"*theme)
-end
+# using DocumenterTools: Themes
+# for w in ("light",)
+#     header = read(joinpath(@__DIR__, "theme/style.scss"), String)
+#     theme = read(joinpath(@__DIR__, "theme/$(w)defs.scss"), String)
+#     write(joinpath(@__DIR__, "theme/$(w).scss"), header*"\n"*theme)
+# end
 
-Themes.compile(joinpath(@__DIR__, "theme/light.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-light.css"))
-Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
+# Themes.compile(joinpath(@__DIR__, "theme/light.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-light.css"))
+# Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
 
 ## Generate Markdown files using Literate.jl
 using Literate
 
-lit = src = joinpath(@__DIR__, "src")
+src = joinpath(@__DIR__, "src")
+lit = joinpath(@__DIR__, "lit")
 
 for (root, _, files) ∈ walkdir(lit), file ∈ files
     splitext(file)[2] == ".jl" || continue
@@ -23,9 +24,6 @@ for (root, _, files) ∈ walkdir(lit), file ∈ files
     opath = splitdir(replace(ipath, lit=>src))[1]
     Literate.markdown(ipath, opath)
 end
-# Literate.markdown("docs/src/tutorials.jl", string(@__DIR__, "/docs/src/"))
-# Literate.markdown("docs/src/howto.jl", string(@__DIR__, "/docs/src/"))
-# Literate.markdown("docs/src/theory.jl", string(@__DIR__, "/docs/src/"))
 
 ## Generate documentation
 makedocs(
@@ -47,10 +45,10 @@ makedocs(
             ],
     format = Documenter.HTML(
                             # /prettyurls = CI,
-                            assets = [
-                                # "assets/logo.ico",
-                                asset("https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&display=swap", class=:css),
-                                ],
+                            # assets = [
+                            #     # "assets/logo.ico",
+                            #     asset("https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&display=swap", class=:css),
+                            #     ],
                             # highlightjs = "theme/highlight.js",
                             ),
 )

@@ -7,15 +7,30 @@ using AeroMDAO # hide
 # Provide the path to the following function.
 
 ## Airfoil coordinates file path
-foilpath  = string(pwd(), "\\..\\..\\data\\airfoil_database\\s1223.dat")
+foilpath = string(@__DIR__, "\\..\\..\\data\\airfoil_database\\s1223.dat")
 
 ## Read coordinates file
-my_foil    = read_foil(foilpath)
+my_foil = read_foil(foilpath)
 
-# ### Interpolate Coordinates
+# ### Interpolate and Process Coordinates
 
-## Cosine spacing with 51 points on upper and lower surfaces
-cos_foil  = cosine_spacing(my_foil, 51)
+# A basic cosine interpolation functionality is provided for foils.
+## Cosine spacing with approx. 51 points on upper and lower surfaces each
+cos_foil = cosine_spacing(my_foil, 51)
+
+# The upper and lower surfaces can be obtained by the following variety of functions.
+
+## Upper surface
+upper = upper_surface(my_foil)
+
+## Lower surface
+lower = lower_surface(my_foil)
+
+## Upper and lower surfaces
+upper, lower = split_surface(my_foil)
+
+# The camber-thickness distribution can be obtained as follows. It internally performs a cosine interpolation to standardize the `$x$--coordinates for both surfaces; hence the number of points for the interpolation can be specified.
+xcamthick = camber_thickness(my_foil, 60)
 
 # ## Wing Geometry
 # 
@@ -43,7 +58,8 @@ wing = Wing(wing_left, wing_right);
 print_info(wing, "My Wing")
 
 # ## Doublet-Source Aerodynamic Analyses
-
+# The method returns the lift coefficient calculated by the doublet strength of the wake panel, the lift, moment and pressure coefficients over the panels, and the panels generated for post-processing.
+cl, cls, cms, cps, panels = solve_case(foil, uniform; num_panels = 80)
 
 # ## Vortex Lattice Aerodynamic Analyses
 # 
@@ -156,10 +172,11 @@ system = solve_case(
 ## Compute dynamics
 ax       = Wind() # Body(), Stability(), Geometry()
 
-
+## Compute non-dimensional coefficients
 CFs, CMs = surface_coefficients(system; axes = ax)
-Fs       = surface_forces(system)
-Fs, Ms   = surface_dynamics(system; axes = ax) 
+
+# Special functions are provided for directly retrieving the dimensionalized forces and moments.
+Fs, Ms   = surface_dynamics(system; axes = ax)
 
 # A Trefftz plane integration is employed to obtain farfield forces.
 # 
@@ -169,7 +186,6 @@ Fs, Ms   = surface_dynamics(system; axes = ax)
 # To obtain the nearfield and farfield coefficients of the components (in wind axes by definition):
 nfs = nearfield_coefficients(system)
 ffs = farfield_coefficients(system)
-
 
 # To obtain the total nearfield and farfield force coefficients:
 nf  = nearfield(system) 
