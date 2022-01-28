@@ -51,7 +51,7 @@ boundary_vector(panels, u) = [ - source_matrix(panels, panels) * source_strength
 
 boundary_vector(colpoints, u, r_te) = [ dot.(colpoints, Ref(u)); dot(u, r_te) ]
 
-# boundary_vector(panels, u, r_te) = [ dot.(collocation_point.(panels), Ref(u)); dot(u, r_te) ]
+boundary_vector(panels, u, r_te) = [ dot.(collocation_point.(panels), Ref(u)); dot(u, r_te) ]
 
 function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<: AbstractPanel2D}, u)
     source_panels = [ panels; wakes ]
@@ -81,11 +81,11 @@ function solve_linear(panels, u, α, r_te, sources :: Bool; bound = 1e2)
 end
 
 """
-    surface_speeds(panels, φs, u, sources :: Bool)
+    surface_velocities(panels, φs, u, sources :: Bool)
 
 Compute the surface speeds and panel distances given the array of `Panel2D`s, their associated doublet strengths ``φ``s, the velocity ``u``, and a condition whether to disable source terms (``σ = 0``).
 """
-function surface_speeds(φs, Δrs, θs, u, sources :: Bool)
+function surface_velocities(φs, Δrs, θs, u, sources :: Bool)
     # Δrs   = midpair_map(distance, panels)
     # Δφs   = -midpair_map(-, φs[1:end-1])
 
@@ -105,7 +105,7 @@ Solve the system of equations ``[AIC][\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\
 """
 function solve_linear(panels, u, wakes)
     AIC  = influence_matrix(panels, wakes)
-    boco = boundary_vector(panels, u)
+    boco = boundary_vector(panels, u, [0., 0.])
 
     AIC \ boco, AIC, boco
 end

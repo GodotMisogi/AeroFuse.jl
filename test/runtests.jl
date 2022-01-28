@@ -9,11 +9,15 @@ using Test
     uniform = Uniform2D(1., 0.)
 
     # Evaluate case
-    cl_1, cls_1, cms_1, cps_1, panels = solve_case(airfoil, uniform; num_panels = 80)
+    sys_1 = solve_case(airfoil, uniform; num_panels = 80)
+    cl_1  = lift_coefficient(sys_1)
+    cls_1 = surface_coefficients(sys_1)[1]
 
     # α = 5ᵒ
     uniform = Uniform2D(1., 5.)
-    cl_2, cls_2, cms_2, cps_2, panels = solve_case(airfoil, uniform; num_panels = 80)
+    sys_2 = solve_case(airfoil, uniform; num_panels = 80)
+    cl_2  = lift_coefficient(sys_2)
+    cls_2 = surface_coefficients(sys_2)[1]
 
     @test cl_1       ≈ 0.0       atol = 1e-6
     @test cl_2       ≈ 0.5996184 atol = 1e-6
@@ -41,17 +45,23 @@ end
     # Test coefficients
     uniform  = Uniform2D(1., 5.)
 
-    cl_coo, cls_coo, cms_coo = solve_case(coo_foil, uniform; num_panels = 80)[1:3]
+    sys_coo            = solve_case(coo_foil, uniform; num_panels = 80)
+    cl_coo             = lift_coefficient(sys_coo)
+    cls_coo, cms_coo   = surface_coefficients(sys_coo)[1:2]
     @test cl_coo       ≈  0.83220516 atol = 1e-6
     @test sum(cls_coo) ≈  0.83291636 atol = 1e-6
     @test sum(cms_coo) ≈ -0.25899389 atol = 1e-6
 
-    cl_cos, cls_cos, cms_cos = solve_case(cos_foil, uniform; num_panels = 80)[1:3]
+    sys_cos            = solve_case(cos_foil, uniform; num_panels = 80)
+    cl_cos             = lift_coefficient(sys_cos)
+    cls_cos, cms_cos   = surface_coefficients(sys_cos)[1:2]
     @test cl_cos       ≈  0.83178821 atol = 1e-6
     @test sum(cls_cos) ≈  0.83269773 atol = 1e-6
     @test sum(cms_cos) ≈ -0.25889408 atol = 1e-6
 
-    cl_cst, cls_cst, cms_cst = solve_case(cst_foil, uniform; num_panels = 80)[1:3]
+    sys_cst            = solve_case(cst_foil, uniform; num_panels = 80)
+    cl_cst             = lift_coefficient(sys_cst)
+    cls_cst, cms_cst   = surface_coefficients(sys_cst)[1:2]
     @test cl_cst       ≈  0.83381613 atol = 1e-6
     @test sum(cls_cst) ≈  0.83408259 atol = 1e-6
     @test sum(cms_cst) ≈ -0.25986701 atol = 1e-6

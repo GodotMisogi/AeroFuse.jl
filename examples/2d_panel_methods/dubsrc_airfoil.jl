@@ -8,11 +8,15 @@ dzs     = (0., 0.)
 airfoil = kulfan_CST(alpha_u, alpha_l, dzs, (0., 0.), 60);      # Kulfan CST airfoil
 # airfoil = Foil(naca4((0,0,1,2), 100; sharp_trailing_edge = true)) # NACA 4-digit airfoil
 uniform = Uniform2D(1., 0.)
-system  = solve_case(airfoil,
-                     uniform;
-                     num_panels = 80)
+system  = @time solve_case(
+                     airfoil, uniform;
+                     num_panels = 80
+                    );
 
-# @time cl, cls, cms, cps, panels = 
+##
+@time ues = surface_velocities(system);
+@time cl  = lift_coefficient(system)
+@time cls, cms, cps = surface_coefficients(system)
 
 ## Printing
 println("Cl: $cl")

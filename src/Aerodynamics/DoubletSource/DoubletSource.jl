@@ -16,7 +16,7 @@ import ..NonDimensional: pressure_coefficient
 
 import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector
 
-import ..AeroMDAO: solve_system, surface_coefficients
+import ..AeroMDAO: solve_system, surface_velocities, surface_coefficients
 
 ## Doublet-source Dirichlet boundary condition
 #===========================================================================#
@@ -50,8 +50,6 @@ boundary_condition(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D, u) = 
 
 surface_velocity(dφ, dr, u, α) = dφ / dr + dot(u, α)
 
-lift_coefficient(cp, dist_colpoints, panel_angle) = - cp * dist_colpoints * cos(panel_angle)
-
 # """
 #     aerodynamic_coefficients(vels, Δrs, panel_angles, speed, α)
 
@@ -70,7 +68,7 @@ lift_coefficient(cp, dist_colpoints, panel_angle) = - cp * dist_colpoints * cos(
 
 include("matrix_func.jl")
 
-struct Aero2D{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVector{T}, O <: AbstractVector{<: AbstractPanel2D}, R <: WakePanel2D, P <: Uniform2D}
+struct DoubletSourceSystem{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVector{T}, O <: AbstractVector{<: AbstractPanel2D}, R <: WakePanel2D, P <: Uniform2D}
     influence_matrix   :: M
     boundary_condition :: N
     singularities      :: N
@@ -98,7 +96,7 @@ function solve_system(panels, uni :: Uniform2D, sources :: Bool, wake_length)
     # Solve for doublet strengths
     φs, AIC, boco   = solve_linear(panels, u, α, wakes; bound = wake_length)
 
-    Aero2D(AIC, boco, φs, panels, wakes, uni)
+    DoubletSourceSystem(AIC, boco, φs, panels, wakes, uni)
 
     # # Evaluate inviscid edge velocities
     # u_es, Δrs       = tangential_velocities(panels, φs, u, sources)
@@ -121,37 +119,37 @@ function solve_system(panels, uni :: Uniform2D, num_wake :: Integer, wake_length
     # Solve for doublet strengths
     φs, AIC, boco   = solve_linear(panels, u, wake_pan) # ; bound = wake_length)
 
-    Aero2D(AIC, boco, φs, panels, wake_pan, uni)
+    DoubletSourceSystem(AIC, boco, φs, panels, wake_pan, uni)
 end
 
-function surface_speeds(prob :: Aero2D)
+function surface_velocities(prob :: DoubletSourceSystem)
     # Panel properties
     ps   = prob.surface_panels
     Δrs  = @views @. distance(ps[2:end], ps[1:end-1])
     αs   = @views panel_tangent.(ps[2:end])
     
-    @views surface_speeds(prob.singularities[1:end-1], Δrs, αs, velocity(prob.freestream), false)
+    @views surface_velocities(prob.singularities[1:end-1], Δrs, αs, velocity(prob.freestream), false)
 end
 
-function surface_coefficients(prob :: Aero2D)
+function surface_coefficients(prob :: DoubletSourceSystem)
     # Panel properties
     ps   = prob.surface_panels
     Δrs  = @views @. distance(ps[2:end], ps[1:end-1])
-    xs   = @views combinedimsview(panel_points(ps)[2:end-1])[:,1]
+    xs   = @views combinedimsview(panel_points(ps)[2:end-1])[1,:]
     θs   = @views panel_angle.(ps[2:end])
 
     # Inviscid edge velocities
-    u_es = @views surface_speeds(prob)
+    u_es = @views surface_velocities(prob)
 
     # Aerodynamic coefficients
     cps  = @. pressure_coefficient(prob.freestream.magnitude, u_es)
-    cls  = @. lift_coefficient(cps, Δrs, θs)
-    # cms  = @. -cls * xs * cos(prob.freestream.angle)
+    cls  = @. -cps * Δrs * cos(θs)
+    cms  = @. -cls * xs * cos(prob.freestream.angle)
 
-    cls # , cms, cps
+    cls, cms, cps
 end
 
-lift_coefficient(prob :: Aero2D) = 2 * last(prob.singularities) / prob.freestream.magnitude
+lift_coefficient(prob :: DoubletSourceSystem) = 2 * last(prob.singularities) / prob.freestream.magnitude
 
 # u_es, Δrs       = tangential_velocities(panels, φs[1:end-1], u, false)
 # cls, cms, cps   = evaluate_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)

@@ -47,7 +47,7 @@ panel_coordinates(panel :: Panel3D) = [ p1(panel), p2(panel), p3(panel), p4(pane
 
 Convert an array of coordinates corresponding to a wing, ordered from root to tip and leading-edge to trailing-edge, into panels.
 """
-make_panels(xyzs :: AbstractArray{<: Panel3D}) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], xyzs[2:end,2:end], xyzs[1:end-1,2:end])
+make_panels(xyzs :: AbstractArray{<: SVector{3,<: Real}}) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], xyzs[2:end,2:end], xyzs[1:end-1,2:end])
 
 """
     transform(panel :: Panel3D, rotation, translation)
