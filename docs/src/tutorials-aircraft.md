@@ -203,9 +203,9 @@ nf = nearfield(system)
 ````
 
 !!! tip
-    Refer to the (how-to guide)(howto.md) to see how to compute the aerodynamic coefficients of each component and perform stability analyses.
+    Refer to the [how-to guide](howto.md) to see how to compute the aerodynamic coefficients of each component and perform stability analyses.
 
-## Drag Polar
+### Drag Polar
 
 Now let's analyze the drag polar of this aircraft configuration by varying the angle of attack and collecting the induced drag coefficient $C_{D_i}$.
 
@@ -218,9 +218,8 @@ end
 
 # Run loop
 αs      = -5:0.5:5
-
-# Cleaner: map(α -> vary_alpha(...), αs)
 systems = [ vary_alpha(aircraft, α, refs) for α in αs ]
+# Cleaner: map(α -> vary_alpha(...), αs)
 
 # Get coefficients
 coeffs = nearfield.(systems)
@@ -243,38 +242,47 @@ plot(CDis, CLs,
 Let's also take a look at the variations of all the coefficients.
 
 ````@example tutorials-aircraft
-data = [ (α, c...) for (α, c) in zip(αs, coeffs) ]
+# Concatenate results into one array
+data = permutedims(reduce(hcat, [α; c] for (α, c) in zip(αs, coeffs)))
+
+# Plot
+plot(data[:,1], round.(data[:,2:end], digits = 4),
+     layout = (3,2),
+     xlabel = L"\alpha",
+     ylabel = [L"C_{D_i}" L"C_Y" L"C_L" L"C_\ell" L"C_m" L"C_n" ],
+     labels = "",
+     size   = (800, 600)
+    )
 ````
 
 > **Tip:** You can convert this into a DataFrame for convenient reference.
 > ```julia
 > using DataFrames, StatsPlots
-> data = DataFrame([ (α, CD, CY, CL, Cl, Cm, Cn) for (α, (CD, CY, CL, Cl, Cm, Cn)) in zip(αs, coeffs) ])
+> data = DataFrame([ xs for xs in zip(αs, coeffs) ])
 > rename!(data, [:α, :CD, :CY, :CL, :Cl, :Cm, :Cn])
 > @df data plot()
 > ```
 
-## Spanwise Loading
+### Spanwise Loading
+
+You can compute the aerodynamic coefficients on the panels from the system.
 
 ````@example tutorials-aircraft
-#
 CFs, CMs = surface_coefficients(system)
-````
 
-````@example tutorials-aircraft
-# Spanwise forces
+# Get panels along the chord-lines of the wing.
 wing_panels = chord_panels(wing_mesh)
-LL_loads    = spanwise_loading(wing_panels, CFs.wing, projected_area(wing))
-CL_loadings = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
-````
 
-````@example tutorials-aircraft
-# Lifting line loads
-plot_CD = plot(LL_loads[:,1], LL_loads[:,2], label = :none, ylabel = L"C_{D_i}")
-plot_CY = plot(LL_loads[:,1], LL_loads[:,3], label = :none, ylabel = L"C_Y")
+# Compute spanwise loads
+span_loads  = spanwise_loading(wing_panels, CFs.wing, projected_area(wing))
+CL_loads    = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord);
+
+# Plot spanwise loadings
+plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = "CDi")
+plot_CY = plot(span_loads[:,1], span_loads[:,3], label = :none, ylabel = "CY")
 plot_CL = begin
-            plot(LL_loads[:,1], LL_loads[:,4], label = :none, xlabel = L"y", ylabel = L"C_L")
-            plot!(LL_loads[:,1], CL_loadings, label = "Normalized", xlabel = L"y")
+            plot(span_loads[:,1], span_loads[:,4], label = :none, xlabel = "y", ylabel = "CL")
+            plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = "y")
           end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 ````

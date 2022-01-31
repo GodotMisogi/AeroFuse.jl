@@ -115,8 +115,10 @@ plot!(plt)
 htail_mesh = WingMesh(htail, [6], 4)
 vtail_mesh = WingMesh(vtail, [4], 3)
 
-[ plot!(plt, panel, label = "", color = :orange) for panel in plot_panels(camber_panels(htail_mesh)) ]
-[ plot!(plt, panel, label = "", color = :lightgreen) for panel in plot_panels(camber_panels(vtail_mesh)) ]
+[ plot!(plt, panel, label = "", color = :orange) 
+    for panel in plot_panels(camber_panels(htail_mesh)) ]
+[ plot!(plt, panel, label = "", color = :lightgreen) 
+    for panel in plot_panels(camber_panels(vtail_mesh)) ]
 plot!(plt)
 
 # For the analysis, you have to assemble the meshes into a `ComponentArray/Vector`.
@@ -152,23 +154,19 @@ system = solve_case(
 nf = nearfield(system)
 
 # !!! tip 
-#     Refer to the (how-to guide)(howto.md) to see how to compute the aerodynamic coefficients of each component and perform stability analyses.
+#     Refer to the [how-to guide](howto.md) to see how to compute the aerodynamic coefficients of each component and perform stability analyses.
 
-# ## Drag Polar
+# ### Drag Polar
 
 # Now let's analyze the drag polar of this aircraft configuration by varying the angle of attack and collecting the induced drag coefficient $C_{D_i}$.
 
 ## Define function to compute system varying with angle of attack.
-function vary_alpha(aircraft, α, refs)
-    fs     = Freestream(alpha = α)
-    system = solve_case(aircraft, fs, refs)
-end
+vary_alpha(aircraft, α, refs) = solve_case(aircraft, Freestream(alpha = α), refs)
 
 ## Run loop
 αs      = -5:0.5:5
-
-## Cleaner: map(α -> vary_alpha(...), αs)
 systems = [ vary_alpha(aircraft, α, refs) for α in αs ]
+## Cleaner: map(α -> vary_alpha(...), αs)
 
 ## Get coefficients
 coeffs = nearfield.(systems)
@@ -184,26 +182,38 @@ plot(CDis, CLs,
      ls     = :solid)
 
 # Let's also take a look at the variations of all the coefficients.
-data = [ (α, c...) for (α, c) in zip(αs, coeffs) ]
+
+## Concatenate results into one array
+data = permutedims(reduce(hcat, [α; c] for (α, c) in zip(αs, coeffs)))
+
+## Plot
+plot(data[:,1], round.(data[:,2:end], digits = 4), 
+     layout = (3,2),
+     xlabel = L"\alpha",
+     ylabel = [L"C_{D_i}" L"C_Y" L"C_L" L"C_\ell" L"C_m" L"C_n" ],
+     labels = "",
+     size   = (800, 600)
+    )
 
 # > **Tip:** You can convert this into a DataFrame for convenient reference.
 # > ```julia
 # > using DataFrames, StatsPlots
-# > data = DataFrame([ (α, CD, CY, CL, Cl, Cm, Cn) for (α, (CD, CY, CL, Cl, Cm, Cn)) in zip(αs, coeffs) ])
+# > data = DataFrame([ xs for xs in zip(αs, coeffs) ])
 # > rename!(data, [:α, :CD, :CY, :CL, :Cl, :Cm, :Cn])
 # > @df data plot()
 # > ```
 
-# ## Spanwise Loading
+# ### Spanwise Loading
 
-#
-##
+# You can compute the aerodynamic coefficients on the panels from the system.
 CFs, CMs = surface_coefficients(system)
 
-#
+## Get panels along the chord-lines of the wing.
+wing_panels = chord_panels(wing_mesh)
+
 ## Compute spanwise loads
-span_loads = spanwise_loading(horseshoe_panels, CFs.wing, projected_area(wing))
-CL_loads   = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
+span_loads  = spanwise_loading(wing_panels, CFs.wing, projected_area(wing))
+CL_loads    = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord);
 
 ## Plot spanwise loadings
 plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = "CDi")

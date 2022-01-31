@@ -49,6 +49,12 @@ The camber-thickness distribution can be obtained as follows. It internally perf
 xcamthick = camber_thickness(my_foil, 60)
 ````
 
+You can also do the inverse transformation.
+
+````@example howto
+coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
+````
+
 ## Doublet-Source Aerodynamic Analyses
 The `solve_case` method runs the analysis given a `Foil` containing the airfoil coordinates, a `Uniform2D` defining the boundary conditions, and an optional named specification for the number of panels. It returns a system which can be used to obtain the aerodynamic quantities of interest and post-processing.
 

@@ -45,12 +45,6 @@ You can convert these coordinates into the camber-thickness representation.
 xcamthick = camber_thickness(airfoil, 60)
 ````
 
-You can also do the inverse transformation.
-
-````@example tutorials-airfoil
-coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
-````
-
 You can split the coordinates into their upper and lower surfaces.
 
 ````@example tutorials-airfoil
