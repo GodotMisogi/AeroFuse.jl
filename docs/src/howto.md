@@ -16,7 +16,7 @@ You can specify the path consisting of the foil's coordinates to the `read_foil`
 
 ````@example howto
 # Airfoil coordinates file path
-foilpath = string(@__DIR__, "\\..\\..\\data\\airfoil_database\\s1223.dat")
+foilpath = string(@__DIR__, "/misc/s1223.dat")
 
 # Read coordinates file
 my_foil = read_foil(foilpath;
