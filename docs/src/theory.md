@@ -134,7 +134,7 @@ and the structural load vector $\mathbf f$ is obtained from conservative and con
 
 ### Longitudinal Motion
 
-A standard three degrees-of-freedom rigid body model is used for performing flight dynamics analyses in the 2-dimensional longitudinal plane formulated as an initial-value problem. The coupled differential equations governing in a canonical state-space representation, with the time-evolution of the state vector $\mathbf x$ driven by the forcing function $\mathbf f$ are shown below subject to initial conditions $\mathbf x_0$.
+A standard three degrees-of-freedom rigid body model is used for performing flight dynamics analyses in the 2-dimensional longitudinal plane formulated as an initial-value problem. The coupled differential equations are shown in a canonical state-space representation, with the time-evolution of the state vector $\mathbf x$ driven by the forcing function $\mathbf f$ are shown below subject to initial conditions $\mathbf x_0$.
 
 ```math
 \begin{align*}

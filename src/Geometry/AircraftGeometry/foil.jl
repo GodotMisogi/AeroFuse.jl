@@ -215,12 +215,22 @@ function camber_CST(α_cam, α_thicc, dz_thicc = 0., coeff_LE = 0, n :: Integer 
     Foil(camber_thickness_to_coordinates(xs, cam, thicc), "Camber-Thickness CST")
 end
 
+"""
+    coordinates_to_CST(coords, num_dvs)
+
+Convert coordinates to a specified number of CST variables by performing a least-squares solution.
+"""
 function coordinates_to_CST(coords, num_dvs)
     xs       = @views coords[:,1]
     S_matrix = reduce(hcat, @. bernstein_class(xs, 0.5, 1.0) * bernstein_basis(xs, num_dvs - 1, i) for i in 0:num_dvs - 1)
     alphas   = @views S_matrix \ coords[:,2]
 end
 
+"""
+    camber_thickness_to_CST(coords, num_dvs)
+
+Convert camber-thickness coordinates to a specified number of CST variables by performing a least-squares solution.
+"""
 function camber_thickness_to_CST(coords, num_dvs)
     xs, camber, thickness = (columns ∘ coordinates_to_camber_thickness)(coords)
 

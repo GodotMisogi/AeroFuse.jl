@@ -69,6 +69,16 @@ panels     = system.surface_panels
 @time cls, cms, cps = surface_coefficients(system)
 ````
 
+AeroMDAO provides more helper functions for the panel geometry.
+
+````@example howto
+pts      = collocation_point.(panels) # Collocation point
+tangents = panel_tangent.(panels)     # Tangents
+normals  = panel_normal.(panels)      # Normals
+locs     = panel_location.(panels);   # Upper or lower surface
+nothing #hide
+````
+
 ## Wing Geometry
 
 To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
@@ -226,7 +236,7 @@ fs = Freestream(
            )
 ````
 
-To define reference values, use the following `References` type
+To define reference values, use the following `References` type.
 
 ````@example howto
 # Define reference values
@@ -239,7 +249,11 @@ refs = References(
            chord     = mean_aerodynamic_chord(wing),
            location  = mean_aerodynamic_center(wing)
           )
+````
 
+The vortex lattice analysis can be executed with the horseshoes, freestream condition, and reference values defined.
+
+````@example howto
 # Solve system
 system = solve_case(
              aircraft, fs, refs;
@@ -272,7 +286,7 @@ Special functions are provided for directly retrieving the dimensionalized force
 Fs, Ms   = surface_dynamics(system; axes = ax)
 ````
 
-A Trefftz plane integration is employed to obtain farfield forces.
+A Trefftz plane integration is performed to compute farfield forces.
 
 !!! note
     The farfield forces are usually more accurate compared to nearfield forces, as the components do not interact as in the evaluation of the Biot-Savart integrals for the latter.

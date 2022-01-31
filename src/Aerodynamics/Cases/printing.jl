@@ -50,7 +50,7 @@ end
 
 Print a pretty table of the total nearfield and farfield coefficients of a `VortexLatticeSystem` with an optional name.
 
-A named Boolean argument `components` is provided to alsoenable the printing of any possible components.
+A named Boolean argument `components` is provided to also enable the printing of any possible components.
 """
 function print_coefficients(system :: VortexLatticeSystem, name = :aircraft; components = false)
     if components

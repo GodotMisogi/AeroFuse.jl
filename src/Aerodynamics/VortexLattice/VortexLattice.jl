@@ -6,6 +6,7 @@ using Rotations
 using ComponentArrays
 using SplitApplyCombine
 using TimerOutputs
+using LabelledArrays
 
 ## Package imports
 #==========================================================================================#

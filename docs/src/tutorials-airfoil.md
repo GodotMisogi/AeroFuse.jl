@@ -4,8 +4,7 @@ EditURL = "<unknown>/docs/lit/tutorials-airfoil.jl"
 
 ## Objectives
 
-Here we will teach you the basic functionality of AeroMDAO by showing you how to perform an aerodynamic analysis of an airfoil.
-Specifically we will:
+Here we will show you how to perform an aerodynamic analysis of an airfoil. Specifically we will:
 1. Compute the coordinates of a NACA 4-digit series airfoil.
 2. Plot its camber, thickness, upper and lower surface representations.
 3. Perform an aerodynamic analysis at a given angle of attack.
@@ -27,13 +26,13 @@ You can define a NACA-4 airfoil using the following function. To analyze our air
 airfoil = naca4((2,4,1,2), 60)
 ````
 
-You can access the abscissa and ordinates as the following fields.
+You can access the $x$- and $y$-coordinates as the following fields.
 
 ````@example tutorials-airfoil
 airfoil.x, airfoil.y
 ````
 
-You can access the coordinates by calling the following function.
+You can obtain the coordinates as an array by calling the following function.
 
 ````@example tutorials-airfoil
 coordinates(airfoil)
@@ -94,22 +93,35 @@ Our analysis also requires boundary conditions, which is the freestream flow def
 
 ````@example tutorials-airfoil
 V       = 1.0
-alpha   = 4.0
+alpha   = 4.0 # degrees
 uniform = Uniform2D(V, alpha)
 ````
 
-Now that we have our airfoil and boundary conditions, we can call the `solve_case()` function, which in this case has an associated method with the specification of ``n`` panels given by the optional argument `num_panels`, which is 60 by default. This will run the analysis and return a system which can be used to obtain the aerodynamic quantities of interest and post-processing.
+You can analyze this airfoil for the given freestream flow as shown.
 
 ````@example tutorials-airfoil
 system  = @time solve_case(
                      airfoil, uniform;
                      num_panels = 80
                     );
+nothing #hide
+````
 
-# The following functions compute the quantities of interest, such as the inviscid edge velocities, lift coefficient, and the sectional lift, moment, and pressure coefficients.
-panels     = system.surface_panels
-@time u_es = surface_velocities(system);
-@time cl   = lift_coefficient(system)
+This will run the analysis and return a system which can be used to obtain the aerodynamic quantities of interest and post-processing. The panels used for the analysis can be accessed as follows.
+
+````@example tutorials-airfoil
+panels = system.surface_panels
+````
+
+You can compute the lift coefficient from the system.
+
+````@example tutorials-airfoil
+@time cl = lift_coefficient(system)
+````
+
+You can also compute the sectional lift, moment and pressure coefficients.
+
+````@example tutorials-airfoil
 @time cls, cms, cps = surface_coefficients(system)
 ````
 
@@ -124,27 +136,22 @@ cl, sum(cls)
 
 ### Visualization
 
-Let's see what the pressure and lift distribution curves look like over the airfoil. AeroMDAO provides more helper functions for post-processing data.
+Let's see what the pressure and lift distribution curves look like over the airfoil. AeroMDAO provides more helper functions for post-processing data. For example, you can make your fancy plots by segregating the values depending on the locations of the panels by defining the following function.
 
 ````@example tutorials-airfoil
-pts      = collocation_point.(panels) # Collocation point
-tangents = panel_tangent.(panels)     # Tangents
-normals  = panel_normal.(panels)      # Normals
-locs     = panel_location.(panels);   # Upper or lower surface
-nothing #hide
-````
-
-You can make your plots fancier by segregating the values depending on the locations of the panels.
-
-````@example tutorials-airfoil
-get_surface_values(panels, vals, surf = "lower") = [ (collocation_point(panel)[1], val) for (val, panel) in zip(vals, panels) if panel_location(panel) == surf ]
+get_surface_values(panels, vals, surf = "lower") =
+    [
+        (collocation_point(panel)[1], val)
+        for (val, panel) in zip(vals, panels)
+            if panel_location(panel) == surf
+    ]
 
 cp_lower = get_surface_values(panels, cps, "lower")
 cp_upper = get_surface_values(panels, cps, "upper");
 nothing #hide
 ````
 
-Now let's plot the results.
+Now let's plot the results!
 
 ````@example tutorials-airfoil
 # Pressure coefficients
@@ -183,7 +190,7 @@ plot!(cm_upper, ls = :dash, lw = 2, c = :cornflowerblue, label = L"$C_m$ Upper")
 plot!(cm_lower, ls = :dash, lw = 2, c = :orange, label = L"$C_m$ Lower")
 ````
 
-Great! We've created our first airfoil and run an aerodynamic analysis in 2 dimensions.
+Great! We've created our first airfoil and run an aerodynamic analysis in 2 dimensions. Now we can move on to analyzing an aircraft configuration in the [Aircraft Aerodynamic Analysis](tutorials-aircraft.md) tutorial.
 
 ---
 

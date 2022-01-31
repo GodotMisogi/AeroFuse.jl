@@ -50,6 +50,12 @@ panels     = system.surface_panels
 @time cl   = lift_coefficient(system)
 @time cls, cms, cps = surface_coefficients(system)
 
+# AeroMDAO provides more helper functions for the panel geometry.
+pts      = collocation_point.(panels) # Collocation point
+tangents = panel_tangent.(panels)     # Tangents
+normals  = panel_normal.(panels)      # Normals
+locs     = panel_location.(panels);   # Upper or lower surface
+
 # ## Wing Geometry
 # 
 # To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.

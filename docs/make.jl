@@ -35,7 +35,7 @@ makedocs(
                 "Home"          => "index.md"
                 "Tutorials"     => [
                                     "Airfoil Aerodynamic Analysis" => "tutorials-airfoil.md",
-                                    "Aircraft Aerodynamic Analysis" => "tutorials-wing.md"
+                                    "Aircraft Aerodynamic Analysis" => "tutorials-aircraft.md"
                                     ]
                 "How-to Guide"  => "howto.md"
                 "Theory"        => "theory.md"

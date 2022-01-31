@@ -49,11 +49,8 @@ function spanwise_loading(panels, CFs, S)
     span_CXs = @views spanwise_loading(CFs[1,:,:], area_scale)
     span_CYs = @views spanwise_loading(CFs[2,:,:], area_scale)
     span_CZs = @views spanwise_loading(CFs[3,:,:], area_scale)
-    span_Cls = @views spanwise_loading(CFs[4,:,:], area_scale) ./ chords
-    span_Cms = @views spanwise_loading(CFs[5,:,:], area_scale) ./ chords
-    span_Cns = @views spanwise_loading(CFs[6,:,:], area_scale) ./ chords
 
-    [ ys span_CXs span_CYs span_CZs span_Cls span_Cms span_Cns ]
+    [ ys span_CXs span_CYs span_CZs ]
 end
 
 spanwise_loading(wing :: WingMesh, CFs, S) = spanwise_loading(chord_panels(wing), CFs, S)
