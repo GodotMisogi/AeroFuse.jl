@@ -2,15 +2,15 @@ using AeroMDAO
 using Documenter
 
 ## Generate theme
-# using DocumenterTools: Themes
-# for w in ("light",)
-#     header = read(joinpath(@__DIR__, "theme/style.scss"), String)
-#     theme = read(joinpath(@__DIR__, "theme/$(w)defs.scss"), String)
-#     write(joinpath(@__DIR__, "theme/$(w).scss"), header*"\n"*theme)
-# end
+using DocumenterTools: Themes
+for w in ("light",)
+    header = read(joinpath(@__DIR__, "theme/style.scss"), String)
+    theme = read(joinpath(@__DIR__, "theme/$(w)defs.scss"), String)
+    write(joinpath(@__DIR__, "theme/$(w).scss"), header*"\n"*theme)
+end
 
-# Themes.compile(joinpath(@__DIR__, "theme/light.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-light.css"))
-# Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
+Themes.compile(joinpath(@__DIR__, "theme/light.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-light.css"))
+Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
 
 ## Generate Markdown files using Literate.jl
 using Literate

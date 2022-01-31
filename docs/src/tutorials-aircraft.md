@@ -148,8 +148,10 @@ Similarly we define the meshes for the other surfaces and plot them.
 htail_mesh = WingMesh(htail, [6], 4)
 vtail_mesh = WingMesh(vtail, [4], 3)
 
-[ plot!(plt, panel, label = "", color = :orange) for panel in plot_panels(camber_panels(htail_mesh)) ]
-[ plot!(plt, panel, label = "", color = :lightgreen) for panel in plot_panels(camber_panels(vtail_mesh)) ]
+[ plot!(plt, panel, label = "", color = :orange)
+    for panel in plot_panels(camber_panels(htail_mesh)) ]
+[ plot!(plt, panel, label = "", color = :lightgreen)
+    for panel in plot_panels(camber_panels(vtail_mesh)) ]
 plot!(plt)
 ````
 
@@ -211,10 +213,7 @@ Now let's analyze the drag polar of this aircraft configuration by varying the a
 
 ````@example tutorials-aircraft
 # Define function to compute system varying with angle of attack.
-function vary_alpha(aircraft, α, refs)
-    fs     = Freestream(alpha = α)
-    system = solve_case(aircraft, fs, refs)
-end
+vary_alpha(aircraft, α, refs) = solve_case(aircraft, Freestream(alpha = α), refs)
 
 # Run loop
 αs      = -5:0.5:5

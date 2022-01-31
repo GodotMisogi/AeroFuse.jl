@@ -77,6 +77,11 @@ struct DoubletSourceSystem{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVecto
     freestream         :: P
 end
 
+function Base.show(io :: IO, sys :: DoubletSourceSystem)
+    println(io, "DoubletSourceSystem —")
+    println(io, length(sys.surface_panels), " ", eltype(sys.surface_panels), " Elements")
+end
+
 function solve_system(panels, uni :: Uniform2D, sources :: Bool, wake_length)
     # Freestream conditions
     u, α  = velocity(uni), uni.angle
@@ -150,12 +155,5 @@ function surface_coefficients(prob :: DoubletSourceSystem)
 end
 
 lift_coefficient(prob :: DoubletSourceSystem) = 2 * last(prob.singularities) / prob.freestream.magnitude
-
-# u_es, Δrs       = tangential_velocities(panels, φs[1:end-1], u, false)
-# cls, cms, cps   = evaluate_coefficients(u_es, Δrs, xs, panel_angle.(panels[2:end]), speed, α)
-# cl_wake         = lift_coefficient(last(φs), speed)
-
-# cls, cms, cps, cl_wake
-
 
 end

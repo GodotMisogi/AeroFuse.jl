@@ -9,16 +9,19 @@ using AeroMDAO # hide
 ````
 
 ## Airfoil Geometry
+How to work with airfoil geometry.
 
 ### Import Coordinates File
-Provide the path to the following function.
+You can specify the path consisting of the foil's coordinates to the `read_foil` function. The format requires a header for the name by default, but this can be disabled and a custom name can be provided by setting the optional `header` and `name` variables.
 
 ````@example howto
 # Airfoil coordinates file path
 foilpath = string(@__DIR__, "\\..\\..\\data\\airfoil_database\\s1223.dat")
 
 # Read coordinates file
-my_foil = read_foil(foilpath)
+my_foil = read_foil(foilpath;
+                    header = true,
+                    name   = "")
 ````
 
 ### Interpolate and Process Coordinates
@@ -63,22 +66,23 @@ The `solve_case` method runs the analysis given a `Foil` containing the airfoil 
 uniform = Uniform2D(1.0, 4.0)
 
 # Solve system
-system  = @time solve_case(
-                     my_foil, uniform;
-                     num_panels = 80
-                    );
+system  = solve_case(my_foil, uniform;
+                     num_panels = 80)
+````
 
-# The following functions compute the quantities of interest, such as the inviscid edge velocities, lift coefficient, and the sectional lift, moment, and pressure coefficients.
-panels     = system.surface_panels
-@time u_es = surface_velocities(system);
-@time cl   = lift_coefficient(system)
-@time cls, cms, cps = surface_coefficients(system)
+The following functions compute the quantities of interest, such as the inviscid edge velocities, lift coefficient, and the sectional lift, moment, and pressure coefficients.
+
+````@example howto
+cls, cms, cps = surface_coefficients(system);
+u_es   = surface_velocities(system)
+cl     = lift_coefficient(system)
 ````
 
 AeroMDAO provides more helper functions for the panel geometry.
 
 ````@example howto
-pts      = collocation_point.(panels) # Collocation point
+panels   = system.surface_panels
+pts      = collocation_point.(panels) # Collocation points
 tangents = panel_tangent.(panels)     # Tangents
 normals  = panel_normal.(panels)      # Normals
 locs     = panel_location.(panels);   # Upper or lower surface
@@ -129,7 +133,7 @@ print_info(wing, "Wing")
 # Import Setfield
 using Setfield
 
-# Set only chords with other properties identical.
+# Set only chords with other properties remaining identical.
 wing_left = @set wing_right.chords = [0.4, 0.1, 0.05]
 ````
 
@@ -148,7 +152,7 @@ How to run a generic aerodynamic analysis on a conventional aircraft configurati
 ### Geometry
 First we define the lifting surfaces. These can be a combination of `Wing` or `HalfWing` types constructed using the various methods available.
 !!! warning "Alert"
-    Support for fuselages will be added soon.
+    Support for fuselages and control surfaces will be added soon.
 
 ````@example howto
 # Wing
@@ -209,7 +213,8 @@ htail_mesh = WingMesh(htail, [10], 5;
                       span_spacing = Cosine()) # Uniform(), Sine()
 
 # Vertical tail
-vtail_mesh = WingMesh(vtail, [10], 5) # Vertical tail
+vtail_mesh = WingMesh(vtail, [10], 5); # Vertical tail
+nothing #hide
 ````
 
 ### Inviscid Analysis
@@ -235,11 +240,9 @@ To define boundary conditions, use the following `Freestream` type, which takes 
 
 ````@example howto
 # Define freestream conditions
-fs = Freestream(
-            alpha = 1.0,
-            beta  = 0.0,
-            omega = [0.,0.,0.]
-           )
+fs = Freestream(alpha = 1.0,
+                beta  = 0.0,
+                omega = [0.,0.,0.])
 ````
 
 To define reference values, use the following `References` type.
@@ -270,11 +273,11 @@ system = solve_case(
 
 ### Dynamics
 
-The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of geometry, body, wind, or stability. The wind axes are used by default.
+The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of geometry, body, wind, or stability axes. The wind axes are used by default.
 
 ````@example howto
 # Compute dynamics
-ax       = Wind() # Body(), Stability(), Geometry()
+ax = Wind() # Body(), Stability(), Geometry()
 
 # Compute non-dimensional coefficients
 CFs, CMs = surface_coefficients(system; axes = ax)
@@ -325,16 +328,17 @@ print_coefficients(nf, ff, :aircraft)
 ````
 
 ## Aerodynamic Stability Analyses
+The derivatives of the aerodynamic coefficients with respect to the freestream values is obtained by automatic differentiation enabled by [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl). To compute the values, simply replace `solve_case` with `solve_case_derivatives`. You can also optionally provide the axes for the reference frame of the coefficients.
 
 ````@example howto
-ac_name = :aircraft
-@time dv_data = solve_case_derivatives(
-                       aircraft, fs, refs;
-                       axes             = Wind(),
-                       name             = ac_name,
-                       print            = true,    # Prints the results for only the aircraft
-                       print_components = true,    # Prints the results for all components
-                      )
+dv_data = solve_case_derivatives(
+             aircraft, fs, refs;
+             axes             = Wind(),
+             name             = :aircraft,
+             print            = true,    # Prints the results for only the aircraft
+             print_components = true,    # Prints the results for all components
+            );
+nothing #hide
 ````
 
 ## Euler-Bernoulli Beam Structural Analysis

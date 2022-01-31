@@ -47,11 +47,11 @@ By default, the header is assumed to exist and should contain the airfoil name, 
 function read_foil(path :: String; header = true, name = "") 
     if header
         coords, name = readdlm(path, header = header)
+        return Foil(coords, name[1])
     else
         coords = readdlm(path)
+        return Foil(coords, name)
     end
-
-    Foil(coords, name[1])
 end
 
 ## Foil processing

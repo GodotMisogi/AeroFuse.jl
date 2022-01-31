@@ -64,7 +64,7 @@ alpha   = 4.0 # degrees
 uniform = Uniform2D(V, alpha)
 
 # You can analyze this airfoil for the given freestream flow as shown.
-system  = @time solve_case(
+system  = solve_case(
                      airfoil, uniform;
                      num_panels = 80
                     );
@@ -73,10 +73,10 @@ system  = @time solve_case(
 panels = system.surface_panels
 
 # You can compute the lift coefficient from the system.
-@time cl = lift_coefficient(system)
+cl = lift_coefficient(system)
 
 # You can also compute the sectional lift, moment and pressure coefficients.
-@time cls, cms, cps = surface_coefficients(system)
+cls, cms, cps = surface_coefficients(system)
 
 # Note the difference between the lift coefficient computed and the sum of the sectional lift coefficients; this is due to numerical errors in the solution procedure and modeling.
 cl, sum(cls)
