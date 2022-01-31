@@ -21,7 +21,7 @@ md"## Surface Optimization"
 
 # ╔═╡ b618f06e-4093-11eb-17af-f918c12aa8da
 function optimize_CST(αs, α, n_upper :: Integer, le = 0.2)
-    airfoil = (Foil ∘ kulfan_CST)(αs[1:n_upper], αs[n_upper+1:end], (0., 0.), le, 80)
+    airfoil = kulfan_CST(αs[1:n_upper], αs[n_upper+1:end], (0., 0.), le, 80)
     uniform = Uniform2D(1.0, α)
     cl = solve_case(airfoil, uniform)[1]
 end
@@ -116,7 +116,7 @@ end
 
 # # Camber optimization
 # function optimize_camber_CST(αs, α, num_cam)
-#     airfoil = (Foil ∘ camber_CST)(αs[1:num_cam], αs[num_cam+1:end], (0., 0.), 0., 80)
+#     airfoil = camber_CST(αs[1:num_cam], αs[num_cam+1:end], (0., 0.), 0., 80)
 #     uniform = Uniform2D(1.0, α)
 #     cl = solve_case(airfoil, uniform, 80)
 # end

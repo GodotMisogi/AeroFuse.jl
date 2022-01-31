@@ -3,17 +3,21 @@ using Test
 
 @testset "NACA-4 Doublet-Source Panel Method" begin
     # Define airfoil
-    airfoil = (Foil ∘ naca4)((0,0,1,2))
+    airfoil = (naca4)((0,0,1,2))
 
     # Define uniform flow
     uniform = Uniform2D(1., 0.)
 
     # Evaluate case
-    cl_1, cls_1, cms_1, cps_1, panels = solve_case(airfoil, uniform; num_panels = 80)
+    sys_1 = solve_case(airfoil, uniform; num_panels = 80)
+    cl_1  = lift_coefficient(sys_1)
+    cls_1 = surface_coefficients(sys_1)[1]
 
     # α = 5ᵒ
     uniform = Uniform2D(1., 5.)
-    cl_2, cls_2, cms_2, cps_2, panels = solve_case(airfoil, uniform; num_panels = 80)
+    sys_2 = solve_case(airfoil, uniform; num_panels = 80)
+    cl_2  = lift_coefficient(sys_2)
+    cls_2 = surface_coefficients(sys_2)[1]
 
     @test cl_1       ≈ 0.0       atol = 1e-6
     @test cl_2       ≈ 0.5996184 atol = 1e-6
@@ -22,18 +26,18 @@ end
 
 @testset "Airfoil Processing and Doublet-Source Panel Method" begin
     # Import and read airfoil coordinates
-    coo_foil  = naca4(2,4,1,2)
+    coo_foil = naca4((2,4,1,2))
 
     # Cosine spacing
     cos_foil = cosine_spacing(coo_foil, 61)
 
     # Split airfoil
-    up, low  = split_foil(cos_foil)
+    up, low  = split_surface(cos_foil)
 
     # Convert coordinates to Kulfan CST variables
     num_dv   = 4
-    alpha_u = coordinates_to_CST(up, num_dv)
-    alpha_l = coordinates_to_CST(low, num_dv)
+    alpha_u  = coordinates_to_CST(up, num_dv)
+    alpha_l  = coordinates_to_CST(low, num_dv)
 
     # Generate same airfoil using Kulfan CST parametrisation
     cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.))
@@ -41,17 +45,23 @@ end
     # Test coefficients
     uniform  = Uniform2D(1., 5.)
 
-    cl_coo, cls_coo, cms_coo = solve_case(Foil(coo_foil), uniform; num_panels = 80)[1:3]
+    sys_coo            = solve_case(coo_foil, uniform; num_panels = 80)
+    cl_coo             = lift_coefficient(sys_coo)
+    cls_coo, cms_coo   = surface_coefficients(sys_coo)[1:2]
     @test cl_coo       ≈  0.83220516 atol = 1e-6
     @test sum(cls_coo) ≈  0.83291636 atol = 1e-6
     @test sum(cms_coo) ≈ -0.25899389 atol = 1e-6
 
-    cl_cos, cls_cos, cms_cos = solve_case(Foil(cos_foil), uniform; num_panels = 80)[1:3]
+    sys_cos            = solve_case(cos_foil, uniform; num_panels = 80)
+    cl_cos             = lift_coefficient(sys_cos)
+    cls_cos, cms_cos   = surface_coefficients(sys_cos)[1:2]
     @test cl_cos       ≈  0.83178821 atol = 1e-6
     @test sum(cls_cos) ≈  0.83269773 atol = 1e-6
     @test sum(cms_cos) ≈ -0.25889408 atol = 1e-6
 
-    cl_cst, cls_cst, cms_cst = solve_case(Foil(cst_foil), uniform; num_panels = 80)[1:3]
+    sys_cst            = solve_case(cst_foil, uniform; num_panels = 80)
+    cl_cst             = lift_coefficient(sys_cst)
+    cls_cst, cms_cst   = surface_coefficients(sys_cst)[1:2]
     @test cl_cst       ≈  0.83381613 atol = 1e-6
     @test sum(cls_cst) ≈  0.83408259 atol = 1e-6
     @test sum(cms_cst) ≈ -0.25986701 atol = 1e-6
@@ -83,7 +93,7 @@ end
 
 @testset "Vortex Lattice Method - NACA 0012 Rectangular Wing" begin
     # Define wing
-    wing = Wing(foils     = Foil.(naca4((0,0,1,2)) for i ∈ 1:2),
+    wing = Wing(foils     = [ naca4((0,0,1,2)) for i ∈ 1:2 ],
                 chords    = [0.18, 0.16],
                 twists    = [0., 0.],
                 spans     = [0.5,],
@@ -129,7 +139,7 @@ end
 
 @testset "Vortex Lattice Method - Vanilla Aircraft" begin
     ## Wing
-    wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+    wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
                 chords    = [1.0, 0.6],
                 twists    = [0.0, 0.0],
                 spans     = [5.0],
@@ -137,7 +147,7 @@ end
                 LE_sweeps = [0.]);
 
     # Horizontal tail
-    htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+    htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.25],
@@ -148,7 +158,7 @@ end
                  axis      = [0., 1., 0.])
 
     # Vertical tail
-    vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+    vtail = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
                      chords    = [0.7, 0.42],
                      twists    = [0.0, 0.0],
                      spans     = [1.0],

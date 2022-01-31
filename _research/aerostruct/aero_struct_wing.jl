@@ -300,9 +300,9 @@ wing_ys     = @view combinedimsview(hs_pts.wing[1,:])[2,:]
 new_hs_pts  = horseshoe_point.(system.vortices)
 new_wing_ys = @view combinedimsview(new_hs_pts.wing[1,:])[2,:]
 
-wing_ll     = span_loads(chord_panels(wing_mesh), CFs.wing, S)
+wing_ll     = spanwise_loading(chord_panels(wing_mesh), CFs.wing, S)
 
-new_wing_ll = span_loads(make_panels(new_chord_mesh), new_CFs.wing, S)
+new_wing_ll = spanwise_loading(make_panels(new_chord_mesh), new_CFs.wing, S)
 
 ## Mesh connectivities
 triangle_connectivities(inds) = @views [ inds[1:end-1,1:end-1][:] inds[1:end-1,2:end][:]   inds[2:end,2:end][:]   ;

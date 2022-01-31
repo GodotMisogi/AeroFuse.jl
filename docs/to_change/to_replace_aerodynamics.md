@@ -46,7 +46,7 @@ cl, cls, cms, cps, panels =
 
 ```@example aeromdao
 digits  = (0,0,1,2);
-airfoil = Foil(naca4(digits; sharp_trailing_edge = true))  #hide
+airfoil = naca4((digits; sharp_trailing_edge = true))  #hide
 V, α = 1.0, 5.0             #hide
 uniform = Uniform2D(V, α)   #hide
 cl, cls, cms, cps, panels = solve_case(airfoil, 
@@ -57,7 +57,7 @@ cl, cls, cms, cps, panels = solve_case(airfoil,
                                        wake_panels = 100,
                                        num_panels = 80)
 
-upper, lower = split_foil(coordinates(airfoil)); #hide
+upper, lower = split_surface(airfoil); #hide
 x_upper, y_upper = upper[:,1], upper[:,2] #hide
 x_lower, y_lower = lower[:,1], lower[:,2] #hide
 
@@ -68,7 +68,7 @@ println("Σᵢ Cmᵢ: $(sum(cms))")
 
 ```@example aeromdao
 digits  = (0,0,1,2); #hide
-airfoil = Foil(naca4(digits; sharp_trailing_edge = true))  #hide
+airfoil = naca4((digits; sharp_trailing_edge = true))  #hide
 V, α = 1.0, 5.0             #hide
 uniform = Uniform2D(V, α)   #hide
 cl, cls, cms, cps, panels = solve_case(airfoil, #hide
@@ -79,7 +79,7 @@ cl, cls, cms, cps, panels = solve_case(airfoil, #hide
                                        wake_panels = 100, #hide
                                        num_panels = 80) #hide
 
-upper, lower = split_foil(coordinates(airfoil)); #hide
+upper, lower = split_surface(airfoil); #hide
 x_upper, y_upper = upper[:,1], upper[:,2] #hide
 x_lower, y_lower = lower[:,1], lower[:,2] #hide
 

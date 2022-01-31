@@ -143,15 +143,15 @@ function mesh_cambers(wing :: Wing, span_num, chord_num; spacings = symmetric_sp
     [ left_panels right_panels ]
 end
 
-function paneller(wing :: AbstractWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
+function make_panels(wing :: AbstractWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
     horseshoe_panels = mesh_horseshoes(wing, span_num, chord_num; spacings = spacings)
     camber_panels    = mesh_cambers(wing, span_num, chord_num; spacings = spacings)
     horseshoe_panels, panel_normal.(camber_panels)
 end
 
-paneller(wing :: AbstractWing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = paneller(wing, [span_num], chord_num; spacings = spacings)
+make_panels(wing :: AbstractWing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(wing, [span_num], chord_num; spacings = spacings)
 
-panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = symmetric_spacing(comp)) = paneller(comp, span_panels, chord_panels, spacings = spacing)
+panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = symmetric_spacing(comp)) = make_panels(comp, span_panels, chord_panels, spacings = spacing)
 
 ## Meshing type for convenience
 #==========================================================================================#

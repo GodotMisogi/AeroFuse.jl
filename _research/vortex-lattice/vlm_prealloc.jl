@@ -43,11 +43,11 @@ function matrix_assembly!(AIC, boco, panels, woke_panel :: Panel2D, u)
 end
 
 """
-    solve_strengths_prealloc(panels, u, bound = 1e3)
+    solve_linear_prealloc(panels, u, bound = 1e3)
 
 Solve the system of equations ``[AIC][\\phi] = [\\hat{U} \\cdot \\vec{n}]`` given the array of Panel2Ds, a freestream velocity vector ``u``, and an optional bound for the length of the wake.
 """
-function solve_strengths_prealloc(panels, u, bound = 1e3)
+function solve_linear_prealloc(panels, u, bound = 1e3)
     n = length(panels) + 1
     AIC = zeros(n,n)
     boco = zeros(n)
@@ -104,6 +104,6 @@ end
 
 # Pre-allocated versions
 # @timeit "Solve System (Pre-allocated)"
-# φs = solve_strengths_prealloc(panels, u)
+# φs = solve_linear_prealloc(panels, u)
 # @timeit "Lift Coefficient (Pre-allocated)"
 # cl = lift_coefficient_prealloc(panels, φs, u)

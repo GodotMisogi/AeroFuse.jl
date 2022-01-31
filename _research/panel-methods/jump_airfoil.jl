@@ -14,7 +14,7 @@ cl0 = 0.5      # Target lift coefficient
 function optimize_lower(α, α_l...)
      α_u = [0.2, 0.3, 0.2, 0.15, 0.2]
      dzs = (0., 0.)
-     airfoil = (Foil ∘ kulfan_CST)(α_u, [ α_l... ], dzs, 0., 80)
+     airfoil = kulfan_CST(α_u, [ α_l... ], dzs, 0., 80)
      uniform = Uniform2D(1.0, α)
      cl = solve_case(airfoil, uniform, num_panels = 60)[1]
 end
@@ -63,7 +63,7 @@ dct = (0., 0.)
 
 # Camber optimization
 function optimize_camber(α, α_c...)
-    airfoil = (Foil ∘ camber_CST)([ α_c... ], α_t, dct, 0., 80)
+    airfoil = camber_CST([ α_c... ], α_t, dct, 0., 80)
     uniform = Uniform2D(1.0, α)
     cl = solve_case(airfoil, uniform, 60)[1]
 end

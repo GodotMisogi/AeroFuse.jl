@@ -21,7 +21,7 @@ end
 
 Print a pretty table of the nearfield and farfield coefficients with an optional name.
 """
-function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: AbstractVector{T}, name = "") where T <: Real
+function print_coefficients(nf_coeffs, ff_coeffs, name = "")
     coeffs = [ ifelse(length(nf_coeffs) == 8, ["CD", "CDv"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn" ] ]
     data = [ coeffs nf_coeffs [ ff_coeffs; fill("—", 3) ] ]
     head = [ name, "Nearfield", "Farfield" ]
@@ -45,14 +45,14 @@ function print_derivatives(comp, name = ""; axes = "")
 end
 
 """
-    print_coefficients(system :: VLMSystem, name = :aircraft;
+    print_coefficients(system :: VortexLatticeSystem, name = :aircraft;
                        components = false)
 
-Print a pretty table of the total nearfield and farfield coefficients of a `VLMSystem` with an optional name.
+Print a pretty table of the total nearfield and farfield coefficients of a `VortexLatticeSystem` with an optional name.
 
-A named Boolean argument `components` is provided to alsoenable the printing of any possible components.
+A named Boolean argument `components` is provided to also enable the printing of any possible components.
 """
-function print_coefficients(system :: VLMSystem, name = :aircraft; components = false)
+function print_coefficients(system :: VortexLatticeSystem, name = :aircraft; components = false)
     if components
         nf_c = nearfield_coefficients(system)
         ff_c = farfield_coefficients(system) 

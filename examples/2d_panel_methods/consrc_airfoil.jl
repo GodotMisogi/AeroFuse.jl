@@ -5,12 +5,12 @@ using Seaborn
 using AeroMDAO
 
 ## Airfoil
-airfoil = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = true))
+airfoil = naca4(((0,0,1,2), 81; sharp_trailing_edge = true))
 V, α    = 1., 0.
 ρ       = 1.225
 uniform = Uniform2D(V, α)
 num_pans = 80
-panels  = paneller(airfoil, num_pans);
+panels  = make_panels(airfoil, num_pans);
 
 ## Constant-strength source panel
 A = @time constant_source_matrix(panels)

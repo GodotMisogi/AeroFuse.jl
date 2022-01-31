@@ -6,7 +6,7 @@ using ForwardDiff
 using StaticArrays
 
 ## Wing
-TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip) = HalfWing(fill((Foil ∘ naca4)(0,0,1,2), 2), [c_root, λ * c_root], [τ_root, τ_tip], [b], [δ], [Λ])
+TrapezoidalWing(b, δ, Λ, λ, c_root, τ_root, τ_tip) = HalfWing(fill((naca4)(0,0,1,2), 2), [c_root, λ * c_root], [τ_root, τ_tip], [b], [δ], [Λ])
 
 xs = [4.0, 0.0, 15.0, 0.4, 2.0, 0.0, -2.0]
 wing_right  = TrapezoidalWing(xs...)

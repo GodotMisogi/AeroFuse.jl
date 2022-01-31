@@ -2,7 +2,7 @@
 using AeroMDAO
 
 ##
-airfoil = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = false))
+airfoil = naca4(((0,0,1,2), 81; sharp_trailing_edge = false))
 # airfoil = Foil(pts)q
 V, α    = 6., 0.
 ρ       = 1.225
@@ -10,7 +10,7 @@ uniform = Uniform2D(V, α)
 num_pans = 12
 num_wake = 28
 
-panels  = paneller(airfoil, num_pans);
+panels  = make_panels(airfoil, num_pans);
 wakes   = wake_panels(panels, 1.0, 1., num_wake);
 
 ##

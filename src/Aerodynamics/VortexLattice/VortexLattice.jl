@@ -6,6 +6,7 @@ using Rotations
 using ComponentArrays
 using SplitApplyCombine
 using TimerOutputs
+using LabelledArrays
 
 ## Package imports
 #==========================================================================================#
@@ -22,7 +23,7 @@ import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coeff
 # Some tools
 import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
 
-import ..AeroMDAO: velocity, solve_linear
+import ..AeroMDAO: velocity, solve_system, solve_linear, surface_velocities, surface_coefficients
 
 ## Horseshoe setup
 #==========================================================================================#
@@ -74,7 +75,7 @@ include("system.jl")
 function solve_system(components, fs :: Freestream, refs :: References, finite_core = false)
     Γs, AIC, boco = solve_linear(components, body_frame_velocity(fs), fs.omega, finite_core)
 
-    VLMSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
+    VortexLatticeSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
 end
 
 ## Post-processing

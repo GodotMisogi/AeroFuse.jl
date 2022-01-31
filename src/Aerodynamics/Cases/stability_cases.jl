@@ -30,7 +30,6 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; a
 
     # Closure to generate results with input vector
     function freestream_derivatives(x)
-        # @set ref.speed = x[1]
         ref_c  = setproperties(ref, speed = x[1])
         fs_c   = setproperties(fs, alpha = rad2deg(x[2]), beta = rad2deg(x[3]), omega = x[4:end] ./ scale)
         system = solve_case(aircraft, fs_c, ref_c,
@@ -40,7 +39,7 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; a
         FFs = farfield_coefficients(system)
         
         # Create array of nearfield and farfield coefficients for each component as a row vector.
-        comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, valkeys(system.vortices))
+        comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
         
         [ comp_coeffs sum(comp_coeffs, dims = 2) ] # Append sum of all forces for aircraft
     end
@@ -71,13 +70,13 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; a
     comps
 end
 
-## Linear stability analysis
+## Linearized stability analysis
 #==========================================================================================#
 
 function longitudinal_stability_derivatives(dvs, U, m, I, Q, S, c)
-    QS = Q * S
-    c1 = QS / (m * U) 
-    c2 = QS / (I[2] * U)
+    QS  = Q * S
+    c1  = QS / (m * U) 
+    c2  = QS / (I[2] * U)
 
     X_u = c1 * dvs.CX_speed
     Z_u = c1 * dvs.CZ_speed
@@ -101,20 +100,20 @@ longitudinal_stability_matrix(X_u, Z_u, M_u, X_w, Z_w, M_w, X_q, Z_q, M_q, U₀,
        0   0         1          0 ]
 
 function lateral_stability_derivatives(dvs, U, m, I, Q, S, b)
-    QS = Q * S
-    c1 = QS / (m * U) 
-    c2 = QS / (I[1] * U)
-    c3 = QS / (I[3] * U)
+    QS  = Q * S
+    c1  = QS / (m * U) 
+    c2  = QS / (I[1] * U)
+    c3  = QS / (I[3] * U)
 
     Y_v = c1 * dvs.CY_beta
-    L_v = c2 / 2 * dvs.Cl_beta * b
-    N_v = c3 / 2 * dvs.Cn_beta * b
+    L_v = c2 * dvs.Cl_beta * b
+    N_v = c3 * dvs.Cn_beta * b
 
-    Y_p = c1 * dvs.CY_pbar * b
+    Y_p = c1 / 2 * dvs.CY_pbar * b
     L_p = c2 / 2 * dvs.Cl_pbar * b^2
-    N_p = c3 * dvs.Cn_pbar * b^2
+    N_p = c3 / 2 * dvs.Cn_pbar * b^2
 
-    Y_r = c1 * dvs.CY_rbar * b
+    Y_r = c1 / 2 * dvs.CY_rbar * b
     L_r = c2 / 2 * dvs.Cl_rbar * b^2
     N_r = c3 / 2 * dvs.Cn_rbar * b^2
 

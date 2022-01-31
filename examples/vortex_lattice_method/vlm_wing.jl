@@ -2,7 +2,7 @@
 using AeroMDAO
 
 ## Wing section setup
-wing_right = HalfWing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
+wing_right = HalfWing(foils     = fill(naca4((0,0,1,2)), 3),
                       chords    = [1.0, 0.6, 0.2],
                       twists    = [0.0, 0.0, 0.0],
                       spans     = [5.0, 0.5],
@@ -119,16 +119,16 @@ scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
 [ plot!(stream, color = :green, label = :none) for stream in eachcol(Tuple.(streams)) ]
 plot!()
 
-## Spanwise forces
-LL_loads    = span_loads(horseshoe_panels, CFs.wing, projected_area(wing))
-CL_loadings = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
+## Compute spanwise loads
+span_loads = spanwise_loading(horseshoe_panels, CFs.wing, projected_area(wing))
+CL_loads   = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
 
-## Lifting line loads
-plot_CD = plot(LL_loads[:,1], LL_loads[:,2], label = :none, ylabel = "CDi")
-plot_CY = plot(LL_loads[:,1], LL_loads[:,3], label = :none, ylabel = "CY")
+## Plot spanwise loadings
+plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = "CDi")
+plot_CY = plot(span_loads[:,1], span_loads[:,3], label = :none, ylabel = "CY")
 plot_CL = begin
-            plot(LL_loads[:,1], LL_loads[:,4], label = :none, xlabel = "y", ylabel = "CL")
-            plot!(LL_loads[:,1], CL_loadings, label = "Normalized", xlabel = "y")
+            plot(span_loads[:,1], span_loads[:,4], label = :none, xlabel = "y", ylabel = "CL")
+            plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = "y")
           end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 

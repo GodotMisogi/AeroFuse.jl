@@ -6,7 +6,7 @@ using Plots
 ## Lifting surfaces
 
 # Wing
-wing_foils = Foil.(fill(naca4((0,0,1,2)), 2))
+wing_foils = fill(naca4((0,0,1,2)), 2)
 wing       = Wing(foils     = wing_foils,
                   chords    = [1.0, 0.6],
                   twists    = [0.0, 0.0],
@@ -15,7 +15,7 @@ wing       = Wing(foils     = wing_foils,
                   LE_sweeps = [2.29]);
 
 # Horizontal tail
-htail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
+htail_foils = fill(naca4((0,0,1,2)), 2)
 htail       = Wing(foils     = htail_foils,
                    chords    = [0.7, 0.42],
                    twists    = [0.0, 0.0],
@@ -28,7 +28,7 @@ htail       = Wing(foils     = htail_foils,
 
 
 # Vertical tail
-vtail_foils = Foil.(fill(naca4((0,0,1,2)), 2))
+vtail_foils = fill(naca4((0,0,1,2)), 2)
 vtail = HalfWing(foils     = vtail_foils,
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],

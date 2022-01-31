@@ -4,8 +4,8 @@ include("DoubletSource.jl")
 
 using .DoubletSource
 
-function cavity_split_foil(foil :: Foil, cavity_start, cavity_end)
-    upper, lower = split_foil(foil.coords)
+function cavity_split_surface(foil :: Foil, cavity_start, cavity_end)
+    upper, lower = split_surface(foil.coords)
 
     xs = [ first(coords) for coords in upper ]
     c = (abs ∘ map)(-, extrema(xs))
@@ -24,7 +24,7 @@ end
 
 function cavity_length_foil(foil :: Foil, cavity_start, cavity_end, N_panels = 40, N_cavpanels = 10)
 
-    leading_cav_upper, wetted_cav_upper, cav_trailing_upper, leading_cav_lower, wetted_cav_lower, cav_trailing_lower = cavity_split_foil(foil, cavity_start, cavity_end)
+    leading_cav_upper, wetted_cav_upper, cav_trailing_upper, leading_cav_lower, wetted_cav_lower, cav_trailing_lower = cavity_split_surface(foil, cavity_start, cavity_end)
 
     wet_foil = cosine_spacing(wetted_cav_lower, N_cavpanels)
 
@@ -113,7 +113,7 @@ function cavity_boundary_vector(wetted_panels :: Vector{Panel2D}, wetted_cavpane
 end
 
 
-function solve_strengths(panels :: Vector{Panel2D}, cavity_panels :: Vector{Panel2D}, freestream :: Uniform2D)
+function solve_linear(panels :: Vector{Panel2D}, cavity_panels :: Vector{Panel2D}, freestream :: Uniform2D)
     wetted_panels, wetted_cavpanels = cavity_split_panels(panels)
 
     # Matrix solution

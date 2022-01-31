@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "<unknown>/docs/src/theory.jl"
+EditURL = "<unknown>/docs/lit/theory.jl"
 ```
 
 # Theory
@@ -22,7 +22,8 @@ The aerodynamic analyses in AeroMDAO mainly utilize potential flow theory and so
 \nabla^2 \phi = 0, \quad \mathbf V \equiv \nabla \phi \cdot \hat{\mathbf n} = 0, \quad \lim_{\mathbf r \to \infty} \phi(\mathbf r) \to 0
 ```
 
-Implementations for viscous-inviscid analyses are in progress.
+!!! note
+    Implementations of viscous-inviscid coupled analyses for drag prediction (á là XFOIL) are in progress.
 
 ### Doublet-Source Panel Method
 
@@ -34,7 +35,7 @@ Source and doublet singularities are placed on the surface, and boundary conditi
 
 ```
 
-As the system is linear, the velocities are added together to obtain the total induced velocity at a point $\mathbf r$.
+The velocities are added to obtain the total induced velocity at a point $\mathbf r$.
 
 ```math
 
@@ -52,10 +53,26 @@ Vortex filaments are placed on the surface, and boundary conditions are imposed 
 
 The vortices can be set up in various configurations consisting of bound or semi-infinite filaments, commonly in the form of _horseshoes_ or _vortex rings_.
 
-> 1. Horseshoe elements
->
-> 2. Vortex rings
->
+1. _Horseshoe elements:_
+   These are defined by a finite _bound leg_ and two semi-infinite _trailing legs_. AeroMDAO encodes this using the following `Horseshoe` type.
+   ```julia
+   struct Horseshoe{T <: Real} <: AbstractVortexArray
+       bound_leg         :: Line{T}
+       collocation_point :: SVector{3,T}
+       normal            :: SVector{3,T}
+       chord             :: T
+   end
+   ```
+2. _Vortex rings:_
+   These are defined by four _bound legs_. AeroMDAO encodes this using the following `VortexRing` type.
+   ```julia
+   struct VortexRing{T <: Real} <: AbstractVortexArray
+       left_leg  :: Line{T}
+       bound_leg :: Line{T}
+       back_leg  :: Line{T}
+       right_leg :: Line{T}
+   end
+   ```
 
 A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\boldsymbol\Omega$ (in the body's frame) is imposed for the external flow. The induced velocity at a point is given by:
 
@@ -63,7 +80,7 @@ A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\bol
 \mathbf V_{\infty}(\mathbf r) = - (\mathbf U + \boldsymbol\Omega \times \mathbf r)
 ```
 
-As the system is linear, the velocities are added together to obtain the total induced velocity at a point $\mathbf r$.
+The velocities are added to obtain the total induced velocity at a point $\mathbf r$.
 
 ```math
 \mathbf V(\mathbf r) = \sum_i \frac{\Gamma_i}{4\pi} \int_0^{\ell_i} \frac{d\boldsymbol\ell_i' \times (\mathbf r - \mathbf r_i')}{|\mathbf r - \mathbf r_i'|^3} + \mathbf V_\infty(\mathbf r)
@@ -117,7 +134,7 @@ and the structural load vector $\mathbf f$ is obtained from conservative and con
 
 ### Longitudinal Motion
 
-A standard three degrees-of-freedom rigid body model is used for performing flight dynamics analyses in the 2-dimensional longitudinal plane formulated as an initial-value problem. The coupled differential equations governing in a canonical state-space representation, with the time-evolution of the state vector $\mathbf x$ driven by the forcing function $\mathbf f$ are shown below subject to initial conditions $\mathbf x_0$.
+A standard three degrees-of-freedom rigid body model is used for performing flight dynamics analyses in the 2-dimensional longitudinal plane formulated as an initial-value problem. The coupled differential equations are shown in a canonical state-space representation, with the time-evolution of the state vector $\mathbf x$ driven by the forcing function $\mathbf f$ are shown below subject to initial conditions $\mathbf x_0$.
 
 ```math
 \begin{align*}

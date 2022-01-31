@@ -15,7 +15,7 @@ cl0 = 0.5      # Target lift coefficient
 function coords(α_l...)
     α_u = [0.1, 0.1, 0.1, 0.1, 0.1]
     dzs = (0., 0.)
-    airfoil = (Foil ∘ kulfan_CST)(α_u, [ α_l... ], dzs, 0., 80).coords
+    airfoil = kulfan_CST(α_u, [ α_l... ], dzs, 0., 80).coords
 end
 
 function solve(α, α_l...)

@@ -60,7 +60,7 @@ rate_coefficient(fs :: Freestream, refs :: References) = rate_coefficient(fs.ome
 ## System
 #==========================================================================================#
 
-struct VLMSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
+struct VortexLatticeSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
     vortices          :: M
     circulations      :: N 
     influence_matrix  :: R
@@ -69,69 +69,77 @@ struct VLMSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
     reference         :: Q
 end
 
+# Made out of annoyance and boredom
+function Base.show(io :: IO, sys :: VortexLatticeSystem)     
+    println(io, "VortexLatticeSystem -")
+    println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements\n")
+    show(io, sys.freestream)
+    show(io, sys.reference)
+end
+
 # Miscellaneous
-rate_coefficient(system :: VLMSystem) = rate_coefficient(system.freestream, system.reference)
+rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freestream, system.reference)
 
 # Velocities
 """
-    surface_velocities(system :: VLMSystem; 
+    surface_velocities(system :: VortexLatticeSystem; 
                        axes   :: AbstractAxisSystem = Geometry())
 
-Compute the velocities on the surface given the `VLMSystem` after performing an analysis, and the reference axis system.
+Compute the velocities on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
 """
-surface_velocities(system :: VLMSystem; axes = Geometry()) = surface_velocities(system, axes)
+surface_velocities(system :: VortexLatticeSystem; axes = Geometry()) = surface_velocities(system, axes)
 
-surface_velocities(system :: VLMSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega)
+surface_velocities(system :: VortexLatticeSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega)
 
-surface_velocities(system :: VLMSystem, ::Body) = geometry_to_body_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+surface_velocities(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
 
-surface_velocities(system :: VLMSystem, ::Stability) = geometry_to_stability_axes.(surface_velocities(system, Geometry()), system.freestream.alpha)
+surface_velocities(system :: VortexLatticeSystem, ::Stability) = geometry_to_stability_axes.(surface_velocities(system, Geometry()), system.freestream.alpha)
 
-surface_velocities(system :: VLMSystem, ::Wind) = geometry_to_wind_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+surface_velocities(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
 
 ## Forces
 """
-    surface_forces(system :: VLMSystem; 
+    surface_forces(system :: VortexLatticeSystem; 
                    axes   :: AbstractAxisSystem = Geometry())
 
-Compute the forces on the surface given the `VLMSystem` after performing an analysis, and the reference axis system.
+Compute the forces on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
 """
 surface_forces(system; axes :: AbstractAxisSystem = Geometry()) = surface_forces(system, axes)
 
-surface_forces(system :: VLMSystem, ::Geometry) = surface_forces(system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega, system.reference.density)
+surface_forces(system :: VortexLatticeSystem, ::Geometry) = surface_forces(system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega, system.reference.density)
 
-surface_forces(system :: VLMSystem, ::Body) = geometry_to_body_axes.(surface_forces(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+surface_forces(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_forces(system, Geometry()), system.freestream.alpha, system.freestream.beta)
 
-surface_forces(system :: VLMSystem, ::Stability) = geometry_to_stability_axes.(surface_forces(system, Geometry()), system.freestream.alpha)
+surface_forces(system :: VortexLatticeSystem, ::Stability) = geometry_to_stability_axes.(surface_forces(system, Geometry()), system.freestream.alpha)
 
-surface_forces(system :: VLMSystem, ::Wind) = geometry_to_wind_axes.(surface_forces(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+surface_forces(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(surface_forces(system, Geometry()), system.freestream.alpha, system.freestream.beta)
 
 ## Moments
 """
-    surface_moments(system :: VLMSystem; 
+    surface_moments(system :: VortexLatticeSystem; 
                     axes   :: AbstractAxisSystem = Geometry())
 
-Compute the moments on the surface given the `VLMSystem` after performing an analysis, and the reference axis system.
+Compute the moments on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
 """
 surface_moments(system; axes :: AbstractAxisSystem = Geometry()) = surface_moments(system, axes)
 
-surface_moments(system :: VLMSystem, ::Geometry) = surface_moments(system.vortices, surface_forces(system, Geometry()), system.reference.location)
+surface_moments(system :: VortexLatticeSystem, ::Geometry) = surface_moments(system.vortices, surface_forces(system, Geometry()), system.reference.location)
 
-surface_moments(system :: VLMSystem, ::Body) = surface_moments(system.vortices, surface_forces(system, Body()), system.reference.location)
+surface_moments(system :: VortexLatticeSystem, ::Body) = surface_moments(system.vortices, surface_forces(system, Body()), system.reference.location)
 
-surface_moments(system :: VLMSystem, ::Stability) = surface_moments(system.vortices, flip_xz.(surface_forces(system, Stability())), system.reference.location)
+surface_moments(system :: VortexLatticeSystem, ::Stability) = surface_moments(system.vortices, flip_xz.(surface_forces(system, Stability())), system.reference.location)
 
-surface_moments(system :: VLMSystem, ::Wind) =  surface_moments(system.vortices, flip_xz.(surface_forces(system, Wind())), system.reference.location)
+surface_moments(system :: VortexLatticeSystem, ::Wind) =  surface_moments(system.vortices, flip_xz.(surface_forces(system, Wind())), system.reference.location)
 
 
 ## Dynamics
 """
-    surface_dynamics(system :: VLMSystem; 
+    surface_dynamics(system :: VortexLatticeSystem; 
                      axes   :: AbstractAxisSystem = Geometry())
 
-Compute the forces and moments on the surface given the `VLMSystem` after performing an analysis, and the reference axis system.
+Compute the forces and moments on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
 """
-function surface_dynamics(system :: VLMSystem)
+function surface_dynamics(system :: VortexLatticeSystem)
     # Compute nearfield forces and moments
     surf_forces  = surface_forces(system)
     surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
@@ -139,9 +147,9 @@ function surface_dynamics(system :: VLMSystem)
     surf_forces, surf_moments
 end
 
-surface_dynamics(system :: VLMSystem, ::Geometry) = surface_dynamics(system)
+surface_dynamics(system :: VortexLatticeSystem, ::Geometry) = surface_dynamics(system)
 
-function surface_dynamics(system :: VLMSystem, ::Body)
+function surface_dynamics(system :: VortexLatticeSystem, ::Body)
     # Compute surface forces and moments in geometry axes
     surface_forces, surface_moments = surface_dynamics(system)
 
@@ -152,7 +160,7 @@ function surface_dynamics(system :: VLMSystem, ::Body)
     stability_forces, stability_moments
 end
 
-function surface_dynamics(system :: VLMSystem, ::Stability)
+function surface_dynamics(system :: VortexLatticeSystem, ::Stability)
     # Get angle of attack
     α = system.freestream.alpha
 
@@ -166,7 +174,7 @@ function surface_dynamics(system :: VLMSystem, ::Stability)
     stability_forces, stability_moments
 end
 
-function surface_dynamics(system :: VLMSystem, ::Wind)
+function surface_dynamics(system :: VortexLatticeSystem, ::Wind)
     # Get angles of attack and sideslip
     α = system.freestream.alpha
     β = system.freestream.beta
@@ -183,7 +191,7 @@ end
 
 surface_dynamics(system; axes :: AbstractAxisSystem = Wind()) = surface_dynamics(system, axes)
 
-function surface_coefficients(system :: VLMSystem; axes :: AbstractAxisSystem = Wind()) 
+function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Wind()) 
     # Compute surface forces in whichever axes
     forces, moments = surface_dynamics(system, axes)
 
@@ -194,15 +202,15 @@ function surface_coefficients(system :: VLMSystem; axes :: AbstractAxisSystem = 
     CFs, CMs
 end
 
-function nearfield_coefficients(system :: VLMSystem) 
+function nearfield_coefficients(system :: VortexLatticeSystem) 
     CFs, CMs = surface_coefficients(system; axes = Wind())
-    ComponentVector(NamedTuple{keys(CFs)}([sum(CFs[key]); sum(CMs[key])] for key in valkeys(CFs)))
+    NamedTuple(key => [sum(CFs[key]); sum(CMs[key])] for key in keys(CFs))
 end
 
-nearfield(system :: VLMSystem) = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
+nearfield(system :: VortexLatticeSystem) = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
 
 # Compute farfield forces in Trefftz plane
-function farfield_forces(system :: VLMSystem)
+function farfield_forces(system :: VortexLatticeSystem)
     hs = system.vortices 
     Γs = system.circulations
     α  = system.freestream.alpha
@@ -210,17 +218,9 @@ function farfield_forces(system :: VLMSystem)
     V  = system.reference.speed
     ρ  = system.reference.density
     
-    ComponentVector(NamedTuple{keys(hs)}(farfield_forces(Γs[comp], hs[comp], V, α, β, ρ) for comp in valkeys(hs)))
+    NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
 end
 
-farfield_coefficients(system :: VLMSystem) = force_coefficient.(farfield_forces(system), dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area)
+farfield_coefficients(system :: VortexLatticeSystem) = map(ff -> force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area), farfield_forces(system))
 
-farfield(system :: VLMSystem)  = let ff = farfield_coefficients(system); vec(sum(reshape(ff, 3, length(ff) ÷ 3), dims = 2)) end
-
-# Made out of annoyance and boredom
-function Base.show(io :: IO, sys :: VLMSystem)     
-    println(io, "VLMSystem -")
-    println(io, "Elements: ", length(sys.vortices), " ", eltype(sys.vortices), "\n")
-    show(io, sys.freestream)
-    show(io, sys.reference)
-end
+farfield(system :: VortexLatticeSystem)  = let ffs = farfield_coefficients(system); sum(reduce(hcat, ffs), dims = 2) end

@@ -65,7 +65,7 @@ stability_to_geometry_axes(coords, α :: T) where T <: Real = geometry_to_stabil
     geometry_to_wind_axes(coords, α, β)
     geometry_to_wind_axes(line :: Line, α, β)
 
-Convert coordinates from geometry axes to wind axes for given angles of attack ``α`` and sideslip \\beta.``
+Convert coordinates from geometry axes to wind axes for given angles of attack ``α`` and sideslip ``\\beta.``
 """
 geometry_to_wind_axes(coords, α, β) = let T = promote_type(eltype(α), eltype(β)); RotZY{T}(β, α) * coords end
 # geometry_to_wind_axes(coords, α, β) = rotate_zy(β, α) * coords

@@ -31,7 +31,13 @@ function velocity end
 
 function solve_linear end
 
+function solve_system end
+
 function properties end
+
+function surface_velocities end
+
+function surface_coefficients end
 
 ## Math tools
 #==========================================================================================#
@@ -59,15 +65,15 @@ import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, Abs
 export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, collocation_point, p1, p2, p3, p4, transform, panel_normal, midpoint, panel_location, panel_tangent, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels
 
 
-## Wing geometry
+## Aircraft geometry
 #==========================================================================================#
 
 include("Geometry/AircraftGeometry/AircraftGeometry.jl")
-import .AircraftGeometry: AbstractAircraft, AbstractWing, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_spacing, camber_thickness_to_CST, coordinates_to_CST, max_thickness_to_chord_ratio_location, Fuselage, projected_area, length, cosine_spacing, HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties
+import .AircraftGeometry: AbstractAircraft, AbstractWing, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_spacing, camber_thickness_to_CST, coordinates_to_CST, max_thickness_to_chord_ratio_location, Fuselage, projected_area, length, cosine_spacing, HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_horseshoes, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties
 
-export AbstractAircraft, AbstractWing, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_spacing, camber_thickness_to_CST, coordinates_to_CST, max_thickness_to_chord_ratio_location, # 2D setups
+export AbstractAircraft, AbstractWing, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_spacing, camber_thickness_to_CST, coordinates_to_CST, max_thickness_to_chord_ratio_location, # 2D setups
 Fuselage, projected_area, length, cosine_spacing, # Fuselage
-HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, paneller, mesh_horseshoes, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties
+HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_horseshoes, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties
 
 make_horseshoes(wing :: WingMesh) = StructArray(Horseshoe.(chord_panels(wing), normal_vectors(wing)))
 
@@ -89,9 +95,9 @@ export Uniform2D, stream, vortex_stream_1, vortex_stream_2, source_stream, carte
 ## Doublet-source panel method
 
 include("Aerodynamics/DoubletSource/DoubletSource.jl")
-import .DoubletSource: solve_problem, doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, tangential_velocities, solve_strengths, eval_coefficients, lift_coefficient
+import .DoubletSource: doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, surface_velocities, lift_coefficient
 
-export doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, tangential_velocities, solve_strengths
+export doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, surface_velocities, lift_coefficient
 
 ## Linear-strength source and vorticity panel method
 
@@ -103,9 +109,9 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, kinematic_viscosity, mach_number
+import .VortexLattice: Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, kinematic_viscosity, mach_number
 
-export Horseshoe, VLMSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, kinematic_viscosity, mach_number
+export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, horseshoe_point, bound_leg_center, bound_leg_vector, r1, r2, points, Horseshoe, horseshoe_point, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, kinematic_viscosity, mach_number
 
 ## Profile drag estimation
 
@@ -129,7 +135,7 @@ export print_case, print_info, print_coefficients, print_derivatives
 
 include("Aerodynamics/Cases/cases.jl")
 
-export solve_case, span_loads, triangle_connectivities, extrapolate_point_mesh
+export solve_case, spanwise_loading, triangle_connectivities, extrapolate_point_mesh
 
 include("Aerodynamics/Cases/stability_cases.jl")
 
