@@ -46,7 +46,7 @@ cl, cls, cms, cps, panels =
 
 ```@example aeromdao
 digits  = (0,0,1,2);
-airfoil = Foil(naca4(digits; sharp_trailing_edge = true))  #hide
+airfoil = naca4((digits; sharp_trailing_edge = true))  #hide
 V, α = 1.0, 5.0             #hide
 uniform = Uniform2D(V, α)   #hide
 cl, cls, cms, cps, panels = solve_case(airfoil, 
@@ -68,7 +68,7 @@ println("Σᵢ Cmᵢ: $(sum(cms))")
 
 ```@example aeromdao
 digits  = (0,0,1,2); #hide
-airfoil = Foil(naca4(digits; sharp_trailing_edge = true))  #hide
+airfoil = naca4((digits; sharp_trailing_edge = true))  #hide
 V, α = 1.0, 5.0             #hide
 uniform = Uniform2D(V, α)   #hide
 cl, cls, cms, cps, panels = solve_case(airfoil, #hide

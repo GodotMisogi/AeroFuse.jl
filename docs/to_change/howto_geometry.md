@@ -41,7 +41,7 @@ foil    = kulfan_CST(alpha_u, alpha_l, dzs, 0.2)
 
 ```@example aeromdao
 digits  = (2,4,1,2)
-airfoil = Foil(naca4(digits))
+airfoil = naca4((digits))
 xcamthick = camber_thickness(airfoil, 60)
 coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
 upper, lower = split_surface(airfoil);

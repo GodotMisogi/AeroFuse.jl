@@ -50,25 +50,26 @@
 
 # The vortices can be set up in various configurations consisting of bound or semi-infinite filaments, commonly in the form of _horseshoes_ or _vortex rings_.
 
-# > 1. Horseshoe elements:
-# > These are defined by a finite _bound leg_ and two semi-infinite _trailing legs_. AeroMDAO encodes this using the following `Horseshoe`type.
-# > ```julia 
-# > struct Horseshoe{T <: Real} <: AbstractVortexArray
-# >     bound_leg         :: Line{T}
-# >     collocation_point :: SVector{3,T}
-# >     normal            :: SVector{3,T}
-# >     chord             :: T
-# > end
-# >
-# > 2. Vortex rings
-# > These are defined by a four _bound legs_. AeroMDAO encodes this using the following `VortexRing` type.
-# > ```julia 
-# > struct Horseshoe{T <: Real} <: AbstractVortexArray
-# >     bound_leg         :: Line{T}
-# >     collocation_point :: SVector{3,T}
-# >     normal            :: SVector{3,T}
-# >     chord             :: T
-# > end
+# 1. _Horseshoe elements:_
+#    These are defined by a finite _bound leg_ and two semi-infinite _trailing legs_. AeroMDAO encodes this using the following `Horseshoe` type.
+#    ```julia 
+#    struct Horseshoe{T <: Real} <: AbstractVortexArray
+#        bound_leg         :: Line{T}
+#        collocation_point :: SVector{3,T}
+#        normal            :: SVector{3,T}
+#        chord             :: T
+#    end
+#    ```
+# 2. _Vortex rings:_
+#    These are defined by four _bound legs_. AeroMDAO encodes this using the following `VortexRing` type.
+#    ```julia 
+#    struct VortexRing{T <: Real} <: AbstractVortexArray
+#        left_leg  :: Line{T}
+#        bound_leg :: Line{T}
+#        back_leg  :: Line{T}
+#        right_leg :: Line{T}
+#    end
+#    ```
 
 # A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\boldsymbol\Omega$ (in the body's frame) is imposed for the external flow. The induced velocity at a point is given by:
 

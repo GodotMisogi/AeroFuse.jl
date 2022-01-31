@@ -8,9 +8,9 @@ EditURL = "<unknown>/docs/lit/howto.jl"
 using AeroMDAO # hide
 ````
 
-## Airfoil Processing
+## Airfoil Geometry
 
-### Import Coordinates
+### Import Coordinates File
 Provide the path to the following function.
 
 ````@example howto
@@ -43,19 +43,39 @@ lower = lower_surface(my_foil)
 upper, lower = split_surface(my_foil)
 ````
 
-The camber-thickness distribution can be obtained as follows. It internally performs a cosine interpolation to standardize the `$x$--coordinates for both surfaces; hence the number of points for the interpolation can be specified.
+The camber-thickness distribution can be obtained as follows. It internally performs a cosine interpolation to standardize the $x$--coordinates for both surfaces; hence the number of points for the interpolation can be specified.
 
 ````@example howto
 xcamthick = camber_thickness(my_foil, 60)
 ````
 
+## Doublet-Source Aerodynamic Analyses
+The `solve_case` method runs the analysis given a `Foil` containing the airfoil coordinates, a `Uniform2D` defining the boundary conditions, and an optional named specification for the number of panels. It returns a system which can be used to obtain the aerodynamic quantities of interest and post-processing.
+
+````@example howto
+# Define freestream boundary conditions
+uniform = Uniform2D(1.0, 4.0)
+
+# Solve system
+system  = @time solve_case(
+                     my_foil, uniform;
+                     num_panels = 80
+                    );
+
+# The following functions compute the quantities of interest, such as the inviscid edge velocities, lift coefficient, and the sectional lift, moment, and pressure coefficients.
+panels     = system.surface_panels
+@time u_es = surface_velocities(system);
+@time cl   = lift_coefficient(system)
+@time cls, cms, cps = surface_coefficients(system)
+````
+
 ## Wing Geometry
 
-AeroMDAO provides a `HalfWing` constructor .
+To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
 
 ````@example howto
 airfoil    = naca4((2,4,1,2))
-wing_right = HalfWing(foils     = Foil.(airfoil for i in 1:3),
+wing_right = HalfWing(foils     = [ airfoil for i in 1:3 ],
                       chords    = [0.4, 0.2, 0.1],
                       twists    = [0., 2., 5.],
                       spans     = [1.0, 0.1],
@@ -63,14 +83,37 @@ wing_right = HalfWing(foils     = Foil.(airfoil for i in 1:3),
                       LE_sweeps = [0., 30.])
 ````
 
-!!! tip
-    You can use [Setfield.jl](https://github.com/jw3126/Setfield.jl) to conveniently copy and modify properties.
+The `Wing` constructor takes left and right `HalfWing`s to define a full wing. For example, the following generates a symmetric wing.
 
 ````@example howto
-#
+wing = Wing(wing_right, wing_right)
+````
+
+The following "getter" functions provide quantities of interest such as chord lengths, spans, twist, dihedral, and sweep angles.
+
+```@repl howto
+foils(wing)
+chords(wing)
+spans(wing)
+twists(wing)
+dihedrals(wing)
+sweeps(wing)
+```
+
+There is also a convenient function for pretty-printing information, in which the first argument takes the `Wing` type and the second takes a name (as a `String` or `Symbol`).
+
+````@example howto
+print_info(wing, "Wing")
+````
+
+!!! tip
+    You can use [Setfield.jl](https://github.com/jw3126/Setfield.jl) to conveniently copy and modify properties of an existing object.
+
+````@example howto
+# Import Setfield
 using Setfield
 
-#
+# Set only chords with other properties identical.
 wing_left = @set wing_right.chords = [0.4, 0.1, 0.05]
 ````
 
@@ -82,13 +125,14 @@ wing = Wing(wing_left, wing_right);
 print_info(wing, "My Wing")
 ````
 
-## Doublet-Source Aerodynamic Analyses
-
 ## Vortex Lattice Aerodynamic Analyses
 
 How to run a generic aerodynamic analysis on a conventional aircraft configuration.
 
 ### Geometry
+First we define the lifting surfaces. These can be a combination of `Wing` or `HalfWing` types constructed using the various methods available.
+!!! warning "Alert"
+    Support for fuselages will be added soon.
 
 ````@example howto
 # Wing
@@ -216,6 +260,12 @@ ax       = Wind() # Body(), Stability(), Geometry()
 CFs, CMs = surface_coefficients(system; axes = ax)
 ````
 
+You can access the corresponding values of the components' by the name provided in the `ComponentVector`.
+
+````@example howto
+CFs.wing
+````
+
 Special functions are provided for directly retrieving the dimensionalized forces and moments.
 
 ````@example howto
@@ -234,11 +284,24 @@ nfs = nearfield_coefficients(system)
 ffs = farfield_coefficients(system)
 ````
 
+You can similarly access the components by name.
+
+````@example howto
+@show (nfs.wing, ffs.wing)
+````
+
 To obtain the total nearfield and farfield force coefficients:
 
 ````@example howto
-nf  = nearfield(system)
-ff  = farfield(system)
+nf = nearfield(system)
+ff = farfield(system)
+````
+
+You can also print the relevant information as a pretty table, if necessary.
+
+````@example howto
+print_coefficients(nfs.wing, ffs.wing, :wing)
+print_coefficients(nf, ff, :aircraft)
 ````
 
 ## Aerodynamic Stability Analyses
@@ -255,13 +318,25 @@ ac_name = :aircraft
 ````
 
 ## Euler-Bernoulli Beam Structural Analysis
+The tubular beam's relevant properties, viz. the Young's (elastic) modulus $E$, shear modulus $G$, and torsional moment of inertia $J$ must be specified to define the stiffness matrix for its discretization with $n$ elements.
 
 ````@example howto
-# Deflection stiffness matrix
-K = bending_stiffness_matrix([1., 1.], [1., 1.], [2., 2.], :z)
+# Material properties
+E = 1. # Elastic modulus
+G = 1. # Shear modulus
+J = 2. # Torsional moment of inertia
+n = 2  # Number of sections
+
+# Stiffness matrix
+K = bending_stiffness_matrix(
+                             fill(E, 2),
+                             fill(G, 2),
+                             fill(J, 2),
+                             :z         # Direction of deflection
+                            )
 ````
 
-Fixed hinged beam subjected to force and moment at the center.
+Fixed, hinged beam subjected to force and moment at the center.
 
 ````@example howto
 # Stiffness matrix
@@ -277,7 +352,7 @@ x = A \ b
 F1 = K * [ 0.; 0.; x[1:2]; 0.; x[3] ]
 ````
 
-Propped cantilever beam with force at one end.
+Propped cantilever beam subjected to force at free end.
 
 ````@example howto
 # Stiffness matrix
