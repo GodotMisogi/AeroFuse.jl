@@ -69,6 +69,14 @@ struct VortexLatticeSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferen
     reference         :: Q
 end
 
+# Made out of annoyance and boredom
+function Base.show(io :: IO, sys :: VortexLatticeSystem)     
+    println(io, "VortexLatticeSystem -")
+    println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements\n")
+    show(io, sys.freestream)
+    show(io, sys.reference)
+end
+
 # Miscellaneous
 rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freestream, system.reference)
 
@@ -196,7 +204,7 @@ end
 
 function nearfield_coefficients(system :: VortexLatticeSystem) 
     CFs, CMs = surface_coefficients(system; axes = Wind())
-    ComponentVector(NamedTuple{keys(CFs)}([sum(CFs[key]); sum(CMs[key])] for key in valkeys(CFs)))
+    NamedTuple(key => [sum(CFs[key]); sum(CMs[key])] for key in keys(CFs))
 end
 
 nearfield(system :: VortexLatticeSystem) = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
@@ -210,17 +218,9 @@ function farfield_forces(system :: VortexLatticeSystem)
     V  = system.reference.speed
     ρ  = system.reference.density
     
-    ComponentVector(NamedTuple{keys(hs)}(farfield_forces(Γs[comp], hs[comp], V, α, β, ρ) for comp in valkeys(hs)))
+    NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
 end
 
-farfield_coefficients(system :: VortexLatticeSystem) = force_coefficient.(farfield_forces(system), dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area)
+farfield_coefficients(system :: VortexLatticeSystem) = map(ff -> force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area), farfield_forces(system))
 
-farfield(system :: VortexLatticeSystem)  = let ff = farfield_coefficients(system); vec(sum(reshape(ff, 3, length(ff) ÷ 3), dims = 2)) end
-
-# Made out of annoyance and boredom
-function Base.show(io :: IO, sys :: VortexLatticeSystem)     
-    println(io, "VortexLatticeSystem -")
-    println(io, "Elements: ", length(sys.vortices), " ", eltype(sys.vortices), "\n")
-    show(io, sys.freestream)
-    show(io, sys.reference)
-end
+farfield(system :: VortexLatticeSystem)  = let ffs = farfield_coefficients(system); sum(reduce(hcat, ffs), dims = 2) end

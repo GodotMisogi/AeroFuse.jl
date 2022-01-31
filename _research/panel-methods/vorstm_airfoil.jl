@@ -2,7 +2,7 @@
 using AeroMDAO
 
 ##
-airfoil = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = false))
+airfoil = naca4(((0,0,1,2), 81; sharp_trailing_edge = false))
 # airfoil = Foil(pts)q
 V, α    = 6., 0.
 ρ       = 1.225

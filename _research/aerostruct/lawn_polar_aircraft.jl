@@ -13,7 +13,7 @@ using SparseArrays
 ## Aerodynamic variables
 
 # Define wing
-wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
+wing = Wing(foils     = fill(naca4((2,4,1,2)), 3),
             chords    = [1.0, 1.0, 0.6],
             twists    = [0.0, 0.0, 0.0],
             spans     = [4.0, 3.0],
@@ -23,7 +23,7 @@ wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
 print_info(wing, "Lawn Polar Wing")
 
 # Horizontal tail
-htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
              spans     = [1.25],
@@ -34,7 +34,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail_u = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+vtail_u = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
                    chords    = [0.7, 0.25],
                    twists    = [0.0, 0.0],
                    spans     = [1.0],
@@ -44,7 +44,7 @@ vtail_u = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                    angle     = 90.,
                    axis      = [1., 0., 0.]);
 
-vtail_d = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+vtail_d = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
                    chords    = [0.7, 0.42],
                    twists    = [0.0, 0.0],
                    spans     = [0.4],
@@ -57,7 +57,7 @@ vtail_d = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
 vtail = Wing(vtail_d, vtail_u)
 
 # Tailerons
-atail_l = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+atail_l = Wing(foils     = fill(naca4((0,0,0,9)), 2),
                chords    = [0.4, 0.2],
                twists    = [0.0, 0.0],
                spans     = [0.5],
@@ -67,7 +67,7 @@ atail_l = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
                angle     = 0.,
                axis      = [0., 1., 0.])
 
-atail_r = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+atail_r = Wing(foils     = fill(naca4((0,0,0,9)), 2),
                chords    = [0.4, 0.2],
                twists    = [0.0, 0.0],
                spans     = [0.5],

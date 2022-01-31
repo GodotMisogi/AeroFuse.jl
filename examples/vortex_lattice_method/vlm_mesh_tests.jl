@@ -4,7 +4,7 @@ using Plots
 using DataFrames
 
 ## Wing
-wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
             chords    = [1.0, 0.6],
             twists    = [0.0, 0.0],
             spans     = [5.0],

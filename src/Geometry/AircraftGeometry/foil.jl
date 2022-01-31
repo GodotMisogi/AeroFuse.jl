@@ -4,8 +4,8 @@
 abstract type AbstractFoil end
 
 """
-Foil(x, y, name = "")
-Foil(coordinates, name = "")
+    Foil(x, y, name = "")
+    Foil(coordinates, name = "")
 
 Structure consisting of foil coordinates in 2 dimensions with an optional name. 
 
@@ -121,7 +121,7 @@ function cosine_spacing(foil :: Foil, n :: Integer = 40)
     upper_cos = @views cosine_interp(n_upper[end:-1:1,:], n)
     lower_cos = cosine_interp(lower, n)
 
-    @views Foil([ upper_cos[end:-1:2,:]; lower_cos ])
+    @views Foil([ upper_cos[end:-1:2,:]; lower_cos ], foil.name)
 end
 
 function camber_line(foil :: Foil, n :: Integer = 40)
@@ -188,7 +188,7 @@ function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l) = (0., 0.), (LE_u, LE_l) = (0
 
     # Counter-clockwise ordering
     @views Foil([ xs[end:-1:2] upper_surf[end:-1:2] ;
-                  xs           lower_surf           ])
+                  xs           lower_surf           ], "Kulfan CST")
 end
 
 """
@@ -212,7 +212,7 @@ function camber_CST(α_cam, α_thicc, dz_thicc = 0., coeff_LE = 0, n :: Integer 
     cam   = [ bernie(x, α_cam) for x ∈ xs ]
     thicc = [ bernie(x, α_thicc, dz_thicc) for x ∈ xs ]
 
-    Foil(camber_thickness_to_coordinates(xs, cam, thicc))
+    Foil(camber_thickness_to_coordinates(xs, cam, thicc), "Camber-Thickness CST")
 end
 
 function coordinates_to_CST(coords, num_dvs)
@@ -292,11 +292,11 @@ naca4_camberline(pos, cam, xc) = ifelse(
 naca4_gradient(pos, cam, xc) = atan(2 * cam / (ifelse(xc < pos, pos^2, (1 - pos)^2)) * (pos - xc))
 
 """
-    naca4(digits :: NTuple{4, <: Real}, n :: Integer; sharp_trailing_edge :: Bool)
+    naca4_coordinates(digits :: NTuple{4, <: Real}, n :: Integer, sharp_trailing_edge :: Bool)
 
-Generate the coordinates of a NACA 4-digit series profile, with a named option for a sharp or blunt trailing edge.
+Generate the coordinates of a NACA 4-digit series profile with a specified number of points, and a Boolean flag to specify a sharp or blunt trailing edge.
 """
-function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_edge = true)
+function naca4_coordinates(digits :: NTuple{4, <: Real}, n :: Integer, sharp_trailing_edge :: Bool)
     # Camber
     cam = digits[1] / 100
     # Position
@@ -329,5 +329,12 @@ function naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_e
     coords = [ [x_upper y_upper][end:-1:2,:];
                 x_lower y_lower             ]
 end
+
+"""
+    naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_edge :: Bool)
+
+Generate a `Foil` of a NACA 4-digit series profile with a specified number of points (40 by default), and a named option to specify a sharp or blunt trailing edge.
+"""
+naca4(digits :: NTuple{4, <: Real}, n = 40; sharp_trailing_edge = true) = Foil(naca4_coordinates(digits, n, sharp_trailing_edge), string("NACA ", digits...))
 
 naca4(a, b, c, d, n = 40; sharp_trailing_edge = true) = naca4((a,b,c,d), n; sharp_trailing_edge = sharp_trailing_edge)

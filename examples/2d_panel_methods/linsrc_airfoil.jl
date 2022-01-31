@@ -5,7 +5,7 @@ using Seaborn
 using AeroMDAO
 
 ## Airfoil
-airfoil = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = false))
+airfoil = naca4(((0,0,1,2), 81; sharp_trailing_edge = false))
 V, α    = 1., 0.
 ρ       = 1.225
 uniform = Uniform2D(V, α)

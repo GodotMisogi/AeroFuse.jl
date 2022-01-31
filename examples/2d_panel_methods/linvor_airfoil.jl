@@ -9,7 +9,7 @@ alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]
 alpha_l = [-0.2, -0.1, -0.1, -0.001]
 dzs     = (0., 0.)
 # airfoil = kulfan_CST(alpha_u, alpha_l, dzs, 0.0, 60);
-airfoil = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = false))
+airfoil = naca4(((0,0,1,2), 81; sharp_trailing_edge = false))
 V, α    = 1., 5.
 ρ       = 1.225
 uniform = Uniform2D(V, α)

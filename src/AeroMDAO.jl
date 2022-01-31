@@ -135,7 +135,7 @@ export print_case, print_info, print_coefficients, print_derivatives
 
 include("Aerodynamics/Cases/cases.jl")
 
-export solve_case, span_loads, triangle_connectivities, extrapolate_point_mesh
+export solve_case, spanwise_loading, triangle_connectivities, extrapolate_point_mesh
 
 include("Aerodynamics/Cases/stability_cases.jl")
 

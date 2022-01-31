@@ -38,7 +38,7 @@ V, α, ρ  = 29., 5., 1.225
 
 # Design variables
 n    = 4
-wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
+wing = Wing(foils     = fill(naca4((2,4,1,2)), n),
             chords    = fill(0.314, n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),

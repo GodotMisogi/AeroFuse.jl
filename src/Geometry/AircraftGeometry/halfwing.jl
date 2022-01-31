@@ -24,6 +24,9 @@ end
 function HalfWing(foils, chords, twists, spans, dihedrals, sweeps, position = zeros(3), angle = 0., axis = [0.,1.,0.], affine = AffineMap(AngleAxis(deg2rad(angle), axis...), position))
     # Error handling
     check_wing(foils, chords, twists, spans, dihedrals, sweeps)
+
+    # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction.
+    
     # Convert angles to radians, adjust twists to leading edge, and generate HalfWing
     HalfWing(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), affine)
 end
@@ -44,7 +47,7 @@ HalfWing(;
         spans, 
         dihedrals, 
         LE_sweeps, 
-        foils    = fill(Foil(naca4(0,0,1,2), "NACA 0012"), length(chords)), 
+        foils    = fill(naca4(0,0,1,2), length(chords)), 
         position = zeros(3), 
         angle    = 0., 
         axis     = SVector(1., 0., 0.)
@@ -72,7 +75,7 @@ Define a `HalfWing` consisting of a single trapezoidal section.
 - `angle      :: Real         = 0.`: Angle of rotation (degrees)
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
-HalfWingSection(; span = 1., dihedral = 0., LE_sweep = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(0., 1., 0.)) = HalfWing([ Foil(root_foil, "Root"), Foil(tip_foil, "Tip") ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [LE_sweep], position, angle, axis)
+HalfWingSection(; span = 1., dihedral = 0., LE_sweep = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(0., 1., 0.)) = HalfWing([ root_foil, tip_foil ], [root_chord, taper * root_chord], [root_twist, tip_twist], [span], [dihedral], [LE_sweep], position, angle, axis)
 
 function HalfWingSection(S_ref, AR, λ, Λ_c4, δ, τ_r, τ_t)
     b    = S_ref^2 / AR

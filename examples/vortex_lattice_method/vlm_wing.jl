@@ -2,7 +2,7 @@
 using AeroMDAO
 
 ## Wing section setup
-wing_right = HalfWing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
+wing_right = HalfWing(foils     = fill(naca4((0,0,1,2)), 3),
                       chords    = [1.0, 0.6, 0.2],
                       twists    = [0.0, 0.0, 0.0],
                       spans     = [5.0, 0.5],
@@ -120,7 +120,7 @@ scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
 plot!()
 
 ## Spanwise forces
-LL_loads    = span_loads(horseshoe_panels, CFs.wing, projected_area(wing))
+LL_loads    = spanwise_loading(horseshoe_panels, CFs.wing, projected_area(wing))
 CL_loadings = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
 
 ## Lifting line loads

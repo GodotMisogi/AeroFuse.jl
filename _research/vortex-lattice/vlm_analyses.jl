@@ -7,7 +7,7 @@ using DataFrames
 #==========================================================================================#
 
 # Define wing
-wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
             chords    = [1.0, 0.6],
             twists    = [2.0, 2.0],
             spans     = [5.0],
@@ -15,7 +15,7 @@ wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
             LE_sweeps = [2.29]);
 
 # Horizontal tail
-htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
              spans     = [1.25],
@@ -26,7 +26,7 @@ htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
              axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+vtail = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],

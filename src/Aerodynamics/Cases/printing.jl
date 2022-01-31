@@ -21,7 +21,7 @@ end
 
 Print a pretty table of the nearfield and farfield coefficients with an optional name.
 """
-function print_coefficients(nf_coeffs :: AbstractVector{T}, ff_coeffs :: AbstractVector{T}, name = "") where T <: Real
+function print_coefficients(nf_coeffs, ff_coeffs, name = "") where T <: Real
     coeffs = [ ifelse(length(nf_coeffs) == 8, ["CD", "CDv"], []); [ "CDi", "CY", "CL", "Cl", "Cm", "Cn" ] ]
     data = [ coeffs nf_coeffs [ ff_coeffs; fill("—", 3) ] ]
     head = [ name, "Nearfield", "Farfield" ]

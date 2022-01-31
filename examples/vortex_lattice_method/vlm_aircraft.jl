@@ -5,7 +5,7 @@ import LinearAlgebra: norm
 ## Surfaces
 
 # Wing
-wing = Wing(foils     = Foil.(fill(naca4(2,4,1,2), 2)),
+wing = Wing(foils     = fill(naca4(2,4,1,2), 2),
             chords    = [1.0, 0.6],
             twists    = [2.0, 0.0],
             spans     = [4.0],
@@ -16,7 +16,7 @@ x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 
 # Horizontal tail
-htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
+htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
              spans     = [1.25],
@@ -27,7 +27,7 @@ htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
              axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail = HalfWing(foils     = Foil.(fill(naca4(0,0,0,9), 2)),
+vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
@@ -123,9 +123,9 @@ ff_v = [ CDi_ff + CDv; CDv; ff ]
 print_coefficients(nf_v, ff_v, :aircraft)
 
 ## Spanwise forces/lifting line loads
-wing_ll  = span_loads(chord_panels(wing_mesh), CFs.wing, S)
-htail_ll = span_loads(chord_panels(htail_mesh), CFs.htail, S)
-vtail_ll = span_loads(chord_panels(vtail_mesh), CFs.vtail, S);
+wing_ll  = spanwise_loading(chord_panels(wing_mesh), CFs.wing, S)
+htail_ll = spanwise_loading(chord_panels(htail_mesh), CFs.htail, S)
+vtail_ll = spanwise_loading(chord_panels(vtail_mesh), CFs.vtail, S);
 
 ## Plotting
 using CairoMakie

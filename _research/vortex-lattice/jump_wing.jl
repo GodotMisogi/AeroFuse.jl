@@ -9,7 +9,7 @@ using AeroMDAO
 
 ## Helper functions
 function make_wing(x)
-    wing_right = HalfWing(foils     = Foil.(naca4((0,0,1,2)) for i = 1:5),
+    wing_right = HalfWing(foils     = [ naca4((0,0,1,2)) for i = 1:5 ],
                           chords    = [ x[1:5]... ],
                           twists    = [0., 0., 0., 0., 0.],
                           spans     = [0.2, 0.2, 0.2, 0.2],
@@ -54,7 +54,7 @@ V, α, ρ  = 15., 5., 1.225
 
 # Design variables
 n    = 6
-wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
+wing = Wing(foils     = fill(naca4((2,4,1,2)), n),
             chords    = fill(0.314, n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),

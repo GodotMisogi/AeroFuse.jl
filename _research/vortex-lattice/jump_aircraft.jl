@@ -9,7 +9,7 @@ using StaticArrays
 
 ## Helper functions
 function make_wing(x)
-    wing_right = HalfWing(Foil.(naca4((0,0,1,2)) for i = 1:5),
+    wing_right = HalfWing([ naca4((0,0,1,2)) for i = 1:5 ],
                           [ x[1:5]... ],
                           [0., 0., 0., 0., 0.],
                           [0.2, 0.2, 0.2, 0.2],
@@ -62,7 +62,7 @@ V, α, ρ  = 15., 5., 1.225
 
 # Design variables
 n    = 12
-wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
+wing = Wing(foils     = fill(naca4((2,4,1,2)), n),
             chords    = fill(0.314, n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),
@@ -70,7 +70,7 @@ wing = Wing(foils     = fill(Foil(naca4(2,4,1,2)), n),
             LE_sweeps = fill(0., n-1))
 
 # Horizontal tail
-htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
+htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
              spans     = [1.25],
@@ -81,7 +81,7 @@ htail = Wing(foils     = Foil.(fill(naca4(0,0,1,2), 2)),
              axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail = HalfWing(foils     = Foil.(fill(naca4(0,0,0,9), 2)),
+vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],

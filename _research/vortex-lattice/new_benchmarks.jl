@@ -9,7 +9,7 @@ using BenchmarkTools
 ## Aerodynamic variables
 
 # Define wing
-@time wing = Wing(foils     = Foil.(fill(naca4((2,4,1,2)), 3)),
+@time wing = Wing(foils     = fill(naca4((2,4,1,2)), 3)),
             chords    = [1.0, 1.0, 0.6],
             twists    = [0.0, 0.0, 0.0],
             spans     = [4.0, 3.0],
@@ -19,7 +19,7 @@ using BenchmarkTools
 print_info(wing, "Lawn Polar Wing")
 
 # Horizontal tail
-@time htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+@time htail = Wing(foils     = fill(naca4((0,0,1,2)), 2)),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
              spans     = [1.25],
@@ -30,7 +30,7 @@ print_info(wing, "Lawn Polar Wing")
              axis      = [0., 1., 0.])
 
 # Vertical tail
-@time vtail_u = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+@time vtail_u = HalfWing(foils     = fill(naca4((0,0,0,9)), 2)),
                    chords    = [0.7, 0.25],
                    twists    = [0.0, 0.0],
                    spans     = [1.0],
@@ -40,7 +40,7 @@ print_info(wing, "Lawn Polar Wing")
                    angle     = 90.,
                    axis      = [1., 0., 0.]);
 
-@time vtail_d = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+@time vtail_d = HalfWing(foils     = fill(naca4((0,0,0,9)), 2)),
                    chords    = [0.7, 0.42],
                    twists    = [0.0, 0.0],
                    spans     = [0.4],
@@ -53,7 +53,7 @@ print_info(wing, "Lawn Polar Wing")
 @time vtail = Wing(vtail_d, vtail_u)
 
 # Tailerons
-@time atail_l = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+@time atail_l = Wing(foils     = fill(naca4((0,0,0,9)), 2)),
                chords    = [0.4, 0.2],
                twists    = [0.0, 0.0],
                spans     = [0.5],
@@ -63,7 +63,7 @@ print_info(wing, "Lawn Polar Wing")
                angle     = 0.,
                axis      = [0., 1., 0.]);
 
-@time atail_r = Wing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+@time atail_r = Wing(foils     = fill(naca4((0,0,0,9)), 2)),
                chords    = [0.4, 0.2],
                twists    = [0.0, 0.0],
                spans     = [0.5],

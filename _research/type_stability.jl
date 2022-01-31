@@ -3,7 +3,7 @@ using AeroMDAO
 import LinearAlgebra: norm
 
 ## Foils
-naca_2412 = Foil(naca4(2,4,1,2))
+naca_2412 = naca4((2,4,1,2))
 
 ##
 foils = fill(naca_2412, 2)

@@ -3,7 +3,7 @@ using Test
 
 @testset "NACA-4 Doublet-Source Panel Method" begin
     # Define airfoil
-    airfoil = (Foil ∘ naca4)((0,0,1,2))
+    airfoil = (naca4)((0,0,1,2))
 
     # Define uniform flow
     uniform = Uniform2D(1., 0.)
@@ -26,7 +26,7 @@ end
 
 @testset "Airfoil Processing and Doublet-Source Panel Method" begin
     # Import and read airfoil coordinates
-    coo_foil = Foil(naca4(2,4,1,2))
+    coo_foil = naca4((2,4,1,2))
 
     # Cosine spacing
     cos_foil = cosine_spacing(coo_foil, 61)
@@ -93,7 +93,7 @@ end
 
 @testset "Vortex Lattice Method - NACA 0012 Rectangular Wing" begin
     # Define wing
-    wing = Wing(foils     = Foil.(naca4((0,0,1,2)) for i ∈ 1:2),
+    wing = Wing(foils     = [ naca4((0,0,1,2)) for i ∈ 1:2 ],
                 chords    = [0.18, 0.16],
                 twists    = [0., 0.],
                 spans     = [0.5,],
@@ -139,7 +139,7 @@ end
 
 @testset "Vortex Lattice Method - Vanilla Aircraft" begin
     ## Wing
-    wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+    wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
                 chords    = [1.0, 0.6],
                 twists    = [0.0, 0.0],
                 spans     = [5.0],
@@ -147,7 +147,7 @@ end
                 LE_sweeps = [0.]);
 
     # Horizontal tail
-    htail = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+    htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.25],
@@ -158,7 +158,7 @@ end
                  axis      = [0., 1., 0.])
 
     # Vertical tail
-    vtail = HalfWing(foils     = Foil.(fill(naca4((0,0,0,9)), 2)),
+    vtail = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
                      chords    = [0.7, 0.42],
                      twists    = [0.0, 0.0],
                      spans     = [1.0],

@@ -32,7 +32,7 @@ orientation(comp :: WingCoordinates) = comp.orientation
 affine_transformation(wing :: WingCoordinates) = Translation(position(wing)) ∘ LinearMap(orientation(wing))
 
 ## Tests
-wing = Wing(foils     = Foil.(fill(naca4((0,0,1,2)), 2)),
+wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
             chords    = [0.7, 0.42],
             twists    = [0.0, 0.0],
             spans     = [1.25],

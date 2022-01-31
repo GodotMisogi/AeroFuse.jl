@@ -49,7 +49,7 @@ Create the vector for the boundary condition of the problem given an array of Pa
 """
 boundary_vector(panels, u) = [ - source_matrix(panels, panels) * source_strengths(panels, u); 0 ]
 
-boundary_vector(colpoints, u, r_te) = [ dot.(colpoints, Ref(u)); dot(u, r_te) ]
+# boundary_vector(colpoints, u, r_te) = [ dot.(colpoints, Ref(u)); dot(u, r_te) ]
 
 boundary_vector(panels, u, r_te) = [ dot.(collocation_point.(panels), Ref(u)); dot(u, r_te) ]
 
@@ -99,9 +99,11 @@ end
 #==========================#
 
 """
-    solve_linear(panels, u, wakes, bound)
+    solve_linear(panels, u, wakes, bound = 1e5)
 
-Solve the system of equations ``[AIC][\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` condition given the array of Panel2Ds, a velocity ``\\vec U``, a vector of wake `Panel2D`s, and an optional named bound for the length of the wake.
+Solve the linear aerodynamic system given the array of Panel2Ds, a velocity ``\\vec U``, a vector of wake `Panel2D`s, and an optional named bound for the length of the wake.
+
+The system of equations ``A[\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` is solved, where ``A`` is the doublet influence coefficient matrix, ``\\phi`` is the vector of doublet strengths, ``B`` is the source influence coefficient matrix, and ``\\sigma`` is the vector of source strengths.
 """
 function solve_linear(panels, u, wakes)
     AIC  = influence_matrix(panels, wakes)
