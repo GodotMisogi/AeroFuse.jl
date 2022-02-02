@@ -66,66 +66,19 @@ cl     = lift_coefficient(system)</code></pre><pre class="documenter-example-out
 pts      = collocation_point.(panels) # Collocation points
 tangents = panel_tangent.(panels)     # Tangents
 normals  = panel_normal.(panels)      # Normals
-locs     = panel_location.(panels);   # Upper or lower surface</code></pre><h2 id="Wing-Geometry"><a class="docs-heading-anchor" href="#Wing-Geometry">Wing Geometry</a><a id="Wing-Geometry-1"></a><a class="docs-heading-anchor-permalink" href="#Wing-Geometry" title="Permalink"></a></h2><p>To define one side of a wing, AeroMDAO provides a <code>HalfWing</code> constructor.</p><pre><code class="language-julia hljs">airfoil    = naca4((2,4,1,2))
+locs     = panel_location.(panels);   # Upper or lower surface</code></pre><h2 id="Wing-Geometry"><a class="docs-heading-anchor" href="#Wing-Geometry">Wing Geometry</a><a id="Wing-Geometry-1"></a><a class="docs-heading-anchor-permalink" href="#Wing-Geometry" title="Permalink"></a></h2><p>To define one side of a wing, AeroMDAO provides a <code>HalfWing</code> constructor.</p><pre><code class="language- hljs">airfoil    = naca4((2,4,1,2))
 wing_right = HalfWing(foils     = [ airfoil for i in 1:3 ],
                       chords    = [0.4, 0.2, 0.1],
                       twists    = [0., 2., 5.],
                       spans     = [1.0, 0.1],
                       dihedrals = [0., 60.],
-                      LE_sweeps = [0., 30.])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">AbstractWing with 2 spanwise section(s).
-Aspect Ratio: 3.8421684144021975
-Span (m): 1.1
-Projected Area (m): 0.3149263305232454
-Mean Aerodynamic Chord (m): 0.30370370370370375
-Mean Aerodynamic Center (m): [0.07714783125754418, 0.26031746031746034, 0.0]
-</code></pre><p>The <code>Wing</code> constructor takes left and right <code>HalfWing</code>s to define a full wing. For example, the following generates a symmetric wing.</p><pre><code class="language-julia hljs">wing = Wing(wing_right, wing_right)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">AbstractWing with 4 spanwise section(s).
-Aspect Ratio: 7.684336828804395
-Span (m): 2.2
-Projected Area (m): 0.6298526610464908
-Mean Aerodynamic Chord (m): 0.30370370370370375
-Mean Aerodynamic Center (m): [0.07714783125754418, 0.0, 0.0]
-</code></pre><p>The following &quot;getter&quot; functions provide quantities of interest such as chord lengths, spans, twist, dihedral, and sweep angles.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; foils(wing)</code><code class="nohighlight hljs ansi" style="display:block;">5-element Vector{Foil{Float64}}:
- NACA 2412 Foil{Float64} with 79 points.
- NACA 2412 Foil{Float64} with 79 points.
- NACA 2412 Foil{Float64} with 79 points.
- NACA 2412 Foil{Float64} with 79 points.
- NACA 2412 Foil{Float64} with 79 points.</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; chords(wing)</code><code class="nohighlight hljs ansi" style="display:block;">5-element Vector{Float64}:
- 0.1
- 0.2
- 0.4
- 0.2
- 0.1</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; spans(wing)</code><code class="nohighlight hljs ansi" style="display:block;">4-element Vector{Float64}:
- 0.1
- 1.0
- 1.0
- 0.1</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; twists(wing)</code><code class="nohighlight hljs ansi" style="display:block;">5-element Vector{Float64}:
- -0.08726646259971647
- -0.03490658503988659
- -0.0
- -0.03490658503988659
- -0.08726646259971647</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; dihedrals(wing)</code><code class="nohighlight hljs ansi" style="display:block;">4-element Vector{Float64}:
- 1.0471975511965976
- 0.0
- 0.0
- 1.0471975511965976</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; sweeps(wing)</code><code class="nohighlight hljs ansi" style="display:block;">4-element Vector{Float64}:
- 0.5235987755982988
- 0.0
- 0.0
- 0.5235987755982988</code></pre><p>There is also a convenient function for pretty-printing information, in which the first argument takes the <code>Wing</code> type and the second takes a name (as a <code>String</code> or <code>Symbol</code>).</p><pre><code class="language-julia hljs">print_info(wing, &quot;Wing&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">────────────────────────────────────────────────────
-            Wing                      Value
-────────────────────────────────────────────────────
-        Aspect Ratio                 7.68434
-          Span (m)                     2.2
-          Area (m²)                 0.629853
- Mean Aerodynamic Chord (m)         0.303704
- Mean Aerodynamic Center (m)  [0.0771478, 0.0, 0.0]
-────────────────────────────────────────────────────</code></pre><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>You can use <a href="https://github.com/jw3126/Setfield.jl">Setfield.jl</a> to conveniently copy and modify properties of an existing object.</p></div></div><pre><code class="language- hljs"># Import Setfield
+                      LE_sweeps = [0., 30.])</code></pre><p>The <code>Wing</code> constructor takes left and right <code>HalfWing</code>s to define a full wing. For example, the following generates a symmetric wing.</p><pre><code class="language- hljs">wing = Wing(wing_right, wing_right)</code></pre><p>The following &quot;getter&quot; functions provide quantities of interest such as chord lengths, spans, twist, dihedral, and sweep angles.</p><pre><code class="language-julia-repl hljs" style="display:block;">julia&gt; foils(wing)</code><code class="nohighlight hljs ansi" style="display:block;">ERROR: UndefVarError: wing not defined</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; chords(wing)</code><code class="nohighlight hljs ansi" style="display:block;">ERROR: UndefVarError: wing not defined</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; spans(wing)</code><code class="nohighlight hljs ansi" style="display:block;">ERROR: UndefVarError: wing not defined</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; twists(wing)</code><code class="nohighlight hljs ansi" style="display:block;">ERROR: UndefVarError: wing not defined</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; dihedrals(wing)</code><code class="nohighlight hljs ansi" style="display:block;">ERROR: UndefVarError: wing not defined</code><br/><code class="language-julia-repl hljs" style="display:block;">julia&gt; sweeps(wing)</code><code class="nohighlight hljs ansi" style="display:block;">ERROR: UndefVarError: wing not defined</code></pre><p>There is also a convenient function for pretty-printing information, in which the first argument takes the <code>Wing</code> type and the second takes a name (as a <code>String</code> or <code>Symbol</code>).</p><pre><code class="language- hljs">print_info(wing, &quot;Wing&quot;)</code></pre><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>You can use <a href="https://github.com/jw3126/Setfield.jl">Setfield.jl</a> to conveniently copy and modify properties of an existing object.</p></div></div><pre><code class="language- hljs"># Import Setfield
 using Setfield
 
 # Set only chords with other properties remaining identical.
 wing_left = @set wing_right.chords = [0.4, 0.1, 0.05]</code></pre><p>To create an asymmetric wing, feed the left and right halves to <code>Wing</code> in the particular order.</p><pre><code class="language- hljs">wing = Wing(wing_left, wing_right);
 
-print_info(wing, &quot;My Wing&quot;)</code></pre><h2 id="Vortex-Lattice-Aerodynamic-Analyses"><a class="docs-heading-anchor" href="#Vortex-Lattice-Aerodynamic-Analyses">Vortex Lattice Aerodynamic Analyses</a><a id="Vortex-Lattice-Aerodynamic-Analyses-1"></a><a class="docs-heading-anchor-permalink" href="#Vortex-Lattice-Aerodynamic-Analyses" title="Permalink"></a></h2><p>How to run a generic aerodynamic analysis on a conventional aircraft configuration.</p><h3 id="Geometry"><a class="docs-heading-anchor" href="#Geometry">Geometry</a><a id="Geometry-1"></a><a class="docs-heading-anchor-permalink" href="#Geometry" title="Permalink"></a></h3><p>First we define the lifting surfaces. These can be a combination of <code>Wing</code> or <code>HalfWing</code> types constructed using the various methods available.</p><div class="admonition is-warning"><header class="admonition-header">Alert</header><div class="admonition-body"><p>Support for fuselages and control surfaces will be added soon.</p></div></div><pre><code class="language-julia hljs"># Wing
+print_info(wing, &quot;My Wing&quot;)</code></pre><h2 id="Vortex-Lattice-Aerodynamic-Analyses"><a class="docs-heading-anchor" href="#Vortex-Lattice-Aerodynamic-Analyses">Vortex Lattice Aerodynamic Analyses</a><a id="Vortex-Lattice-Aerodynamic-Analyses-1"></a><a class="docs-heading-anchor-permalink" href="#Vortex-Lattice-Aerodynamic-Analyses" title="Permalink"></a></h2><p>How to run a generic aerodynamic analysis on a conventional aircraft configuration.</p><h3 id="Geometry"><a class="docs-heading-anchor" href="#Geometry">Geometry</a><a id="Geometry-1"></a><a class="docs-heading-anchor-permalink" href="#Geometry" title="Permalink"></a></h3><p>First we define the lifting surfaces. These can be a combination of <code>Wing</code> or <code>HalfWing</code> types constructed using the various methods available.</p><div class="admonition is-warning"><header class="admonition-header">Alert</header><div class="admonition-body"><p>Support for fuselages and control surfaces will be added soon.</p></div></div><pre><code class="language- hljs"># Wing
 wing  = WingSection(span       = 8.0,
                     dihedral   = 5.0,
                     LE_sweep   = 15.0,
@@ -163,45 +116,26 @@ vtail = HalfWingSection(span       = 0.8,
                         tip_foil   = naca4(0,0,0,9),
                         position   = [5., 0., 0.],
                         angle      = 90.,
-                        axis       = [1., 0., 0.])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">AbstractWing with 1 spanwise section(s).
-Aspect Ratio: 1.2500000000000002
-Span (m): 0.8
-Projected Area (m): 0.512
-Mean Aerodynamic Chord (m): 0.6533333333333332
-Mean Aerodynamic Center (m): [5.21486497272421, 1.122592899218407e-17, 0.18333333333333332]
-</code></pre><h3 id="Meshing"><a class="docs-heading-anchor" href="#Meshing">Meshing</a><a id="Meshing-1"></a><a class="docs-heading-anchor-permalink" href="#Meshing" title="Permalink"></a></h3><p>The <code>WingMesh</code> type takes a <code>HalfWing</code> or <code>Wing</code> type with a vector of integers consisting of the spanwise panel distribution corresponding to the number of sections, and an integer for the chordwise distribution.</p><pre><code class="language-julia hljs"># Wing meshes
-wing_mesh  = WingMesh(wing, [20], 10)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">WingMesh —
-Spanwise panels: 40
-Chordwise panels: 10
-Spanwise spacing: AbstractSpacing[Sine()]
-Chordwise spacing: Cosine()
-</code></pre><p>Optionally the type of spanwise spacing can be specified by the keyword <code>span_spacing</code> and providing types <code>Sine(), Cosine(), Uniform()</code> or a vector of the combination with length corresponding to the number of sections.</p><pre><code class="language-julia hljs"># Horizontal tail
+                        axis       = [1., 0., 0.])</code></pre><h3 id="Meshing"><a class="docs-heading-anchor" href="#Meshing">Meshing</a><a id="Meshing-1"></a><a class="docs-heading-anchor-permalink" href="#Meshing" title="Permalink"></a></h3><p>The <code>WingMesh</code> type takes a <code>HalfWing</code> or <code>Wing</code> type with a vector of integers consisting of the spanwise panel distribution corresponding to the number of sections, and an integer for the chordwise distribution.</p><pre><code class="language- hljs"># Wing meshes
+wing_mesh  = WingMesh(wing, [20], 10)</code></pre><p>Optionally the type of spanwise spacing can be specified by the keyword <code>span_spacing</code> and providing types <code>Sine(), Cosine(), Uniform()</code> or a vector of the combination with length corresponding to the number of sections.</p><pre><code class="language- hljs"># Horizontal tail
 htail_mesh = WingMesh(htail, [10], 5;
                       span_spacing = Cosine()) # Uniform(), Sine()
 
 # Vertical tail
-vtail_mesh = WingMesh(vtail, [10], 5); # Vertical tail</code></pre><h3 id="Inviscid-Analysis"><a class="docs-heading-anchor" href="#Inviscid-Analysis">Inviscid Analysis</a><a id="Inviscid-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Inviscid-Analysis" title="Permalink"></a></h3><p>The inviscid 3D analysis uses a vortex lattice method. The <code>WingMesh</code> type allows you to generate horseshoe elements easily.</p><pre><code class="language-julia hljs">wing_horsies = make_horseshoes(wing_mesh)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10×40 StructArray(::Matrix{AeroMDAO.VortexLattice.Line{Float64}}, ::Matrix{StaticArrays.SVector{3, Float64}}, ::Matrix{StaticArrays.SVector{3, Float64}}, ::Matrix{Float64}) with eltype Horseshoe{Float64}:
- Horseshoe{Float64}(Line{Float64}([1.07669, -4.0, 0.350125], [1.07341, -3.98767, 0.349046]), [1.08486, -3.99383, 0.349927], [-8.70072e-5, 1.88901e-5, 0.000481186], 0.0196345)  …  Horseshoe{Float64}(Line{Float64}([1.07341, 3.98767, 0.349046], [1.07669, 4.0, 0.350125]), [1.08486, 3.99383, 0.349927], [-8.70072e-5, -1.88901e-5, 0.000481186], 0.0196345)
- Horseshoe{Float64}(Line{Float64}([1.10558, -4.0, 0.351134], [1.10243, -3.98767, 0.350051]), [1.13248, -3.99383, 0.351582], [-0.000156736, 8.12436e-5, 0.00139979], 0.0569816)     Horseshoe{Float64}(Line{Float64}([1.10243, 3.98767, 0.350051], [1.10558, 4.0, 0.351134]), [1.13248, 3.99383, 0.351582], [-0.000156736, -8.12436e-5, 0.00139979], 0.0569816)
- Horseshoe{Float64}(Line{Float64}([1.17031, -4.0, 0.353393], [1.16746, -3.98767, 0.352303]), [1.21324, -3.99383, 0.35439], [-0.000202589, 0.000140073, 0.00218166], 0.0887509)     Horseshoe{Float64}(Line{Float64}([1.16746, 3.98767, 0.352303], [1.17031, 4.0, 0.353393]), [1.21324, 3.99383, 0.35439], [-0.000202589, -0.000140073, 0.00218166], 0.0887509)
- Horseshoe{Float64}(Line{Float64}([1.26456, -4.0, 0.356682], [1.26215, -3.98767, 0.355582]), [1.31924, -3.99383, 0.358075], [-0.000177899, 0.000198678, 0.00275175], 0.111833)     Horseshoe{Float64}(Line{Float64}([1.26215, 3.98767, 0.355582], [1.26456, 4.0, 0.356682]), [1.31924, 3.99383, 0.358075], [-0.000177899, -0.000198678, 0.00275175], 0.111833)
- Horseshoe{Float64}(Line{Float64}([1.37909, -4.0, 0.360679], [1.37721, -3.98767, 0.359567]), [1.4401, -3.99383, 0.362277], [-0.00010405, 0.000243616, 0.00305358], 0.123967)       Horseshoe{Float64}(Line{Float64}([1.37721, 3.98767, 0.359567], [1.37909, 4.0, 0.360679]), [1.4401, 3.99383, 0.362277], [-0.00010405, -0.000243616, 0.00305358], 0.123967)
- Horseshoe{Float64}(Line{Float64}([1.5027, -4.0, 0.364993], [1.50139, -3.98767, 0.363868]), [1.56399, -3.99383, 0.366584], [-4.74632e-5, 0.000258667, 0.00305555], 0.123967)    …  Horseshoe{Float64}(Line{Float64}([1.50139, 3.98767, 0.363868], [1.5027, 4.0, 0.364993]), [1.56399, 3.99383, 0.366584], [-4.74632e-5, -0.000258667, 0.00305555], 0.123967)
- Horseshoe{Float64}(Line{Float64}([1.62328, -4.0, 0.369201], [1.62253, -3.98767, 0.368063]), [1.67879, -3.99383, 0.370575], [2.78194e-6, 0.000243798, 0.00275803], 0.111833)       Horseshoe{Float64}(Line{Float64}([1.62253, 3.98767, 0.368063], [1.62328, 4.0, 0.369201]), [1.67879, 3.99383, 0.370575], [2.78194e-6, -0.000243798, 0.00275803], 0.111833)
- Horseshoe{Float64}(Line{Float64}([1.72903, -4.0, 0.372892], [1.72877, -3.98767, 0.371742]), [1.77325, -3.99383, 0.373859], [3.3593e-5, 0.000199275, 0.00218988], 0.0887509)       Horseshoe{Float64}(Line{Float64}([1.72877, 3.98767, 0.371742], [1.72903, 4.0, 0.372892]), [1.77325, 3.99383, 0.373859], [3.3593e-5, -0.000199275, 0.00218988], 0.0887509)
- Horseshoe{Float64}(Line{Float64}([1.80961, -4.0, 0.375704], [1.80972, -3.98767, 0.374546]), [1.83813, -3.99383, 0.376115], [3.65313e-5, 0.000130164, 0.00140651], 0.0569816)      Horseshoe{Float64}(Line{Float64}([1.80972, 3.98767, 0.374546], [1.80961, 4.0, 0.375704]), [1.83813, 3.99383, 0.376115], [3.65313e-5, -0.000130164, 0.00140651], 0.0569816)
- Horseshoe{Float64}(Line{Float64}([1.85711, -4.0, 0.377362], [1.85744, -3.98767, 0.376199]), [1.86709, -3.99383, 0.377121], [1.53652e-5, 4.51955e-5, 0.000484747], 0.0196345)      Horseshoe{Float64}(Line{Float64}([1.85744, 3.98767, 0.376199], [1.85711, 4.0, 0.377362]), [1.86709, 3.99383, 0.377121], [1.53652e-5, -4.51955e-5, 0.000484747], 0.0196345)</code></pre><p>For multiple lifting surfaces, it is most convenient to define a single vector consisting of all the components&#39; horseshoes using <a href="https://github.com/jonniedie/ComponentArrays.jl">ComponentArrays.jl</a>.</p><pre><code class="language-julia hljs">aircraft = ComponentArray(
+vtail_mesh = WingMesh(vtail, [10], 5); # Vertical tail
+nothing #hide</code></pre><h3 id="Inviscid-Analysis"><a class="docs-heading-anchor" href="#Inviscid-Analysis">Inviscid Analysis</a><a id="Inviscid-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Inviscid-Analysis" title="Permalink"></a></h3><p>The inviscid 3D analysis uses a vortex lattice method. The <code>WingMesh</code> type allows you to generate horseshoe elements easily.</p><pre><code class="language- hljs">wing_horsies = make_horseshoes(wing_mesh)</code></pre><p>For multiple lifting surfaces, it is most convenient to define a single vector consisting of all the components&#39; horseshoes using <a href="https://github.com/jonniedie/ComponentArrays.jl">ComponentArrays.jl</a>.</p><pre><code class="language- hljs">aircraft = ComponentArray(
                           wing  = wing_horsies,
                           htail = make_horseshoes(htail_mesh),
                           vtail = make_horseshoes(vtail_mesh)
-                         );</code></pre><p>To define boundary conditions, use the following <code>Freestream</code> type, which takes named arguments for angles of attack and sideslip (in degrees), and a quasi-steady rotation vector.</p><pre><code class="language-julia hljs"># Define freestream conditions
+                         );
+nothing #hide</code></pre><p>To define boundary conditions, use the following <code>Freestream</code> type, which takes named arguments for angles of attack and sideslip (in degrees), and a quasi-steady rotation vector.</p><pre><code class="language-julia hljs"># Define freestream conditions
 fs = Freestream(alpha = 1.0,
                 beta  = 0.0,
                 omega = [0.,0.,0.])</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Freestream: 
     alpha = 0.017453292519943295
     beta = 0.0
     omega = [0.0, 0.0, 0.0]
-</code></pre><p>To define reference values, use the following <code>References</code> type.</p><pre><code class="language-julia hljs"># Define reference values
+</code></pre><p>To define reference values, use the following <code>References</code> type.</p><pre><code class="language- hljs"># Define reference values
 refs = References(
            speed     = 10.0,
            density   = 1.225,
@@ -210,127 +144,26 @@ refs = References(
            span      = span(wing),
            chord     = mean_aerodynamic_chord(wing),
            location  = mean_aerodynamic_center(wing)
-          )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">
-References: 
-    speed = 10.0
-    density = 1.225
-    viscosity = 1.5e-5
-    sound_speed = 330.0
-    area = 11.198294185751582
-    span = 8.0
-    chord = 1.4857142857142858
-    location = [0.8307700441676391, 0.0, 0.0]
-</code></pre><p>The vortex lattice analysis can be executed with the horseshoes, freestream condition, and reference values defined.</p><pre><code class="language-julia hljs"># Solve system
+          )</code></pre><p>The vortex lattice analysis can be executed with the horseshoes, freestream condition, and reference values defined.</p><pre><code class="language- hljs"># Solve system
 system = solve_case(
              aircraft, fs, refs;
              print            = true, # Prints the results for only the aircraft
              print_components = true, # Prints the results for all components
-            )</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">VortexLatticeSystem -
-550 Horseshoe{Float64} Elements
-
-Freestream: 
-    alpha = 0.017453292519943295
-    beta = 0.0
-    omega = [0.0, 0.0, 0.0]
-
-References: 
-    speed = 10.0
-    density = 1.225
-    viscosity = 1.5e-5
-    sound_speed = 330.0
-    area = 11.198294185751582
-    span = 8.0
-    chord = 1.4857142857142858
-    location = [0.8307700441676391, 0.0, 0.0]
-</code></pre><h3 id="Dynamics"><a class="docs-heading-anchor" href="#Dynamics">Dynamics</a><a id="Dynamics-1"></a><a class="docs-heading-anchor-permalink" href="#Dynamics" title="Permalink"></a></h3><p>The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of geometry, body, wind, or stability axes. The wind axes are used by default.</p><pre><code class="language-julia hljs"># Compute dynamics
+            )</code></pre><h3 id="Dynamics"><a class="docs-heading-anchor" href="#Dynamics">Dynamics</a><a id="Dynamics-1"></a><a class="docs-heading-anchor-permalink" href="#Dynamics" title="Permalink"></a></h3><p>The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of geometry, body, wind, or stability axes. The wind axes are used by default.</p><pre><code class="language- hljs"># Compute dynamics
 ax = Wind() # Body(), Stability(), Geometry()
 
 # Compute non-dimensional coefficients
-CFs, CMs = surface_coefficients(system; axes = ax)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((wing = StaticArrays.SVector{3, Float64}[[2.490027747244789e-7, -9.934240311532644e-7, -1.2791238907636707e-5] [9.758755165064086e-7, -4.188463861752231e-6, -5.3691443720801284e-5] … [9.758755165064755e-7, 4.188463861752244e-6, -5.3691443720801657e-5] [2.490027747244943e-7, 9.934240311532671e-7, -1.2791238907636792e-5]; [2.476746571900645e-8, -2.3655810108824592e-8, -3.6026581022745866e-7] [3.7730109008093247e-7, -7.603733828795805e-7, -1.0289348661729987e-5] … [3.773010900809557e-7, 7.603733828795952e-7, -1.0289348661730236e-5] [2.476746571900854e-8, 2.3655810108826164e-8, -3.6026581022748396e-7]; … ; [6.954208654075135e-8, 2.977271464595419e-7, 3.1703955125602767e-6] [2.7570435143200207e-7, 1.2583008095869768e-6, 1.3397846943448458e-5] … [2.7570435143198555e-7, -1.2583008095869821e-6, 1.3397846943448515e-5] [6.954208654074779e-8, -2.9772714645954277e-7, 3.1703955125602848e-6]; [2.4897057797122847e-8, 8.925327077909536e-8, 9.48134545864582e-7] [7.76192564858812e-8, 3.1210876360793436e-7, 3.3130411070328645e-6] … [7.761925648587703e-8, -3.121087636079357e-7, 3.313041107032878e-6] [2.4897057797121974e-8, -8.925327077909603e-8, 9.481345458645887e-7]], htail = StaticArrays.SVector{3, Float64}[[-1.1382055374050671e-7, -5.218468955624506e-9, -5.372100215471709e-6] [-4.904475036890801e-7, -1.7612057287139323e-8, -2.422100137066091e-5] … [-4.904475036535664e-7, 1.7612057283750367e-8, -2.422100136937268e-5] [-1.1382055373241587e-7, 5.218468954769741e-9, -5.372100215196335e-6]; [-6.18893740078054e-8, 1.5671869434016452e-10, -3.5869467148719943e-6] [-3.6236272912818724e-7, -4.225812466863806e-9, -1.964593580301168e-5] … [-3.623627290999956e-7, 4.225812465077722e-9, -1.9645935801865322e-5] [-6.188937400320946e-8, -1.5671869455062052e-10, -3.5869467146641638e-6]; … ; [-1.5649326213975962e-8, 5.355257130763967e-11, -9.762369933281502e-7] [-6.933792165379428e-8, 1.598822246633436e-10, -4.210276006761562e-6] … [-6.933792164991164e-8, -1.5988222469152073e-10, -4.21027600657983e-6] [-1.5649326213101894e-8, -5.355257131183838e-11, -9.762369932843226e-7]; [-4.230242486894495e-9, -1.0003706857784954e-11, -2.62025790882424e-7] [-1.3986519752080915e-8, -2.3698909874970132e-11, -8.478983628344272e-7] … [-1.3986519751463133e-8, 2.3698909878077026e-11, -8.478983628054713e-7] [-4.230242486684583e-9, 1.0003706858501532e-11, -2.6202579087180755e-7]], vtail = StaticArrays.SVector{3, Float64}[[7.010120545924502e-25, 6.977037005251183e-14, -1.043057253531964e-25] [1.4539763204041208e-25, 5.188558261952628e-14, -2.1636454467573303e-26] … [-4.197770287752728e-28, 7.564005663498171e-16, 6.241091271838211e-29] [-8.916838217815319e-29, 1.5968263544288807e-16, 1.325728962145309e-29]; [2.7100203544159095e-23, 4.801922861082548e-13, -2.572582804984405e-24] [-9.501675472531975e-25, 9.302180692742075e-14, 9.019128274854294e-26] … [-3.4898025005085756e-28, 8.373242571872802e-16, 3.3076458590738395e-29] [5.623549936713906e-29, 2.2926653109777776e-16, -5.352352491836387e-30]; … ; [-1.8136293026122845e-25, -3.395156980989783e-14, -2.329934250492396e-26] [-8.489847797829582e-26, -2.443971615363936e-14, -1.0906220083218138e-26] … [7.5637596977887445e-28, -1.256760113174031e-15, 9.725556758299485e-29] [1.2587569147893895e-26, -2.0513891555979472e-15, 1.617369752542544e-27]; [-9.386951666882423e-27, -4.656576509112564e-15, -1.994448081227532e-27] [-7.274099179390142e-27, -3.388587727592184e-15, -1.5455431704275626e-27] … [-3.918403411328607e-27, -2.1295983806526953e-15, -8.325328669029238e-28] [2.3534910949688118e-25, -4.9321958981920546e-15, 5.0012109068482975e-26]]), (wing = [[-6.428636523653019e-6, 2.2132026457112083e-6, -9.322223351004267e-8] [-2.6818786069678638e-5, 9.034382120560326e-6, -3.565621041137624e-7] … [2.6818786069678827e-5, 9.034382120560402e-6, 3.5656210411379524e-7] [6.428636523653063e-6, 2.2132026457112265e-6, 9.322223351005031e-8]; [-1.8087769516813656e-7, 7.349336893663177e-8, -1.1538728683502723e-8] [-5.1377442741152205e-6, 1.977877248953283e-6, -1.612518122099221e-7] … [5.137744274115345e-6, 1.977877248953334e-6, 1.612518122099331e-7] [1.8087769516814932e-7, 7.349336893663701e-8, 1.153872868350371e-8]; … ; [1.596077119816457e-6, -2.0857718374539256e-6, -7.138586123662867e-8] [6.7033028521027904e-6, -8.820694215509312e-6, -2.917923107537998e-7] … [-6.703302852102818e-6, -8.82069421550935e-6, 2.9179231075379226e-7] [-1.5960771198164612e-6, -2.085771837453932e-6, 7.138586123662699e-8]; [4.77339673236563e-7, -6.531674725304864e-7, -2.3953352552611567e-8] [1.657677367476974e-6, -2.2860992138705424e-6, -7.883300366638819e-8] … [-1.6576773674769805e-6, -2.286099213870552e-6, 7.88330036663863e-8] [-4.773396732365663e-7, -6.531674725304911e-7, 2.3953352552611216e-8]], htail = [[-6.631801567862245e-7, 1.607887694243015e-5, 1.6951709742999244e-8] [-2.8456328606781487e-6, 7.228889570228466e-5, 6.73827145751149e-8] … [2.8456328605268537e-6, 7.228889569843873e-5, -6.738271456906507e-8] [6.631801567522428e-7, 1.6078876941605674e-5, -1.6951709741525542e-8]; [-4.4288566296089075e-7, 1.0890881987110427e-5, 7.553203478070276e-9] [-2.3083482885674903e-6, 5.951559401159724e-5, 4.495417578071779e-8] … [2.308348288432831e-6, 5.951559400812362e-5, -4.4954175776401086e-8] [4.4288566293523455e-7, 1.0890881986479279e-5, -7.553203477384224e-9]; … ; [-1.205377132788092e-7, 3.1417346119191555e-6, 1.9002434428129435e-9] [-4.947207677843122e-7, 1.3544564994620775e-5, 8.051904189394935e-9] … [4.947207677629589e-7, 1.3544564994036027e-5, -8.05190418892189e-9] [1.2053771327339786e-7, 3.1417346117780876e-6, -1.900243442702514e-9]; [-3.23522280453645e-8, 8.612993929333135e-7, 5.284133218529e-10] [-9.962945670801327e-8, 2.7879396881326517e-6, 1.657910639680767e-9] … [9.962945670461079e-8, 2.7879396880374253e-6, -1.657910639610073e-9] [3.235222804405367e-8, 8.612993928984116e-7, -5.284133218274193e-10]], vtail = [[-9.310160350481209e-17, 2.8961515258933316e-25, -3.6603086899015873e-14] [7.304853744375692e-16, 7.241017379175523e-26, -2.7339318012162683e-14] … [6.623332135607058e-17, -3.7867272050623617e-28, -4.068293798380034e-16] [1.4372239548589576e-17, -8.163528865587899e-29, -8.59431650164613e-17]; [-7.496504058183217e-16, 7.219397654136759e-24, -2.5815737309984974e-13] [1.2898863246909503e-15, -3.3274520922571054e-25, -5.01459167811171e-14] … [7.319931244081475e-17, -2.615293621765185e-28, -4.572286954386929e-16] [2.0602809106143515e-17, 4.2955718842607623e-29, -1.2524630038370768e-16]; … ; [8.509082903709198e-17, 7.668816231392212e-26, 2.009107761592052e-14] [-3.172689523198628e-16, 2.870001789156552e-26, 1.4413739890397853e-14] … [-1.0911591551921079e-16, 4.972969056215842e-29, 7.292727050006358e-16] [-1.831402961864091e-16, 1.0002097822103443e-27, 1.1897334830381801e-15]; [1.333455518421416e-17, 6.719682309958606e-27, 2.8508949296916074e-15] [-4.28559420912127e-17, 4.572275481865456e-27, 2.063425485990328e-15] … [-1.8441752838949865e-16, 8.321993695008954e-28, 1.263318887235848e-15] [-4.3923170798561565e-16, -4.6756037449021525e-26, 2.9232990494859086e-15]]))</code></pre><p>You can access the corresponding values of the components&#39; by the name provided in the <code>ComponentVector</code>.</p><pre><code class="language-julia hljs">CFs.wing</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">10×40 reshape(view(::Vector{StaticArrays.SVector{3, Float64}}, 1:400), 10, 40) with eltype StaticArrays.SVector{3, Float64}:
- [2.49003e-7, -9.93424e-7, -1.27912e-5]  …  [2.49003e-7, 9.93424e-7, -1.27912e-5]
- [2.47675e-8, -2.36558e-8, -3.60266e-7]     [2.47675e-8, 2.36558e-8, -3.60266e-7]
- [-1.40295e-7, 1.7139e-7, 2.41996e-6]       [-1.40295e-7, -1.7139e-7, 2.41996e-6]
- [-3.31485e-7, 4.85653e-7, 6.42646e-6]      [-3.31485e-7, -4.85653e-7, 6.42646e-6]
- [-2.84964e-7, 7.05615e-7, 8.56746e-6]      [-2.84964e-7, -7.05615e-7, 8.56746e-6]
- [-9.51208e-8, 6.68783e-7, 7.5975e-6]    …  [-9.51208e-8, -6.68783e-7, 7.5975e-6]
- [1.00991e-8, 6.32854e-7, 6.93078e-6]       [1.00991e-8, -6.32854e-7, 6.93078e-6]
- [7.16167e-8, 5.03125e-7, 5.4018e-6]        [7.16167e-8, -5.03125e-7, 5.4018e-6]
- [6.95421e-8, 2.97727e-7, 3.1704e-6]        [6.95421e-8, -2.97727e-7, 3.1704e-6]
- [2.48971e-8, 8.92533e-8, 9.48135e-7]       [2.48971e-8, -8.92533e-8, 9.48135e-7]</code></pre><p>Special functions are provided for directly retrieving the dimensionalized forces and moments.</p><pre><code class="language-julia hljs">Fs, Ms   = surface_dynamics(system; axes = ax)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">((wing = StaticArrays.SVector{3, Float64}[[0.00017078988737153, -0.0006813850913130319, -0.008773453447636788] [0.0006693486437538011, -0.002872848593755301, -0.03682672065014951] … [0.0006693486437538469, 0.00287284859375531, -0.03682672065014977] [0.00017078988737154058, 0.0006813850913130337, -0.008773453447636846]; [1.6987893750613284e-5, -1.6225414149054753e-5, -0.000247104704839708] [0.0002587891269540262, -0.0005215366959906659, -0.0070574181392465815] … [0.00025878912695404216, 0.000521536695990676, -0.007057418139246752] [1.6987893750614717e-5, 1.622541414905583e-5, -0.0002471047048397254]; … ; [4.769860553167766e-5, 0.00020420971560472075, 0.002174560075133745] [0.00018910437918217822, 0.0008630628866953665, 0.009189523181115019] … [0.0001891043791821669, -0.0008630628866953702, 0.009189523181115059] [4.769860553167522e-5, -0.00020420971560472135, 0.0021745600751337506]; [1.7076780376275316e-5, 6.121841847252238e-5, 0.0006503212363012659] [5.323870020225251e-5, 0.00021407400236101183, 0.0022724000491700794] … [5.3238700202249644e-5, -0.00021407400236101275, 0.0022724000491700885] [1.7076780376274716e-5, -6.121841847252284e-5, 0.0006503212363012705]], htail = StaticArrays.SVector{3, Float64}[[-7.806900776674469e-5, -3.579324472063071e-6, -0.0036846994647517393] [-0.00033639574502489043, -1.2080031171458884e-5, -0.016613076302856883] … [-0.00033639574500053177, 1.2080031169134413e-5, -0.01661307630197329] [-7.806900776119521e-5, 3.579324471476791e-6, -0.0036846994645628613]; [-4.2449644298074e-5, 1.0749265017221768e-7, -0.0024602706781822973] [-0.00024854297211716685, -2.8984658346376475e-6, -0.013475059331436515] … [-0.0002485429720978303, 2.8984658334125808e-6, -0.013475059330650234] [-4.244964429492167e-5, -1.074926503165685e-7, -0.0024602706780397473]; … ; [-1.0733802723614932e-5, 3.6731468684266286e-8, -0.0006695965790860116] [-4.755856975060172e-5, 1.0966250144471862e-7, -0.0028878094462743025] … [-4.7558569747938635e-5, -1.0966250146404518e-7, -0.0028878094461496535] [-1.0733802723015412e-5, -3.6731468687146165e-8, -0.0006695965790559505]; [-2.901504365525234e-6, -6.861497705916659e-9, -0.000179722315796531] [-9.593291222640927e-6, -1.6254976085518638e-8, -0.0005815696875315194] … [-9.593291222217193e-6, 1.6254976087649644e-8, -0.0005815696875116587] [-2.901504365381256e-6, 6.861497706408157e-9, -0.00017972231578924924]], vtail = StaticArrays.SVector{3, Float64}[[4.808210269239199e-22, 4.785518416942775e-11, -7.154282961300215e-23] [9.972758427188692e-23, 3.558808861307019e-11, -1.484034716370093e-23] … [-2.879231829645805e-25, 5.188117589355796e-13, 4.280736536257961e-26] [-6.116019376153238e-26, 1.0952560409279195e-13, 9.093115543813004e-27]; [1.8587908171601026e-20, 3.2936173724109084e-10, -1.7645230178795583e-21] [-6.517156628435886e-22, 6.380324052938582e-11, 6.186179667901973e-23] … [-2.393639896865574e-25, 5.743169558520064e-13, 2.2686994727717522e-26] [3.8571677017747046e-26, 1.5725288630850533e-13, -3.671154589602245e-27]; … ; [-1.2439602115663004e-22, -2.3287229591458214e-11, -1.5980914616914386e-23] [-5.823148560481492e-23, -1.6763091792414017e-11, -7.480527482968765e-24] … [5.187948882577903e-25, -8.620061299297767e-13, 6.670715799104305e-26] [8.63375727209838e-24, -1.4070386292980883e-12, 1.1093466656365933e-24]; [-6.4384680842323096e-24, -3.193924960909536e-12, -1.3679830015473622e-24] [-4.98927203101263e-24, -2.3242171376780392e-12, -1.0600811348276563e-24] … [-2.6876153409837564e-24, -1.4606819862980051e-12, -5.7103056272677405e-25] [1.6142489957567015e-22, -3.382971064794853e-12, 3.430308149967447e-23]]), (wing = StaticArrays.SVector{3, Float64}[[-0.0352749838725156, 0.002255352583061564, -0.0005115256977941608] [-0.14715908149536894, 0.009206439858300117, -0.001956514795304683] … [0.14715908149536996, 0.009206439858300195, 0.001956514795304863] [0.03527498387251583, 0.0022553525830615825, 0.0005115256977942026]; [-0.0009925056046454104, 7.489303331094853e-5, -6.331489838044244e-5] [-0.02819164619802445, 0.0020155454680346333, -0.0008848151632450155] … [0.028191646198025132, 0.0020155454680346858, 0.0008848151632450758] [0.0009925056046454805, 7.489303331095388e-5, 6.331489838044786e-5]; … ; [0.008757937154117363, -0.002125494884254987, -0.000391705938667194] [0.03678212310347699, -0.00898868231605258, -0.0016011123071110345] … [-0.03678212310347714, -0.00898868231605262, 0.0016011123071109933] [-0.008757937154117386, -0.0021254948842549934, 0.0003917059386671848]; [0.002619241142842446, -0.0006656068974063784, -0.00013143597742339228] [0.009095947824774, -0.002329637449661136, -0.00043256963163529756] … [-0.009095947824774036, -0.002329637449661146, 0.00043256963163528715] [-0.0026192411428424644, -0.0006656068974063833, 0.00013143597742339036]], htail = StaticArrays.SVector{3, Float64}[[-0.0036389783819840505, 0.016385095470182597, 9.301681400025267e-5] [-0.01561445462007272, 0.07366562115979403, 0.00036974001581486707] … [0.015614454619242539, 0.07366562115587484, -0.0003697400157816707] [0.003638978381797587, 0.016385095469342418, -9.301681399216624e-5]; [-0.002430186332798962, 0.011098296339490846, 4.144566735021377e-5] [-0.01266628597709192, 0.06064905486472753, 0.00024667094178252864] … [0.012666285976353024, 0.06064905486118775, -0.0002466709417588422] [0.0024301863326581822, 0.011098296338847676, -4.144566734644929e-5]; … ; [-0.0006614102191492014, 0.0032015682278424195, 1.042694769761073e-5] [-0.002714614061750315, 0.013802518131929457, 4.418212001548175e-5] … [0.002714614061633146, 0.013802518131333574, -4.418212001288608e-5] [0.0006614102191195085, 0.003201568227698665, -1.0426947697004785e-5]; [-0.00017752198593609214, 0.0008777026425509607, 2.8994906365917146e-6] [-0.0005466831832336376, 0.002841035360785618, 9.097227827648082e-6] … [0.0005466831832149677, 0.002841035360688578, -9.097227827260171e-6] [0.0001775219859288994, 0.0008777026425153941, -2.8994906364518983e-6]], vtail = StaticArrays.SVector{3, Float64}[[-5.108637811539223e-13, 2.951308068205485e-22, -2.008471462488866e-10] [4.0082931594569914e-12, 7.378920896269416e-23, -1.5001532570962729e-10] … [3.6343310654790364e-13, -3.8588445571564236e-25, -2.2323395886280893e-12] [7.88628376208678e-14, -8.319001402596265e-26, -4.715842541033745e-13]; [-4.113454832602597e-12, 7.356889428520293e-21, -1.4165518829945451e-9] [7.077817999732902e-12, -3.390822655046161e-22, -2.751588768812915e-10] … [4.0165664310442477e-13, -2.6651012896368103e-25, -2.508888906428049e-12] [1.1305099553750358e-13, 4.3773800666955696e-26, -6.872470095131473e-13]; … ; [4.66907346672756e-13, 7.814867079619306e-23, 1.102430408494048e-10] [-1.7409068214006775e-12, 2.9246603157233696e-23, 7.909055680869318e-11] … [-5.987369399425521e-13, 5.06767811260114e-26, 4.001639043195615e-12] [-1.004920867840933e-12, 1.019258548367874e-24, 6.528262917393211e-12]; [7.316889317659483e-14, 6.847657120095357e-24, 1.5643328456523554e-11] [-2.351575891010175e-13, 4.6593534209247886e-24, 1.1322354355023589e-11] … [-1.011929250598252e-12, 8.480484158389888e-25, 6.932038109344844e-12] [-2.4101364820491977e-12, -4.764649547058865e-23, 1.6040621747044877e-11]]))</code></pre><p>A Trefftz plane integration is performed to compute farfield forces.</p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>The farfield forces are usually more accurate compared to nearfield forces, as the components do not interact as in the evaluation of the Biot-Savart integrals for the latter.</p></div></div><p>To obtain the nearfield and farfield coefficients of the components (in wind axes by definition):</p><pre><code class="language-julia hljs">nfs = nearfield_coefficients(system)
-ffs = farfield_coefficients(system)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">(wing = [0.001905665369005047, 1.5039206638735053e-16, 0.18507804486111293], htail = [1.1851540006767257e-5, -5.59542324303448e-17, -0.0037252010744547536], vtail = [7.310836604868527e-25, 1.5861670453314072e-13, -9.712471974890614e-30])</code></pre><p>You can similarly access the components by name.</p><pre><code class="language-julia hljs">@show (nfs.wing, ffs.wing)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">([0.0016256492763576129, 1.5987533797699125e-16, 0.1850719896482728, 7.091772762974789e-17, -0.049860880962472244, -3.3046801839946866e-17], [0.001905665369005047, 1.5039206638735053e-16, 0.18507804486111293])</code></pre><p>To obtain the total nearfield and farfield force coefficients:</p><pre><code class="language-julia hljs">nf = nearfield(system)
-ff = farfield(system)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3×1 StaticArrays.SMatrix{3, 1, Float64, 3} with indices SOneTo(3)×SOneTo(1):
- 0.0019175169090118141
- 1.5871114236709772e-13
- 0.18135284378665817</code></pre><p>You can also print the relevant information as a pretty table, if necessary.</p><pre><code class="language-julia hljs">print_coefficients(nfs.wing, ffs.wing, :wing)
-print_coefficients(nf, ff, :aircraft)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">──────────────────────────────
- wing  Nearfield    Farfield
-──────────────────────────────
- CDi   0.00162565  0.00190567
-  CY      0.0         0.0
-  CL    0.185072    0.185078
-  Cl      0.0          —
-  Cm   -0.0498609      —
-  Cn      -0.0         —
-──────────────────────────────
-──────────────────────────────────
- aircraft  Nearfield    Farfield
-──────────────────────────────────
-   CDi     0.00154746  0.00191752
-    CY        0.0         0.0
-    CL      0.181351    0.181353
-    Cl        -0.0         —
-    Cm     -0.0387602      —
-    Cn        -0.0         —
-──────────────────────────────────</code></pre><h2 id="Aerodynamic-Stability-Analyses"><a class="docs-heading-anchor" href="#Aerodynamic-Stability-Analyses">Aerodynamic Stability Analyses</a><a id="Aerodynamic-Stability-Analyses-1"></a><a class="docs-heading-anchor-permalink" href="#Aerodynamic-Stability-Analyses" title="Permalink"></a></h2><p>The derivatives of the aerodynamic coefficients with respect to the freestream values is obtained by automatic differentiation enabled by <a href="https://github.com/JuliaDiff/ForwardDiff.jl">ForwardDiff</a>. To compute the values, simply replace <code>solve_case</code> with <code>solve_case_derivatives</code>. You can also optionally provide the axes for the reference frame of the coefficients.</p><pre><code class="language-julia hljs">dv_data = solve_case_derivatives(
+CFs, CMs = surface_coefficients(system; axes = ax)</code></pre><p>You can access the corresponding values of the components&#39; by the name provided in the <code>ComponentVector</code>.</p><pre><code class="language- hljs">CFs.wing</code></pre><p>Special functions are provided for directly retrieving the dimensionalized forces and moments.</p><pre><code class="language- hljs">Fs, Ms   = surface_dynamics(system; axes = ax)</code></pre><p>A Trefftz plane integration is performed to compute farfield forces.</p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><p>The farfield forces are usually more accurate compared to nearfield forces, as the components do not interact as in the evaluation of the Biot-Savart integrals for the latter.</p></div></div><p>To obtain the nearfield and farfield coefficients of the components (in wind axes by definition):</p><pre><code class="language- hljs">nfs = nearfield_coefficients(system)
+ffs = farfield_coefficients(system)</code></pre><p>You can similarly access the components by name.</p><pre><code class="language- hljs">@show (nfs.wing, ffs.wing)</code></pre><p>To obtain the total nearfield and farfield force coefficients:</p><pre><code class="language- hljs">nf = nearfield(system)
+ff = farfield(system)</code></pre><p>You can also print the relevant information as a pretty table, if necessary.</p><pre><code class="language- hljs">print_coefficients(nfs.wing, ffs.wing, :wing)
+print_coefficients(nf, ff, :aircraft)</code></pre><h2 id="Aerodynamic-Stability-Analyses"><a class="docs-heading-anchor" href="#Aerodynamic-Stability-Analyses">Aerodynamic Stability Analyses</a><a id="Aerodynamic-Stability-Analyses-1"></a><a class="docs-heading-anchor-permalink" href="#Aerodynamic-Stability-Analyses" title="Permalink"></a></h2><p>The derivatives of the aerodynamic coefficients with respect to the freestream values is obtained by automatic differentiation enabled by <a href="https://github.com/JuliaDiff/ForwardDiff.jl">ForwardDiff</a>. To compute the values, simply replace <code>solve_case</code> with <code>solve_case_derivatives</code>. You can also optionally provide the axes for the reference frame of the coefficients.</p><pre><code class="language- hljs">dv_data = solve_case_derivatives(
              aircraft, fs, refs;
              axes             = Wind(),
              name             = :aircraft,
              print            = true,    # Prints the results for only the aircraft
              print_components = true,    # Prints the results for all components
-            );</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">──────────────────────────────────────────────────────────────────────────────
- wing    Values                              Derivatives
-                   ∂/∂α, 1/rad  ∂/∂β, 1/rad     ∂/∂p̄        ∂/∂q̄      ∂/∂r̄
-──────────────────────────────────────────────────────────────────────────────
-  CX   0.00162565   0.0728908      -0.0         -0.0       1.3173      0.0
-  CY      0.0          0.0       0.0105242     1.20835      0.0     -0.12443
-  CZ    0.185072     4.38914       -0.0          0.0      93.8865     -0.0
-  Cℓ      0.0         -0.0       0.0527798     4.13465      0.0     -0.352306
-  Cm   -0.0498609  -0.00917958      0.0         -0.0      -7.64628     0.0
-  Cn      0.0         -0.0      -0.00259548   -0.111074     0.0     0.0145765
-──────────────────────────────────────────────────────────────────────────────
-─────────────────────────────────────────────────────────────────────────────────
- htail    Values                               Derivatives
-                     ∂/∂α, 1/rad  ∂/∂β, 1/rad     ∂/∂p̄        ∂/∂q̄       ∂/∂r̄
-─────────────────────────────────────────────────────────────────────────────────
-  CX     -7.819e-5   0.00270882       0.0          0.0      0.460028     -0.0
-  CY        0.0         -0.0      -0.00178808  -0.0300024     -0.0    0.0318038
-  CZ    -0.00372093   0.220263       -0.0          0.0      25.3962      -0.0
-  Cℓ        0.0        -2.0e-8    -0.0131887    -0.197568     0.0      0.240599
-  Cm     0.0111007    -0.658798       0.0         -0.0      -76.0893     0.0
-  Cn       -0.0          0.0      0.00140018    0.0247845     0.0     -0.0267733
-─────────────────────────────────────────────────────────────────────────────────
-───────────────────────────────────────────────────────────────────────
- vtail  Values                            Derivatives
-                ∂/∂α, 1/rad  ∂/∂β, 1/rad     ∂/∂p̄      ∂/∂q̄    ∂/∂r̄
-───────────────────────────────────────────────────────────────────────
-  CX     0.0       -0.0         -0.0         -0.0      0.0      0.0
-  CY     -0.0     5.0e-7      0.231164      5.12756    -0.0  -6.46813
-  CZ     -0.0       0.0          0.0          0.0      -0.0    -0.0
-  Cℓ     -0.0     2.0e-8     0.00875741    0.183741    -0.0  -0.230339
-  Cm     0.0       -0.0         -0.0         -0.0      0.0      0.0
-  Cn     0.0      -2.0e-7    -0.0831378    -2.07307    0.0    2.75787
-───────────────────────────────────────────────────────────────────────
-──────────────────────────────────────────────────────────────────────────────────
- aircraft    Values                              Derivatives
-                       ∂/∂α, 1/rad  ∂/∂β, 1/rad     ∂/∂p̄        ∂/∂q̄      ∂/∂r̄
-──────────────────────────────────────────────────────────────────────────────────
-    CX     0.00154746   0.0755996       0.0          0.0      1.77733      0.0
-    CY        -0.0       5.0e-7       0.2399       6.30591      -0.0    -6.56076
-    CZ      0.181351     4.60941        0.0          0.0      119.283     -0.0
-    Cℓ        0.0         -0.0       0.0483485     4.12082      0.0     -0.342046
-    Cm     -0.0387602   -0.667977      -0.0         -0.0      -83.7355     0.0
-    Cn        0.0        -2.0e-7    -0.0843331    -2.15936      0.0      2.74567
-──────────────────────────────────────────────────────────────────────────────────</code></pre><h2 id="Euler-Bernoulli-Beam-Structural-Analysis"><a class="docs-heading-anchor" href="#Euler-Bernoulli-Beam-Structural-Analysis">Euler-Bernoulli Beam Structural Analysis</a><a id="Euler-Bernoulli-Beam-Structural-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Euler-Bernoulli-Beam-Structural-Analysis" title="Permalink"></a></h2><p>The tubular beam&#39;s relevant properties, viz. the Young&#39;s (elastic) modulus <span>$E$</span>, shear modulus <span>$G$</span>, and torsional moment of inertia <span>$J$</span> must be specified to define the stiffness matrix for its discretization with <span>$n$</span> elements.</p><pre><code class="language-julia hljs"># Material properties
+            );
+nothing #hide</code></pre><h2 id="Euler-Bernoulli-Beam-Structural-Analysis"><a class="docs-heading-anchor" href="#Euler-Bernoulli-Beam-Structural-Analysis">Euler-Bernoulli Beam Structural Analysis</a><a id="Euler-Bernoulli-Beam-Structural-Analysis-1"></a><a class="docs-heading-anchor-permalink" href="#Euler-Bernoulli-Beam-Structural-Analysis" title="Permalink"></a></h2><p>The tubular beam&#39;s relevant properties, viz. the Young&#39;s (elastic) modulus <span>$E$</span>, shear modulus <span>$G$</span>, and torsional moment of inertia <span>$J$</span> must be specified to define the stiffness matrix for its discretization with <span>$n$</span> elements.</p><pre><code class="language-julia hljs"># Material properties
 E = 1. # Elastic modulus
 G = 1. # Shear modulus
 J = 2. # Torsional moment of inertia
@@ -380,4 +213,4 @@ F2 = K * [ x[1:2]; 0.; x[3]; 0.; 0. ]</code></pre><pre class="documenter-example
  -25.00000000000003
    7.105427357601002e-15
   15.000000000000014
- -10.000000000000009</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../tutorials-aircraft/">« Aircraft Aerodynamic Analysis</a><a class="docs-footer-nextpage" href="../theory/">Theory »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Monday 31 January 2022 17:50">Monday 31 January 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+ -10.000000000000009</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../tutorials-aircraft/">« Aircraft Aerodynamic Analysis</a><a class="docs-footer-nextpage" href="../theory/">Theory »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Wednesday 2 February 2022 19:24">Wednesday 2 February 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
