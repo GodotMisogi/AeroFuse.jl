@@ -33,8 +33,7 @@ struct Wing{M <: AbstractWing} <: AbstractWing
     # end
 end
 
-Wing(bing :: HalfWing)  = Wing(bing, bing)
-
+# Getters
 left(wing :: Wing)      = wing.left
 right(wing :: Wing)     = wing.right
 foils(wing :: Wing)     = @views [ (foils ∘ left)(wing)[end:-1:2]     ; (foils ∘ right)(wing)     ]
@@ -42,15 +41,29 @@ chords(wing :: Wing)    = @views [ (chords ∘ left)(wing)[end:-1:2]    ; (chord
 twists(wing :: Wing)    = @views [ (twists ∘ left)(wing)[end:-1:2]    ; (twists ∘ right)(wing)    ]
 spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)     ; (spans ∘ right)(wing)     ]
 dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dihedrals ∘ right)(wing) ]
-sweeps(wing :: Wing)    = @views [ (reverse ∘ sweeps ∘ left)(wing)    ; (sweeps ∘ right)(wing)    ]
+
+sweeps(wing :: Wing, w = 0.) = [ reverse(sweeps, left(wing), w); sweeps(right(wing), w) ]
 
 Base.position(wing :: Wing) = right(wing).affline.translation
 orientation(wing :: Wing)   = right(wing).affine.linear
 
 affine_transformation(wing :: Wing) = affine_transformation(right(wing))
 
-# Symmetric wing
-Wing(; chords, twists, spans, dihedrals, LE_sweeps, foils = fill(naca4(((0,0,1,2))), length(chords)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = let w = HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, LE_sweeps = LE_sweeps, position = position, angle = angle, axis = axis); Wing(w, w) end
+# Symmetric wings
+Wing(bing :: HalfWing) = Wing(bing, bing)
+
+Wing(;
+        chords,
+        twists    = zero(chords), 
+        spans     = 1/2 * ones(length(chords) - 1) / (length(chords) - 1), 
+        dihedrals = zero(spans), 
+        sweeps    = zero(spans),
+        w_sweep   = 0.0,
+        foils     = fill(naca4(((0,0,1,2))), length(chords)),
+        position  = zeros(3),
+        angle     = 0.,
+        axis      = SVector(1., 0., 0.)
+    ) = Wing(HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, sweeps = sweeps, w_sweep = w_sweep, position = position, angle = angle, axis = axis))
 
 """
     WingSection(; span, dihedral, LE_sweep, taper, root_chord,
@@ -67,13 +80,32 @@ Define a `Wing` consisting of two trapezoidal sections with one plane of symmetr
 - `root_chord :: Real         = 1.`: Root chord length
 - `root_twist :: Real         = 0.`: Twist angle at root (degrees)
 - `tip_twist  :: Real         = 0.`: Twist angle at tip (degrees)
-- `root_foil  :: Array{Real}  = naca4((0,0,1,2))`: Foil coordinates at root
-- `tip_foil   :: Array{Real}  = naca4((0,0,1,2))`: Foil coordinates at tip
+- `root_foil  :: Foil         = naca4((0,0,1,2))`: Foil coordinates at root
+- `tip_foil   :: Foil         = root_foil`: Foil coordinates at tip
 - `position   :: Vector{Real} = zeros(3)`: Position
 - `angle      :: Real         = 0.`: Angle of rotation (degrees)
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
-WingSection(; span = 1., dihedral = 0., LE_sweep = 0., taper = 1., root_chord = 1., root_twist = 0., tip_twist = 0., root_foil = naca4((0,0,1,2)), tip_foil = naca4((0,0,1,2)), position = zeros(3), angle = 0., axis = SVector(1., 0., 0.)) = let w = HalfWingSection(span = span / 2, dihedral = dihedral, LE_sweep = LE_sweep, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis); Wing(w, w) end
+function WingSection(;
+        span = 1.,
+        dihedral = 0.,
+        sweep = 0.,
+        w_sweep = 0.,
+        taper = 1.,
+        root_chord = 1.,
+        root_twist = 0.,
+        tip_twist = 0.,
+        root_foil = naca4((0,0,1,2)),
+        tip_foil = root_foil,
+        position = zeros(3),
+        angle = 0.,
+        axis = SVector(1., 0., 0.)
+    )
+
+    w = HalfWingSection(span = span / 2, dihedral = dihedral, sweep = sweep, w_sweep = w_sweep, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis)
+
+    Wing(w, w) 
+end
 
 span(wing :: Wing) = (span ∘ left)(wing) + (span ∘ right)(wing)
 

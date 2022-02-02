@@ -73,7 +73,7 @@ end
                           twists    = [2.0, 0.0, -0.2],
                           spans     = [5.0, 0.5],
                           dihedrals = [5., 5.],
-                          LE_sweeps = [5., 5.]);
+                          sweeps      = [5., 5.]);
 
     # Get wing info
     b        = span(wing_right)
@@ -98,7 +98,7 @@ end
                 twists    = [0., 0.],
                 spans     = [0.5,],
                 dihedrals = [5.],
-                LE_sweeps = [1.14])
+                sweeps    = [1.14])
 
     # Define freestream and reference values
     fs   = Freestream(2.0, 2.0, [0.0, 0.0, 0.0])
@@ -144,7 +144,7 @@ end
                 twists    = [0.0, 0.0],
                 spans     = [5.0],
                 dihedrals = [11.39],
-                LE_sweeps = [0.]);
+                sweeps    = [0.]);
 
     # Horizontal tail
     htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
@@ -152,7 +152,7 @@ end
                  twists    = [0.0, 0.0],
                  spans     = [1.25],
                  dihedrals = [0.],
-                 LE_sweeps = [6.39],
+                 sweeps    = [6.39],
                  position  = [4., 0, 0],
                  angle     = -2.,
                  axis      = [0., 1., 0.])
@@ -163,7 +163,7 @@ end
                      twists    = [0.0, 0.0],
                      spans     = [1.0],
                      dihedrals = [0.],
-                     LE_sweeps = [7.97],
+                     sweeps    = [7.97],
                      position  = [4., 0, 0],
                      angle     = 90.,
                      axis      = [1., 0., 0.])
