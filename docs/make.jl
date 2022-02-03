@@ -23,6 +23,7 @@ for (root, _, files) ∈ walkdir(lit), file ∈ files
     ipath = joinpath(root, file)
     opath = splitdir(replace(ipath, lit => src))[1]
     Literate.markdown(ipath, opath)
+    # Literate.notebook(ipath, opath)
 end
 
 ## Generate documentation
@@ -33,17 +34,17 @@ makedocs(
     # repo = "https://github.com/GodotMisogi/AeroMDAO.jl",
     pages = [
                 "Home"          => "index.md"
-                "Tutorials"     => [
-                                    "Airfoil Aerodynamic Analysis" => "tutorials-airfoil.md",
-                                    "Aircraft Aerodynamic Analysis" => "tutorials-aircraft.md"
+                "Tutorials"     =>  [
+                                        "Airfoil Aerodynamic Analysis"  => "tutorials-airfoil.md",
+                                        "Aircraft Aerodynamic Analysis" => "tutorials-aircraft.md"
                                     ]
                 "How-to Guide"  => "howto.md"
                 "Theory"        => "theory.md"
-                "Reference"     => [
-                                    "Geometry API"      => "geometry.md"
-                                    "Aerodynamics API"  => "aerodynamics.md"
-                                    "Structures API"    => "structures.md"
-                                    "In-Progress API"   => "development.md"
+                "Reference"     =>  [
+                                        "Geometry API"      => "geometry.md"
+                                        "Aerodynamics API"  => "aerodynamics.md"
+                                        "Structures API"    => "structures.md"
+                                        "In-Progress API"   => "development.md"
                                     ]
             ],
     format = Documenter.HTML(
