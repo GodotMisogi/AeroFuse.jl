@@ -68,7 +68,7 @@ plt = plot(
 htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
-             spans     = [1.25],
+             spans     = [2.5],
              dihedrals = [0.],
              sweeps    = [6.39],
              w_sweep   = 0.,
