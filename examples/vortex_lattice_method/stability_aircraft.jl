@@ -129,9 +129,9 @@ println("Spiral Stability      γ: $γ")
 ## Plotting everything
 using Plots
 
-wing_plan  = plot_wing(wing)
-htail_plan = plot_wing(htail)
-vtail_plan = plot_wing(vtail)
+wing_plan  = plot_planform(wing)
+htail_plan = plot_planform(htail)
+vtail_plan = plot_planform(vtail)
 
 #
 z_limit = b

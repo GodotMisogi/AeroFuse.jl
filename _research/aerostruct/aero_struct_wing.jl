@@ -263,8 +263,8 @@ ss_plot   = axes_plot[:,2,:]
 ns_plot   = axes_plot[:,3,:]
 
 # Planforms
-wing_plan  = plot_wing(wing)
-nwing_plan = plot_wing(new_camber_mesh)
+wing_plan  = plot_planform(wing)
+nwing_plan = plot_planform(new_camber_mesh)
 
 # Streamlines
 seed    = chop_coordinates(new_camber_mesh[1,:], 3)
@@ -338,7 +338,7 @@ m1 = poly!(scene, wing_mesh.camber_mesh[:], wing_cam_connec, color = wing_cp_poi
 m2 = poly!(scene, new_camber_mesh[:], new_wing_cam_connec, color = new_wing_cp_points[:])
 
 # Borders
-# lines!(scene, plot_wing(wing))
+# lines!(scene, plot_planform(wing))
 l1 = [ lines!(scene, pts, color = :grey, transparency = true) for pts in plot_panels(make_panels(wing_mesh.camber_mesh)) ]
 l2 = [ lines!(scene, pts, color = :grey, transparency = true) for pts in plot_panels(make_panels(new_camber_mesh)) ]
 

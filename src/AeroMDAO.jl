@@ -164,6 +164,6 @@ export AerostructWing, make_beam_mesh, transform_stiffy, permute_stiffy, build_b
 
 include("Tools/plot_tools.jl")
 
-export plot_panels, plot_streamlines, plot_wing, plot_surface
+export plot_panels, plot_streamlines, plot_planform, plot_surface
 
 end

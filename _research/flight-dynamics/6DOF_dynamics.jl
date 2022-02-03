@@ -105,7 +105,7 @@ include("../vortex-lattice/aircraft_types.jl")
 vanilla   = VanillaAirplane()
 wing      = vanilla.surfs[1]
 wing_mac  = mean_aerodynamic_center(wing)
-wing_plan = plot_wing(wing)
+wing_plan = plot_planform(wing)
 
 print_info(wing, "Wing")
 

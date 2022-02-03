@@ -102,7 +102,7 @@ streams = plot_streamlines(system, seed, distance, num_stream_points);
 ## Display
 horseshoe_panels = chord_panels(wing_mesh)
 horseshoe_coords = plot_panels(horseshoe_panels)
-wing_coords      = plot_wing(wing);
+wing_coords      = plot_planform(wing);
 horseshoe_points = Tuple.(horseshoe_point.(system.vortices))
 ys               = getindex.(horseshoe_points, 2)
 

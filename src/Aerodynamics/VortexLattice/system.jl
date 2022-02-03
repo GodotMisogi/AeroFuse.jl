@@ -74,7 +74,7 @@ function Base.show(io :: IO, sys :: VortexLatticeSystem)
     println(io, "VortexLatticeSystem -")
     println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements\n")
     show(io, sys.freestream)
-    println(io, "\n")
+    println(io, "")
     show(io, sys.reference)
 end
 

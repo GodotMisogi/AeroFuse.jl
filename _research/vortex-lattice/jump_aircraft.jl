@@ -181,7 +181,7 @@ nf, ff = run_case(wing, V, x_opt[end], ρ, span_num, chord_num)
 print_coefficients(nf, ff)
 
 ## Plotting
-bing = plot_wing(wing)
+bing = plot_planform(wing)
 
 ##
 using Plots

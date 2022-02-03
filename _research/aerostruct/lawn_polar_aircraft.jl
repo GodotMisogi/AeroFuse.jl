@@ -18,7 +18,7 @@ wing = Wing(foils     = fill(naca4((2,4,1,2)), 3),
             twists    = [0.0, 0.0, 0.0],
             spans     = [4.0, 3.0],
             dihedrals = [0., 0.],
-            sweeps      = [0., 5.]);
+            sweeps    = [0., 5.]);
 
 print_info(wing, "Lawn Polar Wing")
 
@@ -28,7 +28,7 @@ htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweeps      = [6.39],
+             sweeps    = [6.39],
              position  = [4., 0., 0.],
              angle     = 0.,
              axis      = [0., 1., 0.])
@@ -49,7 +49,7 @@ vtail_d = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
                    twists    = [0.0, 0.0],
                    spans     = [0.4],
                    dihedrals = [0.],
-                   sweeps      = [7.97],
+                   sweeps    = [7.97],
                    position  = [4.7, 0, 0],
                    angle     = 90.,
                    axis      = [1., 0., 0.]);
@@ -62,7 +62,7 @@ atail_l = Wing(foils     = fill(naca4((0,0,0,9)), 2),
                twists    = [0.0, 0.0],
                spans     = [0.5],
                dihedrals = [0.],
-               sweeps      = [8.],
+               sweeps    = [8.],
                position  = [2., 2.5, 0.],
                angle     = 0.,
                axis      = [0., 1., 0.])
@@ -72,7 +72,7 @@ atail_r = Wing(foils     = fill(naca4((0,0,0,9)), 2),
                twists    = [0.0, 0.0],
                spans     = [0.5],
                dihedrals = [0.],
-               sweeps      = [8.],
+               sweeps    = [8.],
                position  = [2., -2.5, 0.],
                angle     = 0.,
                axis      = [0., 1., 0.]);
@@ -105,7 +105,7 @@ ref      = [wing_mac[1], 0., 0.]
 V, α, β  = 25.0, 0.0, 0.0
 Ω        = zeros(3)
 fs       = Freestream(α, β, Ω)
-refs     = References(V, S, b, c, ρ, ref)
+refs     = References(speed = V, area = S, span = b, chord = c, density = ρ, location = ref)
 
 ## Solve aerodynamic case for initial vector
 @time system = solve_case(aircraft, fs, refs;
@@ -114,7 +114,7 @@ refs     = References(V, S, b, c, ρ, ref)
 
 ## Data collection
 # @time CFs, CMs = surface_coefficients(system);
-Fs = surface_forces(system)
+Fs = surface_forces(system);
 
 ## Wing FEM setup
 vlm_acs_wing    = bound_leg_center.(system.vortices.wing)
@@ -243,10 +243,10 @@ solve_aerostructural_residual!(R, x) =
 @time res_aerostruct =
     nlsolve(solve_aerostructural_residual!, x0,
             method         = :newton,
+            autodiff       = :forward,
             # show_trace     = true,
             # extended_trace = true,
             # store_trace    = true,
-            autodiff       = :forward,
            );
 # print_timer()
 
@@ -262,8 +262,8 @@ dxs   = mesh_translation.(Δs)
 Ts    = mesh_rotation.(Δs)
 
 ## New VLM variables
-new_mesh.chord_meshes = transfer_displacements.(dxs, Ts, chord_meshes, fem_meshes)
-new_panels     = make_panels.(new_mesh.chord_meshes)
+new_chord_meshes = transfer_displacements.(dxs, Ts, chord_meshes, fem_meshes)
+new_panels     = make_panels.(new_chord_meshes)
 
 new_camber_meshes = transfer_displacements.(dxs, Ts, camber_meshes, fem_meshes)
 new_cam_panels = make_panels.(new_camber_meshes)
@@ -338,16 +338,16 @@ new_mesh.chord_mesh_plot = @. reduce(hcat, new_mesh.chord_meshes)
 new_panel_plot    = plot_panels(reduce(vcat, vec.(make_panels.(new_mesh.chord_meshes))))
 
 ## Planforms
-wing_plan     = plot_wing(wing)
-htail_plan    = plot_wing(htail)
-vtail_plan    = plot_wing(vtail)
-atail_l_plan  = plot_wing(atail_l)
-atail_r_plan  = plot_wing(atail_r)
+wing_plan     = plot_planform(wing)
+htail_plan    = plot_planform(htail)
+vtail_plan    = plot_planform(vtail)
+atail_l_plan  = plot_planform(atail_l)
+atail_r_plan  = plot_planform(atail_r)
 
 ## New planforms
-nwing_plan  = plot_wing(new_camber_meshes[1])
-nhtail_plan = plot_wing(new_camber_meshes[2])
-nvtail_plan = plot_wing(new_camber_meshes[3])
+nwing_plan  = plot_planform(new_camber_meshes[1])
+nhtail_plan = plot_planform(new_camber_meshes[2])
+nvtail_plan = plot_planform(new_camber_meshes[3])
 
 # Streamlines
 seed    = [ 

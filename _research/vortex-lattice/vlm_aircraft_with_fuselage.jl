@@ -128,9 +128,9 @@ aircraft_panels   = ComponentArray(wing  = chord_panels(wing_mesh),
 panel_coordinates = plot_panels(aircraft_panels)
 horseshoe_points  = Tuple.(horseshoe_point.(aircraft_panels))[:];
 
-wing_coords  = plot_wing(wing)
-htail_coords = plot_wing(htail)
-vtail_coords = plot_wing(vtail)
+wing_coords  = plot_planform(wing)
+htail_coords = plot_planform(htail)
+vtail_coords = plot_planform(vtail)
 
 z_limit = span(wing)
 plot(xaxis = "x", yaxis = "y", zaxis = "z",

@@ -19,7 +19,7 @@ wing = WingSection(root_foil  = naca4(0,0,1,5),
                    root_twist = 0.0, # 2.0
                    tip_twist  = 0.0)
 wing_mac    = mean_aerodynamic_center(wing)
-wing_plan   = plot_wing(wing)
+wing_plan   = plot_planform(wing)
 wing_name   = "Wing"
 print_info(wing, wing_name)
 

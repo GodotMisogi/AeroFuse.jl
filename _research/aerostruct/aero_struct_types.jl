@@ -243,10 +243,10 @@ ss_plot   = axes_plot[:,2,:]
 ns_plot   = axes_plot[:,3,:]
 
 # Planforms
-wing_plan  = plot_wing(wing)
-nwing_plan = plot_wing(new_camber_mesh)
-htail_plan = plot_wing(htail)
-vtail_plan = plot_wing(vtail)
+wing_plan  = plot_planform(wing)
+nwing_plan = plot_planform(new_camber_mesh)
+htail_plan = plot_planform(htail)
+vtail_plan = plot_planform(vtail)
 
 # Streamlines
 seed    = chop_coordinates(new_camber_mesh[end,:], 3)

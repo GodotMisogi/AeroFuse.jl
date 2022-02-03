@@ -279,14 +279,14 @@ new_mesh.chord_mesh_plot = @. reduce(hcat, new_mesh.chord_meshes)
 new_panel_plot    = plot_panels(reduce(vcat, vec.(make_panels.(new_mesh.chord_meshes))))
 
 # Planforms
-wing_plan   = plot_wing(wing)
-htail_plan  = plot_wing(htail)
-vtail_plan  = plot_wing(vtail)
+wing_plan   = plot_planform(wing)
+htail_plan  = plot_planform(htail)
+vtail_plan  = plot_planform(vtail)
 
 # New planforms
-nwing_plan  = plot_wing(new_mesh.camber_meshes[1])
-nhtail_plan = plot_wing(new_mesh.camber_meshes[2])
-nvtail_plan = plot_wing(new_mesh.camber_meshes[3])
+nwing_plan  = plot_planform(new_mesh.camber_meshes[1])
+nhtail_plan = plot_planform(new_mesh.camber_meshes[2])
+nvtail_plan = plot_planform(new_mesh.camber_meshes[3])
 
 # Streamlines
 seed    = chop_coordinates(new_mesh.camber_meshes[1][end,:], 4)

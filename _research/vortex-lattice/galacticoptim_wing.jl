@@ -94,10 +94,10 @@ CDi_opt, cons_opt = evaluate_CDi(x_opt), cons!(zeros(3), x_opt)
 using Plots
 pyplot(dpi = 300)
 
-ini_plan = plot_wing(wing)
+ini_plan = plot_planform(wing)
 
 opt_wing = make_wing(x_opt[1:end-1])
-opt_plan = plot_wing(opt_wing)
+opt_plan = plot_planform(opt_wing)
 
 b = span(opt_wing)
 plot(xlim = (-b/2, b/2), zlim = (-b/2, b/2))
@@ -109,12 +109,12 @@ plot!(opt_plan, color = :blue, label = "Optimized")
 #============================================#
 
 opt_state_wing = make_wing(x_opt[1:end-1])
-opt_state_plan = plot_wing(opt_state_wing)
-htail_plan     = plot_wing(htail,
+opt_state_plan = plot_planform(opt_state_wing)
+htail_plan     = plot_planform(htail,
                            position = [1., 0, 0.15],
                            angle    = deg2rad(0.),
                            axis     = [0., 1., 0.])
-vtail_plan     = plot_wing(vtail_1,
+vtail_plan     = plot_planform(vtail_1,
                            position = [1., 0., 0],
                            angle    = π/2,
                            axis     = [1., 0, 0])

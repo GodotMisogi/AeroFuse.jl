@@ -1,11 +1,12 @@
 # ## Objectives
 #
-# Here we will show you how to perform an aerodynamic analysis of a conventional aircraft. Specifically we will:
-# 1. Define the geometries of a wing, horizontal tail and vertical tail.
-# 2. Mesh and plot the geometries for numerical analyses.
-# 3. Perform an aerodynamic analysis of this aircraft configuration at given freestream conditions and reference values.
-# 4. Evaluate its drag polar for a given range of angles of attack.
-# 5. Plot the spanwise loading distribution for the wing.
+# Here we will show you how to perform an aerodynamic analysis of a conventional aircraft.
+# > **Recipe**
+# > 1. Define the geometries of a wing, horizontal tail and vertical tail.
+# > 2. Mesh and plot the geometries for numerical analyses.
+# > 3. Perform an aerodynamic analysis of this aircraft configuration at given freestream conditions and reference values.
+# > 4. Evaluate its drag polar for a given range of angles of attack.
+# > 5. Plot the spanwise loading distribution for the wing.
 
 # For this, we will need to import some packages which will be convenient for plotting.
 using AeroMDAO      # Main package
@@ -27,22 +28,25 @@ airfoils  = [ airfoil_1, naca4((0,0,1,2)) ]
 #md #     Refer to the [Airfoil Aerodynamic Analysis](tutorials-airfoil.md) tutorial for an introduction to the `Foil` type.
 
 # ### Parametrization
-# The following function defines a symmetric wing and prints the relevant information. Named arguments corresponding to the foil shapes, chord and span lengths, twist, dihedral and leading-edge sweep angles. The following parametrization is used for the wing, presented for visual understanding.
+# The following function defines a symmetric wing and prints the relevant information. Named arguments corresponding to the foil shapes, chord and span lengths, twist, dihedral and sweep angles. The following parametrization is used for the wing, presented for visual understanding.
 # ![](https://godot-bloggy.xyz/post/diagrams/WingGeometry.svg)
-wing = Wing(foils     = airfoils,    # Foil profiles
-            chords    = [1.0, 0.6],  # Chord lengths
-            twists    = [2.0, 0.0],  # Twist angles (degrees)
-            spans     = [4.0],       # Section span lengths
-            dihedrals = [5.],        # Dihedral angles (degrees)
-            sweeps      = [5.])        # Leading-edge sweep angles (degrees)
+wing = Wing(
+        foils     = airfoils,    # Foil profiles
+        chords    = [1.0, 0.6],  # Chord lengths
+        twists    = [2.0, 0.0],  # Twist angles (degrees)
+        spans     = [4.0],       # Section span lengths
+        dihedrals = [5.],        # Dihedral angles (degrees)
+        sweeps    = [5.],        # Sweep angles (degrees)
+        w_sweep   = 0.,          # Sweep angle location w.r.t. normalized chord lengths ∈ [0,1]
+    )
 
 #md # !!! info
-#md #     See the [how-to guide](howto.md) on how to define an asymmetric wing.
+#md #     See the [How-to Guide](howto.md) for the various ways of constructing wings.
 
 # ### Visualization
 # 
 # The following function generates the coordinates of the wing's outline.
-wing_outline = plot_wing(wing)
+wing_outline = plot_planform(wing)
 
 # Let's plot the geometry!
 plt = plot(
@@ -66,7 +70,8 @@ htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweeps      = [6.39],
+             sweeps    = [6.39],
+             w_sweep   = 0.,
              position  = [4., 0, 0],
              angle     = -2.,
              axis      = [0., 1., 0.])
@@ -78,14 +83,15 @@ vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweeps      = [7.97],
+                 sweeps    = [7.97],
+                 w_sweep   = 0.,
                  position  = [4., 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.])
 
 # Let's visualize the geometry of the aircraft's configuration.
-htail_outline = plot_wing(htail)
-vtail_outline = plot_wing(vtail)
+htail_outline = plot_planform(htail)
+vtail_outline = plot_planform(vtail)
 
 plot!(plt,
     htail_outline[:,1], htail_outline[:,2], htail_outline[:,3], 
@@ -121,12 +127,12 @@ vtail_mesh = WingMesh(vtail, [4], 3)
     for panel in plot_panels(camber_panels(vtail_mesh)) ]
 plot!(plt)
 
-# For the analysis, you have to assemble the meshes into a `ComponentArray/Vector`.
-aircraft = ComponentArray(
-                          wing  = make_horseshoes(wing_mesh),
-                          htail = make_horseshoes(htail_mesh),
-                          vtail = make_horseshoes(vtail_mesh)
-                         )
+# For the analysis, you have to assemble the meshes into a `ComponentVector`.
+aircraft = ComponentVector(
+                           wing  = make_horseshoes(wing_mesh),
+                           htail = make_horseshoes(htail_mesh),
+                           vtail = make_horseshoes(vtail_mesh)
+                          )
 
 # You can define the freestream condition as follows, by providing the angles of attack $\alpha$ and sideslip $\beta$ in degrees with a rotation vector $\Omega$.
 fs  = Freestream(

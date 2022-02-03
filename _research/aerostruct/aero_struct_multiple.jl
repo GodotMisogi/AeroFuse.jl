@@ -18,7 +18,7 @@ wing = Wing(foils     = fill(naca4((2,4,1,2)), 2),
             twists    = [0.0, 0.0],
             spans     = [5.0],
             dihedrals = [5.],
-            sweeps      = [15.]);
+            sweeps    = [15.]);
 
 # Horizontal tail
 htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
@@ -26,7 +26,7 @@ htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             sweeps      = [6.39],
+             sweeps    = [6.39],
              position  = [4., 0., 0.],
              angle     = 0.,
              axis      = [0., 1., 0.])
@@ -37,7 +37,7 @@ vtail = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweeps      = [7.97],
+                 sweeps    = [7.97],
                  position  = [4., 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.]);
@@ -91,7 +91,7 @@ aluminum = Material(       # Aluminum properties
                     25e9,  # Shear modulus, N/m²,
                     350e6, # Yield stress with factor of safety 2.5, N/m²,
                     1.6e3, # Density, kg/m³
-                    )
+                   )
 
 Ls_wing = norm.(diff(wing_fem_mesh))                 # Beam lengths, m
 rs_wing = LinRange(2e-2, 1e-2, length(Ls_wing) ÷ 2)  # Outer radius, m
@@ -242,19 +242,19 @@ dxs   = mesh_translation.(Δs)
 Ts    = mesh_rotation.(Δs)
 
 ## New VLM variables
-new.chord_meshes = transfer_displacements.(dxs, Ts, chord_meshes, fem_meshes)
-new_panels     = make_panels.(new.chord_meshes)
+new_chord_meshes = transfer_displacements.(dxs, Ts, chord_meshes, fem_meshes)
+new_panels     = make_panels.(new_chord_meshes)
 
 new_camber_meshes = transfer_displacements.(dxs, Ts, camber_meshes, fem_meshes)
 new_cam_panels = make_panels.(new_camber_meshes)
 
 new_horsies = new_horseshoes.(dxs, Ts, chord_meshes, camber_meshes, fem_meshes)
-all_horsies = [ reduce(vcat, vec.(new_horsies)); other_horsies ];
+all_horsies = mapreduce(vec, vcat, new_horsies)
 
 ## Aerodynamic forces and center locations
 U_opt      = freestream_to_cartesian(-V, α_opt, deg2rad(β))
 new_acs    = new_horsies .|> horsies -> bound_leg_center.(horsies)
-all_forces = surface_forces(Γ_opt, all_horsies, Γ_opt, all_horsies, U_opt, Ω, ρ)
+all_forces = surface_forces(Γ_opt, all_horsies, U_opt, Ω, ρ)
 
 new_Γs     = getindex.(Ref(Γ_opt), syms)
 new_forces = surface_forces.(new_Γs, new_horsies, Ref(Γs), Ref(all_horsies), Ref(U_opt), Ref(Ω), Ref(ρ));
@@ -312,13 +312,13 @@ new.chord_mesh_plot = @. reduce(hcat, new.chord_meshes)
 new_panel_plot    = plot_panels(reduce(vcat, vec.(make_panels.(new.chord_meshes))))
 
 # Planforms
-wing_plan   = plot_wing(wing)
-htail_plan  = plot_wing(htail)
-vtail_plan  = plot_wing(vtail)
+wing_plan   = plot_planform(wing)
+htail_plan  = plot_planform(htail)
+vtail_plan  = plot_planform(vtail)
 
 # New planforms
-nwing_plan  = plot_wing(new_camber_meshes[1])
-nhtail_plan = plot_wing(new_camber_meshes[2])
+nwing_plan  = plot_planform(new_camber_meshes[1])
+nhtail_plan = plot_planform(new_camber_meshes[2])
 
 # Streamlines
 seed    = chop_coordinates(new_camber_meshes[1][end,:], 4)

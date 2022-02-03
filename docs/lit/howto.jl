@@ -69,7 +69,8 @@ wing_right = HalfWing(foils     = [ airfoil for i in 1:3 ],
                       twists    = [0., 2., 5.],
                       spans     = [1.0, 0.1],
                       dihedrals = [0., 60.],
-                      sweeps    = [0., 30.])
+                      sweeps    = [0., 30.],
+                      w_sweep   = 0.25)
 
 # The `Wing` constructor takes left and right `HalfWing`s to define a full wing. For example, the following generates a symmetric wing.
 wing = Wing(wing_right, wing_right)
@@ -173,11 +174,11 @@ vtail_mesh = WingMesh(vtail, [10], 5); # Vertical tail
 wing_horsies = make_horseshoes(wing_mesh)
 
 # For multiple lifting surfaces, it is most convenient to define a single vector consisting of all the components' horseshoes using [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl).
-aircraft = ComponentArray(
-                          wing  = wing_horsies,
-                          htail = make_horseshoes(htail_mesh),
-                          vtail = make_horseshoes(vtail_mesh)
-                         );
+aircraft = ComponentVector(
+                           wing  = wing_horsies,
+                           htail = make_horseshoes(htail_mesh),
+                           vtail = make_horseshoes(vtail_mesh)
+                          );
 
 # To define boundary conditions, use the following `Freestream` type, which takes named arguments for angles of attack and sideslip (in degrees), and a quasi-steady rotation vector.
 

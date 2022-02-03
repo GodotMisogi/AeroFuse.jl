@@ -209,9 +209,9 @@ m3 = poly!(scene, vec(vtail_mesh.camber_mesh), vtail_cam_connec, color = vec(vta
 # w1 = wireframe!(scene, wing_surf_mesh.plot[1][], color = :grey, alpha = 0.1)
 
 # Borders
-lines!(scene, plot_wing(wing))
-lines!(scene, plot_wing(htail))
-lines!(scene, plot_wing(vtail))
+lines!(scene, plot_planform(wing))
+lines!(scene, plot_planform(htail))
+lines!(scene, plot_planform(vtail))
 
 # l1 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(wing_mesh))  ]
 # l2 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(htail_mesh)) ]

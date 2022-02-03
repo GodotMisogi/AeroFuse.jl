@@ -2,8 +2,8 @@ plot_panel(panel :: Panel3D) = let ps = panel_coordinates(panel); Tuple.([ ps; [
 plot_panels(panels) = plot_panel.(vec(panels))
 
 # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coordinates ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
-    
-function plot_wing(mesh :: Matrix{SVector{3,T}}) where T <: Real
+
+function plot_planform(mesh :: Matrix{SVector{3,T}}) where T <: Real
     wing_coords =   [ 
                         mesh[1,1:end-1]; 
                         mesh[1:end-1,end]; 
@@ -14,11 +14,11 @@ function plot_wing(mesh :: Matrix{SVector{3,T}}) where T <: Real
     wing_coords # .|> coords -> tuple(coords...)
 end
 
-plot_wing(wing :: AbstractWing) = permutedims(combinedimsview(plot_wing(coordinates(wing))))
+plot_planform(wing :: AbstractWing) = permutedims(combinedimsview(plot_planform(coordinates(wing))))
 
 plot_streamlines(system :: VortexLatticeSystem, points, length, num_steps) = Tuple.(streamlines(system, points, length, num_steps))
 
-plot_surface(wing :: AbstractWing, span_num = 5, chord_num = 30) = plot_panels(mesh_wing(wing, span_num, chord_num))
+plot_surface(wing :: AbstractWing, span_num = [5], chord_num = 30) = plot_panels(mesh_wing(wing, span_num, chord_num))
 
 
 ## Doublet-source
