@@ -16,7 +16,7 @@ function aeromdao_steady_vlm()
                 twists    = [2.0, 2.0],
                 spans     = [5.0],
                 dihedrals = [11.31],
-                LE_sweeps = [2.29]);
+                sweeps    = [2.29]);
 
     # Horizontal tail
     htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
@@ -24,7 +24,7 @@ function aeromdao_steady_vlm()
                  twists    = [0.0, 0.0],
                  spans     = [1.25],
                  dihedrals = [0.],
-                 LE_sweeps = [6.39],
+                 sweeps    = [6.39],
                  position  = [4., 0, 0],
                  angle     = 0.,
                  axis      = [0., 1., 0.])
@@ -35,7 +35,7 @@ function aeromdao_steady_vlm()
                      twists    = [0.0, 0.0],
                      spans     = [1.0],
                      dihedrals = [0.],
-                     LE_sweeps = [7.97],
+                     sweeps    = [7.97],
                      position  = [4., 0, 0],
                      angle     = 90.,
                      axis      = [1., 0., 0.])
@@ -97,7 +97,7 @@ function aeromdao_steady_vlm_components()
                 twists    = [2.0, 2.0],
                 spans     = [5.0],
                 dihedrals = [11.31],
-                LE_sweeps = [2.29]);
+                sweeps    = [2.29]);
 
     # Horizontal tail
     htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
@@ -105,7 +105,7 @@ function aeromdao_steady_vlm_components()
                  twists    = [0.0, 0.0],
                  spans     = [1.25],
                  dihedrals = [0.],
-                 LE_sweeps = [6.39],
+                 sweeps    = [6.39],
                  position  = [4., 0, 0],
                  angle     = 0.,
                  axis      = [0., 1., 0.])
@@ -116,7 +116,7 @@ function aeromdao_steady_vlm_components()
                      twists    = [0.0, 0.0],
                      spans     = [1.0],
                      dihedrals = [0.],
-                     LE_sweeps = [7.97],
+                     sweeps    = [7.97],
                      position  = [4., 0, 0],
                      angle     = 90.,
                      axis      = [1., 0., 0.])

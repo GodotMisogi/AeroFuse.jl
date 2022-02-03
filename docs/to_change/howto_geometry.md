@@ -142,7 +142,7 @@ wing_right = HalfWing(foils     = Foil.(airfoil for i in 1:3),
                       twists    = [0., 2., 5.],
                       spans     = [1.0, 0.1],
                       dihedrals = [0., 60.],
-                      LE_sweeps = [0., 30.])
+                      sweeps      = [0., 30.])
 
 wing = Wing(wing_right);
 

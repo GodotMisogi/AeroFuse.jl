@@ -15,7 +15,7 @@ using TimerOutputs
 wing = WingSection(root_foil  = naca4((2,4,1,2)),
                    span       = 2.6,
                    dihedral   = 1.0,
-                   LE_sweep   = 20.0,
+                   sweep        =  20.0,
                    taper      = 0.5,
                    root_chord = 0.314,
                    root_twist = 0.0,

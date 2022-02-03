@@ -67,7 +67,7 @@ wing = Wing(foils     = fill(naca4((2,4,1,2)), n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),
             dihedrals = fill(0., n-1),
-            LE_sweeps = fill(0., n-1))
+            sweeps      = fill(0., n-1))
 
 # Horizontal tail
 htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
@@ -75,7 +75,7 @@ htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             LE_sweeps = [6.39],
+             sweeps      = [6.39],
              position  = [4., 0, 0],
              angle     = -2.,
              axis      = [0., 1., 0.])
@@ -86,7 +86,7 @@ vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 LE_sweeps = [7.97],
+                 sweeps      = [7.97],
                  position  = [4., 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.])
@@ -123,7 +123,7 @@ make_wing(x) = Wing(chords    = collect(x[1:n]),
                     spans     = spans(wing.right),
                     twists    = rad2deg.(twists(wing.right)),
                     dihedrals = rad2deg.(dihedrals(wing.right)),
-                    LE_sweeps = collect(x[n+1:end]))
+                    sweeps      = collect(x[n+1:end]))
 
 # Closures
 evaluate_CDi(x...)  = evaluate_CDi(make_wing(x[1:end-1]), htail_horses, vtail_horses, V, x[end], ρ, span_num, chord_num)

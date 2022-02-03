@@ -20,7 +20,7 @@ wing =  Wing(foils     = foils,
              twists    = [2.0, 0.0],
              spans     = [4.0],
              dihedrals = [5.],
-             LE_sweeps = [5.]);
+             sweeps      = [5.]);
 
 ##
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)

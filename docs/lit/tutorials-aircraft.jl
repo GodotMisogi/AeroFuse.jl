@@ -34,7 +34,7 @@ wing = Wing(foils     = airfoils,    # Foil profiles
             twists    = [2.0, 0.0],  # Twist angles (degrees)
             spans     = [4.0],       # Section span lengths
             dihedrals = [5.],        # Dihedral angles (degrees)
-            LE_sweeps = [5.])        # Leading-edge sweep angles (degrees)
+            sweeps      = [5.])        # Leading-edge sweep angles (degrees)
 
 #md # !!! info
 #md #     See the [how-to guide](howto.md) on how to define an asymmetric wing.
@@ -66,7 +66,7 @@ htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             LE_sweeps = [6.39],
+             sweeps      = [6.39],
              position  = [4., 0, 0],
              angle     = -2.,
              axis      = [0., 1., 0.])
@@ -78,7 +78,7 @@ vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 LE_sweeps = [7.97],
+                 sweeps      = [7.97],
                  position  = [4., 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.])

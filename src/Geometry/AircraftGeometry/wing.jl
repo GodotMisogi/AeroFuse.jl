@@ -9,7 +9,7 @@
 
 A composite type consisting of fields `left` and `right`, each a `HalfWing` for constructing a wing.
 
-A single argument generates a symmetric `Wing`.
+A single argument generates a symmetric `Wing`, viz. `left === right`.
 
 # Arguments
 - `foils :: Vector{Foil}`
@@ -42,7 +42,7 @@ twists(wing :: Wing)    = @views [ (twists ∘ left)(wing)[end:-1:2]    ; (twist
 spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)     ; (spans ∘ right)(wing)     ]
 dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dihedrals ∘ right)(wing) ]
 
-sweeps(wing :: Wing, w = 0.) = [ reverse(sweeps, left(wing), w); sweeps(right(wing), w) ]
+sweeps(wing :: Wing, w = 0.) = [ reverse(sweeps(left(wing)), w); sweeps(right(wing), w) ]
 
 Base.position(wing :: Wing) = right(wing).affline.translation
 orientation(wing :: Wing)   = right(wing).affine.linear
@@ -55,7 +55,7 @@ Wing(bing :: HalfWing) = Wing(bing, bing)
 Wing(;
         chords,
         twists    = zero(chords), 
-        spans     = 1/2 * ones(length(chords) - 1) / (length(chords) - 1), 
+        spans     = ones(length(chords) - 1) / (length(chords) - 1), 
         dihedrals = zero(spans), 
         sweeps    = zero(spans),
         w_sweep   = 0.0,
@@ -63,14 +63,14 @@ Wing(;
         position  = zeros(3),
         angle     = 0.,
         axis      = SVector(1., 0., 0.)
-    ) = Wing(HalfWing(foils = foils, chords = chords, twists = twists, spans = spans, dihedrals = dihedrals, sweeps = sweeps, w_sweep = w_sweep, position = position, angle = angle, axis = axis))
+    ) = Wing(HalfWing(foils = foils, chords = chords, twists = twists, spans = spans / 2, dihedrals = dihedrals, sweeps = sweeps, w_sweep = w_sweep, position = position, angle = angle, axis = axis))
 
 """
-    WingSection(; span, dihedral, LE_sweep, taper, root_chord,
+    WingSection(; span, dihedral, sweep, taper, root_chord,
                   root_twist, tip_twist, root_foil, tip_foil,
                   position, angle, axis)
 
-Define a `Wing` consisting of two trapezoidal sections with one plane of symmetry.
+Define a `Wing` consisting of two trapezoidal sections with ``y``-``z`` reflection symmetry.
 
 # Arguments
 - `span       :: Real         = 1.`: Span length 
@@ -87,24 +87,22 @@ Define a `Wing` consisting of two trapezoidal sections with one plane of symmetr
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
 function WingSection(;
-        span = 1.,
-        dihedral = 0.,
-        sweep = 0.,
-        w_sweep = 0.,
-        taper = 1.,
+        span       = 1.,
+        dihedral   = 0.,
+        sweep      = 0.,
+        w_sweep    = 0.,
+        taper      = 1.,
         root_chord = 1.,
         root_twist = 0.,
-        tip_twist = 0.,
-        root_foil = naca4((0,0,1,2)),
-        tip_foil = root_foil,
-        position = zeros(3),
-        angle = 0.,
-        axis = SVector(1., 0., 0.)
+        tip_twist  = 0.,
+        root_foil  = naca4((0,0,1,2)),
+        tip_foil   = root_foil,
+        position   = zeros(3),
+        angle      = 0.,
+        axis       = SVector(1., 0., 0.)
     )
 
-    w = HalfWingSection(span = span / 2, dihedral = dihedral, sweep = sweep, w_sweep = w_sweep, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis)
-
-    Wing(w, w) 
+    Wing(HalfWingSection(span = span / 2, dihedral = dihedral, sweep = sweep, w_sweep = w_sweep, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis)) 
 end
 
 span(wing :: Wing) = (span ∘ left)(wing) + (span ∘ right)(wing)

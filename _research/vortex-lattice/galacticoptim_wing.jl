@@ -39,14 +39,14 @@ wing = Wing(foils     = fill(naca4((2,4,1,2)), n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),
             dihedrals = fill(0., n-1),
-            LE_sweeps = fill(0., n-1))
+            sweeps      = fill(0., n-1))
 
 make_wing(x) = Wing(chords    = x,
                     foils     = foils(wing.right),
                     spans     = spans(wing.right),
                     twists    = rad2deg.(twists(wing.right)),
                     dihedrals = rad2deg.(dihedrals(wing.right)),
-                    LE_sweeps = rad2deg.(sweeps(wing.right)))
+                    sweeps      = rad2deg.(sweeps(wing.right)))
 
 # Meshing and assembly
 AR, b, S, c, mac  = properties(wing)

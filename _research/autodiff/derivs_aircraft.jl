@@ -59,7 +59,7 @@ sps = [5.0, 1.0]
 dis = [11.3, 60.]
 sws = [2.29, 30.]
 
-# winger(x, n) = mean_aerodynamic_chord(HalfWing(chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], LE_sweeps = x[4n-1:end]))
+# winger(x, n) = mean_aerodynamic_chord(HalfWing(chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], sweeps      = x[4n-1:end]))
 
 xs = [cs; ts; sps; dis; sws]
 wing = winger(xs, length(cs))
@@ -150,7 +150,7 @@ ForwardDiff.gradient(x -> arc_length(FoilerWinger(fill(Foil(x_coords), length(x)
 AeroMDAO.arc_length(fw :: HalfWing) = sum(arc_length, fw.foils)
 AeroMDAO.arc_length(wing :: Wing) = arc_length(wing.left) + arc_length(wing.right)
 
-winglord(x, n) = HalfWing(foils = fill(Foil(x_coords), n), chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], LE_sweeps = x[4n-1:end])
+winglord(x, n) = HalfWing(foils = fill(Foil(x_coords), n), chords = x[1:n], twists = x[n+1:2n], spans = x[2n+1:3n-1], dihedrals = x[3n:4n-2], sweeps      = x[4n-1:end])
 
 wing = winglord(xs, length(cs))
 

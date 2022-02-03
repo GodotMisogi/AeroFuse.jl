@@ -7,7 +7,7 @@ wing_right = HalfWing(foils     = fill(naca4((0,0,1,2)), 3),
                       twists    = [0.0, 0.0, 0.0],
                       spans     = [5.0, 0.5],
                       dihedrals = [5., 5.],
-                      LE_sweeps = [5., 5.]);
+                      sweeps      = [5., 5.]);
 wing = Wing(wing_right, wing_right)
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")

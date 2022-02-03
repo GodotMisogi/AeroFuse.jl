@@ -43,7 +43,7 @@ wing = Wing(foils     = fill(naca4((2,4,1,2)), n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),
             dihedrals = fill(0., n-1),
-            LE_sweeps = fill(0., n-1))
+            sweeps      = fill(0., n-1))
 
 x0 = [(chords ∘ right)(wing); α]
 
@@ -52,7 +52,7 @@ make_wing(x) = Wing(chords    = x,
                     spans     = spans(right(wing)),
                     twists    = rad2deg.(twists(right(wing))),
                     dihedrals = rad2deg.(dihedrals(right(wing))),
-                    LE_sweeps = rad2deg.(sweeps(right(wing))))
+                    sweeps      = rad2deg.(sweeps(right(wing))))
 
 
 # wing = WingSection(root_foil  = naca4((2,4,1,2)),
@@ -61,7 +61,7 @@ make_wing(x) = Wing(chords    = x,
 #                    root_chord = 0.314,
 #                    taper      = 0.8,
 #                    dihedral   = 5.0,
-#                    LE_sweep   = 10.)
+#                    sweep        =  10.)
 
 # x0 = [ mean_aerodynamic_chord(wing); taper_ratio(right(wing)); α ]
 
@@ -71,7 +71,7 @@ make_wing(x) = Wing(chords    = x,
 #                            root_chord = x[1],
 #                            taper      = x[2],
 #                            dihedral   = rad2deg((dihedrals ∘ right)(wing)[1]),
-#                            LE_sweep   = rad2deg((sweeps ∘ right)(wing)[1]))
+#                            sweep        =  rad2deg((sweeps ∘ right)(wing)[1]))
 
 
 # Meshing and assembly
@@ -185,7 +185,7 @@ vtail_1 = HalfWingSection(root_foil  = naca4((0,0,1,2)),
                           span       = 0.4,
                           taper      = 0.731,
                           root_chord = 0.260,
-                          LE_sweep   = 15.)
+                          sweep        =  15.)
 vtail_2  = vtail_1
 aircraft = Dict("Wing"    => panel_wing(wing, span_num, chord_num),
                 "HTail"   => panel_wing(htail, 6, 6;

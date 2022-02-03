@@ -12,7 +12,7 @@ wing       = Wing(foils     = wing_foils,
                   twists    = [0.0, 0.0],
                   spans     = [5.0],
                   dihedrals = [0.],
-                  LE_sweeps = [2.29]);
+                  sweeps      = [2.29]);
 
 # Horizontal tail
 htail_foils = fill(naca4((0,0,1,2)), 2)
@@ -21,7 +21,7 @@ htail       = Wing(foils     = htail_foils,
                    twists    = [0.0, 0.0],
                    spans     = [1.25],
                    dihedrals = [0.],
-                   LE_sweeps = [6.39],
+                   sweeps      = [6.39],
                    position	 = [4., 0, 0],
                    angle     = deg2rad(-0.),
                    axis      = [0., 1., 0.])
@@ -34,7 +34,7 @@ vtail = HalfWing(foils     = vtail_foils,
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 LE_sweeps = [7.97],
+                 sweeps      = [7.97],
                  position  = [4., 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.])

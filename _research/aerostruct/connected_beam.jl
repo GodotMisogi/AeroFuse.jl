@@ -13,7 +13,7 @@ using UnicodePlots
 wing = WingSection(root_foil  = naca4(0,0,1,5),
                    span       = 3.11,
                    dihedral   = 0.0, # 5.0
-                   LE_sweep   = 20.0, # 20.0
+                   sweep        =  20.0, # 20.0
                    taper      = 0.5, # 0.5
                    root_chord = 0.3,
                    root_twist = 0.0, # 2.0

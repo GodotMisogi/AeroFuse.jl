@@ -10,7 +10,7 @@ wing = Wing(foils     = fill(naca4(2,4,1,2), 2),
             twists    = [2.0, 0.0],
             spans     = [4.0],
             dihedrals = [5.],
-            LE_sweeps = [5.]);
+            sweeps      = [5.]);
 
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
@@ -21,7 +21,7 @@ htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             LE_sweeps = [6.39],
+             sweeps      = [6.39],
              position  = [4., 0, 0],
              angle     = -2.,
              axis      = [0., 1., 0.])
@@ -32,7 +32,7 @@ vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 LE_sweeps = [7.97],
+                 sweeps      = [7.97],
                  position  = [4., 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.])

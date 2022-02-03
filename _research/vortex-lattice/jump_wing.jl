@@ -59,7 +59,7 @@ wing = Wing(foils     = fill(naca4((2,4,1,2)), n),
             twists    = fill(0.0, n),
             spans     = fill(1.3/(n-1), n-1),
             dihedrals = fill(0., n-1),
-            LE_sweeps = fill(0., n-1))
+            sweeps      = fill(0., n-1))
 
 # Meshing and assembly
 wing_mac = mean_aerodynamic_center(wing);
@@ -75,7 +75,7 @@ make_wing(x) = Wing(chords    = collect(x[1:n]),
                     spans     = spans(wing.right),
                     twists    = rad2deg.(twists(wing.right)),
                     dihedrals = rad2deg.(dihedrals(wing.right)),
-                    LE_sweeps = collect(x[n+1:end]))
+                    sweeps      = collect(x[n+1:end]))
 
 # Closures
 evaluate_CDi(x...)  = evaluate_CDi(make_wing(x[1:end-1]), V, x[end], ρ, span_num, chord_num)

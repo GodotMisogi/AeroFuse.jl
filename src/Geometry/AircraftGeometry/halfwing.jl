@@ -26,17 +26,17 @@ function HalfWing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep = 0.,
     check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 
     # Convert sweep angles to leading-edge
-    sweeps = @. rad2deg(sweep_angle(
+    sweeps = @. sweep_angle(
                     chords[2:end] / chords[1:end-1], # Section tapers
                     aspect_ratio(spans, chords[2:end], chords[1:end-1]), # Section aspect ratios
                     deg2rad(sweeps), # Sweep angles at desired normalized location
                     -w_sweep # Normalized sweep angle location ∈ [0,1]
-                ))
+                )
 
     # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction.
     
     # Convert angles to radians, adjust twists to leading edge, and generate HalfWing
-    HalfWing(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), deg2rad.(sweeps), affine)
+    HalfWing(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), sweeps, affine)
 end
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
@@ -66,7 +66,7 @@ function HalfWing(;
 end
 
 """
-    HalfWingSection(; span, dihedral, LE_sweep, taper, root_chord,
+    HalfWingSection(; span, dihedral, sweep, taper, root_chord,
                       root_twist, tip_twist, root_foil, tip_foil,
                       position, angle, axis)
 
@@ -75,7 +75,7 @@ Define a `HalfWing` consisting of a single trapezoidal section.
 # Arguments
 - `span       :: Real         = 1.`: Span length 
 - `dihedral   :: Real         = 1.`: Dihedral angle (degrees)
-- `LE_sweep   :: Real         = 0.`: Leading-edge sweep angle (degrees)
+- `sweep      :: Real         = 0.`: Leading-edge sweep angle (degrees)
 - `taper      :: Real         = 1.`: Taper ratio of tip to root chord
 - `root_chord :: Real         = 1.`: Root chord length
 - `root_twist :: Real         = 0.`: Twist angle at root (degrees)
@@ -101,15 +101,15 @@ HalfWingSection(;
     angle       = 0.,
     axis        = SVector(0., 1., 0.)
     ) = HalfWing(
-            [root_foil, tip_foil],
-            [root_chord, taper * root_chord],
-            [root_twist, tip_twist],
-            [span],
-            [dihedral],
-            [rad2deg(sweep_angle(taper, aspect_ratio(span, root_chord, taper * root_chord), sweep, -w_sweep))],
-            position,
-            angle,
-            axis
+            foils     = [root_foil, tip_foil],
+            chords    = [root_chord, taper * root_chord],
+            twists    = [root_twist, tip_twist],
+            spans     = [span],
+            dihedrals = [dihedral],
+            sweeps    = [sweep],
+            position  = position,
+            angle     = angle,
+            axis      = axis
         )
 
 function HalfWingSection(S, AR, λ, Λ, δ, τ_r, τ_t, w = 0.25)

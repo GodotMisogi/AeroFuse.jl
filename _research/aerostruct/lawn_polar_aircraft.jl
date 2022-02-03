@@ -18,7 +18,7 @@ wing = Wing(foils     = fill(naca4((2,4,1,2)), 3),
             twists    = [0.0, 0.0, 0.0],
             spans     = [4.0, 3.0],
             dihedrals = [0., 0.],
-            LE_sweeps = [0., 5.]);
+            sweeps      = [0., 5.]);
 
 print_info(wing, "Lawn Polar Wing")
 
@@ -28,7 +28,7 @@ htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
              twists    = [0.0, 0.0],
              spans     = [1.25],
              dihedrals = [0.],
-             LE_sweeps = [6.39],
+             sweeps      = [6.39],
              position  = [4., 0., 0.],
              angle     = 0.,
              axis      = [0., 1., 0.])
@@ -39,7 +39,7 @@ vtail_u = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
                    twists    = [0.0, 0.0],
                    spans     = [1.0],
                    dihedrals = [0.],
-                   LE_sweeps = [7.97],
+                   sweeps      = [7.97],
                    position  = [4.7, 0, 0],
                    angle     = 90.,
                    axis      = [1., 0., 0.]);
@@ -49,7 +49,7 @@ vtail_d = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
                    twists    = [0.0, 0.0],
                    spans     = [0.4],
                    dihedrals = [0.],
-                   LE_sweeps = [7.97],
+                   sweeps      = [7.97],
                    position  = [4.7, 0, 0],
                    angle     = 90.,
                    axis      = [1., 0., 0.]);
@@ -62,7 +62,7 @@ atail_l = Wing(foils     = fill(naca4((0,0,0,9)), 2),
                twists    = [0.0, 0.0],
                spans     = [0.5],
                dihedrals = [0.],
-               LE_sweeps = [8.],
+               sweeps      = [8.],
                position  = [2., 2.5, 0.],
                angle     = 0.,
                axis      = [0., 1., 0.])
@@ -72,7 +72,7 @@ atail_r = Wing(foils     = fill(naca4((0,0,0,9)), 2),
                twists    = [0.0, 0.0],
                spans     = [0.5],
                dihedrals = [0.],
-               LE_sweeps = [8.],
+               sweeps      = [8.],
                position  = [2., -2.5, 0.],
                angle     = 0.,
                axis      = [0., 1., 0.]);
