@@ -53,6 +53,7 @@ makedocs(
                                 "assets/logo.ico",
                                 asset("https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&display=swap", class=:css),
                                 ],
+                            analytics = "UA-89998292-1"
                             # highlightjs = "theme/highlight.js",
                             ),
 )
