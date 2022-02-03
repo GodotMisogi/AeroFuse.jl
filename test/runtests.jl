@@ -124,7 +124,7 @@ end
     ff_tests = [0.0014281, 0.0001743, 0.1159415]
     dv_tests = [ 0.0797419  -0.0004936  -0.0039018   0.063737    0.0004044
                  0.0066033   0.0024036   0.0809152   0.0302107  -0.0121575
-                 3.41101    -0.0060238  -0.185695    5.17916     0.0065573
+                 3.4110144  -0.0060238  -0.185695    5.17916     0.0065573
                  0.0084357   0.0064223   0.285074    0.110973   -0.0385723
                 -0.0088809   0.0004686   0.0618588  -0.660474   -0.0051181
                 -0.0009645  -0.0018438   0.0054144  -0.0044697   0.0013694]
@@ -134,7 +134,7 @@ end
     # Farfield coefficients test
     [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
     # Stability derivatives' coefficients test
-    # [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
+    [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
 end
 
 @testset "Vortex Lattice Method - Vanilla Aircraft" begin
