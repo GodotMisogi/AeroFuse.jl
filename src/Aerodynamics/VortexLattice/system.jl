@@ -43,7 +43,7 @@ References(; speed = 1., density = 1.225, viscosity = 1.5e-5, sound_speed = 330.
 Base.broadcastable(refs :: References) = Ref(refs)
 
 function Base.show(io :: IO, refs :: References)
-    println(io, "\nReferences: ")
+    println(io, "References: ")
     for fname in fieldnames(typeof(refs))
         println(io, "    ", fname, " = ", getfield(refs, fname))
     end
@@ -73,7 +73,7 @@ end
 function Base.show(io :: IO, sys :: VortexLatticeSystem)     
     println(io, "VortexLatticeSystem -")
     println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements\n")
-    show(io, sys.freestream)
+    show(io, sys.freestream, "\n")
     show(io, sys.reference)
 end
 

@@ -87,19 +87,19 @@ Define a `HalfWing` consisting of a single trapezoidal section.
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
 HalfWingSection(;
-    span        = 1.,
-    dihedral    = 0.,
-    sweep       = 0.,
-    w_sweep     = 0.,
-    taper       = 1.,
-    root_chord  = 1.,
-    root_twist  = 0.,
-    tip_twist   = 0.,
-    root_foil   = naca4((0,0,1,2)),
-    tip_foil    = root_foil,
-    position    = zeros(3),
-    angle       = 0.,
-    axis        = SVector(0., 1., 0.)
+        span        = 1.,
+        dihedral    = 0.,
+        sweep       = 0.,
+        w_sweep     = 0.,
+        taper       = 1.,
+        root_chord  = 1.,
+        root_twist  = 0.,
+        tip_twist   = 0.,
+        root_foil   = naca4((0,0,1,2)),
+        tip_foil    = root_foil,
+        position    = zeros(3),
+        angle       = 0.,
+        axis        = SVector(0., 1., 0.)
     ) = HalfWing(
             foils     = [root_foil, tip_foil],
             chords    = [root_chord, taper * root_chord],
@@ -107,6 +107,7 @@ HalfWingSection(;
             spans     = [span],
             dihedrals = [dihedral],
             sweeps    = [sweep],
+            w_sweep   = w_sweep,
             position  = position,
             angle     = angle,
             axis      = axis

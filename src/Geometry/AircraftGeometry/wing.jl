@@ -59,7 +59,7 @@ Wing(;
         dihedrals = zero(spans), 
         sweeps    = zero(spans),
         w_sweep   = 0.0,
-        foils     = fill(naca4(((0,0,1,2))), length(chords)),
+        foils     = fill(naca4(0,0,1,2), length(chords)),
         position  = zeros(3),
         angle     = 0.,
         axis      = SVector(1., 0., 0.)
@@ -86,7 +86,7 @@ Define a `Wing` consisting of two trapezoidal sections with ``y``-``z`` reflecti
 - `angle      :: Real         = 0.`: Angle of rotation (degrees)
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
-function WingSection(;
+WingSection(;
         span       = 1.,
         dihedral   = 0.,
         sweep      = 0.,
@@ -100,10 +100,7 @@ function WingSection(;
         position   = zeros(3),
         angle      = 0.,
         axis       = SVector(1., 0., 0.)
-    )
-
-    Wing(HalfWingSection(span = span / 2, dihedral = dihedral, sweep = sweep, w_sweep = w_sweep, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis)) 
-end
+    ) = Wing(HalfWingSection(span = span / 2, dihedral = dihedral, sweep = sweep, w_sweep = w_sweep, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis))
 
 span(wing :: Wing) = (span ∘ left)(wing) + (span ∘ right)(wing)
 
