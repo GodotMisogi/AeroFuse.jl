@@ -20,4 +20,6 @@ function streamlines(V, Ω, horseshoes, Γs, point, length, num_steps :: Integer
     streamlines
 end
 
-streamlines(system :: VortexLatticeSystem, points, length, num_steps :: Integer) = mapreduce(pt -> streamlines(system.reference.speed * velocity(system.freestream), system.freestream.omega, system.vortices, system.circulations, pt, length, num_steps), hcat, points)
+streamlines(fs :: Freestream, refs :: References, vortices, Γs, points, length, num_steps :: Integer) = mapreduce(pt -> streamlines(refs.speed * velocity(fs), fs.omega, vortices, Γs, pt, length, num_steps), hcat, points)
+
+streamlines(system :: VortexLatticeSystem, points, length, num_steps :: Integer) = streamlines(system.freestream, system.reference, system.vortices, system.circulations, points, length, num_steps)

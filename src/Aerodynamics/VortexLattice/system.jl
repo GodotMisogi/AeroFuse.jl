@@ -224,4 +224,12 @@ end
 
 farfield_coefficients(system :: VortexLatticeSystem) = map(ff -> force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area), farfield_forces(system))
 
-farfield(system :: VortexLatticeSystem)  = let ffs = farfield_coefficients(system); sum(reduce(hcat, ffs), dims = 2) end
+function farfield(system :: VortexLatticeSystem)
+    ffs = farfield_coefficients(system)
+    # Massive hack
+    if length(ffs) == 1
+        return ffs[1]
+    else 
+        return sum(reduce(hcat, ffs), dims = 2)
+    end
+end

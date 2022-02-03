@@ -5,7 +5,7 @@ using DataFrames
 using NLsolve
 using TimerOutputs
 using SparseArrays
-using ProfileView
+# using ProfileView
 
 # Case
 #==========================================================================================#
@@ -249,18 +249,22 @@ new_camber_meshes = transfer_displacements.(dxs, Ts, camber_meshes, fem_meshes)
 new_cam_panels = make_panels.(new_camber_meshes)
 
 new_horsies = new_horseshoes.(dxs, Ts, chord_meshes, camber_meshes, fem_meshes)
-all_horsies = mapreduce(vec, vcat, new_horsies)
+all_horsies = [ mapreduce(vec, vcat, new_horsies); system.vortices.vtail[:] ]
+
+## New freestream variable
+using Setfield
+new_fs = @set fs.alpha = α_opt
 
 ## Aerodynamic forces and center locations
-U_opt      = freestream_to_cartesian(-V, α_opt, deg2rad(β))
+U_opt      = freestream_to_cartesian(-refs.speed, α_opt, fs.beta)
 new_acs    = new_horsies .|> horsies -> bound_leg_center.(horsies)
-all_forces = surface_forces(Γ_opt, all_horsies, U_opt, Ω, ρ)
+all_forces = surface_forces(all_horsies, Γ_opt, U_opt, fs.omega, refs.density)
 
 new_Γs     = getindex.(Ref(Γ_opt), syms)
-new_forces = surface_forces.(new_Γs, new_horsies, Ref(Γs), Ref(all_horsies), Ref(U_opt), Ref(Ω), Ref(ρ));
+new_forces = surface_forces.(new_horsies, new_Γs, Ref(all_horsies), Ref(Γ_opt), Ref(U_opt), Ref(fs.omega), Ref(refs.density));
 
 ## New beams and loads
-new_fem_meshes = make_beam_mesh.(new.chord_meshes, fem_weights)
+new_fem_meshes = make_beam_mesh.(new_chord_meshes, fem_weights)
 fem_loads      = compute_loads.(new_acs, new_forces, new_fem_meshes);
 
 ## Compute stresses
@@ -275,7 +279,7 @@ load_fac = lift * cos(α_opt) / weight
 println("Load factor: $load_fac")
 println("Weight: $weight N")
 println("Lift: $lift N")
-println("Speed: $V m/s")
+println("Speed: $(refs.speed) m/s")
 println("Angle of attack: $(rad2deg(α_opt))ᵒ")
 
 ## Generate DataFrame
@@ -294,9 +298,9 @@ loads_plot   = fem_loads
 σ_norms      = [ [ σ_norm; σ_norm[end] ] for σ_norm in σs_norm ]
 
 ## Panels
-wing_panel_plot  = plot_panels(wing_panels)
-htail_panel_plot = plot_panels(htail_panels)
-vtail_panel_plot = plot_panels(vtail_panels)
+wing_panel_plot  = plot_panels(chord_panels(wing_mesh))
+htail_panel_plot = plot_panels(chord_panels(htail_mesh))
+vtail_panel_plot = plot_panels(chord_panels(vtail_mesh))
 
 # Aerodynamic centers and forces
 ac_plot    = @. reduce(hcat, new_acs)
@@ -304,12 +308,12 @@ force_plot = @. reduce(hcat, new_forces)
 
 # Cambers
 cam_panels   = @. make_panels(camber_meshes)
-cam_plot     = plot_panels(reduce(vcat, vec.(cam_panels)))
-new_cam_plot = plot_panels(reduce(vcat, vec.(new_cam_panels)))
+cam_plot     = plot_panels(mapreduce(vec, vcat, cam_panels))
+new_cam_plot = plot_panels(mapreduce(vec, vcat, new_cam_panels))
 
 # Displacements
-new.chord_mesh_plot = @. reduce(hcat, new.chord_meshes)
-new_panel_plot    = plot_panels(reduce(vcat, vec.(make_panels.(new.chord_meshes))))
+new_chord_mesh_plot = @. reduce(hcat, new_chord_meshes)
+new_panel_plot    = plot_panels(mapreduce(vec, vcat, make_panels.(new_chord_meshes)))
 
 # Planforms
 wing_plan   = plot_planform(wing)
@@ -322,17 +326,17 @@ nhtail_plan = plot_planform(new_camber_meshes[2])
 
 # Streamlines
 seed    = chop_coordinates(new_camber_meshes[1][end,:], 4)
-streams = streamlines(fs, seed, all_horsies, Γ_opt, 5, 100);
+streams = streamlines(new_fs, refs, all_horsies, Γ_opt, seed, 5, 100);
 
 ## Plot
 using Plots
 using LaTeXStrings
 
-# gr()
+gr()
 # plotlyjs(dpi = 300, size = (1280, 720))
-pyplot(dpi = 300)
+# pyplot(dpi = 300)
 # pgfplotsx(size = (900, 600))
-
+b = span(wing)
 aircraft_plot =
     plot(xaxis = "x", yaxis = "y", zaxis = "z",
          camera = (-75, 20),
@@ -345,16 +349,16 @@ aircraft_plot =
         )
 
 # Panels
-[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Panels", :none), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
-[ plot!(pans, color = :lightblue, label = ifelse(i == 1, "Deflected Panels", :none), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
-[ plot!(pans, color = :brown, label = :none, linestyle = :solid) for (i, pans) in enumerate(vtail_panel_plot) ]
+[ plot!(pans, color = :lightgray, label = ifelse(i == 1, "Original Panels", ""), linestyle = :solid) for (i, pans) in enumerate(cam_plot) ]
+[ plot!(pans, color = :lightblue, label = ifelse(i == 1, "Deflected Panels", ""), linestyle = :solid) for (i, pans) in enumerate(new_cam_plot) ]
+[ plot!(pans, color = :brown, label = "", linestyle = :solid) for (i, pans) in enumerate(vtail_panel_plot) ]
 
 # Planforms
-plot!(wing_plan, color = :gray, label = "Original Wing", linestyle = :solid)
-plot!(nwing_plan, color = :blue, label = "Deflected Wing")
-plot!(htail_plan, color = :gray, label = "Horizontal Tail")
-plot!(nhtail_plan, color = :blue, label = "Deflected Horizontal Tail")
-plot!(vtail_plan, color = :brown, label = "Vertical Tail")
+plot!(wing_plan[:,1], wing_plan[:,2], wing_plan[:,3], color = :gray, label = "Original Wing", linestyle = :solid)
+plot!(nwing_plan[:,1], nwing_plan[:,2], nwing_plan[:,3], color = :blue, label = "Deflected Wing")
+plot!(htail_plan[:,1], htail_plan[:,2],  htail_plan[:,3], color = :gray, label = "Horizontal Tail")
+plot!(nhtail_plan[:,1],nhtail_plan[:,2], nhtail_plan[:,3], color = :blue, label = "Deflected Horizontal Tail")
+plot!(vtail_plan[:,1], vtail_plan[:,2], vtail_plan[:,3], color = :brown, label = "Vertical Tail")
 
 # Beams
 thickness = 2.5
@@ -365,7 +369,7 @@ r_norms = @. normer([ r_wing, r_htail ]) * thickness
 [ plot!(new_fem[1,:], new_fem[2,:], new_fem[3,:], m = (thickness, 0.8, :heat, Plots.stroke(0)), zcolor = σ_ns, cbar = true, label = "Deflected Beam Stresses", linestyle = :solid, linewidth = r_ns) for (new_fem, σ_ns, r_ns) in zip(new_fem_plot, σ_norms, r_norms) ]
 
 # Streamlines
-[ plot!(stream, color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", :none), linestyle = :solid) for (i, stream) in enumerate(streams) ]
+[ plot!(stream, color = RGBA(0.5, 0.8, 0.5, 1.0), label = ifelse(i == 1, "Streamlines", ""), linestyle = :solid) for (i, stream) in enumerate(eachcol(Tuple.(streams))) ]
 
 # Forces
 # quiver!(ac_plot[1,:], ac_plot[2,:], ac_plot[3,:],

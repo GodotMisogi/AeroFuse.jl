@@ -19,25 +19,25 @@ wing_mesh    = WingMesh(wing, [12, 3], 6,
 aircraft     = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
-fs      = Freestream(alpha = 1.0, 
-                     beta  = 0.0, 
-                     omega = [0.,0.,0.])
+fs  = Freestream(alpha = 1.0, 
+                 beta  = 0.0, 
+                 omega = [0.,0.,0.])
 
 # Reference values
-refs    = References(
-                     speed     = 10.0,
-                     density   = 1.225,
-                     viscosity = 1.5e-5,
-                     area      = projected_area(wing),
-                     span      = span(wing), 
-                     chord     = mean_aerodynamic_chord(wing), 
-                     location  = mean_aerodynamic_center(wing)
-                    )
+refs = References(
+                  speed     = 10.0,
+                  density   = 1.225,
+                  viscosity = 1.5e-5,
+                  area      = projected_area(wing),
+                  span      = span(wing), 
+                  chord     = mean_aerodynamic_chord(wing), 
+                  location  = mean_aerodynamic_center(wing)
+                 )
 
 ## Solve system
 system  = solve_case(aircraft, fs, refs; 
                      print = true
-                    )
+                    );
 
 ## Compute dynamics
 ax       = Wind()
@@ -145,5 +145,5 @@ plot(xaxis = "x", yaxis = "y", zaxis = "z",
     )
 plot!.(horseshoe_coords, color = :gray, label = :none)
 # scatter!(cz_pts, zcolor = vec(CLs), marker = 2, label = "CL (Exaggerated)")
-quiver!(hs_pts, quiver=(LL_loads[:,2], LL_loads[:,3], LL_loads[:,4]) .* 10)
+quiver!(hs_pts, quiver=(span_loads[:,2], span_loads[:,3], span_loads[:,4]) .* 10)
 plot!(size = (800, 600))

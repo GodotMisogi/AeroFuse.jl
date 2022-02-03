@@ -12,7 +12,7 @@ using TimerOutputs
 ## Aerodynamic variables
 
 # Define wing
-wing = WingSection(root_foil  = naca4((2,4,1,2)),
+wing = WingSection(root_foil  = naca4(2,4,1,2),
                    span       = 2.6,
                    dihedral   = 1.0,
                    sweep        =  20.0,
@@ -23,7 +23,7 @@ wing = WingSection(root_foil  = naca4((2,4,1,2)),
 
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing),
-print_info(wing)
+print_info(wing, "Wing")
 
 # Mesh details
 wing_mesh = WingMesh(wing, [12], 6, 
@@ -99,7 +99,7 @@ fem_loads = compute_loads(vlm_acs, vlm_forces, fem_mesh)
 ## Solve system
 dx = solve_cantilever_beam(Ks, fem_loads, cons)
 Δx = ComponentArray(
-                    constraint = zeros(6),
+                    constraint   = zeros(6),
                     displacement = dx
                    )
 
@@ -156,9 +156,9 @@ reset_timer!()
 @timeit "Solving Residuals" res_aerostruct =
     nlsolve(solve_aerostruct!, x0,
             method         = :newton,
-            show_trace     = true,
-            # extended_trace = true,
             autodiff       = :forward,
+            # show_trace     = true,
+            # extended_trace = true,
            );
 print_timer()
 
@@ -170,8 +170,8 @@ x_opt = res_aerostruct.zero
 
 ## Compute displacements
 dx  = δ_opt
-dxs = @views SVector.(dx[1,:], dx[2,:], dx[3,:])
-Ts  = rotation_matrix(dx[4:6,:])
+dxs = mesh_translation(dx)
+Ts  = mesh_rotation(dx)
 
 ## Perturb VLM and camber meshes
 new_chord_mesh = transfer_displacements(dxs, Ts, wing_mesh.chord_mesh, fem_mesh)
@@ -180,9 +180,9 @@ new_camber_mesh = transfer_displacements(dxs, Ts, wing_mesh.camber_mesh, fem_mes
 # new_panels     = make_panels(new_vlm_meh)
 # new_cam_panels = make_panels(new_camber_mesh)
 # new_normals    = panel_normal.(new_cam_panels)
-
+using Setfield
 new_aircraft = ComponentArray(wing = Horseshoe.(make_panels(new_chord_mesh), panel_normal.(make_panels(new_camber_mesh))))
-new_fs       = Freestream(rad2deg(α_opt), rad2deg(fs.beta), fs.omega)
+new_fs       = @set fs.alpha = α_opt
 system       = solve_case(new_aircraft, new_fs, refs);
 
 ## Aerodynamic forces and center locations
@@ -227,6 +227,7 @@ breguet_fuel_burn(W, args...) = W * (1 - breguet_fuel_fraction(args...))
 SFC = 0.001
 R  = 50000
 Ws = 0
+V  = refs.speed
 
 m_f = breguet_fuel_burn(weight, R, V, SFC, CD, CL)
 
@@ -256,11 +257,11 @@ new_chord_mesh_plot = combinedimsview(new_chord_mesh)
 
 # Axes
 xs_plot   = combinedimsview((fem_mesh[1:end-1] + fem_mesh[2:end]) / 2)
-axes      = axis_transformation(fem_mesh, new_chord_mesh)
-axes_plot = combinedimsview(axes)
-cs_plot   = axes_plot[:,1,:]
-ss_plot   = axes_plot[:,2,:]
-ns_plot   = axes_plot[:,3,:]
+# axes      = axis_transformation(fem_mesh, new_chord_mesh)
+# axes_plot = combinedimsview(axes)
+# cs_plot   = axes_plot[:,1,:]
+# ss_plot   = axes_plot[:,2,:]
+# ns_plot   = axes_plot[:,3,:]
 
 # Planforms
 wing_plan  = plot_planform(wing)
@@ -268,7 +269,7 @@ nwing_plan = plot_planform(new_camber_mesh)
 
 # Streamlines
 seed    = chop_coordinates(new_camber_mesh[1,:], 3)
-streams = streamlines(new_fs, seed, system.vortices, Γ_opt, 1, 100);
+streams = streamlines(new_fs, refs, seed, system.vortices, Γ_opt, 1, 100);
 
 ## Plot
 using LaTeXStrings

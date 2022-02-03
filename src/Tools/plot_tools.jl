@@ -4,17 +4,17 @@ plot_panels(panels) = plot_panel.(vec(panels))
 # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coordinates ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
 
 function plot_planform(mesh :: Matrix{SVector{3,T}}) where T <: Real
-    wing_coords =   [ 
-                        mesh[1,1:end-1]; 
-                        mesh[1:end-1,end]; 
-                        mesh[end,end:-1:2]; 
-                        mesh[end:-1:1,1] 
-                    ]
+    coords  =   [ 
+                    mesh[1,1:end-1]; 
+                    mesh[1:end-1,end]; 
+                    mesh[end,end:-1:2]; 
+                    mesh[end:-1:1,1] 
+                ]
                     
-    wing_coords # .|> coords -> tuple(coords...)
+    permutedims(combinedimsview(coords)) # .|> coords -> tuple(coords...)
 end
 
-plot_planform(wing :: AbstractWing) = permutedims(combinedimsview(plot_planform(coordinates(wing))))
+plot_planform(wing :: AbstractWing) = plot_planform(coordinates(wing))
 
 plot_streamlines(system :: VortexLatticeSystem, points, length, num_steps) = Tuple.(streamlines(system, points, length, num_steps))
 
