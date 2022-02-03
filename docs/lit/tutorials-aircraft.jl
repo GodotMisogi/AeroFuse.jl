@@ -34,7 +34,7 @@ wing = Wing(
         foils     = airfoils,    # Foil profiles
         chords    = [1.0, 0.6],  # Chord lengths
         twists    = [2.0, 0.0],  # Twist angles (degrees)
-        spans     = [4.0],       # Section span lengths
+        spans     = [8.0],       # Section span lengths
         dihedrals = [5.],        # Dihedral angles (degrees)
         sweeps    = [5.],        # Sweep angles (degrees)
         w_sweep   = 0.,          # Sweep angle location w.r.t. normalized chord lengths ∈ [0,1]
@@ -222,10 +222,10 @@ span_loads  = spanwise_loading(wing_panels, CFs.wing, projected_area(wing))
 CL_loads    = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord);
 
 ## Plot spanwise loadings
-plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = "CDi")
-plot_CY = plot(span_loads[:,1], span_loads[:,3], label = :none, ylabel = "CY")
+plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = L"C_{D_i}")
+plot_CY = plot(span_loads[:,1], span_loads[:,3], label = :none, ylabel = L"C_Y")
 plot_CL = begin
-            plot(span_loads[:,1], span_loads[:,4], label = :none, xlabel = "y", ylabel = "CL")
-            plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = "y")
+            plot(span_loads[:,1], span_loads[:,4], label = :none, xlabel = L"y", ylabel = L"C_L")
+            plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = L"y")
           end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))

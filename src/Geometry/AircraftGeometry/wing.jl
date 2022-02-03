@@ -42,7 +42,7 @@ twists(wing :: Wing)    = @views [ (twists ∘ left)(wing)[end:-1:2]    ; (twist
 spans(wing :: Wing)     = @views [ (reverse ∘ spans ∘ left)(wing)     ; (spans ∘ right)(wing)     ]
 dihedrals(wing :: Wing) = @views [ (reverse ∘ dihedrals ∘ left)(wing) ; (dihedrals ∘ right)(wing) ]
 
-sweeps(wing :: Wing, w = 0.) = [ reverse(sweeps(left(wing)), w); sweeps(right(wing), w) ]
+sweeps(wing :: Wing, w = 0.) = [ reverse(sweeps(left(wing), w)); sweeps(right(wing), w) ]
 
 Base.position(wing :: Wing) = right(wing).affline.translation
 orientation(wing :: Wing)   = right(wing).affine.linear

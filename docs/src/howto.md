@@ -91,9 +91,8 @@ nothing #hide
 
 ## Wing Geometry
 
-To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
-
 ````@example howto
+# To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
 airfoil    = naca4((2,4,1,2))
 wing_right = HalfWing(foils     = [ airfoil for i in 1:3 ],
                       chords    = [0.4, 0.2, 0.1],
