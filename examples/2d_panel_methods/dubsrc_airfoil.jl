@@ -14,6 +14,7 @@ system  = @time solve_case(
                     );
 
 ##
+panels    = system.surface_panels
 @time ues = surface_velocities(system);
 @time cl  = lift_coefficient(system)
 @time cls, cms, cps = surface_coefficients(system)

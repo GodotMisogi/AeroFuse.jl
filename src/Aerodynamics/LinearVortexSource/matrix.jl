@@ -30,8 +30,8 @@ linear_source_matrix(panels_1, panels_2) = two_point_matrix(linear_source_veloci
 linear_vortex_matrix(panels_1, panels_2) = two_point_matrix(linear_vortex_velocity_a, linear_vortex_velocity_b, panels_1, panels_2)
 
 kutta_condition(panels_1, panels_2) = [ 1 zeros(length(panels_1) - 1)' 1 zeros(length(panels_2) - length(panels_1))' ]
-source_influence_matrix(panels_1, panels_2) = [ linear_source_matrix(panels_1, panels_2); kutta_condition(panels_1, panels_2) ]
-vortex_influence_matrix(panels_1, panels_2) = [ linear_vortex_matrix(panels_1, panels_2); kutta_condition(panels_1, panels_2) ]
+source_influence_matrix(panels_1, panels_2) = linear_source_matrix(panels_1, panels_2)
+vortex_influence_matrix(panels_1, panels_2) = linear_vortex_matrix(panels_1, panels_2)
 
 # Diagonal cases
 kutta_condition(panels) = [ 1 zeros(length(panels) - 1)' 1 ]

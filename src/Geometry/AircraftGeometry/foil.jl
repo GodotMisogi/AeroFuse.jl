@@ -72,11 +72,16 @@ Compute the arc-length of a `Foil`.
 arc_length(foil :: Foil) = let c = coordinates(foil); @views norm(c[2:end,:] .- c[1:end-1,:]) end
 
 """
-    scale_coordinates(foil :: Foil, scale)
+    scale(foil :: Foil, scale)
 
 Scale the coordinates of a `Foil` to a scaling value.
 """
-scale_coordinates(foil :: Foil, scale) = Foil(scale .* coordinates(foil))
+scale(foil :: Foil, scale) = Foil(scale .* coordinates(foil))
+
+translate(foil :: Foil; vector) = Foil(foil.x .+ vector[1], foil.y .+ vector[2])
+rotate(foil :: Foil; angle) = Foil(coordinates(foil) * RotMatrix{2,eltype(angle)}(angle)')
+
+affine(foil :: Foil; angle, vector) = translate(rotate(foil; angle = angle); vector = vector)
 
 """
     camber_thickness(foil :: Foil, num :: Integer)

@@ -14,6 +14,8 @@ struct WakePanel2D{T <: Real} <: AbstractPanel2D
     p2 :: SVector{2,T}
 end
 
+Base.length(:: Panel2D) = 1
+
 Panel2D(p1 :: FieldVector{2,T}, p2 :: FieldVector{2,T}) where T <: Real = Panel2D{T}(p1, p2)
 WakePanel2D(p1 :: FieldVector{2,T}, p2 :: FieldVector{2,T}) where T <: Real = WakePanel2D{T}(p1, p2)
 
@@ -99,4 +101,4 @@ panel_velocity(f1, f2, str1, str2, panel :: AbstractPanel2D, x, y) = panel_veloc
 
 panel_velocity(f1, f2, str_j1, str_j2, panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D) = panel_velocity(f1, str_j1, panel_j, panel_i) .+ panel_velocity(f2, str_j2, panel_j, panel_i)
 
-get_surface_values(panels, vals, surf = "upper", points = false) = partition(x -> (panel_location ∘ first)(x) == surf, (collect ∘ zip)(panels, vals), x -> ((first ∘ ifelse(points, p1, collocation_point) ∘ first)(x), last(x)))
+get_surface_values(panels, vals, surf = "upper", points = false) = partition(x -> (panel_location ∘ first)(x) == surf, (collect ∘ zip)(panels[2:end], vals), x -> ((first ∘ ifelse(points, p1, collocation_point) ∘ first)(x), last(x)))
