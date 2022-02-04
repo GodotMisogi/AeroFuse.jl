@@ -12,12 +12,17 @@ chop_trailing_edge(obj :: Wing, span_num :: Integer) = chop_coordinates([ traili
 coordinates(wing :: HalfWing, y_flip = false) = let (lead, trail) = wing_bounds(wing, y_flip); affine_transformation(wing).(wing_bounds(lead, trail)) end
 coordinates(wing :: Wing) = let (lead, trail) = wing_bounds(wing); affine_transformation(wing).(wing_bounds(lead, trail)) end
 
+"""
+    coordinates(wing :: AbstractWing, n_s :: Integer, n_c :: Integer, flip = false)
+
+Compute the planform coordinates of a `HalfWing` given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+"""
 coordinates(wing :: AbstractWing, span_num, chord_num; span_spacing = Cosine(), chord_spacing = Cosine()) = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
 
 """
     chord_coordinates(wing :: AbstractWing, n_s :: Integer, n_c :: Integer, flip = false)
 
-Compute the chord coordinates of a `HalfWing` consisting of `Foil`s and relevant geometric quantities, given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+Compute the chord coordinates of a `HalfWing` given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
 """
 chord_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false) = chop_wing(coordinates(wing, flip), span_num, chord_num; span_spacing = spacings, flip = flip)
 
@@ -96,23 +101,23 @@ camber_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spac
 #==========================================================================================#
 
 """
-    mesh_horseshoes(wing :: AbstractWing, n_s :: Vector{Integer}, n_c :: Integer; flip = false)
+    mesh_chords(wing :: AbstractWing, n_s :: Vector{Integer}, n_c :: Integer; flip = false)
 
 Mesh the span and chord distributions of an `AbstractWing` with ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions.
 """
-mesh_horseshoes(wing :: AbstractWing, span_num, chord_num; spacings = symmetric_spacing(wing)) = mesh_horseshoes(wing, span_num, chord_num; spacings = spacings)
+mesh_chords(wing :: AbstractWing, span_num, chord_num; spacings = symmetric_spacing(wing)) = mesh_chords(wing, span_num, chord_num; spacings = spacings)
 
-mesh_horseshoes(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false) = make_panels(chord_coordinates(wing, span_num, chord_num; spacings = spacings, flip = flip))
+mesh_chords(wing :: HalfWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing), flip = false) = make_panels(chord_coordinates(wing, span_num, chord_num; spacings = spacings, flip = flip))
 
-function mesh_horseshoes(wing :: Wing, span_num, chord_num; spacings = symmetric_spacing(wing))
-    left_panels  = mesh_horseshoes(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
-    right_panels = mesh_horseshoes(right(wing), span_num, chord_num; spacings = spacings)
+function mesh_chords(wing :: Wing, span_num, chord_num; spacings = symmetric_spacing(wing))
+    left_panels  = mesh_chords(left(wing), reverse(span_num), chord_num; spacings = reverse(spacings), flip = true)
+    right_panels = mesh_chords(right(wing), span_num, chord_num; spacings = spacings)
 
     [ left_panels right_panels ]
 end
 
 """
-    mesh_horseshoes(wing :: AbstractWing, n_s :: Vector{Integer}, n_c :: Integer; flip = false)
+    mesh_wing(wing :: AbstractWing, n_s :: Vector{Integer}, n_c :: Integer; flip = false)
 
 Mesh the span and airfoil coordinate distributions of an `AbstractWing` with ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions.
 """
@@ -144,7 +149,7 @@ function mesh_cambers(wing :: Wing, span_num, chord_num; spacings = symmetric_sp
 end
 
 function make_panels(wing :: AbstractWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
-    horseshoe_panels = mesh_horseshoes(wing, span_num, chord_num; spacings = spacings)
+    horseshoe_panels = mesh_chords(wing, span_num, chord_num; spacings = spacings)
     camber_panels    = mesh_cambers(wing, span_num, chord_num; spacings = spacings)
     horseshoe_panels, panel_normal.(camber_panels)
 end

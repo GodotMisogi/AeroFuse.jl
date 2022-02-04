@@ -55,9 +55,9 @@ chord_coordinates(wing :: WingCoordinates, span_num, chord_num; spacings = [Cosi
 chord_coordinates(wing_vlm, [6], 6)
 
 ## Horseshoe mesh
-AeroMDAO.AircraftGeometry.mesh_horseshoes(wing :: WingCoordinates, span_num, chord_num; spacings = [Cosine()]) = make_panels(affine_transformation(wing).(chord_coordinates(wing, span_num, chord_num; spacings = spacings)))
+AeroMDAO.AircraftGeometry.mesh_chords(wing :: WingCoordinates, span_num, chord_num; spacings = [Cosine()]) = make_panels(affine_transformation(wing).(chord_coordinates(wing, span_num, chord_num; spacings = spacings)))
 
-mesh_horseshoes(wing_vlm, [6], 6)
+mesh_chords(wing_vlm, [6], 6)
 
 ## Camberline coordinates
 AeroMDAO.AircraftGeometry.camber_coordinates(wing :: WingCoordinates, span_num, chord_num; spacings = [Cosine()]) = affine_transformation(wing).(AeroMDAO.chord_coordinates(component(wing), span_num, chord_num; spacings = spacings))
