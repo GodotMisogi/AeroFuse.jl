@@ -6,7 +6,7 @@
 
 Compute the induced velocity at point ``r_i`` of the wake in the Trefftz plane due to the strength ``Γ_j`` at ``r_j``. 
 """
-farfield_velocity(r_i, r_j, Γ_j) = let r = r_i - r_j; Γ_j / 2π * SVector(1., 0, 0) × r / norm(r)^2 end
+farfield_velocity(r_i, r_j, Γ_j) = let r = r_i - r_j; Γ_j / 2π * SVector(1., 0., 0.) × r / norm(r)^2 end
 
 """
     farfield_influence_matrix(centers, normals, points)
@@ -42,7 +42,7 @@ function trefftz_plane_quantities(horseshoes :: AbstractArray{<: Horseshoe}, α,
     U_ref = (Ref ∘ SVector)(1, 0, 0)
 
     # Transform to wind axes
-    wake_lines     = @views geometry_to_wind_axes.(bound_leg.(vec(horseshoes[end,:])), α, β)
+    wake_lines     = @views geometry_to_wind_axes.(vec(horseshoes[end,:]), α, β)
 
     # Project trailing edge horseshoes' bound legs into Trefftz plane along wind axes
     wake_vectors   = @. vector(wake_lines); 

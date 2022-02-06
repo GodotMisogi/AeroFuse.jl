@@ -73,6 +73,8 @@ geometry_to_wind_axes(coords, α, β) = let T = promote_type(eltype(α), eltype(
 # Define generated function?
 geometry_to_wind_axes(line :: Line, α, β) = Line(geometry_to_wind_axes(r1(line), α, β), geometry_to_wind_axes(r2(line), α, β)) 
 
+geometry_to_wind_axes(horseshoe :: Horseshoe, α, β) = Line(geometry_to_wind_axes(r1(horseshoe), α, β), geometry_to_wind_axes(r2(horseshoe), α, β)) 
+
 """
     wind_to_geometry_axes(coords, α, β)
 

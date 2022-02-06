@@ -6,14 +6,14 @@
 
 Compute the influence coefficient of the velocity of a Horseshoe with trailing lines in a given direction ``û`` at a point ``r`` projected to a normal vector.
 """
-influence_coefficient(horseshoe :: Horseshoe, horseshoe_j, V_hat, finite_core = false) = dot(velocity(horseshoe_point(horseshoe_j), horseshoe, 1., V_hat, finite_core), horseshoe_normal(horseshoe_j))
+influence_coefficient(horseshoe :: Horseshoe, horseshoe_j, V_hat) = dot(velocity(horseshoe_point(horseshoe_j), horseshoe, 1., V_hat), horseshoe_normal(horseshoe_j))
 
 """
     influence_matrix(horseshoes, collocation_points, normals, V_hat)
 
 Assemble the Aerodynamic Influence Coefficient (AIC) matrix given horseshoes, collocation points, associated normal vectors, and a unit vector representing the freestream.
 """
-influence_matrix(horseshoes, V_hat, finite_core = false) = [ influence_coefficient(horsie_j, horsie_i, V_hat, finite_core) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
+influence_matrix(horseshoes, V_hat) = [ influence_coefficient(horsie_j, horsie_i, V_hat) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
 
 """
     boundary_condition(velocities, normals)

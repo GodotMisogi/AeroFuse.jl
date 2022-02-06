@@ -25,11 +25,10 @@ import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
 
 import ..AeroMDAO: velocity, solve_system, solve_linear, surface_velocities, surface_coefficients
 
-## Horseshoe setup
+## Vortex types and methods
 #==========================================================================================#
 
 include("horseshoes.jl")
-include("finite_core.jl")
 
 include("vortex_rings.jl")
 
@@ -37,6 +36,8 @@ include("vortex_rings.jl")
 #==========================================================================================#
 
 include("freestream.jl")
+
+include("lines.jl")
 include("reference_frames.jl")
 
 ## Matrix and residual setups
@@ -49,8 +50,8 @@ include("residuals.jl")
 
 Evaluate and return the vortex strengths ``Γ``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``Ω``.
 """
-function solve_linear(horseshoes, U, Ω, finite_core = false)
-    AIC  = influence_matrix(horseshoes, -normalize(U), finite_core)
+function solve_linear(horseshoes, U, Ω)
+    AIC  = influence_matrix(horseshoes, -normalize(U))
     boco = boundary_condition(horseshoes, U, Ω)
     Γs   = AIC \ boco
 
@@ -72,8 +73,8 @@ include("farfield.jl")
 
 include("system.jl")
 
-function solve_system(components, fs :: Freestream, refs :: References, finite_core = false)
-    Γs, AIC, boco = solve_linear(components, body_frame_velocity(fs), fs.omega, finite_core)
+function solve_system(components, fs :: Freestream, refs :: References)
+    Γs, AIC, boco = solve_linear(components, body_frame_velocity(fs), fs.omega)
 
     VortexLatticeSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
 end

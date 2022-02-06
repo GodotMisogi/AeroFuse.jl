@@ -9,8 +9,8 @@
 
 Perform a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `Reference` values.
 """
-function solve_case(components, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false, finite_core = false)
-    system = solve_system(components, freestream, refs, finite_core)
+function solve_case(components, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false)
+    system = solve_system(components, freestream, refs)
 
     # Printing if needed
     if print_components

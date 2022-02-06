@@ -1,19 +1,22 @@
 """
-    VortexRing{T <: Real}(left_leg, bound_leg, back_leg, right_leg)
+    VortexRing(r1, r2, r3, r4, r_c, n̂, ε)
 
-A vortex ring type consisting of four finite vortex line filaments connected in a loop.
+A vortex ring consisting of four points ``r_i, i = 1,…,4``, a collocation point ``r_c``, a normal vector ``n̂``, and a core size ``ε``.
 """
 struct VortexRing{T <: Real} <: AbstractVortexArray
-    left_leg  :: Line{T}
-    bound_leg :: Line{T}
-    back_leg  :: Line{T}
-    right_leg :: Line{T}
+    r1                :: SVector{3,T}
+    r2                :: SVector{3,T}
+    r3                :: SVector{3,T}
+    r4                :: SVector{3,T}
+    collocation_point :: SVector{3,T}
+    normal            :: SVector{3,T}
+    core              :: T
 end
 
 """
 Helper function to compute the vortex ring given four points following Panel3D ordering.
 """
-function vortex_ring(p1, p2, p3, p4)
+function vortex_lines(p1, p2, p3, p4)
     v1 = quarter_point(p1, p2)
     v4 = quarter_point(p4, p3)
     v2 = v1 + p2 - p1
@@ -21,11 +24,6 @@ function vortex_ring(p1, p2, p3, p4)
 
     v1, v2, v3, v4
 end
-
-"""
-Computes the vortex rings on a Panel3D.
-"""
-vortex_ring(panel :: Panel3D) = vortex_ring(panel.p1, panel.p2, panel.p3, panel.p4)
 
 """
 Constructor for vortex rings on a Panel3D using Lines. The following convention is adopted:
@@ -38,25 +36,13 @@ left_leg       right_leg
     p2 —back_leg→ p3
 ```
 """
-function VortexRing(panel :: Panel3D{T}) where T <: Real
-    v1, v2, v3, v4 = vortex_ring(panel)
-
-    bound_leg = Line(v1, v4)
-    left_leg  = Line(v2, v1)
-    right_leg = Line(v3, v2)
-    back_leg  = Line(v4, v3)
-
-    VortexRing{T}(left_leg, bound_leg, back_leg, right_leg)
+function VortexRing(panel :: Panel3D{T}, normal = panel_normal(panel)) where T <: Real
+    r_c = collocaiton_point(panel)
+    ε   = 0. # (norm ∘ average_chord)(panel)
+    VortexRing{T}(panel.p1, panel.p2, panel.p3, panel.p4, r_c, normal, ε)
 end
 
 Base.length(::VortexRing) = 1
-
-"""
-    sum_vortices(r, vortex_lines :: Array{Line}, Γ)
-
-Sums the velocities evaluated at a point ``r`` of Lines with constant strength ``Γ``.
-"""
-sum_vortices(r, vortex_lines :: Array{<: Line}, Γ) = sum(line -> bound_velocity(r, line, Γ), vortex_lines)
 
 """
 Computes the induced velocities at a point ``r`` of a VortexRing with constant strength ``Γ``.
