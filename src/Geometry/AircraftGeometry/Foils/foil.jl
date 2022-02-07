@@ -9,7 +9,7 @@ abstract type AbstractFoil end
 
 Structure consisting of foil coordinates in 2 dimensions with an optional name. 
 
-The coordinates should be provided in Selig format for compatibility with other AeroMDAO tools.
+The coordinates should be provided in counter-clockwise format, viz. from the trailing edge of the upper surface to the trailing edge of the lower surface.
 """
 struct Foil{T <: Real} <: AbstractFoil
     x      :: Vector{T}
@@ -65,7 +65,7 @@ scale(foil :: Foil, scale) = Foil(scale .* coordinates(foil), foil.name)
 translate(foil :: Foil; vector) = Foil(foil.x .+ vector[1], foil.y .+ vector[2])
 
 function rotate(foil :: Foil; angle, center = zeros(2)) 
-    trans  = @views [ foil.x .- center[1] foil.y .- center[2] ]     # Translate 
+    trans  = @views [ foil.x .- center[1] foil.y .- center[2] ]     # Translate
     rotate = trans * RotMatrix{2,eltype(angle)}(deg2rad(angle))'    # Rotate
     @views Foil(rotate[:,1] .+ center[1], rotate[:,2] .+ center[2], foil.name) # Inverse translate
 end
@@ -77,21 +77,21 @@ affine(foil :: Foil; angle, vector) = translate(rotate(foil; angle = angle); vec
 
 Compute the camber-thickness distribution of a `Foil` with cosine spacing.
 """
-camber_thickness(foil :: Foil, num = 40) = coordinates_to_camber_thickness(cosine_spacing(foil), num + 1)
+camber_thickness(foil :: Foil, num = 40) = coordinates_to_camber_thickness(foil, num + 1)
 
 leading_edge_index(foil :: Foil) = argmin(coordinates(foil)[:,1])
 
 """
     upper_surface(foil :: Foil)
 
-Get the upper surface coordinates of a `Foil`.
+Get the upper surface coordinates of a `Foil` from leading to trailing edge.
 """
-upper_surface(foil :: Foil) = @view coordinates(foil)[1:leading_edge_index(foil),:]
+upper_surface(foil :: Foil) = @views reverse(coordinates(foil)[1:leading_edge_index(foil),:], dims = 1)
 
 """
     lower_surface(foil :: Foil)
 
-Get the lower surface coordinates of a `Foil`.
+Get the lower surface coordinates of a `Foil` from leading to trailing edge.
 """
 lower_surface(foil :: Foil) = @view coordinates(foil)[leading_edge_index(foil):end,:]
 
@@ -110,7 +110,7 @@ Interpolate a `Foil` profile's coordinates by projecting the x-coordinates of a 
 function cosine_spacing(foil :: Foil, n :: Integer = 40)
     upper, lower = split_surface(foil)
 
-    upper_cos = @views cosine_interp(upper[end:-1:1,:], n)
+    upper_cos = cosine_interp(upper, n)
     lower_cos = cosine_interp(lower, n)
 
     @views Foil([ upper_cos[end:-1:2,:]; lower_cos ], foil.name)
@@ -118,35 +118,30 @@ end
 
 function camber_line(foil :: Foil, n = 60)
     upper, lower = split_surface(foil)
-    xs  = LinRange(minimum(foil.x), maximum(foil.x), n)
-    y_u = @views LinearInterpolation(upper[end:-1:1,1], upper[end:-1:1,2]).(xs)
+    xs  = LinRange(minimum(foil.x), maximum(foil.x), n + 1)
+    y_u = @views LinearInterpolation(upper[:,1], upper[:,2]).(xs)
     y_l = @views LinearInterpolation(lower[:,1], lower[:,2]).(xs)
 
-    [xs (y_u + y_l) / 2]
-    # throw("Not implemented yet.")
+    [ xs (y_u + y_l) / 2 ]
 end
 
 
 """
+    make_panels(foil :: Foil)
     make_panels(foil :: Foil, n :: Integer)
 
-Generate a vector of `Panel2D`s from a `Foil` with cosine interpolation using (approximately) ``n`` points.
+Generate a vector of `Panel2D`s from a `Foil`, additionally with cosine interpolation using (approximately) ``n`` points if provided.
 """
-function make_panels(foil :: Foil, n = 40)
-    coords = coordinates(cosine_spacing(foil, n ÷ 2))
-    vecs   = SVector.(coords[:,1], coords[:,2])
+function make_panels(foil :: Foil)
+    vecs = SVector.(foil.x, foil.y)
     @views Panel2D.(vecs[2:end,:], vecs[1:end-1,:])[end:-1:1]
 end
 
-function max_thickness_to_chord_ratio_location(coords)
-    @views xs, thiccs = coords[:,1], coords[:,3]
-    max_thick_arg = argmax(thiccs)
-    @views xs[max_thick_arg], thiccs[max_thick_arg]
-end
+make_panels(foil :: Foil, n :: Integer) = make_panels(cosine_spacing(foil, n ÷ 2))
 
 function camber(foil :: Foil, x_by_c)
     upper, lower = split_surface(foil)
-    y_u = @views LinearInterpolation(upper[end:-1:1,1], upper[end:-1:1,2])(x_by_c * chord_length(foil))
+    y_u = @views LinearInterpolation(upper[:,1], upper[:,2])(x_by_c * chord_length(foil))
     y_l = @views LinearInterpolation(lower[:,1], lower[:,2])(x_by_c * chord_length(foil))
 
     (y_u + y_l) / 2
@@ -156,10 +151,12 @@ function control_surface(foil :: Foil, δ, xc_hinge)
     y_hinge  = camber(foil, xc_hinge)
     rot_foil = rotate(foil; angle = δ, center = [xc_hinge, y_hinge])
     coords   = coordinates(foil)
-    coords[foil.x .>= xc_hinge,1] = rot_foil.x[foil.x .>= xc_hinge]
-    coords[foil.x .>= xc_hinge,2] = rot_foil.y[foil.x .>= xc_hinge]
+    @views coords[foil.x .>= xc_hinge,1] = rot_foil.x[foil.x .>= xc_hinge]
+    @views coords[foil.x .>= xc_hinge,2] = rot_foil.y[foil.x .>= xc_hinge]
     Foil(coords, foil.name)
 end
+
+control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge)
 
 ## Camber-thickness representation
 #==========================================================================================#
@@ -169,17 +166,14 @@ end
 
 Convert 2-dimensional coordinates to its camber-thickness representation after cosine interpolation with ``2n`` points.
 """
-function coordinates_to_camber_thickness(foil, num :: Integer = 40)
-    # Linear interpolation
-    upper, lower = split_surface(foil)
-    xs           = LinRange(minimum(foil.x), maximum(foil.x), num)
-    y_upper      = @views LinearInterpolation(upper[end:-1:1,1], upper[end:-1:1,2]).(xs)
-    y_lower      = @views LinearInterpolation(lower[:,1], lower[:,2]).(xs)
+function coordinates_to_camber_thickness(foil, n = 40)
+    # Cosine interpolation and splitting
+    upper, lower = split_surface(cosine_spacing(foil, n))
 
-    camber       = @views (y_upper + y_lower) / 2
-    thickness    = @views  y_upper - y_lower
+    camber       = @views (upper[:,2] + lower[:,2]) / 2
+    thickness    = @views  upper[:,2] - lower[:,2]
 
-    [ xs camber thickness ]
+    @views [ upper[:,1] camber thickness ]
 end
 
 """
@@ -198,14 +192,21 @@ camber_thickness_to_coordinates(coords) = @views camber_thickness_to_coordinates
 
 Generate the camber coordinates on the ``x``-``z`` plane at ``y = 0``.
 """
-camber_coordinates(coords) = @views [ coords[:,1] zeros(length(coords[:,1])) coords[:,2] ]
+camber_coordinates(coords) = @views [ coords[:,1] zero(coords[:,1]) coords[:,2] ]
 
 """
     thickness_coordinates(coords :: Array{2, <: Real})
 
 Generate the thickness coordinates on the ``x``-``z`` plane at ``y = 0``.
 """
-thickness_coordinates(coords) = @views [ coords[:,1] zeros(length(coords[:,1])) coords[:,3] ]
+thickness_coordinates(coords) = @views [ coords[:,1] zero(coords[:,1]) coords[:,3] ]
+
+function maximum_thickness_to_chord(coords)
+    xs, thiccs    = @views coords[:,1], coords[:,3]
+    max_thick_arg = argmax(thiccs)
+    chord         = @views maximum(coords[:,1])
+    @views xs[max_thick_arg] / chord, thiccs[max_thick_arg] / chord
+end
 
 """
     read_foil(path :: String; header = true; name = "")

@@ -93,6 +93,13 @@ Compute the aspect ratio of an `AbstractWing`.
 aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
 
 """
+    taper_ratio(wing :: AbstractWing)
+
+Compute the taper ratio of an `AbstractWing`, defined as the tip chord length divided by the root chord length.
+"""
+taper_ratio(wing :: AbstractWing) = taper_ratio(wing)
+
+"""
     properties(wing :: AbstractWing)
 
 Compute the generic properties of interest (span, area, etc.) of an `AbstractWing`.

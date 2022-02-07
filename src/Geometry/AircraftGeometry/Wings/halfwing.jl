@@ -33,8 +33,9 @@ function HalfWing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep = 0.,
                     -w_sweep # Normalized sweep angle location ∈ [0,1]
                 )
 
-    # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction.
-    
+    # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
+    # foils = cosine_spacing.(foils, 60)
+
     # Convert angles to radians, adjust twists to leading edge, and generate HalfWing
     HalfWing(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), sweeps, affine)
 end
@@ -148,21 +149,8 @@ Base.position(wing :: HalfWing) = wing.affine.transformation
 orientation(wing :: HalfWing) = wing.affine.linear
 affine_transformation(wing :: HalfWing) = wing.affine
 
-"""
-    span(wing :: AbstractWing)
-
-Compute the projected span length of an `AbstractWing` on the ``x``-``y`` plane.
-"""
-span
 
 span(wing :: HalfWing) = sum(wing.spans)
-
-"""
-    taper_ratio(wing :: AbstractWing)
-
-Compute the taper ratio of an `AbstractWing`, defined as the tip chord length divided by the root chord length.
-"""
-taper_ratio
 
 taper_ratio(wing :: HalfWing) = last(wing.chords) / first(wing.chords)
 
@@ -214,27 +202,38 @@ function mean_aerodynamic_center(wing :: HalfWing, factor = 0.25)
     y_LEs       = getindex.(wing_LE, 2)
 
     # Compute x-y locations of MACs
-    x_mac_LEs   = @views @. y_mac.(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
-    y_macs      = @views @. y_mac.(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
+    x_mac_LEs   = @views @. y_mac(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
+    y_macs      = @views @. y_mac(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
 
     mac_coords  = @. SVector(x_mac_LEs + factor * macs, y_macs, 0.)
 
     affine_transformation(wing)(sum(mac_coords .* areas) / sum(areas))
 end
 
-camber_thickness(wing :: HalfWing, num) = camber_thickness.(wing.foils, num)
+camber_thickness(wing :: HalfWing, num :: Integer) = camber_thickness.(wing.foils, num)
 
-max_thickness_to_chord_ratio_location(wing :: HalfWing, num) = max_thickness_to_chord_ratio_location.(camber_thickness(wing, num))
+maximum_thickness_to_chord(wing :: HalfWing, num :: Integer) = maximum_thickness_to_chord.(camber_thickness(wing, num))
 
 function max_thickness_to_chord_ratio_sweeps(wing :: HalfWing, num)
-    xs_max_tbyc = max_thickness_to_chord_ratio_location(wing, num)
+    # Compute (t/c)_max locations and values
+    xs_max_tbyc = maximum_thickness_to_chord(wing, num)
     max_tbyc    = getindex.(xs_max_tbyc, 2)
     xs_temp     = getindex.(xs_max_tbyc, 1)
-    xs          = getindex.(leading_edge(wing), 1) .+ wing.chords .* getindex.(xs_temp, 1)
-    ds          = forward_difference(xs)
-    widths      = @. wing.spans / cos(wing.dihedrals)
+    
+    # Get leading edge
+    le          = leading_edge(wing)
 
+    # Determine x-coordinates in Cartesian frame
+    xs          = @. getindex(le, 1) + wing.chords * getindex(xs_temp, 1)
+
+    # Compute sectional x-coordinates
+    ds          = forward_difference(xs)
+    
+    # Compute leading-edge sweep angles accounting for dihedral
+    widths      = @. wing.spans / cos(wing.dihedrals)
     sweeps      = @. atan(ds, widths)
+
+    # Averaging for sections
     xs          = forward_sum(xs_temp) / 2
     tbycs       = forward_sum(max_tbyc) / 2
 

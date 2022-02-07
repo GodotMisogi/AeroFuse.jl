@@ -65,9 +65,9 @@ dot(V₁, V₂) = sum(V₁ .* V₂)
 #===========================================================================#
 
 # Transforms (x, y) to the coordinate system with (x_s, y_s) as origin oriented at α_s.
-affine_2D(x, y, x_s, y_s, α_s)  = rotation(x - x_s, y - y_s, α_s)
-inverse_rotation(x, y, angle)   = SVector(x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle))
-rotation(x, y, angle)           = SVector(x * cos(angle) + y * sin(angle), -x * sin(angle) + y * cos(angle))
+affine_2D(x, y, x_s, y_s, α_s) = rotation(x - x_s, y - y_s, α_s)
+inverse_rotation(x, y, angle) = SVector(x * cos(angle) - y * sin(angle), x * sin(angle) + y * cos(angle))
+rotation(x, y, angle) = SVector(x * cos(angle) + y * sin(angle), -x * sin(angle) + y * cos(angle))
 
 # Matrix versions
 rotation(θ)         = [ cos(θ) sin(θ) ;
@@ -87,7 +87,7 @@ slope(x1, y1, x2, y2) = (y2 - y1) / (x2 - x1)
 tuparray(xs)  = tuple.(eachcol(xs)...)
 vectarray(xs) = SVector.(eachcol(xs)...)
 
-extend_yz(coords) = @views [ coords[:,1] zeros(length(coords[:,1])) coords[:,2] ]
+extend_yz(coords) = @views [ coords[:,1] zero(coords[:,1]) coords[:,2] ]
 
 reflect_mapper(f, xs) = @views [ f(xs[:,end:-1:1]) xs ]
 
@@ -96,9 +96,9 @@ reflect_mapper(f, xs) = @views [ f(xs[:,end:-1:1]) xs ]
 
 forward_difference_matrix(n) = [ I zeros(n) ] - [ zeros(n) I ]
 
-forward_sum(xs)   = @views @. xs[2:end] + xs[1:end-1]
-forward_difference(xs)  = @views @. xs[2:end] - xs[1:end-1]
-forward_division(xs)   = @views @. xs[2:end] / xs[1:end-1]
+forward_sum(xs) = @views @. xs[2:end] + xs[1:end-1]
+forward_difference(xs) = @views @. xs[2:end] - xs[1:end-1]
+forward_division(xs) = @views @. xs[2:end] / xs[1:end-1]
 ord2diff(xs) = @views @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2] 
 
 adj3(xs) = @views zip(xs[1:end-2,:], xs[2:end-1,:], xs[3:end,:])
@@ -141,8 +141,8 @@ function sine_spacing(x1, x2, n :: Integer = 40)
 end
 
 function cosine_interp(coords, n :: Integer = 40)
-    xs = coords[:,1]
-    ys = coords[:,2]
+    xs = @views coords[:,1]
+    ys = @views coords[:,2]
 
     d = maximum(xs) - minimum(xs)
     x_center = (maximum(xs) + minimum(xs)) / 2

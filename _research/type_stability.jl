@@ -9,7 +9,7 @@ naca_2412 = naca4((2,4,1,2))
 foils = fill(naca_2412, 2)
 
 ##
-@code_warntype max_thickness_to_chord_ratio_location.(foils)
+@code_warntype maximum_thickness_to_chord.(foils)
 
 ##
 @code_warntype upper_surface.(foils)
@@ -39,5 +39,4 @@ M       = 10. / 330.
 @code_warntype AeroMDAO.camber_thickness(wing.left, 50)
 
 ##
-
-# @code_warntype AeroMDAO.max_thickness_to_chord_ratio_sweeps(wing.right, 60)
+@code_warntype AeroMDAO.max_thickness_to_chord_ratio_sweeps(wing.right, 60)
