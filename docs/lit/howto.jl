@@ -38,6 +38,11 @@ xcamthick = camber_thickness(my_foil, 60)
 # You can also do the inverse transformation.
 coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
 
+# ### Control Surfaces
+
+# You can (somewhat) mimic the behaviour of a control surface by specifying a deflection angle $\delta$ (clockwise-positive convention) with the specification of the hinge location's $x$-coordinate normalized in $[0,1]$ to the chord length.
+con_foil = control_surface(cos_foil; angle = 5., )
+
 # ## Doublet-Source Aerodynamic Analyses
 # The `solve_case` method runs the analysis given a `Foil` containing the airfoil coordinates, a `Uniform2D` defining the boundary conditions, and an optional named specification for the number of panels. It returns a system which can be used to obtain the aerodynamic quantities of interest and post-processing.
 

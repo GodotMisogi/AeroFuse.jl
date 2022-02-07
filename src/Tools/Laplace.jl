@@ -66,6 +66,7 @@ angle(uni :: Uniform2D)     = uni.angle
 Uniform2D(mag :: T, ang :: T) where T <: Real = Uniform2D{T}(mag, ang)
 Uniform2D(mag, ang) = Uniform2D(promote(mag, ang)...)
 Uniform2D(velocity) = Uniform2D((sqrt ∘ sum)(velocity.^2), atan(velocity[2], velocity[1]))
+Uniform2D(; angle)  = Uniform2D(1., angle)
 
 velocity(uni :: Uniform2D) = let (sa, ca) = sincos(uni.angle); uni.magnitude * SVector(ca, sa) end
 potential(uni :: Uniform2D, x, y) = uni.magnitude * (x * cos(uni.angle) + y * sin(uni.angle))

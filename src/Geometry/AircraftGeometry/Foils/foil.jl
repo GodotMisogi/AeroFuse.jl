@@ -147,15 +147,21 @@ function camber(foil :: Foil, x_by_c)
     (y_u + y_l) / 2
 end
 
+
 function control_surface(foil :: Foil, δ, xc_hinge)
     y_hinge  = camber(foil, xc_hinge)
-    rot_foil = rotate(foil; angle = δ, center = [xc_hinge, y_hinge])
+    rot_foil = rotate(foil; angle = -δ, center = [xc_hinge, y_hinge])
     coords   = coordinates(foil)
     @views coords[foil.x .>= xc_hinge,1] = rot_foil.x[foil.x .>= xc_hinge]
     @views coords[foil.x .>= xc_hinge,2] = rot_foil.y[foil.x .>= xc_hinge]
     Foil(coords, foil.name)
 end
 
+"""
+    control_surface(foil :: Foil; angle, hinge)
+
+Modify a `Foil` to mimic a control surface by specifying a deflection angle (in degrees, clockwise-positive convention) and a normalized hinge ``x``-coordinate ``∈ [0,1]`` in terms of the chord length.
+"""
 control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge)
 
 ## Camber-thickness representation

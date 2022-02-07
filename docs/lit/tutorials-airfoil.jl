@@ -1,10 +1,11 @@
 # ## Objectives
 #
-# Here we will show you how to perform an aerodynamic analysis of an airfoil. Specifically we will:
-# 1. Compute the coordinates of a NACA 4-digit series airfoil.
-# 2. Plot its camber, thickness, upper and lower surface representations.
-# 3. Perform an aerodynamic analysis at a given angle of attack.
-# 4. Plot its aerodynamic properties.
+# Here we will show you how to perform an aerodynamic analysis of an airfoil.
+# > **Recipe**
+# > 1. Compute the coordinates of a NACA 4-digit series airfoil.
+# > 2. Plot its camber, thickness, upper and lower surface representations.
+# > 3. Perform an aerodynamic analysis at a given angle of attack.
+# > 4. Plot its aerodynamic properties.
 # For this, we will need to import some packages which will be convenient for plotting.
 using AeroMDAO      # Main package
 using Plots         # Plotting library

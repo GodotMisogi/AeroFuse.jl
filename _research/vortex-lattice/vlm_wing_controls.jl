@@ -2,8 +2,15 @@
 using AeroMDAO
 
 ## Wing section setup
+
+foils = [   # Wrong idea
+            control_surface(naca4(0,0,1,2); angle = 5., hinge = 0.75)
+            control_surface(naca4(0,0,1,2); angle = 5., hinge = 0.75)
+            naca4(0,0,1,2)
+        ]
+
 wing_right = HalfWing(
-                      foils     = fill(naca4((0,0,1,2)), 3),
+                      foils     = fill(naca4(0,0,1,2), 3),
                       chords    = [1.0, 0.6, 0.2],
                       twists    = [0.0, 0.0, 0.0],
                       spans     = [2.5, 0.5],
@@ -82,7 +89,7 @@ print_coefficients(nf_v, ff_v, :wing)
 ## Plotting
 # using StaticArrays
 using Plots
-gr()
+plotlyjs()
 
 ## Streamlines
 
@@ -104,7 +111,7 @@ num_stream_points = 100
 streams = plot_streamlines(system, seed, distance, num_stream_points);
 
 ## Display
-horseshoe_panels = chord_panels(wing_mesh)
+horseshoe_panels = camber_panels(wing_mesh)
 horseshoe_coords = plot_panels(horseshoe_panels)
 wing_coords      = plot_planform(wing);
 horseshoe_points = Tuple.(horseshoe_point.(system.vortices))
@@ -124,7 +131,7 @@ scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
 plot!()
 
 ## Compute spanwise loads
-span_loads = spanwise_loading(horseshoe_panels, CFs.wing, projected_area(wing))
+span_loads = spanwise_loading(chord_panels(wing_mesh), CFs.wing, projected_area(wing))
 CL_loads   = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
 
 ## Plot spanwise loadings
