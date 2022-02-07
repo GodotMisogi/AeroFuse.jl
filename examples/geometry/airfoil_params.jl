@@ -3,9 +3,12 @@ using AeroMDAO
 
 ## Test function
 function doublet_source_case(foil, uniform)
-    @time cl, cls, cms, cps, panels = solve_case(foil,
-                                                 uniform;
-                                                 num_panels = 80)
+    @time system = solve_case(foil,
+                              uniform;
+                              num_panels = 80)
+                            
+    cl = lift_coefficient(system)
+    cls, cms, cps = surface_coefficients(system)
 
     println("Cl: $cl")
     println("Σᵢ Clᵢ: $(sum(cls))")
@@ -43,19 +46,20 @@ doublet_source_case(cst_foil, uniform)
 
 ## Camber-thickness fitting
 alphas   = camber_thickness_to_CST(cos_foil, num_dv)
-cam_foil = camber_CST(alphas..., (0., 0.), 0)
+cam_foil = camber_CST(alphas..., 0., 0)
 
 doublet_source_case(cam_foil, uniform)
 
 ## Plotting library
 using Plots
-plotly(dpi = 300);
+gr(dpi = 300);
 
 ## Cosine and camber-thickness
 plot(aspect_ratio = 1)
-plot!(coords[:,1], coords[:,2],       label = "Original")
-plot!(cos_foil[:,1], cos_foil[:,2],   label = "Cosine")
+plot!(coords.x, coords.y,      label = "Original")
+plot!(cos_foil.x, cos_foil.y,   label = "Cosine")
 plot!(xcamthick[:,1], xcamthick[:,2], label = "Camber")
 plot!(xcamthick[:,1], xcamthick[:,3], label = "Thickness")
-plot!(cst_foil[:,1], cst_foil[:,2],   label = "CST Coordinates Fit")
-plot!(cam_foil[:,1], cam_foil[:,2],   label = "CST Camber-Thickness Fit")
+plot!(foiler.x, foiler.y, label = "Inverse Camber-Thickness")
+plot!(cst_foil.x, cst_foil.y,   label = "CST Coordinates Fit")
+plot!(cam_foil.x, cam_foil.y,   label = "CST Camber-Thickness Fit")

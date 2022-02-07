@@ -7,7 +7,7 @@ wing_right = HalfWing(foils     = fill(naca4((0,0,1,2)), 3),
                       twists    = [0.0, 0.0, 0.0],
                       spans     = [5.0, 0.5],
                       dihedrals = [5., 5.],
-                      sweeps      = [5., 5.]);
+                      sweeps    = [5., 5.]);
 wing = Wing(wing_right, wing_right)
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
@@ -44,7 +44,7 @@ ax       = Wind()
 CFs, CMs = surface_coefficients(system; axes = ax)
 # Fs       = surface_forces(system)
 # Ms       = surface_moments(system)
-# Fs, Ms   = surface_dynamics(system; axes = ax) 
+# Fs, Ms   = surface_dynamics(system; axes = ax)
 
 ## Viscous drag prediction using empirical models
 

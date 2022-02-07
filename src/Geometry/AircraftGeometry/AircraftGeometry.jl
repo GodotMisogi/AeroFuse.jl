@@ -11,6 +11,7 @@ using CoordinateTransformations
 using Rotations
 using LinearAlgebra
 using SplitApplyCombine
+using Interpolations
 
 # Math tools
 import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, forward_sum, forward_division, forward_difference, weighted_vector, vectarray, extend_yz
@@ -30,7 +31,9 @@ abstract type AbstractWing <: AbstractAircraft end
 ## Foil geometry
 #==========================================================================================#
 
-include("foil.jl")
+include("Foils/foil.jl")
+include("Foils/class_shape_transformation.jl")
+include("Foils/naca_airfoils.jl")
 
 ## Fuselage geometry
 #==========================================================================================#
@@ -48,12 +51,11 @@ mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + tape
 y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / 3(1 + λ)
 quarter_chord(chord) = 0.25 * chord
 
-include("halfwing.jl")
-include("wing.jl")
-include("mesh_tools.jl")
-include("mesh_wing.jl")
-
-
+include("Wings/halfwing.jl")
+include("Wings/wing.jl")
+include("Wings/mesh_tools.jl")
+include("Wings/mesh_wing.jl")
+include("Wings/controls.jl")
 
 """
     span(wing :: AbstractWing)
@@ -68,7 +70,6 @@ span(wing :: AbstractWing) = span(wing)
 Compute the projected area of an `AbstractWing`` by summing the trapezoidal areas.
 """
 projected_area(wing :: AbstractWing) = projected_area(wing)
-
 
 """
     mean_aerodynamic_chord(wing :: AbstractWing)

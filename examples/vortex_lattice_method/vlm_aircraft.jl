@@ -8,9 +8,9 @@ import LinearAlgebra: norm
 wing = Wing(foils     = fill(naca4(2,4,1,2), 2),
             chords    = [1.0, 0.6],
             twists    = [2.0, 0.0],
-            spans     = [4.0],
+            spans     = [8.0],
             dihedrals = [5.],
-            sweeps      = [5.]);
+            sweeps    = [5.]);
 
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
@@ -19,9 +19,9 @@ S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              chords    = [0.7, 0.42],
              twists    = [0.0, 0.0],
-             spans     = [1.25],
+             spans     = [2.5],
              dihedrals = [0.],
-             sweeps      = [6.39],
+             sweeps    = [6.39],
              position  = [4., 0, 0],
              angle     = -2.,
              axis      = [0., 1., 0.])
@@ -32,7 +32,7 @@ vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweeps      = [7.97],
+                 sweeps    = [7.97],
                  position  = [4., 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.])

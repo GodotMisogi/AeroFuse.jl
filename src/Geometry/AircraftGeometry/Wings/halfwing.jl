@@ -281,4 +281,3 @@ end
 Compute the trailing edge coordinates of a `HalfWing`, with an option to flip the signs of the ``y``-coordinates.
 """
 trailing_edge(wing :: HalfWing, flip = false) = wing_bounds(wing, flip)[2]
-

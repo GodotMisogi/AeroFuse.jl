@@ -173,7 +173,7 @@ end
 
 function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: N; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surf)) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}}
     check_definition(surf, n_span)
-    chord_mesh =  chord_coordinates(surf, n_span, n_chord; spacings = span_spacing)
+    chord_mesh  = chord_coordinates(surf, n_span, n_chord; spacings = span_spacing)
     camber_mesh = camber_coordinates(surf, n_span, n_chord; spacings = span_spacing)
     T = promote_type(eltype(chord_mesh), eltype(camber_mesh))
     WingMesh{M,N,P,Q,T}(surf, n_span, n_chord, chord_spacing, span_spacing, chord_mesh, camber_mesh)
@@ -189,9 +189,9 @@ surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num
 
 surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
 
-chord_panels(wing :: WingMesh)    = make_panels(wing.chord_mesh)
-camber_panels(wing :: WingMesh)   = make_panels(wing.camber_mesh)
-normal_vectors(wing :: WingMesh)  = panel_normal.(camber_panels(wing))
+chord_panels(wing :: WingMesh) = make_panels(wing.chord_mesh)
+camber_panels(wing :: WingMesh) = make_panels(wing.camber_mesh)
+normal_vectors(wing :: WingMesh) = panel_normal.(camber_panels(wing))
 
 function Base.show(io :: IO, mesh :: WingMesh)
     n_c, n_s = size(mesh.chord_mesh) .- 1

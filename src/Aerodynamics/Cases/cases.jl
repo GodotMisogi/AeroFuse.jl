@@ -42,15 +42,12 @@ function spanwise_loading(panels, CFs, S)
 
     # Compute weighted areas for spanwise strips
     area_scale = S ./ vec(sum(panel_area, panels, dims = 1))
-    chords     = vec(sum(average_chord, panels, dims = 1))
+    # chords     = vec(sum(average_chord, panels, dims = 1))
 
     # Compute spanwise coefficients
-    CFs      = combinedimsview(CFs)
-    span_CXs = @views spanwise_loading(CFs[1,:,:], area_scale)
-    span_CYs = @views spanwise_loading(CFs[2,:,:], area_scale)
-    span_CZs = @views spanwise_loading(CFs[3,:,:], area_scale)
+    span_CFs = permutedims(combinedimsview(spanwise_loading(CFs, area_scale)))
 
-    [ ys span_CXs span_CYs span_CZs ]
+    [ ys span_CFs ]
 end
 
 spanwise_loading(wing :: WingMesh, CFs, S) = spanwise_loading(chord_panels(wing), CFs, S)

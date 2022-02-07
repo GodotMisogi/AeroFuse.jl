@@ -73,7 +73,9 @@ panel_normal(panel :: Panel3D) = let p31 = p3(panel) - p1(panel), p42 = p4(panel
 """
     transform_normal(panel :: Panel3D, h_l, g_l)
 
-Transform the normal vector of a `Panel3D` about the hinge axis ``ĥ_l`` by the control gain ``g_l``.
+Transform the normal vector ``n̂₀`` of a `Panel3D` about the hinge axis ``ĥₗ`` by the control gain ``gₗ``.
+
+The transformation is the following: ``n̂ₗ = gₗ ĥₗ × n̂₀`` (FVA, Drela, 6.36).
 """
 transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, panel_normal(panel))
 
@@ -97,3 +99,15 @@ wetted_area(panels) = sum(panel -> panel_area(panel), panels)
 Reflect a Panel3D with respect to the ``x``-``z`` plane of its reference coordinate system.
 """
 reflect_xz(panel :: Panel3D) = Panel3D((reflect_xz ∘ p1)(panel), (reflect_xz ∘ p2)(panel), (reflect_xz ∘ p3)(panel), (reflect_xz ∘ p4)(panel))
+
+# Compute local axis coordinates
+function local_coordinate_system(stream, normie) 
+    s_hat = normalize(stream)
+    n_hat = normalize(normie)
+    c_hat = s_hat × n_hat
+
+    reduce(hcat, @SMatrix [ c_hat; s_hat; n_hat ])
+end
+
+# Compute local axis coordinates
+local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, panel_normal(panel))
