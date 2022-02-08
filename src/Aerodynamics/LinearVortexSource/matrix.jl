@@ -52,6 +52,6 @@ neumann_influence_matrix(func, angle_func, panel_is, panel_js) = [ influence_coe
 #============================================#
 
 
-constant_source_boundary_condition(panels, u) = -dot.(Ref(u), panel_normal.(panels))
+constant_source_boundary_condition(panels, u) = -map(pan -> dot(u, panel_normal(pan)), panels)
 
-neumann_boundary_condition(panels, u) = [ -dot.(Ref(u), panel_normal.(panels)); 0 ]
+neumann_boundary_condition(panels, u) = [ constant_source_boundary_condition(panels, u); 0 ]
