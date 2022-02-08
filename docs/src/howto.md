@@ -6,6 +6,9 @@ EditURL = "<unknown>/docs/lit/howto.jl"
 
 ````@example howto
 using AeroMDAO # hide
+using Plots # hide
+gr(dpi = 300) # hide
+using LaTeXStrings # hide
 ````
 
 ## Airfoil Geometry
@@ -22,6 +25,11 @@ foilpath = string(@__DIR__, "/misc/s1223.dat")
 my_foil = read_foil(foilpath;
                     header = true,
                     name   = "")
+````
+
+````@example howto
+plot(my_foil.x, my_foil.y,
+     xlabel = L"x", ylabel = L"y", aspect_ratio = 1, label = "$(my_foil.name)")
 ````
 
 ### Interpolate and Process Coordinates
@@ -60,10 +68,12 @@ coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthi
 
 ### Control Surfaces
 
-You can (somewhat) mimic the behaviour of a control surface by specifying a deflection angle $\delta$ (clockwise-positive convention) with the specification of the hinge location's $x$-coordinate normalized in $[0,1]$ to the chord length.
+You can (somewhat) mimic the behaviour of a control surface by specifying a deflection angle $\delta$ (in degrees, clockwise-positive convention) with the specification of the hinge location's $x$-coordinate normalized in $[0,1]$ to the chord length.
 
 ````@example howto
-con_foil = control_surface(cos_foil; angle = 5., )
+con_foil = control_surface(cos_foil; angle = 10., hinge = 0.75)
+
+plot!(con_foil.x, con_foil.y, label = "$(my_foil.name) Deflected")
 ````
 
 ## Doublet-Source Aerodynamic Analyses

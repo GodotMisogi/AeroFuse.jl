@@ -26,7 +26,7 @@ Functioning:
 - Steady, inviscid, incompressible, isentropic 2D and 3D aerodynamic analyses.
   - 2D - Doublet-source panel method
   - 3D - Vortex lattice method with derivatives
-- Empirical viscous drag prediction methods for wings.
+- Semi-/empirical profile drag prediction methods for wings.
 - Finite-element beam model based on Euler-Bernoulli theory for structural analysis.
 
 ![](plots/VortexLattice.svg)
@@ -58,11 +58,11 @@ If you use AeroMDAO in your research, please cite the following until any releva
 
 ```bibtex
 @software{aeromdao,
-  author  = {Arjit Seth, Rhea P. Liem, Stephane Redonnet},
+  author  = {Arjit Seth, Stephane Redonnet, Rhea P. Liem},
   title   = {AeroMDAO},
   url     = {https://github.com/GodotMisogi/AeroMDAO},
   version = {0.3.0},
-  date    = {2021-01-04},
+  date    = {2021-02-08},
 }
 ```
 
