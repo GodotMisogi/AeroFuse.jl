@@ -2,138 +2,72 @@
 #==========================================================================================#
 
 """
-    print_info(wing :: Union{Wing, HalfWing})
+    solve_case(components :: Vector{Horseshoe}, fs :: Freestream, refs :: References;
+               name = :aircraft :: Symbol, 
+               print = false :: Boolean,
+               print_components = false :: Boolean)
 
-Print the relevant geometric characteristics of a `HalfWing` or `Wing`.
+Perform a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `Reference` values.
 """
-function print_info(wing :: Union{Wing, HalfWing}, head = ""; browser = false)
-    labels = [ "Span (m)", "Area (m²)", "MAC (m)", "Aspect Ratio"]
-    wing_info = [ info(wing)... ]
-    data = [ labels wing_info ]
-    header = [ head, "Value" ]
-    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :blue, bold = true)
-    if browser
-        pretty_table(String, data, header, alignment = [:c, :c], tf = tf_html_minimalist, backend = :html, highlighters = HTMLHighlighter( (data,i,j) -> (j == 1), HTMLDecoration(font_weight = "bold")), formatters = ft_round(8))
-    else
-        pretty_table(data, header, alignment = [:c, :c], tf = tf_compact, highlighters = h1, vlines = :none, formatters = ft_round(8))
-    end
-end
+function solve_case(components, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false)
+    system = solve_system(components, freestream, refs)
 
-VortexLattice.VLMState(fs :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") = VLMState(fs.V, fs.alpha, fs.beta, fs.omega, r_ref, rho_ref, area_ref, chord_ref, span_ref, name)
-
-"""
-    solve_case(horseshoe_panels :: Matrix{Panel3D}, normals, freestream :: Freestream, r_ref, ρ = 1.225; symmetry = false)
-
-Evaluate a vortex lattice case given an array of `Panel3D`s with associated normal vectors (not necessarily the same as the panels' normals), a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments, with an option for symmetry.
-"""
-function solve_case(horseshoe_panels :: Array{<: Panel3D}, normals, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref, r_ref)
-    # Make horseshoes and collocation points
-    horseshoes = horseshoe_line.(horseshoe_panels)
-
-    # Solve system
-    Γs = reshape(solve_system(horseshoes[:], normals[:], U, Ω), size(horseshoe_panels))
-
-    # Compute forces and moments
-    surface_forces, surface_moments, trefftz_force = case_dynamics(Γs, horseshoes, U, α, β, Ω, rho_ref, r_ref)
-
-    # Compute aerodynamic coefficients
-    nearfield_coeffs, farfield_coeffs, CFs, CMs = evaluate_coefficients(surface_forces, surface_moments, trefftz_force, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref)
-
-    nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs
-end
-
-"""
-    solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream, ρ :: Real, r_ref; span_num :: Integer = 5, chord_num :: Integer = 10)
-
-Evaluate a vortex lattice case given a `Wing` or `HalfWing` with a `Freestream`, reference density ``\\rho`` and reference point ``r_\\text{ref}`` for moments, ``n_s`` span-wise panels and ``n_c`` chord-wise panels.
-"""
-function solve_case(wing :: Union{Wing, HalfWing}, freestream :: Freestream; rho_ref = 1.225, r_ref = [0.25, 0, 0], area_ref = projected_area(wing), chord_ref = mean_aerodynamic_chord(wing), span_ref = span(wing), mu_ref = 1.5e-5, span_num :: Union{Integer, Vector{<: Integer}}, chord_num :: Integer, viscous = false, a_ref = 330., x_tr = 0.3, spacing = spanwise_spacing(wing))
-    # Unpack Freestream
-    U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
-
-    # Determine spanwise panel distribution and spacing
-    space     = ifelse(typeof(spacing) <: String, [spacing], spacing)
-    span_nums = number_of_spanwise_panels(wing, span_num)
-
-    # Compute panels and normals
-    horseshoe_panels, camber_panels = vlmesh_wing(wing, span_nums, chord_num, space)
-    normals = panel_normal.(camber_panels)
-
-    # Compute forces and moments
-    nearfield_coeffs, farfield_coeffs, CFs, CMs, horseshoes, Γs = solve_case(horseshoe_panels, normals, U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref, r_ref)
-    
-    # Viscous drag evaluation
-    if viscous
-        # Compute profile drag via wetted-area equivalent skin-friction method
-        CDv = profile_drag_coefficient(wing, x_tr, freestream.V, rho_ref, a_ref, area_ref, mu_ref)
-
-        # Add profile and total drag coefficients
-        nf_coeffs = [ nearfield_coeffs[1] + CDv; CDv; nearfield_coeffs ]
-        ff_coeffs = [  farfield_coeffs[1] + CDv; CDv; farfield_coeffs  ]
-    else
-        nf_coeffs = nearfield_coeffs
-        ff_coeffs = farfield_coeffs
+    # Printing if needed
+    if print_components
+        print_coefficients(system, name, components = true)
+    elseif print
+        print_coefficients(system, name)
     end
 
-    nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs
+    system
 end
 
-function solve_case(components :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, freestream :: Freestream; rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft", print = false, print_components = false) where T <: Real
-    # Get panels
-    meshes = values(components)
-    
-    # Flattening for VLM
-    horseshoe_panels = first.(meshes)
-    normals          = last.(meshes)
-    horsies          = reduce(vcat, vec.(horseshoe_panels))
-    normies          = reduce(vcat, vec.(normals))
+## Placeholder for functions I'm not sure where to put
+#==========================================================================================#
 
-    # Get required vortex lattice variables, i.e. horseshoes, collocation points and normals
-    horseshoes = horseshoe_line.(horsies)
-    horseshoes_arr = [ horseshoe_line.(horses) for horses in horseshoe_panels ]
-    
-    # Unpack Freestream
-    U, α, β, Ω = aircraft_velocity(freestream), freestream.alpha, freestream.beta, freestream.omega
+spanwise_loading(CXs, weighted_areas) = vec(sum(CXs, dims = 1)) .* weighted_areas
 
-    # Solve system
-    Γs = solve_system(horseshoes, normies, U, Ω)
+## Span-loading
+"""
+    spanwise_loading(panels, CFs, S)
+    spanwise_loading(mesh :: WingMesh, CFs, S)
 
-    # Reshaping
-    panel_sizes = size.(horseshoe_panels)
-    panel_inds 	= [ 0; cumsum(prod.(panel_sizes)) ]
-    Γs_arr 		= reshape_array(Γs, panel_inds, panel_sizes)
+Compute the spanwise loading of the forces given panels, associated force coefficients, and the reference area.
 
-    # Compute forces and moments
-    results = case_dynamics.(Γs_arr, horseshoes_arr, Ref(Γs), Ref(horseshoes), Ref(U), α, β, Ref(Ω), rho_ref, Ref(r_ref))
+Alternatively, provide a `WingMesh` type which gets the panels for you.
+"""
+function spanwise_loading(panels, CFs, S)
+    # Get y-coordinates of spanwise strips
+    ys = @views vec(mean(x -> midpoint(x)[2], panels, dims = 1))
 
-    # Components' non-dimensional forces and moments
-    data = [ evaluate_coefficients(dyn..., U, α, β, Ω, rho_ref, area_ref, chord_ref, span_ref) for dyn in results ]
+    # Compute weighted areas for spanwise strips
+    area_scale = S ./ vec(sum(panel_area, panels, dims = 1))
+    # chords     = vec(sum(average_chord, panels, dims = 1))
 
-    nf_comp_coeffs = getindex.(data, 1)
-    ff_comp_coeffs = getindex.(data, 2)
-    CFs            = getindex.(data, 3)
-    CMs            = getindex.(data, 4)
+    # Compute spanwise coefficients
+    span_CFs = permutedims(combinedimsview(spanwise_loading(CFs, area_scale)))
 
-    # Aircraft's non-dimensional forces and moments
-    nf_coeffs = reduce((x, y) -> x .+ y, nf_comp_coeffs) # Sum nearfield coefficients
-    ff_coeffs = reduce((x, y) -> x .+ y, ff_comp_coeffs) # Sum farfield coefficients
-    name_CFs  = reduce(vcat, vec.(CFs))                  # Collect surface force coefficients
-    name_CMs  = reduce(vcat, vec.(CMs))                  # Collect surface moment coefficients
-
-    # Printing
-    if print_components; print_coefficients.(nf_comp_coeffs, ff_comp_coeffs, keys(components)) end
-    if print; 			 print_coefficients(nf_coeffs, ff_coeffs, name) 					   end
-
-    # Dictionary assembly
-    name_data = (nf_coeffs, ff_coeffs, name_CFs, name_CMs, horsies, normies, horseshoes, Γs)
-    comp_data = tuple.(nf_comp_coeffs, ff_comp_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes_arr, Γs_arr)
-
-    names 	= [ name						 ; # Aircraft name
-                (collect ∘ keys)(components) ] # Component names
-    data  	= [ name_data ;	# Aircraft data
-                comp_data ]	# Component data
-
-    Dict(names .=> data)
+    [ ys span_CFs ]
 end
 
-streamlines(freestream :: Freestream, points, horseshoes, Γs, length, num_steps :: Integer) = VortexLattice.streamlines.(points, Ref(velocity(freestream)), Ref(freestream.omega), Ref(horseshoes), Ref(Γs), Ref(length), Ref(num_steps))
+spanwise_loading(wing :: WingMesh, CFs, S) = spanwise_loading(chord_panels(wing), CFs, S)
+
+## Mesh connectivities
+triangle_connectivities(inds) = @views [ 
+                                         vec(inds[1:end-1,1:end-1]) vec(inds[1:end-1,2:end]) vec(inds[2:end,2:end])    ;
+                                         vec(inds[2:end,2:end])     vec(inds[2:end,1:end-1]) vec(inds[1:end-1,1:end-1])
+                                       ]
+
+## Extrapolating surface values to neighbouring points
+function extrapolate_point_mesh(mesh, weight = 0.75)
+    m, n   = size(mesh)
+    points = zeros(eltype(mesh), m + 1, n + 1)
+
+    # The quantities are measured at the bound leg of a Horseshoe by default (0.25×)
+    @views @. points[1:end-1,1:end-1] += weight       / 2 * mesh
+    @views @. points[1:end-1,2:end]   += weight       / 2 * mesh
+    @views @. points[2:end,1:end-1]   += (1 - weight) / 2 * mesh
+    @views @. points[2:end,2:end]     += (1 - weight) / 2 * mesh
+
+    points
+end

@@ -1,212 +1,235 @@
-mutable struct VLMState{T <: Real}
-	U           :: T
-    alpha       :: T
-    beta        :: T
-    omega       :: SVector{3,T}
-	r_ref 		:: SVector{3,T}
-	rho_ref 	:: T
-	area_ref 	:: T
-	chord_ref 	:: T
-	span_ref 	:: T
-	name 		:: String
+## References
+#==========================================================================================#
+
+abstract type AbstractReferences end
+
+"""
+    References(V, ρ, μ, S, b, c, r)
+    References(; speed, density, viscosity,
+                 sound_speed, area, span, 
+                 chord, location)
+Define reference values with speed ``V``, density ``ρ``, _dynamic_ viscosity ``μ``, area ``S``, span ``b``, chord ``c``, location ``r`` for a vortex lattice analysis.
+
+# Arguments
+- `speed       :: Real         = 1.`: Speed (m/s)
+- `density     :: Real         = 1.225`: Density (m)
+- `viscosity   :: Real         = 1.5e-5`: Dynamic viscosity (m)
+- `sound_speed :: Real         = 330.`: Speed of sound (m/s)
+- `span        :: Real         = 1.`: Span length (m)
+- `area        :: Real         = 1.`: Area (m²)
+- `chord       :: Real         = 1.`: Chord length (m)
+- `location    :: Vector{Real} = [0,0,0]`: Position
+"""
+struct References{T} <: AbstractReferences
+    speed       :: T
+    density     :: T
+    viscosity   :: T
+    sound_speed :: T
+    area        :: T
+    span        :: T
+    chord       :: T
+    location    :: SVector{3,T}
 end
 
-VLMState(U :: T, α, β, Ω = zeros(3); rho_ref = 1.225, r_ref = zeros(3), area_ref = 1, chord_ref = 1, span_ref = 1, name = "Aircraft") where T <: Real = VLMState{T}(U, α, β, Ω, r_ref, rho_ref, area_ref, chord_ref, span_ref, name)
-
-mutable struct VLMSurface{T <: Real}
-    horseshoes         :: Matrix{Horseshoe{T}}
-    collocation_points :: Matrix{SVector{3,T}}
-    normals            :: Matrix{SVector{3,T}}
-    surface_forces     :: Matrix{SVector{3,T}}
-    surface_moments    :: Matrix{SVector{3,T}}
-    circulations       :: Matrix{T}
-    wake_vectors       :: Vector{SVector{3,T}}
-    wake_AIC           :: Matrix{T}
-    farfield_forces    :: MVector{3,T}
+function References(V, ρ, μ, a, S, b, c, r)
+    T = promote_type(eltype(V), eltype(ρ), eltype(μ), eltype(a), eltype(S), eltype(b), eltype(c), eltype(r))
+    References{T}(V, ρ, μ, a, S, b, c, r) 
 end
 
-function VLMSurface(panels :: Matrix{Panel3D{T}}, normals :: Matrix{SVector{3,T}}) where T <: Real
-    horseshoes         = horseshoe_line.(panels)
-    collocation_points = horseshoe_point.(panels)
-    
-    m = size(panels)
+# References(; V, rho, mu, a, S, b, c, r) = References(V, rho, mu, a, S, b, c, r)
 
-    # Initialize
-    wake_AIC        = Matrix{T}(undef, m)
-    Γs              = Matrix{T}(undef, m)
-    surface_forces  = Matrix{SVector{3,T}}(undef, m)
-    surface_moments = Matrix{SVector{3,T}}(undef, m)
-    wake_vectors    = Vector{SVector{3,T}}(undef, m[1])
-    farfield_forces = MVector{3,T}(0., 0., 0.)
+References(; speed = 1., density = 1.225, viscosity = 1.5e-5, sound_speed = 330., area = 1., span = 1., chord = 1., location = zeros(3)) = References(speed, density, viscosity, sound_speed, area, span, chord, location)
 
-    VLMSurface{T}(horseshoes, collocation_points, normals, surface_forces, surface_moments, Γs, wake_vectors, wake_AIC, farfield_forces)
+Base.broadcastable(refs :: References) = Ref(refs)
+
+function Base.show(io :: IO, refs :: References)
+    println(io, "References: ")
+    for fname in fieldnames(typeof(refs))
+        println(io, "    ", fname, " = ", getfield(refs, fname))
+    end
 end
 
-horseshoes(surf :: VLMSurface) = surf.horseshoes
-collocation_points(surf :: VLMSurface) = surf.collocation_points
-normals(surf :: VLMSurface) = surf.normals
+kinematic_viscosity(refs :: References) = refs.viscosity / refs.density
+mach_number(refs :: References) = refs.speed / refs.sound_speed
 
-function compute_wake_properties!(surface :: VLMSurface, α, β)
-    # Reference velocity for broadcasting
-    U_ref = (Ref ∘ SVector)(1, 0, 0)
+force_coefficient(force, refs :: References) = force_coefficient(force, dynamic_pressure(refs.density, refs.speed), refs.area)
+moment_coefficient(moment, refs :: References) = moment_coefficient(moment, dynamic_pressure(refs.density, refs.speed), refs.area, refs.span, refs.chord)
+
+rate_coefficient(fs :: Freestream, refs :: References) = rate_coefficient(fs.omega, refs.speed, refs.span, refs.chord)
+
+## System
+#==========================================================================================#
+
+struct VortexLatticeSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
+    vortices          :: M
+    circulations      :: N 
+    influence_matrix  :: R
+    boundary_vector   :: S
+    freestream        :: P
+    reference         :: Q
+end
+
+# Made out of annoyance and boredom
+function Base.show(io :: IO, sys :: VortexLatticeSystem)     
+    println(io, "VortexLatticeSystem -")
+    println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements\n")
+    show(io, sys.freestream)
+    println(io, "")
+    show(io, sys.reference)
+end
+
+# Miscellaneous
+rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freestream, system.reference)
+
+# Velocities
+"""
+    surface_velocities(system :: VortexLatticeSystem; 
+                       axes   :: AbstractAxisSystem = Geometry())
+
+Compute the velocities on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
+"""
+surface_velocities(system :: VortexLatticeSystem; axes = Geometry()) = surface_velocities(system, axes)
+
+surface_velocities(system :: VortexLatticeSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega)
+
+surface_velocities(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+
+surface_velocities(system :: VortexLatticeSystem, ::Stability) = geometry_to_stability_axes.(surface_velocities(system, Geometry()), system.freestream.alpha)
+
+surface_velocities(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+
+## Forces
+"""
+    surface_forces(system :: VortexLatticeSystem; 
+                   axes   :: AbstractAxisSystem = Geometry())
+
+Compute the forces on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
+"""
+surface_forces(system; axes :: AbstractAxisSystem = Geometry()) = surface_forces(system, axes)
+
+surface_forces(system :: VortexLatticeSystem, ::Geometry) = surface_forces(system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega, system.reference.density)
+
+surface_forces(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_forces(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+
+surface_forces(system :: VortexLatticeSystem, ::Stability) = geometry_to_stability_axes.(surface_forces(system, Geometry()), system.freestream.alpha)
+
+surface_forces(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(surface_forces(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+
+## Moments
+"""
+    surface_moments(system :: VortexLatticeSystem; 
+                    axes   :: AbstractAxisSystem = Geometry())
+
+Compute the moments on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
+"""
+surface_moments(system; axes :: AbstractAxisSystem = Geometry()) = surface_moments(system, axes)
+
+surface_moments(system :: VortexLatticeSystem, ::Geometry) = surface_moments(system.vortices, surface_forces(system, Geometry()), system.reference.location)
+
+surface_moments(system :: VortexLatticeSystem, ::Body) = surface_moments(system.vortices, surface_forces(system, Body()), system.reference.location)
+
+surface_moments(system :: VortexLatticeSystem, ::Stability) = surface_moments(system.vortices, flip_xz.(surface_forces(system, Stability())), system.reference.location)
+
+surface_moments(system :: VortexLatticeSystem, ::Wind) =  surface_moments(system.vortices, flip_xz.(surface_forces(system, Wind())), system.reference.location)
+
+
+## Dynamics
+"""
+    surface_dynamics(system :: VortexLatticeSystem; 
+                     axes   :: AbstractAxisSystem = Geometry())
+
+Compute the forces and moments on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
+"""
+function surface_dynamics(system :: VortexLatticeSystem)
+    # Compute nearfield forces and moments
+    surf_forces  = surface_forces(system)
+    surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
+
+    surf_forces, surf_moments
+end
+
+surface_dynamics(system :: VortexLatticeSystem, ::Geometry) = surface_dynamics(system)
+
+function surface_dynamics(system :: VortexLatticeSystem, ::Body)
+    # Compute surface forces and moments in geometry axes
+    surface_forces, surface_moments = surface_dynamics(system)
+
+    # Transform to body axes
+    stability_forces  = @. geometry_to_body_axes(surface_forces)
+    stability_moments = @. geometry_to_body_axes(surface_moments)
+
+    stability_forces, stability_moments
+end
+
+function surface_dynamics(system :: VortexLatticeSystem, ::Stability)
+    # Get angle of attack
+    α = system.freestream.alpha
+
+    # Compute surface forces and moments
+    surface_forces, surface_moments = surface_dynamics(system)
+
+    # Transform to stability axes
+    stability_forces  = @. geometry_to_stability_axes(surface_forces, α)
+    stability_moments = @. geometry_to_stability_axes(flip_xz(surface_moments), α)
+
+    stability_forces, stability_moments
+end
+
+function surface_dynamics(system :: VortexLatticeSystem, ::Wind)
+    # Get angles of attack and sideslip
+    α = system.freestream.alpha
+    β = system.freestream.beta
+
+    # Compute nearfield forces and moments
+    surface_forces, surface_moments = surface_dynamics(system)
 
     # Transform to wind axes
-    wake_lines  = @. body_to_wind_axes(bound_leg(surface.horseshoes[end,:][:]), α, β)
-    centers     = center.(wake_lines)
-    wake_points = points(wake_lines)
+    wind_forces  = @. geometry_to_wind_axes(surface_forces, α, β)
+    wind_moments = @. geometry_to_wind_axes(flip_xz(surface_moments), α, β)
 
-    # Project trailing edge horseshoes' bound legs into Trefftz plane along wind axes
-    surface.wake_vectors = @. project_vector(vector(wake_lines), U_ref)
-
-    # Compute normal vectors
-    wake_normals = @. normal(surface.wake_vectors, U_ref)
-
-    surface.wake_AIC = trefftz_influence_matrix(centers, wake_normals, wake_points)
+    wind_forces, wind_moments
 end
 
-mutable struct VLMSystem{T <: Real}
-    horseshoes         :: Vector{Horseshoe{T}}
-    collocation_points :: Vector{SVector{3,T}}
-    normals            :: Vector{SVector{3,T}}
-    AIC                :: Matrix{T}
-    RHS                :: Vector{T}
-    circulations       :: Vector{T}
+surface_dynamics(system; axes :: AbstractAxisSystem = Wind()) = surface_dynamics(system, axes)
+
+function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Wind()) 
+    # Compute surface forces in whichever axes
+    forces, moments = surface_dynamics(system, axes)
+
+    # Compute coefficients
+    CFs = @. force_coefficient(forces, system.reference)
+    CMs = @. moment_coefficient(moments, system.reference)
+
+    CFs, CMs
 end
 
-horseshoes(system :: VLMSystem) = system.horseshoes
-collocation_points(system :: VLMSystem) = system.collocation_points
-normals(system :: VLMSystem) = system.normals
-AIC(system :: VLMSystem) = system.AIC
-RHS(system :: VLMSystem) = system.RHS
-circulations(system :: VLMSystem) = system.circulations
-
-# Initialization
-function VLMSystem{T}(horseshoes :: Vector{Horseshoe{T}}, collocation_points :: Vector{SVector{3,T}}, normals :: Vector{SVector{3,T}}) where T <: Real
-    m   = length(horseshoes)
-    AIC = Matrix{T}(undef, m, m)
-    RHS = Vector{T}(undef, m)
-    Γs  = Vector{T}(undef, m)
-    VLMSystem{T}(horseshoes, collocation_points, normals, AIC, RHS, Γs)
+function nearfield_coefficients(system :: VortexLatticeSystem) 
+    CFs, CMs = surface_coefficients(system; axes = Wind())
+    NamedTuple(key => [sum(CFs[key]); sum(CMs[key])] for key in keys(CFs))
 end
 
-function VLMSystem(surface :: VLMSurface{T}) where T <: Real
-    horsies = horseshoes.(surface)[:]
-    collies = collocation_points.(surface)[:]
-    normies = normals.(surface)[:]
-    VLMSystem{T}(horsies, collies, normies)
-end
+nearfield(system :: VortexLatticeSystem) = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
 
-function VLMSystem(surfaces :: Vector{VLMSurface{T}}) where T <: Real
-    # Flattening for system
-    horsies = reduce(vcat, (vec ∘ horseshoes).(surfaces))
-    collies = reduce(vcat, (vec ∘ collocation_points).(surfaces))
-    normies = reduce(vcat, (vec ∘ normals).(surfaces))
-    VLMSystem{T}(horsies, collies, normies)
-end
-
-compute_horseshoes!(system :: VLMSystem, horseshoe_panels) = 
-    system.horseshoes = horseshoe_line.(horseshoe_panels)
-
-compute_collocation_points!(system :: VLMSystem, horseshoe_panels) = 
-    system.collocation_points = horseshoe_point.(horseshoe_panels)
-
-compute_influence_matrix!(system :: VLMSystem, V) = 
-    system.AIC = influence_matrix(system.horseshoes, system.collocation_points, system.normals, -normalize(V))
-
-compute_boundary_condition!(system :: VLMSystem, V, Ω) = 
-    system.RHS = boundary_condition(map(r -> V + Ω × r, system.collocation_points), system.normals)
-
-generate_system!(system :: VLMSystem, V, Ω) =
-    matrix_assembly!(system.AIC, system.RHS, system.horseshoes, system.collocation_points, system.normals, V, Ω)
-
-solve_system!(system :: VLMSystem) = 
-    system.circulations = system.AIC \ system.RHS
-
-solve_residual!(system :: VLMSystem, R, x) =
-    R .= system.AIC * x - system.RHS
-
-## Dynamics evaluations
-compute_surface_forces!(surf :: VLMSurface, system :: VLMSystem, U, Ω, ρ) = 
-    surf.surface_forces = nearfield_forces(surf.circulations, surf.horseshoes, system.circulations, system.horseshoes, U, Ω, ρ)
-
-compute_surface_moments!(surf :: VLMSurface, r_ref) =
-    surf.surface_moments = moments(surf.horseshoes, surf.surface_forces, r_ref)
+# Compute farfield forces in Trefftz plane
+function farfield_forces(system :: VortexLatticeSystem)
+    hs = system.vortices 
+    Γs = system.circulations
+    α  = system.freestream.alpha
+    β  = system.freestream.beta
+    V  = system.reference.speed
+    ρ  = system.reference.density
     
-function compute_farfield_forces!(surface :: VLMSurface, U, α, β, ρ);
-    # Set up wake AIC and evaluate doublet normal derivatives
-    Δφs = vec(sum(surface.circulations, dims = 1))
-    compute_wake_properties!(surface, α, β)
-    ∂φ_∂n = surface.wake_AIC * Δφs
-
-    Δs = @. norm(surface.wake_vectors)
-    θs = @. dihedral(surface.wake_vectors)
-
-    surface.farfield_forces = trefftz_compute(Δφs, Δs, ∂φ_∂n, θs, U, ρ) 
+    NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
 end
 
-## Evaluate system
-function solve_case!(aircraft :: Dict{String, Tuple{Matrix{Panel3D{T}}, Matrix{SVector{3,T}}}}, state :: VLMState) where T <: Real
-    # Collect surface data and freestream
-    V        = freestream_to_cartesian(-state.U, state.alpha, state.beta)
-    vals     = values(aircraft)
-    horsies  = getindex.(vals, 1)
-    normies  = getindex.(vals, 2)
-    sizes    = size.(horsies)
-    inds 	 = [ 0; cumsum(prod.(sizes)) ]
+farfield_coefficients(system :: VortexLatticeSystem) = map(ff -> force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area), farfield_forces(system))
 
-    # Build surfaces and systems
-    surfs  = @. VLMSurface(horsies, normies)
-    system = VLMSystem(surfs)
-
-    # Assemble and solve matrix system
-    # compute_influence_matrix!(system, V)
-    # compute_boundary_condition!(system, V, state.omega)
-    generate_system!(system, V, state.omega) # Pre-allocated version
-    solve_system!(system)
-
-    # Allocate surface circulations
-    Γs = reshape_array(system.circulations, inds, sizes)
-    for (surf, Γ_vec) in zip(surfs, Γs)
-        surf.circulations = Γ_vec
+function farfield(system :: VortexLatticeSystem)
+    ffs = farfield_coefficients(system)
+    # Massive hack
+    if length(ffs) == 1
+        return ffs[1]
+    else 
+        return sum(reduce(hcat, ffs), dims = 2)
     end
-
-    # Evaluate forces
-    compute_surface_forces!.(surfs, Ref(system), Ref(V), Ref(state.omega), state.rho_ref)
-    compute_surface_moments!.(surfs, Ref(state.r_ref))
-    compute_farfield_forces!.(surfs, state.U, state.alpha, state.beta, state.rho_ref)
-
-    nf_coeffs = aerodynamic_coefficients.(surfs, Ref(state))
-    ff_coeffs = farfield_force_coefficients.(surfs, Ref(state))
-    
-    total_nf_coeffs = sum(nf_coeffs)
-    total_ff_coeffs = sum(ff_coeffs)
-
-    # Generate dictionary
-    results = Dict((collect ∘ keys)(aircraft) .=> zip(nf_coeffs, ff_coeffs, surfs))
-
-    system, results, total_nf_coeffs, total_ff_coeffs
 end
-
-## Pure methods
-surface_force_coefficients(surf :: VLMSurface, U, ρ, S) = 
-    force_coefficient.(surf.surface_forces,  dynamic_pressure(ρ, U), S)
-
-surface_moment_coefficients(surf :: VLMSurface, U, ρ, S, b, c) = 
-    moment_coefficient.(surf.surface_moments, dynamic_pressure(ρ, U), S, b, c)
-
-function aerodynamic_coefficients(surf :: VLMSurface, U, α, β, Ω, ρ, S, b, c) 
-    CF_body = (sum ∘ surface_force_coefficients)(surf, U, ρ, S)
-    CM_body = (sum ∘ surface_moment_coefficients)(surf, U, ρ, S, b, c)
-    CF_wind = body_to_wind_axes(CF_body, α, β) # Consider axes specification in state
-    CM_wind = body_to_stability_axes(stability_flip(CM_body), α)
-    CR      = rate_coefficient(Ω, U, b, c)
-
-    [ CF_wind; CM_wind; CR ]
-end
-
-surface_force_coefficients(surf :: VLMSurface, state :: VLMState) = surface_force_coefficients(surf, state.U, state.rho_ref, state.area_ref)
-surface_moment_coefficients(surf :: VLMSurface, state :: VLMState) = surface_moment_coefficients(surf, state.U, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
-aerodynamic_coefficients(surf :: VLMSurface, state :: VLMState) = aerodynamic_coefficients(surf, state.U, state.alpha, state.beta, state.omega, state.rho_ref, state.area_ref, state.span_ref, state.chord_ref)
-
-farfield_force_coefficients(surf :: VLMSurface, V, ρ, S) = force_coefficient(surf.farfield_forces, dynamic_pressure(ρ, V), S)
-farfield_force_coefficients(surf :: VLMSurface, state :: VLMState) = farfield_force_coefficients(surf, state.U, state.rho_ref, state.area_ref)

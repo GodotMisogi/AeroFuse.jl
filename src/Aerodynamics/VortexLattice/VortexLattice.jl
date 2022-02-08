@@ -3,118 +3,87 @@ module VortexLattice
 using LinearAlgebra
 using StaticArrays
 using Rotations
+using ComponentArrays
+using SplitApplyCombine
+using TimerOutputs
+using LabelledArrays
 
-## Panel geometry and math tools
+## Package imports
 #==========================================================================================#
 
-import ..AeroMDAO: Panel3D, panel_area, panel_coords, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width, dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient, weighted_vector, reshape_array, cartesian_to_freestream, freestream_to_cartesian
+# Math tools
+import ..MathTools: weighted_vector, structtolist
 
-## Horseshoe setup
+# Panel geometry
+import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width
+
+# Non-dimensionalization
+import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
+
+# Some tools
+import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
+
+import ..AeroMDAO: velocity, solve_system, solve_linear, surface_velocities, surface_coefficients
+
+## Vortex types and methods
 #==========================================================================================#
 
 include("horseshoes.jl")
-include("finite_core.jl")
 
-# export Horseshoe, horseshoe_line, horseshoe_point, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, points, make_horseshoes
+include("vortex_rings.jl")
 
 ## Reference frames
 #==========================================================================================#
 
+include("freestream.jl")
+
+include("lines.jl")
 include("reference_frames.jl")
 
-# export body_to_stability_axes, stability_to_body_axes, body_to_wind_axes, wind_to_body_axes, reflect_xz
-
-## Influence matrix and solution of system
+## Matrix and residual setups
 #==========================================================================================#
 
-include("influences.jl")
-
-# export solve_system
+include("residuals.jl")
 
 """
-    make_horseshoes(horseshoe_panels)
+    solve_linear(horseshoes, normals, U, Ω) 
 
-Get the bound legs and collocation points of the horseshoes defined by horseshoe `Panel3D`s.
+Evaluate and return the vortex strengths ``Γ``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``Ω``.
 """
-make_horseshoes(horseshoe_panels) =	@. horseshoe_line(horseshoe_panels), horseshoe_point(horseshoe_panels)
+function solve_linear(horseshoes, U, Ω)
+    AIC  = influence_matrix(horseshoes, -normalize(U))
+    boco = boundary_condition(horseshoes, U, Ω)
+    Γs   = AIC \ boco
 
-"""
-    solve_system(horseshoes, collocation_points, normals, U, Ω) 
-
-Evaluate and return the vortex strengths ``\\Gamma``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``\\Omega``.
-"""
-function solve_system(horseshoes, normals, U, Ω)
-    V = map(r -> U + Ω × r, collocation_point.(horseshoes))
-    AIC  = influence_matrix(horseshoes, collocation_point.(horseshoes), normals, -normalize(U), false)
-    boco = boundary_condition(V, normals)
-    Γs 	 = AIC \ boco 
+    Γs, AIC, boco
 end
 
 ## Force evaluations
 #==========================================================================================#
 
+# Nearfield forces
 include("nearfield.jl")
 
-# export nearfield_dynamics, nearfield_drag
-
+# Farfield forces
 include("farfield.jl")
 
-# export farfield_dynamics
+
+# System setups
+#==========================================================================================#
+
+include("system.jl")
+
+function solve_system(components, fs :: Freestream, refs :: References)
+    Γs, AIC, boco = solve_linear(components, body_frame_velocity(fs), fs.omega)
+
+    VortexLatticeSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
+end
 
 ## Post-processing
 #==========================================================================================#
 
-# export case_dynamics, evaluate_coefficients
-
-"""
-    case_dynamics(Γ_comp, hs_comp, Γs, horseshoes, U, α, β, Ω, ρ, r_ref)
-
-Compute the nearfield and farfield forces over a given component with associated vortex strengths `Γ_comp` and horseshoes `hs_comp`, using the vortex strengths ``\\Gamma``s and `horseshoes` of the entire configuration, the speed ``U``, angles of attack ``\\alpha`` and sideslip ``\\beta``, the rotation vector ``\\Omega``, the freestream density ``\\rho`` and the reference location for moments ``r_\\text{ref}``.
-"""
-function case_dynamics(Γ_comp, hs_comp, Γs, horseshoes, U, α, β, Ω, ρ, r_ref)
-    # Compute near-field dynamics
-    surface_forces, surface_moments = nearfield_dynamics(Γ_comp, hs_comp, Γs, horseshoes, U, Ω, ρ, r_ref)
-
-    # Compute farfield dynamics
-    trefftz_force = trefftz_forces(Γ_comp, hs_comp, norm(U), α, β, ρ)
-
-    surface_forces, surface_moments, trefftz_force
-end
-
-# In case of only one component
-case_dynamics(Γs, horseshoes, U, α, β, Ω, ρ, r_ref) = case_dynamics(Γs, horseshoes, Γs, horseshoes, U, α, β, Ω, ρ, r_ref)
-
-function evaluate_coefficients(forces, moments, trefftz_force, U, α, β, Ω, ρ, S, c, b)
-    V = norm(U)
-    q = dynamic_pressure(ρ, V)
-
-    # Computing summed coefficients
-    force, moment = sum(forces), sum(moments)
-
-    # Transform near-field dynamics to wind axes
-    trans_force	 = body_to_wind_axes(force, α, β)
-    trans_force  = [ nearfield_drag(force, U); trans_force[2:end] ]
-    trans_moment = body_to_wind_axes(stability_flip(moment), α, β)
-
-    # Compute coefficients
-    nearfield_coeffs = aerodynamic_coefficients(trans_force, trans_moment, Ω, V, S, b, c, ρ)
-    farfield_coeffs	 = force_coefficient(trefftz_force, q, S)
-
-    # Non-dimensional panel coefficients
-    CFs = force_coefficient.(forces, q, S)
-    CMs = moment_coefficient.(moments, q, S, b, c)
-
-    nearfield_coeffs, farfield_coeffs, CFs, CMs
-end
-
 # Streamlines
 include("streamlines.jl")
 
-# export streamlines
-
-# EXPERIMENTAL: SYSTEM
-include("system.jl")
-
-# export VLMState, VLMSystem, compute_influence_matrix!, compute_boundary_condition!, compute_collocation_points!, compute_horseshoes!, compute_normals!, solve_system!, compute_nearfield_forces!, compute_farfield_forces!, solve_case!, set_horseshoe_panels!, set_camber_panels!, compute_wake_properties!, normals, horseshoes, collocation_points, AIC, RHS, circulations, surface_force_coefficients, surface_moment_coefficients, total_force_coefficients, farfield_force_coefficients
 
 end

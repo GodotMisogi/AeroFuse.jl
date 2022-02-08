@@ -1,5 +1,8 @@
 module AircraftGeometry
 
+## Package imports
+#==========================================================================================#
+
 using Base.Math
 using Base.Iterators
 using DelimitedFiles
@@ -7,25 +10,35 @@ using StaticArrays
 using CoordinateTransformations
 using Rotations
 using LinearAlgebra
+using SplitApplyCombine
+using Interpolations
 
-using ..AeroMDAO: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, fwdsum, fwddiv, fwddiff, weighted_vector, vectarray, Point2D, Panel2D, Panel3D, extend_yz, transform, panel_area, panel_normal, wetted_area
+# Math tools
+import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, forward_sum, forward_division, forward_difference, weighted_vector, vectarray, extend_yz
 
-abstract type Aircraft end
+# Panel geometry
+import ..PanelGeometry: Panel2D, Panel3D, panel_area, panel_normal, transform, make_panels
 
-export Aircraft
+import ..AeroMDAO: properties
+
+## Types
+#==========================================================================================#
+
+abstract type AbstractAircraft end
+
+abstract type AbstractWing <: AbstractAircraft end
 
 ## Foil geometry
 #==========================================================================================#
 
-include("foil.jl")
-
-# export Foil, kulfan_CST, naca4, camber_CST, paneller, read_foil, split_foil, foil_camthick, camthick_foil, camber_thickness, cosine_foil, camthick_to_CST, coords_to_CST, max_thickness_to_chord_ratio_location
+include("Foils/foil.jl")
+include("Foils/class_shape_transformation.jl")
+include("Foils/naca_airfoils.jl")
 
 ## Fuselage geometry
+#==========================================================================================#
 
 include("fuselage.jl")
-
-# export Fuselage, projected_area, length, cosine_distribution
 
 ## Wing geometry
 #==========================================================================================#
@@ -38,15 +51,70 @@ mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + tape
 y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / 3(1 + λ)
 quarter_chord(chord) = 0.25 * chord
 
-include("mesh_tools.jl")
-include("halfwing.jl")
-include("wing.jl")
-include("mesh_wing.jl")
+include("Wings/halfwing.jl")
+include("Wings/wing.jl")
+include("Wings/mesh_tools.jl")
+include("Wings/mesh_wing.jl")
+include("Wings/controls.jl")
 
+"""
+    span(wing :: AbstractWing)
+
+Compute the planform span of an `AbstractWing`.
+"""
+span(wing :: AbstractWing) = span(wing)
+
+"""
+    projected_area(wing :: AbstractWing)
+
+Compute the projected area of an `AbstractWing`` by summing the trapezoidal areas.
+"""
+projected_area(wing :: AbstractWing) = projected_area(wing)
+
+"""
+    mean_aerodynamic_chord(wing :: AbstractWing)
+
+Compute the mean aerodynamic chord of an `AbstractWing`.
+"""
+mean_aerodynamic_chord(wing :: AbstractWing) = mean_aerodynamic_chord(wing)
+
+"""
+    mean_aerodynamic_chord(wing :: AbstractWing)
+
+Compute the coordinates of the mean aerodynamic center of an `AbstractWing`.
+"""
+mean_aerodynamic_center(wing :: AbstractWing) = mean_aerodynamic_center(wing)
+
+"""
+    aspect_ratio(wing :: AbstractWing)
+
+Compute the aspect ratio of an `AbstractWing`.
+"""
 aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
 
-info(wing :: Union{Wing, HalfWing}) = [ span(wing), projected_area(wing), mean_aerodynamic_chord(wing), aspect_ratio(wing) ]
+"""
+    taper_ratio(wing :: AbstractWing)
 
-# export HalfWing, HalfWingSection, Wing, WingSection, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, info, max_tbyc_sweeps, leading_edge, trailing_edge, wing_bounds, chop_leading_edge, chop_trailing_edge, chop_wing, paneller, panel_wing, mesh_horseshoes, mesh_wing, mesh_cambers, make_panels, vlmesh_wing, mean_aerodynamic_center, wetted_area, number_of_spanwise_panels, spanwise_spacing, coordinates
+Compute the taper ratio of an `AbstractWing`, defined as the tip chord length divided by the root chord length.
+"""
+taper_ratio(wing :: AbstractWing) = taper_ratio(wing)
+
+"""
+    properties(wing :: AbstractWing)
+
+Compute the generic properties of interest (span, area, etc.) of an `AbstractWing`.
+"""
+properties(wing :: AbstractWing) = [ aspect_ratio(wing), span(wing), projected_area(wing), mean_aerodynamic_chord(wing), mean_aerodynamic_center(wing) ]
+
+function Base.show(io :: IO, wing :: AbstractWing)
+    println(io, supertype(typeof(wing)),  " with ", length(spans(wing)), " spanwise section(s).")
+    println(io, "Aspect Ratio: ", aspect_ratio(wing))
+    println(io, "Span (m): ", span(wing))
+    println(io, "Projected Area (m): ", projected_area(wing))
+    println(io, "Mean Aerodynamic Chord (m): ", mean_aerodynamic_chord(wing))
+    println(io, "Mean Aerodynamic Center (m): ", mean_aerodynamic_center(wing))
+
+    nothing
+end
 
 end

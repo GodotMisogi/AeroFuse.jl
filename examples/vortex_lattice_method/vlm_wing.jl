@@ -2,64 +2,87 @@
 using AeroMDAO
 
 ## Wing section setup
-wing_right = HalfWing(foils     = Foil.(fill(naca4((0,0,1,2)), 3)),
+wing_right = HalfWing(
+                      foils     = fill(naca4((0,0,1,2)), 3),
                       chords    = [1.0, 0.6, 0.2],
                       twists    = [0.0, 0.0, 0.0],
-                      spans     = [5.0, 0.5],
+                      spans     = [2.5, 0.5],
                       dihedrals = [5., 5.],
-                      sweep_LEs = [5., 5.]);
+                      sweeps    = [10., 10.],
+                      w_sweep   = 0.25 # Quarter-chord
+                     );
 wing = Wing(wing_right, wing_right)
-wing_mac = mean_aerodynamic_center(wing)
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
+x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
-## Assembly
-ρ       = 1.225
-x_w     = wing_mac[1]
-ref     = [ x_w; 0.; 0. ]
-V, α, β = 1.0, 5.0, 0.0
-Ω       = [0.0, 0.0, 0.0]
-fs      = Freestream(V, α, β, Ω)
+## Meshing and assembly
+wing_mesh = WingMesh(wing, [12,6], 6, 
+                     span_spacing = Cosine()
+                    );
+aircraft = ComponentVector(wing = make_horseshoes(wing_mesh))
 
-## Evaluate case
-@time nf_coeffs, ff_coeffs, CFs, CMs, horseshoe_panels, normals, horseshoes, Γs =
-solve_case(wing, fs;
-           rho_ref   = ρ,
-           r_ref     = ref,
-           area_ref  = S,
-           span_ref  = b,
-           chord_ref = c,
-           span_num  = [25, 8],
-           chord_num = 5,
-           viscous   = true, # Only appropriate for α = β = 0, but works for other angles anyway
-           x_tr      = [0.3, 0.3],
-          #  spacing   = "uniform"
-          );
+# Freestream conditions
+fs  = Freestream(alpha = 1.0, 
+                 beta  = 0.0, 
+                 omega = [0.,0.,0.])
 
-print_coefficients(nf_coeffs, ff_coeffs, "Wing")
+# Reference values
+refs = References(
+                  speed     = 10.0,
+                  density   = 1.225,
+                  viscosity = 1.5e-5,
+                  area      = projected_area(wing),
+                  span      = span(wing), 
+                  chord     = mean_aerodynamic_chord(wing), 
+                  location  = mean_aerodynamic_center(wing)
+                 )
 
-## Evaluate case with stability derivatives
-@time nf, ff, dvs =
-solve_stability_case(wing, fs;
-                     rho_ref    = ρ,
-                     r_ref      = ref,
-                     span_num   = [25, 8],
-                     chord_num  = 6,
-                     name       = "My Wing",
-                     viscous    = true,
-                     x_tr       = [0.3, 0.3],
-                     print      = false,
-                    #  spacing   = ["sine", "cosine"]
+## Solve system
+system  = solve_case(aircraft, fs, refs; 
+                     print = true
                     );
 
-#
-print_coefficients(nf, ff, "Wing")
-print_derivatives(dvs, "Wing")
+## Compute dynamics
+ax       = Wind()
+CFs, CMs = surface_coefficients(system; axes = ax)
+# Fs       = surface_forces(system)
+# Ms       = surface_moments(system)
+# Fs, Ms   = surface_dynamics(system; axes = ax)
+
+## Viscous drag prediction using empirical models
+
+## Equivalent flat-plate skin-friction estimation
+x_tr        = [0.98, 0.98]              # Transition locations over sections
+CDv_plate   = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, 330., refs.area, refs.viscosity)
+
+## Local-dissipation drag estimation (WRONG???)
+x_tr        = fill(0.98, 4)
+cam_panels  = camber_panels(wing_mesh)
+edge_speeds = surface_velocities(system).wing
+M           = mach_number(system.reference)  # Mach number
+CDv_diss    = local_dissipation_drag(wing, panel_area.(cam_panels), refs.density, edge_speeds, x_tr, refs.speed, refs.density, M, refs.viscosity) / system.reference.area
+
+## Viscous drag coefficient
+CDv = CDv_plate
+
+## Total force coefficients with viscous drag prediction
+CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
+CDi_ff, CY_ff, CL_ff = ff = farfield(system)
+
+nf_v = [ CDi_nf + CDv; CDv; nf ]
+ff_v = [ CDi_ff + CDv; CDv; ff ]
+print_coefficients(nf_v, ff_v, :wing)
+
+
+## Evaluate case with stability derivatives
+@time dv_data = solve_case_derivatives(aircraft, fs, refs;
+                                       print = true
+                                      );
 
 ## Plotting
-using StaticArrays
+# using StaticArrays
 using Plots
-gr(size = (600, 400), dpi = 300)
+gr()
 
 ## Streamlines
 
@@ -78,64 +101,53 @@ seed        = [ init .+ Ref([dx, dy,  dz])  ;
 
 distance = 5
 num_stream_points = 100
-streams = plot_streams(fs, seed, horseshoes, Γs, distance, num_stream_points);
+streams = plot_streamlines(system, seed, distance, num_stream_points);
 
 ## Display
-horseshoe_coords = plot_panels(horseshoe_panels[:])
-wing_coords      = plot_wing(wing);
-colpoints        = horseshoe_point.(horseshoe_panels)
+horseshoe_panels = chord_panels(wing_mesh)
+horseshoe_coords = plot_panels(horseshoe_panels)
+wing_coords      = plot_planform(wing);
+horseshoe_points = Tuple.(horseshoe_point.(system.vortices))
+ys               = getindex.(horseshoe_points, 2)
 
-# Coordinates
-xs = getindex.(colpoints, 1);
-ys = getindex.(colpoints, 2);
-zs = getindex.(colpoints, 3);
-
+## Coordinates
 z_limit = 5
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
      camera = (30, 60),
      zlim = (-0.1, z_limit),
      size = (800, 600))
+# plot!(wing_coords[:,1], wing_coords[:,2], wing_coords[:,3])
 plot!.(horseshoe_coords, color = :black, label = :none)
-scatter!(tupvector(colpoints)[:], marker = 1, color = :black, label = :none)
-plot!.(streams, color = :green, label = :none)
+scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
+[ plot!(stream, color = :green, label = :none) for stream in eachcol(Tuple.(streams)) ]
 plot!()
 
-## Spanwise forces
-wind_CFs = body_to_wind_axes.(CFs, fs.alpha, fs.beta)
-CDis     = @. getindex(wind_CFs, 1)
-CYs	     = @. getindex(wind_CFs, 2)
-CLs      = @. getindex(wind_CFs, 3)
+## Compute spanwise loads
+span_loads = spanwise_loading(horseshoe_panels, CFs.wing, projected_area(wing))
+CL_loads   = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
 
-area_scale  = S ./ sum(panel_area, horseshoe_panels, dims = 1)[:]
-span_CDis   = sum(CDis, dims = 1)[:] .* area_scale
-span_CYs    = sum(CYs,  dims = 1)[:] .* area_scale
-span_CLs    = sum(CLs,  dims = 1)[:] .* area_scale
-CL_loadings = sum(Γs,   dims = 1)[:] / (0.5 * fs.V * c)
-
-plot_CD = plot(ys[1,:], span_CDis, label = :none, ylabel = "CDi")
-plot_CY = plot(ys[1,:], span_CYs, label = :none, ylabel = "CY")
+## Plot spanwise loadings
+plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = "CDi")
+plot_CY = plot(span_loads[:,1], span_loads[:,3], label = :none, ylabel = "CY")
 plot_CL = begin
-            plot(ys[1,:], span_CLs, label = :none, xlabel = "y", ylabel = "CL")
-            plot!(ys[1,:], CL_loadings, label = "Normalized", xlabel = "y")
+            plot(span_loads[:,1], span_loads[:,4], label = :none, xlabel = "y", ylabel = "CL")
+            plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = "y")
           end
-plot(plot_CD, plot_CY, plot_CL, layout = (3,1))
+plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 
 ## Lift distribution
 
 # Exaggerated CF distribution for plot
-hs_pts = bound_leg_center.(horseshoes)
-hs_xs  = getindex.(hs_pts, 1)
-hs_ys  = getindex.(hs_pts, 2)
-hs_zs  = getindex.(hs_pts, 3)
+hs_pts = vec(Tuple.(bound_leg_center.(system.vortices)))
 
 plot(xaxis = "x", yaxis = "y", zaxis = "z",
      aspect_ratio = 1,
      camera = (60, 60),
-     zlim = (-0.1, z_limit)
+     zlim = (-0.1, z_limit),
+     title = "Forces (Exaggerated)"
     )
 plot!.(horseshoe_coords, color = :gray, label = :none)
-# scatter!(cz_pts, zcolor = CLs[:], marker = 2, label = "CL (Exaggerated)")
-quiver!(hs_xs[:], hs_ys[:], hs_zs[:], quiver=(CDis[:], CYs[:], CLs[:]) .* 100)
+# scatter!(cz_pts, zcolor = vec(CLs), marker = 2, label = "CL (Exaggerated)")
+quiver!(hs_pts, quiver=(span_loads[:,2], span_loads[:,3], span_loads[:,4]) .* 10)
 plot!(size = (800, 600))
-plot!()

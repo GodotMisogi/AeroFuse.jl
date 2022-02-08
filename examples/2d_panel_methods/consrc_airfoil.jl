@@ -5,12 +5,12 @@ using Seaborn
 using AeroMDAO
 
 ## Airfoil
-airfoil = Foil(naca4((0,0,1,2), 81; sharp_trailing_edge = true))
+airfoil = naca4(((0,0,1,2), 81; sharp_trailing_edge = true))
 V, α    = 1., 0.
 ρ       = 1.225
 uniform = Uniform2D(V, α)
 num_pans = 80
-panels  = paneller(airfoil, num_pans);
+panels  = make_panels(airfoil, num_pans);
 
 ## Constant-strength source panel
 A = @time constant_source_matrix(panels)
@@ -22,10 +22,10 @@ sum(σs)
 
 ## Pressure coefficient
 pts = collocation_point.(panels);
-panel_vels = [ velocity(uniform) .+ sum(source_velocity.(σs, panels, Ref(panel_i))) for panel_i in panels ] 
+panel_vels = [ velocity(uniform) .+ sum(source_velocity.(σs, panels, Ref(panel_i))) for panel_i in panels ]
 
 qts = @. dot(panel_vels, panel_tangent(panels))
-cps = @. 1 - qts^2 / uniform.mag^2
+cps = @. 1 - qts^2 / uniform.magnitude^2
 
 ##
 upper, lower = get_surface_values(panels, cps)
@@ -49,7 +49,7 @@ pts = panel_points(panels);
 source_vels = [ velocity(uniform) .+ sum(source_velocity.(σs, panels, x, y)) for (x, y) in grid ]
 
 speeds = @. sqrt(first(source_vels)^2 + last(source_vels)^2)
-cps = @. 1 - speeds^2 / uniform.mag^2
+cps = @. 1 - speeds^2 / uniform.magnitude^2
 
 contourf(first.(grid), last.(grid), cps)
 CB1 = colorbar(label = "Pressure Coefficient (Cp)")
