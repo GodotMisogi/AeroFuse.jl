@@ -24,7 +24,10 @@ jobs:
       - name: "Run CompatHelper"
         run: |
           import CompatHelper
-          CompatHelper.main()
+          CompatHelper.main(
+                            unsub_from_prs=true,
+                            cc_user=true
+                           )
         shell: julia --color=yes {0}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
