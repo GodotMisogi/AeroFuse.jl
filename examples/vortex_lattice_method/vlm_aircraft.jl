@@ -22,7 +22,7 @@ htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              spans     = [2.5],
              dihedrals = [0.],
              sweeps    = [6.39],
-             position  = [4., 0, 0],
+             position  = [4., 0, -0.1],
              angle     = -2.,
              axis      = [0., 1., 0.])
 
@@ -104,8 +104,8 @@ CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 M = mach_number(system.reference) # Mach number
 edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
 
-CDvd_wing   = local_dissipation_drag(wing_mesh, system.reference.density, edge_speeds.wing, [0.8, 0.8], system.reference.speed, refs.density, M, system.reference.viscosity) / system.reference.area
-CDvd_htail  = local_dissipation_drag(htail_mesh, refs.density, edge_speeds.htail, [0.6, 0.6], refs.speed, refs.density, M, system.reference.viscosity) / system.reference.area
+CDvd_wing   = local_dissipation_drag(wing_mesh, system.reference.density, edge_speeds.wing, [0.8, 0.8], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
+CDvd_htail  = local_dissipation_drag(htail_mesh, system.reference.density, edge_speeds.htail, [0.6, 0.6], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
 CDvd_vtail  = local_dissipation_drag(vtail_mesh, system.reference.density, edge_speeds.vtail, [0.6, 0.6], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
 
 CDv_diss    = CDvd_wing + CDvd_htail + CDvd_vtail
@@ -195,12 +195,16 @@ plot_spanload!(ax, vtail_ll, LS("Vertical Tail"))
 
 # Legend
 Legend(ax[4,1:2], ax_cl)
-fig1[0, :] = Label(fig1, LS("Vortex Lattice Analysis"), textsize = 20)
 
 # Surface pressure meshes
 m1 = poly!(scene, vec(wing_mesh.camber_mesh),  wing_cam_connec,  color = vec(wing_cp_points))
 m2 = poly!(scene, vec(htail_mesh.camber_mesh), htail_cam_connec, color = vec(htail_cp_points))
 m3 = poly!(scene, vec(vtail_mesh.camber_mesh), vtail_cam_connec, color = vec(vtail_cp_points))
+
+Colorbar(fig1[4,1], m1.plots[1], label = L"Pressure Coefficient, $C_p$", vertical = false)
+
+fig1[0, :] = Label(fig1, LS("Vortex Lattice Analysis"), textsize = 20)
+
 
 # Airfoil meshes
 # wing_surf = surface_coordinates(wing_mesh, wing_mesh.n_span, 60)
@@ -223,7 +227,7 @@ lines!(scene, plot_planform(vtail))
 fig1.scene
 
 ## Save figure
-save("plots/VortexLattice.svg", fig1, px_per_unit = 1.5)
+# save("plots/VortexLattice.pdf", fig1, px_per_unit = 1.5)
 
 ## Animation settings
 pts = [ Node(Point3f0[stream]) for stream in streams[1,:] ]
