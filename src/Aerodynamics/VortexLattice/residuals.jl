@@ -25,23 +25,23 @@ boundary_condition(horseshoes, U, Ω) = map(hs -> dot(U + Ω × horseshoe_point(
 # Matrix-free setup for nonlinear analyses
 #==========================================================================================#
 
-induced_velocity(r, horseshoes, Γs, U_hat) = @timeit "Induced Velocity" @views sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+induced_velocity(r, horseshoes, Γs, U_hat) = @views sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
 
 # In-place version
 function induced_velocity!(vel, r, horseshoes, Γs, U_hat)
     for i in eachindex(horseshoes)
-        vel += @timeit "Induced Velocity" @views velocity(r, horseshoes[i], Γs[i], U_hat)
+        vel += @views velocity(r, horseshoes[i], Γs[i], U_hat)
     end
 
     vel
 end
 
-induced_trailing_velocity(r, horseshoes, Γs, U_hat) = @timeit "Induced Trailing Velocity" @views sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+induced_trailing_velocity(r, horseshoes, Γs, U_hat) = @views sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
 
 # In-place version
 function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
     for i in eachindex(horseshoes)
-        vel += @timeit "Induced Trailing Velocity" @views trailing_velocity(r, horseshoes[i], Γs[i], U_hat)
+        vel += @views trailing_velocity(r, horseshoes[i], Γs[i], U_hat)
     end
 
     vel
@@ -49,19 +49,19 @@ end
 
 function induced_velocity(r, hs, Γs, U, Ω) 
     # vel = zeros(eltype(r), 3)
-    @timeit "Velocity" induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
+    induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 function induced_trailing_velocity(r, horseshoes, Γs, U, Ω) 
     # vel = zeros(eltype(r), 3)
-    @timeit "Trailing Velocity" induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
+    induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 # Residual computations
 function residual(r, n, hs, Γs, U, Ω) 
-    @timeit "Residual" dot(induced_velocity(r, hs, Γs, U, Ω), n)
+   dot(induced_velocity(r, hs, Γs, U, Ω), n)
 end 
 
 aerodynamic_residuals(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(horseshoe_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
 
-aerodynamic_residuals!(R, horseshoes, Γs, U_hat, Ω_hat) = @timeit "Aerodynamic Residual" map!(hs -> residual(horseshoe_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)
+aerodynamic_residuals!(R, horseshoes, Γs, U_hat, Ω_hat) = map!(hs -> residual(horseshoe_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)

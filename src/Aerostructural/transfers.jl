@@ -10,16 +10,16 @@ section_moments(vlm_acs, fem_pts, half_vlm_forces) = sum(x -> section_moment(x[1
 
 function compute_loads(vlm_acs, vlm_forces, fem_mesh)
     # Forces
-    @timeit "Sectional Forces" sec_forces   = vec(sum(vlm_forces, dims = 1)) / 2
-    @timeit "Beam Forces" beam_forces  = adjacent_adder(sec_forces / 2, sec_forces / 2)
+    sec_forces   = vec(sum(vlm_forces, dims = 1)) / 2
+    beam_forces  = adjacent_adder(sec_forces / 2, sec_forces / 2)
 
     # Moments
-    @timeit "M ins" M_ins        = @views section_moments(vlm_acs, fem_mesh[1:end-1], vlm_forces / 2)
-    @timeit "M outs" M_outs       = @views section_moments(vlm_acs, fem_mesh[2:end],   vlm_forces / 2)
-    @timeit "Beam Moments" beam_moments = adjacent_adder(M_ins, M_outs)
+    M_ins        = @views section_moments(vlm_acs, fem_mesh[1:end-1], vlm_forces / 2)
+    M_outs       = @views section_moments(vlm_acs, fem_mesh[2:end],   vlm_forces / 2)
+    beam_moments = adjacent_adder(M_ins, M_outs)
 
     # Concatenate forces and moments into loads array
-    @timeit "Loads" [ combinedimsview(beam_forces); combinedimsview(beam_moments) ]
+    [ combinedimsview(beam_forces); combinedimsview(beam_moments) ]
 end
 
 # Generate load vector for FEM system

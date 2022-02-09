@@ -1,12 +1,12 @@
 # AeroMDAO
 
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://godotmisogi.github.io/AeroMDAO.jl/dev/)
+
 <p align="center">
-<img width="60%", src="https://raw.githubusercontent.com/GodotMisogi/AeroMDAO.jl/develop/docs/src/assets/logo.svg">
+<img width="60%", src="https://raw.githubusercontent.com/GodotMisogi/AeroMDAO.jl/main/docs/src/assets/logo.svg">
 </p>
 
 AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
-
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://godotmisogi.github.io/AeroMDAO.jl/dev/)
 
 **Authors**: Arjit Seth, Stephane Redonnet, and Rhea P. Liem
 
@@ -47,10 +47,6 @@ julia> using Pkg; Pkg.add("AeroMDAO")
 julia> Pkg.test("AeroMDAO")
 julia> using AeroMDAO
 ```
-
-## Guide
-
-Refer to the [wiki](https://github.com/GodotMisogi/AeroMDAO.jl/wiki) to see how to get started!
 
 ## Citation
 
