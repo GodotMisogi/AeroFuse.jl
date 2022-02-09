@@ -1,6 +1,8 @@
 # AeroMDAO
 
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://godotmisogi.github.io/AeroMDAO.jl/stable/)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://godotmisogi.github.io/AeroMDAO.jl/dev/)
+[![CI](https://github.com/GodotMisogi/AeroMDAO.jl/workflows/CI/badge.svg?branch=main)](https://github.com/GodotMisogi/AeroMDAO.jl/actions?query=workflow%3ACI+branch%3Amain)
 
 <p align="center">
 <img width="60%", src="https://raw.githubusercontent.com/GodotMisogi/AeroMDAO.jl/main/docs/src/assets/logo.svg">
@@ -57,8 +59,8 @@ If you use AeroMDAO in your research, please cite the following until any releva
   author  = {Arjit Seth, Stephane Redonnet, Rhea P. Liem},
   title   = {AeroMDAO},
   url     = {https://github.com/GodotMisogi/AeroMDAO},
-  version = {0.3.0},
-  date    = {2021-02-08},
+  version = {0.3.3},
+  date    = {2021-02-09},
 }
 ```
 
