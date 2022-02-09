@@ -1,0 +1,87 @@
+BENCHMARKING RESULTS
+
+Aircraft - (chordwise panels, spanwise panels) 
+Wing:            (10, 40)
+Horizontal Tail: (6, 24)
+Vertical Tail:   (5, 10)
+
+1. Laptop i7-7700HQ, 1.9 GHz(?):
+
+AeroMDAO Aircraft -
+BenchmarkTools.Trial: 67 samples with 1 evaluation.
+ Range (min … max):  56.998 ms … 204.134 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     67.052 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   75.029 ms ±  27.054 ms  ┊ GC (mean ± σ):  1.47% ± 3.66%
+
+    █▆ ▄   
+  ▆▆████▇▅▄▃▃▁▁▃▁▁▁▃▁▁▁▁▁▁▃▁▁▃▁▁▁▁▃▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃ ▁
+  57 ms           Histogram: frequency by time          196 ms <
+
+ Memory estimate: 7.74 MiB, allocs estimate: 25676.
+
+AeroMDAO Aircraft ComponentArrays.jl -
+BenchmarkTools.Trial: 63 samples with 1 evaluation.
+ Range (min … max):  58.795 ms … 183.911 ms  ┊ GC (min … max): 0.00% … 4.36%
+ Time  (median):     73.138 ms               ┊ GC (median):    4.60%
+ Time  (mean ± σ):   80.365 ms ±  25.399 ms  ┊ GC (mean ± σ):  3.59% ± 3.48%
+
+   ▂▂ ▆█▂▂   ▄▂
+  █████████▄▄████▁▄▁▁▁▁▁▁▁▄▁▁▁▁▁▁▄▁▆▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄▁▁▁▁▄ ▁
+  58.8 ms         Histogram: frequency by time          175 ms <
+
+ Memory estimate: 25.31 MiB, allocs estimate: 27353.
+
+2-element Vector{var"#15#16"}:
+ #15 (generic function with 1 method)
+ #15 (generic function with 1 method)
+
+BYU FLOW Lab VortexLattice.jl - 
+BenchmarkTools.Trial: 54 samples with 1 evaluation.
+ Range (min … max):  80.079 ms … 217.972 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     86.594 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   92.585 ms ±  22.039 ms  ┊ GC (mean ± σ):  1.80% ± 3.34%
+
+  ██▃▄   ▁▃
+  ████▆▇▄██▁▇▁▆▄▁▄▆▁▁▁▁▁▁▁▄▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▄ ▁
+  80.1 ms         Histogram: frequency by time          170 ms <
+
+ Memory estimate: 10.44 MiB, allocs estimate: 72602.
+
+
+2. Desktop i7-8700, 3.2 GHz:
+
+AeroMDAO Aircraft -
+BenchmarkTools.Trial: 117 samples with 1 evaluation.
+ Range (min … max):  38.145 ms … 50.611 ms  ┊ GC (min … max): 0.00% … 14.44%
+ Time  (median):     42.109 ms              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   42.735 ms ±  2.676 ms  ┊ GC (mean ± σ):  2.04% ±  4.23%
+
+          ▂ ▁    ▁▁ █      ▂                                   
+  ▃▁▃▅▃▁█▆█▅██▅▃▆████▆▆▆▆███▆▅▃▆▁▁▆▅▅▃▁▅▁▁▁▁▃▅▃▃▃▁▃▁▅▃▃▁▁▁▁▁▃ ▃
+  38.1 ms         Histogram: frequency by time        50.5 ms <
+
+ Memory estimate: 7.74 MiB, allocs estimate: 25676.
+
+AeroMDAO Aircraft ComponentArrays.jl -
+BenchmarkTools.Trial: 105 samples with 1 evaluation.
+ Range (min … max):  41.043 ms … 56.288 ms  ┊ GC (min … max): 0.00% … 10.53%
+ Time  (median):     48.111 ms              ┊ GC (median):    6.18%
+ Time  (mean ± σ):   47.925 ms ±  3.472 ms  ┊ GC (mean ± σ):  4.63% ±  4.15%
+
+            ▆▁ █  ▁ ▃    ▁  ▃ ▁▆   ▃▁▃ █
+  ▄▄▁▄▄▁▄▄▁▇██▇█▄▇█▄█▇▄▄▄█▇▇█▄██▇▇▇███▇█▁▇▇▇▄▁▇▄▄▄▁▁▄▇▄▁▁▄▁▄▄ ▄
+  41 ms           Histogram: frequency by time        55.8 ms <
+
+ Memory estimate: 25.31 MiB, allocs estimate: 27353.
+
+BYU FLOW Lab VortexLattice.jl - 
+BenchmarkTools.Trial: 78 samples with 1 evaluation.
+ Range (min … max):  59.888 ms … 74.836 ms  ┊ GC (min … max): 0.00% … 12.88%
+ Time  (median):     64.079 ms              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   64.720 ms ±  3.722 ms  ┊ GC (mean ± σ):  2.18% ±  3.87%
+
+  ▁   ▁ ▁▆▆▁   ▁   ▁  █▁     ▁           ▁
+  █▄▇▇█▄████▇▄▁█▇▄▁█▇▄██▁▄▁▁▄█▇▄▁▄▁▇▁▁▁▇▁█▁▄▁▁▁▄▄▇▄▁▁▁▁▁▇▁▁▁▄ ▁
+  59.9 ms         Histogram: frequency by time        73.9 ms <
+
+ Memory estimate: 10.44 MiB, allocs estimate: 72602.
