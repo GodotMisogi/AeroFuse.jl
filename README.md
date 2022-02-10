@@ -22,7 +22,7 @@ An additional aim is to write code compatible with automatic differentiation lib
 
 **Disclaimer**: The implementations are work-in-progress, and hence the results may not be entirely accurate. Please exercise caution when interpreting the results until validation cases are added.
 
-Functioning:
+**Functioning:**
 
 - Basic geometric tools for airfoil processing and wing design. 
 - Steady, inviscid, incompressible, isentropic 2D and 3D aerodynamic analyses.
@@ -32,8 +32,9 @@ Functioning:
 - Finite-element beam model based on Euler-Bernoulli theory for structural analysis.
 
 ![](plots/VortexLattice.svg)
+![](plots/LinearVortex.svg)
 
-In progress:
+**In progress:**
 
 - Aeroelastic analyses coupling vortex lattice and beam element models.
 - 2D integral boundary layer solver for viscous-inviscid analyses.
@@ -59,8 +60,8 @@ If you use AeroMDAO in your research, please cite the following until any releva
   author  = {Arjit Seth, Stephane Redonnet, Rhea P. Liem},
   title   = {AeroMDAO},
   url     = {https://github.com/GodotMisogi/AeroMDAO},
-  version = {0.3.3},
-  date    = {2021-02-09},
+  version = {0.3.4},
+  date    = {2021-02-10},
 }
 ```
 

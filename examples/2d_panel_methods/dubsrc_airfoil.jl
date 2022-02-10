@@ -26,19 +26,32 @@ println("Σᵢ Cmᵢ: $(sum(cms))")
 
 ## Plotting libraries
 using Plots
-plotlyjs();
+gr();
 
 ## Pressure coefficients
-plot((first ∘ collocation_point).(panels[1:end-1]), cps, marker = 2, label = :none, yflip = true, xlabel = "(x/c)", ylabel = "Cp")
+
+# Split surfaces and values
+cp_upper, cp_lower = get_surface_values(panels, cps)
+
+plot(marker = 2, label = :none, yflip = true, xlabel = "(x/c)", ylabel = "Cp")
+plot!(cp_upper, label = "Upper")
+plot!(cp_lower, label = "Lower")
 
 ## Lift distribution
-plot((first ∘ collocation_point).(panels[1:end-1]), cls, marker = 2, label = :none, xlabel = "(x/c)", ylabel = "Cl")
+cl_upper, cl_lower = get_surface_values(panels, cls)
 
-## Angle of attack sweep
+plot(marker = 2, label = :none, yflip = true, xlabel = "(x/c)", ylabel = "Cl")
+plot!(cl_upper, label = "Upper")
+plot!(cl_lower, label = "Lower")
+
+## Angle of attack sweep example
 function alpha_sweep(α, airfoil)
     uniform = Uniform2D(1.0, α)
-    solve_case(airfoil, uniform, num_panels = 80)[1]
+    lift_coefficient(solve_case(airfoil, uniform, num_panels = 80))
 end
 
 αs = 0:10
 cls = @time alpha_sweep.(αs, Ref(airfoil))
+
+##
+plot(αs, cls, ylabel = "Cl", xlabel = "α (deg)", label = :none)

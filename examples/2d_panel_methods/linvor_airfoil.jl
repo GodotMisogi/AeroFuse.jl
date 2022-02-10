@@ -35,6 +35,8 @@ CairoMakie.activate!()
 
 using LaTeXStrings
 
+const LS = LaTeXString
+
 ## Pressure coefficient
 qts = γs
 cps = @. 1 - qts^2 / uniform.magnitude^2
@@ -73,7 +75,7 @@ poly!(pts, color = "black")
 Colorbar(f1[1,3], hm, label = L"Normalized Speed $(U/U_\infty)$")
 colsize!(f1.layout, 2, Aspect(1, 1.0))
 
-fig1[0, :] = Label(f1, LS("Vortex Lattice Analysis"), textsize = 20)
+# f1[0,:] = Label(f1, LS("Linear Vortex Panel Method"))
 
 # arrows!(x_dom, y_dom, first.(vortex_vels), last.(vortex_vels))
 # CB2 = colorbar(orientation = "horizontal", label = "Relative Airspeed (U/U∞)")

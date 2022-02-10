@@ -14,7 +14,7 @@ using LaTeXStrings  # For LaTeX printing in plots
 
 # ## Your First Airfoil
 #
-# You can define a NACA-4 airfoil using the following function. To analyze our airfoil, we must convert the coordinates into a `Foil` type defined in `AeroMDAO`.
+# You can define a NACA 4-digit series airfoil using the following function.
 airfoil = naca4((2,4,1,2), 60)
 
 # You can access the $x$- and $y$-coordinates as the following fields.
@@ -88,23 +88,15 @@ cl, sum(cls)
 # ### Visualization
 # 
 # Let's see what the pressure and lift distribution curves look like over the airfoil. AeroMDAO provides more helper functions for post-processing data. For example, you can make your fancy plots by segregating the values depending on the locations of the panels by defining the following function.
-get_surface_values(panels, vals, surf = "lower") = 
-    [ 
-        (collocation_point(panel)[1], val) 
-        for (val, panel) in zip(vals, panels) 
-            if panel_location(panel) == surf 
-    ]
-
-cp_lower = get_surface_values(panels, cps, "lower")
-cp_upper = get_surface_values(panels, cps, "upper");
+cp_upper, cp_lower = get_surface_values(panels, cps)
 
 # Now let's plot the results!
 
 ## Pressure coefficients
-plot(yflip = true, xlabel = L"(x/c)", ylabel = L"C_p")
-plot!(cp_upper, label = "Upper",
+plot(yflip = true, xlabel = L"(x/c)", ylabel = L"C_p", lw = 2)
+plot!(cp_upper, label = L"$C_p$ Upper",
       ls = :dash, lw = 2, c = :cornflowerblue)
-plot!(cp_lower, label = "Lower",
+plot!(cp_lower, label = L"$C_p$ Lower",
       ls = :dash, lw = 2, c = :orange)
 plot!(x_upper, -y_upper, label = "$(airfoil.name) Upper", 
       ls = :solid, lw = 2, c = :cornflowerblue)
@@ -113,24 +105,30 @@ plot!(x_lower, -y_lower, label = "$(airfoil.name) Lower",
 
 #
 ## Lift coefficients
-cl_upper = get_surface_values(panels, cls, "upper")
-cl_lower = get_surface_values(panels, cls, "lower")
+cl_upper, cl_lower = get_surface_values(panels, cls)
 
-cl_plot = plot(xlabel = L"(x/c)", ylabel = L"C_l")
-plot!(x_upper, y_upper, lw = 2, c = :cornflowerblue, label = "Upper")
-plot!(x_lower, y_lower, lw = 2, c = :orange, label = "Lower")
-plot!(cl_upper, ls = :dash, lw = 2, c = :cornflowerblue, label = L"$C_l$ Upper")
-plot!(cl_lower, ls = :dash, lw = 2, c = :orange, label = L"$C_l$ Lower")
+cl_plot = plot(xlabel = L"(x/c)", ylabel = L"C_l", lw = 2)
+plot!(cl_upper, label = L"$C_l$ Upper",
+      ls = :dash, lw = 2, c = :cornflowerblue)
+plot!(cl_lower, label = L"$C_l$ Lower",
+      ls = :dash, lw = 2, c = :orange)
+plot!(x_lower, y_lower, label = "$(airfoil.name) Lower",
+      ls = :solid, lw = 2, c = :orange)
+plot!(x_upper, y_upper, label = "$(airfoil.name) Upper",
+      ls = :solid, lw = 2, c = :cornflowerblue)
 
 #
 ## Moment coefficients
-cm_upper = get_surface_values(panels, cms, "upper")
-cm_lower = get_surface_values(panels, cms, "lower")
+cm_upper, cm_lower = get_surface_values(panels, cms)
 
 cm_plot = plot(xlabel = L"(x/c)", ylabel = L"C_m")
-plot!(x_upper, y_upper, lw = 2, c = :cornflowerblue, label = "Upper")
-plot!(x_lower, y_lower, lw = 2, c = :orange, label = "Lower")
-plot!(cm_upper, ls = :dash, lw = 2, c = :cornflowerblue, label = L"$C_m$ Upper")
-plot!(cm_lower, ls = :dash, lw = 2, c = :orange, label = L"$C_m$ Lower")
+plot!(cm_upper, label = L"$C_m$ Upper",
+      ls = :dash, lw = 2, c = :cornflowerblue)
+plot!(cm_lower, label = L"$C_m$ Lower",
+      ls = :dash, lw = 2, c = :orange)
+plot!(x_upper, y_upper, label = L"$C_m$ Upper",
+      ls = :solid, lw = 2, c = :cornflowerblue)
+plot!(x_lower, y_lower, label = L"$C_m$ Lower",
+      ls = :solid, lw = 2, c = :orange)
 
 # Great! We've created our first airfoil and run an aerodynamic analysis in 2 dimensions. Now we can move on to analyzing an aircraft configuration in the [Aircraft Aerodynamic Analysis](tutorials-aircraft.md) tutorial.

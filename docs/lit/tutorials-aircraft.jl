@@ -19,7 +19,7 @@ using LaTeXStrings  # For LaTeX printing in plots
 # Here you will learn how to define a wing using an intuitive parametrization scheme. First, we define a `Vector` of `Foil`s.
 
 ## Define one airfoil
-airfoil_1 = naca4((4,4,1,2))
+airfoil_1 = naca4(4,4,1,2)
 
 ## Define vector of airfoils
 airfoils  = [ airfoil_1, naca4((0,0,1,2)) ]
@@ -102,7 +102,7 @@ plot!(plt,
    label = "Vertical Tail"
   )
 
-# ### Meshing and Assembly
+# ### Meshing
 # To perform the aerodynamic analysis, we will need to discretize our geometry into a _mesh_. The following `WingMesh` function constructs a mesh for you by providing a `HalfWing` or `Wing` type with specification of spanwise panels and chordwise panels. As the wing has only one spanwise section, we provide a vector with a single  integer entry for the spanwise panel distribution.
 wing_mesh = WingMesh(wing, [12], 6) # (Wing, [Spanwise panels], Chordwise panels)
 
@@ -127,6 +127,7 @@ vtail_mesh = WingMesh(vtail, [4], 3)
     for panel in plot_panels(camber_panels(vtail_mesh)) ]
 plot!(plt)
 
+# ### Aerodynamic Analysis
 # For the analysis, you have to assemble the meshes into a `ComponentVector`.
 aircraft = ComponentVector(
                            wing  = make_horseshoes(wing_mesh),
