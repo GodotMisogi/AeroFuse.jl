@@ -74,7 +74,7 @@ The vortices can be set up in various configurations consisting of bound or semi
    end
    ```
 
-A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\boldsymbol\Omega$ (in the body's frame) is imposed for the external flow. The induced velocity at a point is given by:
+A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\boldsymbol\Omega$ (in the body's frame) defines an external flow. The induced velocity at a point is given by:
 
 ```math
 \mathbf V_{\infty}(\mathbf r) = - (\mathbf U + \boldsymbol\Omega \times \mathbf r)
@@ -91,6 +91,15 @@ Imposing the Neumann boundary condition $\mathbf V \cdot \hat{\mathbf n} = 0$ de
 ```math
 \mathbf A \boldsymbol\Gamma = -V_{\infty} \cdot [\hat{\mathbf n}_i ]_{i = 1, \ldots, N}
 ```
+
+### Compressibility Corrections
+The Prandtl-Glauert equation is applicable to a weakly compressible flow problem ($0.3 \leq M_\infty \leq 0.7$).
+
+```math
+\beta_\infty^2\frac{\partial^2\phi}{\partial x^2} + \frac{\partial^2\phi}{\partial y^2} + \frac{\partial^2\phi}{\partial z^2} = 0, \quad \beta_\infty^2 = \left(1 - M_\infty^2\right)
+```
+
+The Prandtl-Glauert transformation $\phi(x,y,z; \beta_\infty) \to \bar\phi(\bar x, \bar y, \bar z)$ converts this equation into an equivalent incompressible flow problem in a "morphed" geometric space. This "bar" map simultaneously scales the coordinates $(\bar x,\bar y, \bar z) = (x,\beta y, \beta z)$ and the potential $\bar\phi = \beta^2 \phi$. Hence the transformed equation satisfies the Laplace equation $\bar\nabla^2 \bar\phi = 0$, where $\bar\nabla$ is differentiation with respect to the transformed coordinates.
 
 ## Structures
 

@@ -61,6 +61,6 @@ makedocs(
 ## Deployment
 deploydocs(
     repo = "github.com/GodotMisogi/AeroMDAO.jl.git",
-    # devbranch = "develop",
+    devbranch = "develop",
     # versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
 )

@@ -22,13 +22,15 @@ wing_mesh = WingMesh(wing, [12,6], 6,
 aircraft = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
-fs  = Freestream(alpha = 1.0, 
-                 beta  = 0.0, 
-                 omega = [0.,0.,0.])
+fs  = Freestream(
+                 alpha = 1.0,
+                 beta  = 0.0,
+                 omega = [0.,0.,0.]
+                )
 
 # Reference values
 refs = References(
-                  speed     = 10.0,
+                  speed     = 300.0,
                   density   = 1.225,
                   viscosity = 1.5e-5,
                   area      = projected_area(wing),

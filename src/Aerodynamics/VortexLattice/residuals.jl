@@ -2,23 +2,23 @@
 #==========================================================================================#
 
 """
-    influence_coefficient(r, horseshoe, normal, V_hat, symmetry)
+    influence_coefficient(r, horseshoe, normal, u_hat, symmetry)
 
 Compute the influence coefficient of the velocity of a Horseshoe with trailing lines in a given direction ``û`` at a point ``r`` projected to a normal vector.
 """
 influence_coefficient(horseshoe :: Horseshoe, horseshoe_j, V_hat) = dot(velocity(horseshoe_point(horseshoe_j), horseshoe, 1., V_hat), horseshoe_normal(horseshoe_j))
 
 """
-    influence_matrix(horseshoes, collocation_points, normals, V_hat)
+    influence_matrix(horseshoes, u_hat)
 
-Assemble the Aerodynamic Influence Coefficient (AIC) matrix given horseshoes, collocation points, associated normal vectors, and a unit vector representing the freestream.
+Assemble the Aerodynamic Influence Coefficient (AIC) matrix given an array of `Horseshoes` and the freestream direction ``̂u``.
 """
 influence_matrix(horseshoes, V_hat) = [ influence_coefficient(horsie_j, horsie_i, V_hat) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
 
 """
-    boundary_condition(velocities, normals)
+    boundary_condition(horseshoes, U, Ω)
 
-Compute the projection of a velocity vector with respect to normal vectors of panels. Corresponds to construction of the boundary condition for the RHS of the AIC system.
+Assemble the boundary condition vector given an array of `Horseshoes`, the freestream velocity ``U``, and a quasi-steady rotation vector  ``Ω``.
 """
 boundary_condition(horseshoes, U, Ω) = map(hs -> dot(U + Ω × horseshoe_point(hs), horseshoe_normal(hs)), horseshoes)
 

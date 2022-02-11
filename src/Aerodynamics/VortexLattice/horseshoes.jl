@@ -47,9 +47,11 @@ total_horseshoe_velocity(a, b, Γ, u, ε) = bound_leg_velocity(a, b, Γ, ε) + t
 abstract type AbstractVortexArray end
 
 """
-    Horseshoe(bound_leg, collocation_point, normal, chord)
+    Horseshoe(r1, r2, collocation_point, normal, chord)
 
-Define a horseshoe vortex based on a bound leg, a collocation point, a normal vector, and a "chord length".
+Define a horseshoe vortex with a start and endpoints ``r₁, r₂`` for the bound leg, a collocation point ``r``, a normal vector ``̂n``, and a finite core size.
+
+The finite core setup is not implemented for now.
 """
 struct Horseshoe{T <: Real} <: AbstractVortexArray
     r1                :: SVector{3,T}
@@ -63,6 +65,11 @@ Base.length(::Horseshoe) = 1
 
 r1(horseshoe :: Horseshoe) = horseshoe.r1
 r2(horseshoe :: Horseshoe) = horseshoe.r2
+
+function Horseshoe(r1, r2, r_c, n, c)
+    T = promote_type(eltype(r1), eltype(r2), eltype(r_c), eltype(n), eltype(c))
+    Horseshoe{T}(r1, r2, r_c, n, c)
+end
 
 """
     bound_leg(horseshoe :: Horseshoe)
@@ -89,6 +96,22 @@ function Horseshoe(panel :: Panel3D, normal, drift = SVector(0., 0., 0.))
 end
 
 """
+    transform(horseshoe :: Horseshoe, T :: LinearMap)
+
+Generate a new `Horseshoe` with the points and normal vectors transformed by the linear map ``T``.
+"""
+transform(horseshoe :: Horseshoe, T :: LinearMap) =
+    setproperties(
+              horseshoe,
+              r1                = T(horseshoe.r1),
+              r2                = T(horseshoe.r2),
+              collocation_point = T(horseshoe.collocation_point),
+              normal            = T(horseshoe.normal),
+             )
+
+transform(horseshoe :: Horseshoe; rotation = I(3), translation = zeros(3)) = transform(horseshoe, Translation(translation) ∘ LinearMap(rotation))
+
+"""
     bound_leg_center(horseshoe :: Horseshoe)
 
 Compute the midpoint of the bound leg of a `Horseshoe`.
@@ -103,21 +126,21 @@ Compute the direction vector of the bound leg of a `Horseshoe`.
 bound_leg_vector(horseshoe :: Horseshoe) = horseshoe.r2 - horseshoe.r1
 
 """
-    velocity(r, horseshoe, Γ, V_hat)
+    velocity(r, horseshoe, Γ, u_hat)
 
 Compute the induced velocity at a point ``r`` of a given `Horseshoe` with a bound leg of constant strength ``Γ`` and semi-infinite trailing legs pointing in a given direction ``û``.
 """
 velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat) = total_horseshoe_velocity(r1(r, horseshoe), r2(r, horseshoe), Γ, V_hat, horseshoe.core)
 
 """
-    trailing_velocity(r, horseshoe, Γ, V_hat)
+    bound_velocity(r, horseshoe, Γ, u_hat)
 
 Compute the induced velocity at a point ``r`` from the bound leg with constant strength ``Γ`` of a given `Horseshoe`.
 """
 bound_velocity(r, horseshoe :: Horseshoe, Γ) = bound_leg_velocity(r1(r, horseshoe), r2(r, horseshoe), Γ, horseshoe.core)
 
 """
-    trailing_velocity(r, horseshoe, Γ, V_hat)
+    trailing_velocity(r, horseshoe, Γ, u_hat)
 
 Compute the induced velocity at a point ``r`` from the semi-infinite trailing legs with constant strength ``Γ`` of a given `Horseshoe`.
 """
