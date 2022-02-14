@@ -14,7 +14,7 @@ function aeromdao_steady_vlm()
     wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
                 chords    = [1.0, 0.6],
                 twists    = [2.0, 2.0],
-                spans     = [5.0],
+                spans     = [10.0],
                 dihedrals = [11.31],
                 sweeps    = [2.29]);
 
@@ -22,7 +22,7 @@ function aeromdao_steady_vlm()
     htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
-                 spans     = [1.25],
+                 spans     = [2.5],
                  dihedrals = [0.],
                  sweeps    = [6.39],
                  position  = [4., 0, 0],
@@ -52,14 +52,13 @@ function aeromdao_steady_vlm()
                                              spacing  = Cosine()
                                             )
 
-    # Aircraft assembly (ComponentVectors are death)
+    # Aircraft assembly
     aircraft = [
                 Horseshoe.(wing_panels,  wing_normals)[:];
                 Horseshoe.(htail_panels, htail_normals)[:];
                 Horseshoe.(vtail_panels, vtail_normals)[:];
                ]
 
-    # display(size.([ wing_panels[1], htail_panels[1], vtail_panels[1] ])) # Checking sizes
     α, β = 5.0, 0.0
     Ω    = [0.0, 0.0, 0.0]
     fs   = AeroMDAO.Freestream(α, β, Ω)
@@ -81,7 +80,7 @@ function aeromdao_steady_vlm()
     CFs, CMs = surface_coefficients(data)
     # FFs      = farfield_coefficients(data)
 
-    # sum(CFs), sum(CMs)
+    sum(CFs), sum(CMs)
     # nearfield(data), farfield(data)
     # print_timer()
 end
@@ -95,7 +94,7 @@ function aeromdao_steady_vlm_components()
     wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
                 chords    = [1.0, 0.6],
                 twists    = [2.0, 2.0],
-                spans     = [5.0],
+                spans     = [10.0],
                 dihedrals = [11.31],
                 sweeps    = [2.29]);
 
@@ -103,7 +102,7 @@ function aeromdao_steady_vlm_components()
     htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
-                 spans     = [1.25],
+                 spans     = [2.5],
                  dihedrals = [0.],
                  sweeps    = [6.39],
                  position  = [4., 0, 0],
@@ -121,26 +120,25 @@ function aeromdao_steady_vlm_components()
                      angle     = 90.,
                      axis      = [1., 0., 0.])
 
-    wing_panels, wing_normals   = panel_wing(wing, 20, 10, 
-                                             spacing = Cosine()
-                                            )
+    wing_mesh = WingMesh(wing, [20], 10, 
+                         span_spacing = Cosine()
+                        )
 
-    htail_panels, htail_normals = panel_wing(htail, 12, 6;
-                                             spacing  = Cosine()
-                                            )
+    htail_mesh = WingMesh(htail, [12], 6;
+                          span_spacing  = Cosine()
+                         )
 
-    vtail_panels, vtail_normals = panel_wing(vtail, 10, 5;
-                                             spacing  = Cosine()
-                                            )
+    vtail_mesh = WingMesh(vtail, [10], 5;
+                          span_spacing  = Cosine()
+                         )
 
-    # Aircraft assembly (ComponentVectors are death)
+    # Aircraft assembly
     aircraft = ComponentArray(
-                    wing  = Horseshoe.(wing_panels,  wing_normals),
-                    htail = Horseshoe.(htail_panels, htail_normals),
-                    vtail = Horseshoe.(vtail_panels, vtail_normals),
+                    wing  = make_horseshoes(wing_mesh),
+                    htail = make_horseshoes(htail_mesh),
+                    vtail = make_horseshoes(vtail_mesh),
                 )
 
-    # display(size.([ wing_panels[1], htail_panels[1], vtail_panels[1] ])) # Checking sizes
     α, β = 5.0, 0.0
     Ω    = [0.0, 0.0, 0.0]
     fs   = AeroMDAO.Freestream(α, β, Ω)
@@ -162,7 +160,7 @@ function aeromdao_steady_vlm_components()
     CFs, CMs = surface_coefficients(data)
     # FFs      = farfield_coefficients(data)
 
-    # sum(CFs), sum(CMs)
+    sum(CFs), sum(CMs)
     # nearfield(data), farfield(data)
     # print_timer()
 end

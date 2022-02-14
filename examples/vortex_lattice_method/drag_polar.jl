@@ -5,36 +5,34 @@ using Plots
 
 ## Lifting surfaces
 
+## Surfaces
+
 # Wing
-wing_foils = fill(naca4((0,0,1,2)), 2)
-wing       = Wing(foils     = wing_foils,
-                  chords    = [1.0, 0.6],
-                  twists    = [0.0, 0.0],
-                  spans     = [5.0],
-                  dihedrals = [0.],
-                  sweeps      = [2.29]);
+wing = Wing(foils     = fill(naca4(0,0,1,2), 2),
+            chords    = [1.0, 0.6],
+            twists    = [0.0, 0.0],
+            spans     = [8.0],
+            dihedrals = [0.],
+            sweeps    = [5.]);
 
 # Horizontal tail
-htail_foils = fill(naca4((0,0,1,2)), 2)
-htail       = Wing(foils     = htail_foils,
-                   chords    = [0.7, 0.42],
-                   twists    = [0.0, 0.0],
-                   spans     = [1.25],
-                   dihedrals = [0.],
-                   sweeps      = [6.39],
-                   position	 = [4., 0, 0],
-                   angle     = deg2rad(-0.),
-                   axis      = [0., 1., 0.])
-
+htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
+             chords    = [0.7, 0.42],
+             twists    = [0.0, 0.0],
+             spans     = [2.5],
+             dihedrals = [0.],
+             sweeps    = [6.39],
+             position  = [4., 0, 0.],
+             angle     = 0.,
+             axis      = [0., 1., 0.])
 
 # Vertical tail
-vtail_foils = fill(naca4((0,0,1,2)), 2)
-vtail = HalfWing(foils     = vtail_foils,
+vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  chords    = [0.7, 0.42],
                  twists    = [0.0, 0.0],
                  spans     = [1.0],
                  dihedrals = [0.],
-                 sweeps      = [7.97],
+                 sweeps    = [7.97],
                  position  = [4., 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.])
@@ -44,41 +42,50 @@ print_info(wing, "Wing")
 print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
-# Assembly
-wing_panels, wing_normals   = panel_wing(wing, [20], 10)
-htail_panels, htail_normals = panel_wing(htail, [12], 12)
-vtail_panels, vtail_normals = panel_wing(vtail, [12], 10)
+## WingMesh type
+wing_mesh  = WingMesh(wing, [12], 6, 
+                      span_spacing = Cosine()
+                     )
+htail_mesh = WingMesh(htail, [12], 6, 
+                      span_spacing = Cosine()
+                     )
+vtail_mesh = WingMesh(vtail, [12], 6, 
+                      span_spacing = Cosine()
+                     )
 
-aircraft = ComponentArray(wing  = Horseshoe.(wing_panels,  wing_normals ),
-                          htail = Horseshoe.(htail_panels, htail_normals),
-                          vtail = Horseshoe.(vtail_panels, vtail_normals))
+aircraft = ComponentArray(
+                          wing  = make_horseshoes(wing_mesh),
+                          htail = make_horseshoes(htail_mesh),
+                          vtail = make_horseshoes(vtail_mesh)
+                         );
 
+## Case
+fs  = Freestream(alpha = 0.0, 
+                 beta  = 0.0, 
+                 omega = [0., 0., 0.]);
 
-S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing)
-
-function vlm_analysis(aircraft, fs, refs, print = false)
-    # Evaluate case
-    system = solve_case(aircraft, fs, refs;
-                        print = print);
-
-    # Get data
-    [ farfield(system); nearfield(system) ]
-end
-
-##
-ρ       = 1.225
-ref     = [0.25c, 0., 0.]
-V, β    = 1.0, 0.0
-Ω       = [0.0, 0.0, 0.0]
-αs      = -5:0.5:5
-fses    = map(α -> Freestream(V, α, β, Ω), αs);
-refs    = References(ρ, S, b, c, ref)
+ref = References(speed     = 1.0, 
+                 density   = 1.225,
+                 viscosity = 1.5e-5,
+                 area      = projected_area(wing),
+                 span      = span(wing),
+                 chord     = mean_aerodynamic_chord(wing),
+                 location  = mean_aerodynamic_center(wing))
 
 ## Evaluate cases
-results = vlm_analysis.(Ref(aircraft), fses, Ref(refs), true);
+using Setfield
+
+αs = -5:0.5:5
+results = permutedims(combinedimsview(
+    map(αs) do α
+        fst = @set fs.alpha = deg2rad(α)
+        sys = solve_case(aircraft, fst, ref)
+        [ α; farfield(sys)[:]; nearfield(sys) ]
+    end
+))
 
 ## Generate DataFrame
-data = DataFrame((α, res...) for (α, res) in zip(αs, results))
+data = DataFrame(results, :auto)
 rename!(data, [:α, :CD_ff, :CY_ff, :CL_ff, :CD_nf, :CY_nf, :CL_nf, :Cl, :Cm, :Cn])
 
 ##
