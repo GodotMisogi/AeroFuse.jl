@@ -216,6 +216,52 @@ end
     [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
 end
 
+# @testset "Vortex Lattice Method (Compressible) - NACA 0012 Tapered Wing" begin
+#     # Define wing
+#     wing = Wing(foils     = [ naca4((0,0,1,2)) for i ∈ 1:2 ],
+#                 chords    = [0.18, 0.16],
+#                 twists    = [0., 0.],
+#                 spans     = [0.5,],
+#                 dihedrals = [5.],
+#                 sweeps    = [1.14])
+
+#     # Define freestream and reference values
+#     fs   = Freestream(2.0, 2.0, [0.0, 0.0, 0.0])
+#     refs = References(speed    = 1.0, 
+#                       area     = projected_area(wing), 
+#                       span     = span(wing), 
+#                       chord    = mean_aerodynamic_chord(wing), 
+#                       density  = 1.225, 
+#                       location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.])
+
+#     aircraft = ComponentArray(wing = make_horseshoes(WingMesh(wing, [10], 5, span_spacing = Sine())))
+
+#     # Evaluate stability case
+#     dv_data = solve_case_derivatives(aircraft, fs, refs)
+
+#     dcf = dv_data.wing
+#     nfs = @views dcf[1:6,1]
+#     ffs = @views dcf[7:9,1]
+#     dvs = @views dcf[1:6,3:end]
+
+#     # Test values
+#     nf_tests = [0.0013533, 0.0002199, 0.1159460, 0.0009056, 0.0003870, -9.45e-5]
+#     ff_tests = [0.0014288, 0.0001743, 0.1159407]
+#     dv_tests = [ 0.0797407 -0.0004935 -0.0039017  0.0637363  0.00040432;
+#                  0.0066032  0.0024037  0.0809146  0.0302106 -0.01215740;
+#                  3.4109908 -0.0060240 -0.1856933  5.1791483  0.00655725;
+#                  0.0084357  0.0064224  0.2850721  0.1109732 -0.03857202;
+#                 -0.0088806  0.0004687  0.0618584 -0.6604729 -0.00511808;
+#                 -0.0009645 -0.0018439  0.0054145 -0.0044698  0.00136934]
+
+#     # Nearfield coefficients test
+#     [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
+#     # Farfield coefficients test
+#     [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
+#     # Stability derivatives' coefficients test
+#     [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
+# end
+
 # @testset "Vortex Lattice Method (Compressible) - Vanilla Aircraft" begin
 #     ## Wing
 #     wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
@@ -263,7 +309,7 @@ end
 #                          beta     = 1.0, 
 #                          omega    = zeros(3))
                          
-#     refs    = References(speed    = 200.0,
+#     refs    = References(speed    = 1.0,
 #                          area     = projected_area(wing),
 #                          span     = span(wing),
 #                          chord    = mean_aerodynamic_chord(wing),
@@ -278,21 +324,21 @@ end
 #     ffs = @views dcf[7:9,1]
 #     dvs = @views dcf[1:6,3:end]
 
-#     nf_tests = [8.0411e-5, -0.00404099, 0.030722712, -0.001121819, 0.027332115, 0.002651787]
-#     ff_tests = [0.000108423, -0.004069802, 0.030710072]
-#     dv_tests = dv_tests = [ 0.006005598  0.001141902 -0.147001597    -0.134360362    0.493780108;
-#                             0.003094128 -0.226548154 26.306818756  -10.9502109290 -100.455223951;
-#                             2.215051723  0.030031793 -5.219234999  1360.264256667    3.321451223;
-#                             0.021122411 -0.065002493 43.102004798    18.134941224   -9.712370062;
-#                            -0.613715973 -0.016873227 -9.180578816 -2760.669315103  -13.928981003;
-#                             0.004797641  0.148132884  1.165234766    12.983609754   78.007717977]
+#     nf_tests = nf_tests = [0.0003809, -0.0092001, 0.0653603, -0.00267614, 0.0601835, 0.0059991]
+#     ff_tests = [0.0005143, -0.0092706, 0.0653322]
+#     dv_tests = [ 0.02683135  0.00598999  0.00129946   0.07677650 -0.00239941;
+#                  0.00485459 -0.51746200  0.30400759  -0.07441648 -0.89977551;
+#                  4.79517314  0.05981426 -0.05579090  11.96808124  0.03481949;
+#                  0.04139111 -0.15508121  0.48946241   0.14696791 -0.09903859;
+#                 -1.56084895 -0.03600234 -0.06169580 -25.51686024 -0.12496307;
+#                  0.01034791  0.33641149  0.01552321   0.09067189  0.69307000]
 
 #     # Nearfield coefficients test
-#     [ @test nf_c ≈ nf_t atol = 1e-9 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
+#     [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
 #     # Farfield coefficients test
-#     [ @test ff_c ≈ ff_t atol = 1e-9 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
-#     # Stability derivatives' coefficients test
-#     [ @test dv_c ≈ dv_t atol = 1e-9 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
+#     [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
+#     # # Stability derivatives' coefficients test
+#     [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
 # end
 
 @testset "Structures - Euler-Bernoulli Beam Elastic Stiffness" begin

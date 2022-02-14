@@ -82,17 +82,10 @@ print_coefficients(nf_v, ff_v, :wing)
                                       );
 
 ## Plotting
-# using StaticArrays
 using Plots
 gr()
 
 ## Streamlines
-
-# Chordwise distribution
-# num_points = 50
-# max_z = 0.1
-# y = span(wing) / 2 - 0.05
-# seed = SVector.(fill(-0.1, num_points), fill(y, num_points), range(-max_z, stop = max_z, length = num_points))
 
 # Spanwise distribution
 span_points = 20
@@ -109,7 +102,7 @@ streams = plot_streamlines(system, seed, distance, num_stream_points);
 horseshoe_panels = chord_panels(wing_mesh)
 horseshoe_coords = plot_panels(horseshoe_panels)
 wing_coords      = plot_planform(wing);
-horseshoe_points = Tuple.(horseshoe_point.(system.vortices))
+horseshoe_points = Tuple.(collocation_point.(system.vortices))
 ys               = getindex.(horseshoe_points, 2)
 
 ## Coordinates
@@ -154,19 +147,81 @@ plot!.(horseshoe_coords, color = :gray, label = :none)
 quiver!(hs_pts, quiver=(span_loads[:,2], span_loads[:,3], span_loads[:,4]) .* 10)
 plot!(size = (800, 600))
 
+## VARIABLE ANALYSES
+#=========================================================#
 
-## (Speed, alpha) sweep
 using Setfield
 using Base.Iterators: product
 
-Vs = 80:20:300
-αs = -5:0.1:5
+## Speed sweep
+Vs = 1.0:10:300
+res_Vs = permutedims(combinedimsview(
+    map(Vs) do V
+        ref = @set refs.speed = V
+        sys = solve_case(aircraft, fs, ref)
+        [ V; farfield(sys)[:]; nearfield(sys) ]
+    end
+))
 
-coeffs = combinedimsview(
+plot(
+    res_Vs[:,1], res_Vs[:,2:end],
+    layout = (3,3), size = (900, 800),
+    xlabel = "V",
+    labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
+)
+
+## Alpha sweep
+αs = -5:0.5:5
+res_αs = permutedims(combinedimsview(
+    map(αs) do α
+        fst = @set fs.alpha = deg2rad(α)
+        sys = solve_case(aircraft, fst, refs)
+        [ α; farfield(sys); nearfield(sys) ]
+    end
+))
+
+plot(
+    res_αs[:,1], res_αs[:,2:end],
+    layout = (3,3), size = (900, 800),
+    xlabel = "α",
+    labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
+)
+
+## (Speed, alpha) sweep
+res = combinedimsview(
     map(product(Vs, αs)) do (V, α)
         ref = @set refs.speed = V
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, ref)
-        nearfield(sys)
+        [ V; α; farfield(sys); nearfield(sys) ]
     end
 )
+
+##
+res_p = permutedims(res, (3,1,2))
+
+# CDi
+plt_CDi_ff = plot(camera = (60,45))
+[ plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,3,n], 
+    ylabel = "α", xlabel = "V", zlabel = "CDi_ff", 
+    label = "", c = :black,
+) for n in axes(res_p,3) ]
+
+# CL
+plt_CL_ff = plot(camera = (45,45))
+[ plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,5,n], 
+    ylabel = "α", xlabel = "V", zlabel = "CL_ff", 
+    label = "", c = :black,
+) for n in axes(res_p,3) ]
+
+plt_Cm_ff = plot(camera = (45,45))
+[ plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,10,n], 
+    ylabel = "α", xlabel = "V", zlabel = "Cm", 
+    label = "", c = :black,
+) for n in axes(res_p,3) ]
+
+##
+plot(plt_CDi_ff, plt_CL_ff, plt_Cm_ff, layout = (1,3), size = (1300, 400))

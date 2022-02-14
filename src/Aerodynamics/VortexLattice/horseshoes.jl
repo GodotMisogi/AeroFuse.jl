@@ -20,7 +20,7 @@ bound_leg(panel :: Panel3D) = bound_leg(panel.p1, panel.p2, panel.p3, panel.p4)
 
 Compute the collocation point of a `Panel3D` for horseshoes/vortex rings, which is the 3-quarter point on each side in the ``x``-``z`` plane.
 """
-horseshoe_point(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, panel.p3, panel.p4)
+collocation_point(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, panel.p3, panel.p4)
 
 bound_leg_velocity(a, b, Γ)    = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
 trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × normalize(u) / (norm(r) - dot(r, u))
@@ -44,7 +44,7 @@ total_horseshoe_velocity(a, b, Γ, u, ε) = bound_leg_velocity(a, b, Γ, ε) + t
 ## Arrays of vortex lines
 #==========================================================================================#
 
-abstract type AbstractVortexArray end
+abstract type AbstractVortex end
 
 """
     Horseshoe(r1, r2, collocation_point, normal, chord)
@@ -53,7 +53,7 @@ Define a horseshoe vortex with a start and endpoints ``r₁, r₂`` for the boun
 
 The finite core setup is not implemented for now.
 """
-struct Horseshoe{T <: Real} <: AbstractVortexArray
+struct Horseshoe{T <: Real} <: AbstractVortex
     r1                :: SVector{3,T}
     r2                :: SVector{3,T}
     collocation_point :: SVector{3,T}
@@ -77,7 +77,7 @@ end
 Getter for bound leg field of a `Horseshoe`.
 """
 bound_leg(horseshoe :: Horseshoe)        = horseshoe.bound_leg
-horseshoe_point(horseshoe :: Horseshoe)  = horseshoe.collocation_point
+collocation_point(horseshoe :: Horseshoe)  = horseshoe.collocation_point
 horseshoe_normal(horseshoe :: Horseshoe) = horseshoe.normal
 
 r1(r, horseshoe :: Horseshoe) = r - horseshoe.r1
@@ -90,7 +90,7 @@ Generate a `Horseshoe` corresponding to a `Panel3D`, an associated normal vector
 """
 function Horseshoe(panel :: Panel3D, normal, drift = SVector(0., 0., 0.))
     r1, r2 = bound_leg(panel)
-    r_c = horseshoe_point(panel) + drift
+    r_c = collocation_point(panel) + drift
     ε   = 0. # (norm ∘ average_chord)(panel))
     Horseshoe(r1, r2, r_c, normal, ε)
 end

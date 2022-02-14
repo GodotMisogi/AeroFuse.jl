@@ -80,7 +80,7 @@ results = permutedims(combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, ref)
-        [ α; farfield(sys)[:]; nearfield(sys) ]
+        [ α; farfield(sys); nearfield(sys) ]
     end
 ))
 

@@ -96,7 +96,7 @@ function solve_system(components, fs :: Freestream, refs :: References)
         # Solve system
         Γs, AIC, boco = solve_linear(comp, U, Ω)
 
-        return VortexLatticeSystem(components, refs.speed * Γs / β^2, AIC, boco, fs, refs)
+        return VortexLatticeSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
     else
         # Solve system
         Γs, AIC, boco = solve_linear(comp, U, Ω)
