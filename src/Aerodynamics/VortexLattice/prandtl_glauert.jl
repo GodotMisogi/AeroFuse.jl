@@ -5,7 +5,7 @@ prandtl_glauert_scale_coordinates(x, y, z, β) = SVector(x, β * y, β * z)
 prandtl_glauert_scale_coordinates(r, β) = @views prandtl_glauert_scale_coordinates(r[1], r[2], r[3], β)
 
 prandtl_glauert_scale_normal(nx, ny, nz, β) = SVector(β * nx, ny, nz)
-prandtl_glauert_scale_normal(n, β) = @views prandtl_glauert_scale_normal(n[1], n[1], n[3], β)
+prandtl_glauert_scale_normal(n, β) = @views prandtl_glauert_scale_normal(n[1], n[2], n[3], β)
 
 prandtl_glauert_scale_coordinates(horseshoe :: Horseshoe, β) = 
     setproperties(horseshoe,

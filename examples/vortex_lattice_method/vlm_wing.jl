@@ -30,7 +30,7 @@ fs  = Freestream(
 
 # Reference values
 refs = References(
-                  speed     = 300.0,
+                  speed     = 150.0,
                   density   = 1.225,
                   viscosity = 1.5e-5,
                   area      = projected_area(wing),
@@ -153,3 +153,20 @@ plot!.(horseshoe_coords, color = :gray, label = :none)
 # scatter!(cz_pts, zcolor = vec(CLs), marker = 2, label = "CL (Exaggerated)")
 quiver!(hs_pts, quiver=(span_loads[:,2], span_loads[:,3], span_loads[:,4]) .* 10)
 plot!(size = (800, 600))
+
+
+## (Speed, alpha) sweep
+using Setfield
+using Base.Iterators: product
+
+Vs = 80:20:300
+αs = -5:0.1:5
+
+coeffs = combinedimsview(
+    map(product(Vs, αs)) do (V, α)
+        ref = @set refs.speed = V
+        fst = @set fs.alpha = deg2rad(α)
+        sys = solve_case(aircraft, fst, ref)
+        nearfield(sys)
+    end
+)

@@ -137,7 +137,7 @@ end
     [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
 end
 
-@testset "Vortex Lattice Method - Vanilla Aircraft" begin
+@testset "Vortex Lattice Method (Incompressible) - Vanilla Aircraft" begin
     ## Wing
     wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
                 chords    = [1.0, 0.6],
@@ -215,6 +215,85 @@ end
     # Stability derivatives' coefficients test
     [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
 end
+
+# @testset "Vortex Lattice Method (Compressible) - Vanilla Aircraft" begin
+#     ## Wing
+#     wing = Wing(foils     = fill(naca4((0,0,1,2)), 2),
+#                 chords    = [1.0, 0.6],
+#                 twists    = [0.0, 0.0],
+#                 spans     = [5.0],
+#                 dihedrals = [11.39],
+#                 sweeps    = [0.]);
+
+#     # Horizontal tail
+#     htail = Wing(foils     = fill(naca4((0,0,1,2)), 2),
+#                  chords    = [0.7, 0.42],
+#                  twists    = [0.0, 0.0],
+#                  spans     = [1.25],
+#                  dihedrals = [0.],
+#                  sweeps    = [6.39],
+#                  position  = [4., 0, 0],
+#                  angle     = -2.,
+#                  axis      = [0., 1., 0.])
+
+#     # Vertical tail
+#     vtail = HalfWing(foils     = fill(naca4((0,0,0,9)), 2),
+#                      chords    = [0.7, 0.42],
+#                      twists    = [0.0, 0.0],
+#                      spans     = [1.0],
+#                      dihedrals = [0.],
+#                      sweeps    = [7.97],
+#                      position  = [4., 0, 0],
+#                      angle     = 90.,
+#                      axis      = [1., 0., 0.])
+
+#     ## Assembly
+#     wing_panels , wing_normals  = panel_wing(wing, 16, 10; spacing = Cosine())
+#     htail_panels, htail_normals = panel_wing(htail, 6,  6; spacing = Cosine())
+#     vtail_panels, vtail_normals = panel_wing(vtail, 5,  6; spacing = Cosine())
+
+#     aircraft = ComponentArray(
+#                               wing  = Horseshoe.(wing_panels , wing_normals),
+#                               htail = Horseshoe.(htail_panels, htail_normals),
+#                               vtail = Horseshoe.(vtail_panels, vtail_normals)
+#                              )
+
+#     ## Reference quantities
+#     fs      = Freestream(alpha    = 1.0, 
+#                          beta     = 1.0, 
+#                          omega    = zeros(3))
+                         
+#     refs    = References(speed    = 200.0,
+#                          area     = projected_area(wing),
+#                          span     = span(wing),
+#                          chord    = mean_aerodynamic_chord(wing),
+#                          density  = 1.225,
+#                          location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.])
+
+#     ## Stability case
+#     dv_data = solve_case_derivatives(aircraft, fs, refs);
+
+#     dcf = dv_data.aircraft
+#     nfs = @views dcf[1:6,1]
+#     ffs = @views dcf[7:9,1]
+#     dvs = @views dcf[1:6,3:end]
+
+#     nf_tests = [8.0411e-5, -0.00404099, 0.030722712, -0.001121819, 0.027332115, 0.002651787]
+#     ff_tests = [0.000108423, -0.004069802, 0.030710072]
+#     dv_tests = dv_tests = [ 0.006005598  0.001141902 -0.147001597    -0.134360362    0.493780108;
+#                             0.003094128 -0.226548154 26.306818756  -10.9502109290 -100.455223951;
+#                             2.215051723  0.030031793 -5.219234999  1360.264256667    3.321451223;
+#                             0.021122411 -0.065002493 43.102004798    18.134941224   -9.712370062;
+#                            -0.613715973 -0.016873227 -9.180578816 -2760.669315103  -13.928981003;
+#                             0.004797641  0.148132884  1.165234766    12.983609754   78.007717977]
+
+#     # Nearfield coefficients test
+#     [ @test nf_c ≈ nf_t atol = 1e-9 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
+#     # Farfield coefficients test
+#     [ @test ff_c ≈ ff_t atol = 1e-9 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
+#     # Stability derivatives' coefficients test
+#     [ @test dv_c ≈ dv_t atol = 1e-9 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
+# end
 
 @testset "Structures - Euler-Bernoulli Beam Elastic Stiffness" begin
     # Deflection stiffness matrix

@@ -54,7 +54,7 @@ include("residuals.jl")
 Evaluate and return the vortex strengths ``Γ``s given an array of `Horseshoes`, their associated normal vectors, the velocity vector ``U``, and the quasi-steady rotation vector ``Ω``.
 """
 function solve_linear(horseshoes, U, Ω)
-    AIC  = influence_matrix(horseshoes, -normalize(U))
+    AIC  = influence_matrix(horseshoes)
     boco = boundary_condition(horseshoes, U, Ω)
     Γs   = AIC \ boco
 
@@ -83,23 +83,23 @@ function solve_system(components, fs :: Freestream, refs :: References)
     @assert M < 1.  "Only compressible subsonic flow conditions (M < 1) are valid!"
     if M > 0.7 @warn "Results in transonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
 
+    comp = geometry_to_wind_axes.(components, fs)
+    U    = geometry_to_wind_axes(body_frame_velocity(fs), fs)
+    Ω    = geometry_to_wind_axes(fs.omega, fs)
+
     # Hack for now to pass tests
     if M > 0.3
-        # Prandtl-Glauert transformation
+        # Prandtl-Glauert transformation of geometry
         β    = √(1 - M^2)
-        comp = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(components, -fs.alpha, -fs.beta), β)
-        U    = wind_to_geometry_axes(body_frame_velocity(fs), -fs.alpha, -fs.beta)
-        Ω    = wind_to_geometry_axes(fs.omega, -fs.alpha, -fs.beta)
+        comp = prandtl_glauert_scale_coordinates.(comp, β)
 
         # Solve system
         Γs, AIC, boco = solve_linear(comp, U, Ω)
 
-        return VortexLatticeSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
+        return VortexLatticeSystem(components, refs.speed * Γs / β^2, AIC, boco, fs, refs)
     else
-        U, Ω = body_frame_velocity(fs), fs.omega
-
         # Solve system
-        Γs, AIC, boco = solve_linear(components, U, Ω)
+        Γs, AIC, boco = solve_linear(comp, U, Ω)
 
         return VortexLatticeSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
     end

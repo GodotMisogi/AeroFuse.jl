@@ -230,6 +230,6 @@ function farfield(system :: VortexLatticeSystem)
     if length(ffs) == 1
         return ffs[1]
     else 
-        return sum(reduce(hcat, ffs), dims = 2)
+        return vec(sum(reduce(hcat, ffs), dims = 2))
     end
 end

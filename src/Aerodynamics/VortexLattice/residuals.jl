@@ -2,17 +2,20 @@
 #==========================================================================================#
 
 """
-    influence_coefficient(r, horseshoe, normal, u_hat, symmetry)
+    influence_coefficient(horseshoe_1 :: Horseshoe, horseshoe_2 :: Horseshoe)
 
-Compute the influence coefficient of the velocity of a Horseshoe with trailing lines in a given direction ``û`` at a point ``r`` projected to a normal vector.
+Compute the influence coefficient of the first `Horseshoe` at the collocation point of the second `Horseshoe`.
 """
+influence_coefficient(horseshoe :: Horseshoe, horseshoe_j) = dot(velocity(horseshoe_point(horseshoe_j), horseshoe, 1.), horseshoe_normal(horseshoe_j))
 influence_coefficient(horseshoe :: Horseshoe, horseshoe_j, V_hat) = dot(velocity(horseshoe_point(horseshoe_j), horseshoe, 1., V_hat), horseshoe_normal(horseshoe_j))
 
 """
+    influence_matrix(horseshoes)
     influence_matrix(horseshoes, u_hat)
 
 Assemble the Aerodynamic Influence Coefficient (AIC) matrix given an array of `Horseshoes` and the freestream direction ``̂u``.
 """
+influence_matrix(horseshoes) = [ influence_coefficient(horsie_j, horsie_i) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
 influence_matrix(horseshoes, V_hat) = [ influence_coefficient(horsie_j, horsie_i, V_hat) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
 
 """

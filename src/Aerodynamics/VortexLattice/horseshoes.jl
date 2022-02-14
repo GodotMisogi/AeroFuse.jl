@@ -126,11 +126,11 @@ Compute the direction vector of the bound leg of a `Horseshoe`.
 bound_leg_vector(horseshoe :: Horseshoe) = horseshoe.r2 - horseshoe.r1
 
 """
-    velocity(r, horseshoe, Γ, u_hat)
+    velocity(r, horseshoe, Γ, u_hat = [1.,0.,0.])
 
-Compute the induced velocity at a point ``r`` of a given `Horseshoe` with a bound leg of constant strength ``Γ`` and semi-infinite trailing legs pointing in a given direction ``û``.
+Compute the induced velocity at a point ``r`` of a given `Horseshoe` with a bound leg of constant strength ``Γ`` and semi-infinite trailing legs pointing in a given direction ``û``, by default `û = x̂`.
 """
-velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat) = total_horseshoe_velocity(r1(r, horseshoe), r2(r, horseshoe), Γ, V_hat, horseshoe.core)
+velocity(r, horseshoe :: Horseshoe, Γ :: Real, V_hat = SVector(1.,0.,0.)) = total_horseshoe_velocity(r1(r, horseshoe), r2(r, horseshoe), Γ, V_hat, horseshoe.core)
 
 """
     bound_velocity(r, horseshoe, Γ, u_hat)

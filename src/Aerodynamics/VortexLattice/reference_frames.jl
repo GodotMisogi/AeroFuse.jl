@@ -71,12 +71,21 @@ function geometry_to_wind_axes(horseshoe :: Horseshoe, α, β)
     transform(horseshoe, LinearMap(RotZY{T}(β, α)))
 end
 
+geometry_to_wind_axes(coords, fs :: Freestream) = geometry_to_wind_axes(coords, fs.alpha, fs.beta)
+geometry_to_wind_axes(horseshoe :: Horseshoe, fs :: Freestream) = geometry_to_wind_axes(horseshoe, fs.alpha, fs.beta)
+
 """
     wind_to_geometry_axes(coords, α, β)
 
 Convert coordinates from wind axes to geometry axes for given angles of attack ``α`` and sideslip \\beta.``
 """
 wind_to_geometry_axes(coords, α, β) = let T = promote_type(eltype(α), eltype(β)); RotYZ{T}(-α, -β) * coords end
+
+function wind_to_geometry_axes(horseshoe :: Horseshoe, α, β) 
+    T = promote_type(eltype(α), eltype(β))
+    transform(horseshoe, LinearMap(RotZY{T}(-α, -β)))
+end
+
 
 # function rotate_zy(θ₁, θ₂)
 #     sinθ₁, cosθ₁ = sincos(θ₁)
