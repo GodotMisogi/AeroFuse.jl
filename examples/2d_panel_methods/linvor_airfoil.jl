@@ -35,20 +35,22 @@ CairoMakie.activate!()
 
 using LaTeXStrings
 
+const LS = LaTeXString
+
 ## Pressure coefficient
 qts = γs
 cps = @. 1 - qts^2 / uniform.magnitude^2
 
 upper, lower = get_surface_values(panels, cps)
-upper, lower = [ upper; lower[1] ], [ lower; upper[1] ]
+upper, lower = [ lower[end]; upper ], [ upper[end]; lower ]
 
 # Plot
 f1 = Figure(resolution = (900, 400))
 ax = Axis(f1[1,1], aspect = 1, yreversed = true, xlabel = L"(x/c)", ylabel = L"C_p")
-l1 = lines!(upper, label = "Upper")
-l2 = lines!(lower, label = "Lower")
+l1 = lines!(upper, label = L"\mathrm{Upper}")
+l2 = lines!(lower, label = L"\mathrm{Lower}")
 
-axislegend("Surface")
+axislegend(L"\mathrm{Surface}")
 
 # Velocity field
 x_domain, y_domain = (-1, 2), (-1, 1)
@@ -57,7 +59,7 @@ x_dom, y_dom = range(x_domain..., length = grid_size), range(y_domain..., length
 grid = product(x_dom, y_dom)
 pts = panel_points(panels);
 
-total_velocity(xs, ys) = map((x, y) -> Point2f0(velocity(uniform) .+ sum(vortex_velocity.(γs[1:end-1], γs[2:end], panels, x, y))...), xs, ys)
+total_velocity(xs, ys) = map((x, y) -> Point2f(velocity(uniform) .+ sum(vortex_velocity.(γs[1:end-1], γs[2:end], panels, x, y))...), xs, ys)
 
 vortex_vels = total_velocity(first.(grid), last.(grid))
 speeds = @. sqrt(first(vortex_vels)^2 + last(vortex_vels)^2)
@@ -65,17 +67,21 @@ cps = @. 1 - speeds^2 / uniform.magnitude^2
 
 # Plot
 ax2 = Axis(f1[1,2], aspect = 1)
-hm = contourf!(x_dom, y_dom, speeds)
+hm = contourf!(x_dom, y_dom, speeds, levels = 50)
 
-streamplot!(total_velocity, first.(grid), last.(grid))
+streamplot!(total_velocity, first.(grid), last.(grid), colormap = Reverse(:viridis))
 poly!(pts, color = "black")
-
 
 Colorbar(f1[1,3], hm, label = L"Normalized Speed $(U/U_\infty)$")
 colsize!(f1.layout, 2, Aspect(1, 1.0))
+
+# f1[0,:] = Label(f1, LS("Linear Vortex Panel Method"))
 
 # arrows!(x_dom, y_dom, first.(vortex_vels), last.(vortex_vels))
 # CB2 = colorbar(orientation = "horizontal", label = "Relative Airspeed (U/U∞)")
 # tight_layout()
 # show()
 f1
+
+##
+save("plots/LinearVortex.svg", f1, px_per_unit = 1.5)

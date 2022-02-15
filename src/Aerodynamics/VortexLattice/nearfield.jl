@@ -35,3 +35,13 @@ surface_moments(horseshoes, forces, r_ref) = map((hs, f) -> horseshoe_moment(hs,
 # surface_forces(Γ_comp, hs_comp, Γs, horseshoes, U, Ω, ρ, ε) = map((Γ, hs, v) -> kutta_joukowsky(ρ, Γ, v, bound_leg_vector(hs)), Γ_comp, horseshoes, surface_velocities(hs_comp, Γs, horseshoes, U, Ω, ε))
 
 # surface_forces(Γs, horseshoes, U, Ω, ρ, ε) = surface_forces(Γs, horseshoes, Γs, horseshoes, U, Ω, ρ, ε)
+
+## Compressible variants using Prandtl-Glauert transformation
+#==========================================================================================#
+
+# surface_velocity(h, horseshoes, Γs, U, Ω, β) = prandtl_glauert_inverse_scale_velocity(surface_velocity(h, horseshoes, Γs, U, Ω), β)
+
+# surface_velocities(hs_comp, horseshoes, Γs, U, Ω, β) = map(h -> surface_velocity(h, horseshoes, Γs, U, Ω, β), hs_comp)
+
+# surface_forces(hs_comp, Γ_comp, horseshoes, Γs, U, Ω, ρ, β) = map((h, Γ) -> kutta_joukowsky(ρ, surface_velocity(h, horseshoes, Γs, U, Ω, β), bound_leg_vector(h), Γ), hs_comp, Γ_comp)
+# surface_forces(horseshoes, Γs, U, Ω, ρ, β) = surface_forces(horseshoes, Γs, horseshoes, Γs, U, Ω, ρ, β)

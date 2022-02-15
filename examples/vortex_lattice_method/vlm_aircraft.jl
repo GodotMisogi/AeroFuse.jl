@@ -1,6 +1,5 @@
 ## Wing analysis case
 using AeroMDAO
-import LinearAlgebra: norm
 
 ## Surfaces
 
@@ -22,7 +21,7 @@ htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              spans     = [2.5],
              dihedrals = [0.],
              sweeps    = [6.39],
-             position  = [4., 0, 0],
+             position  = [4., 0, -0.1],
              angle     = -2.,
              axis      = [0., 1., 0.])
 
@@ -101,11 +100,13 @@ CDv_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], system.reference)
 CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 
 ## Local dissipation form factor friction estimation
+import LinearAlgebra: norm
+
 M = mach_number(system.reference) # Mach number
 edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
 
-CDvd_wing   = local_dissipation_drag(wing_mesh, system.reference.density, edge_speeds.wing, [0.8, 0.8], system.reference.speed, refs.density, M, system.reference.viscosity) / system.reference.area
-CDvd_htail  = local_dissipation_drag(htail_mesh, refs.density, edge_speeds.htail, [0.6, 0.6], refs.speed, refs.density, M, system.reference.viscosity) / system.reference.area
+CDvd_wing   = local_dissipation_drag(wing_mesh, system.reference.density, edge_speeds.wing, [0.8, 0.8], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
+CDvd_htail  = local_dissipation_drag(htail_mesh, system.reference.density, edge_speeds.htail, [0.6, 0.6], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
 CDvd_vtail  = local_dissipation_drag(vtail_mesh, system.reference.density, edge_speeds.vtail, [0.6, 0.6], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
 
 CDv_diss    = CDvd_wing + CDvd_htail + CDvd_vtail
@@ -195,12 +196,16 @@ plot_spanload!(ax, vtail_ll, LS("Vertical Tail"))
 
 # Legend
 Legend(ax[4,1:2], ax_cl)
-fig1[0, :] = Label(fig1, LS("Vortex Lattice Analysis"), textsize = 20)
 
 # Surface pressure meshes
 m1 = poly!(scene, vec(wing_mesh.camber_mesh),  wing_cam_connec,  color = vec(wing_cp_points))
 m2 = poly!(scene, vec(htail_mesh.camber_mesh), htail_cam_connec, color = vec(htail_cp_points))
 m3 = poly!(scene, vec(vtail_mesh.camber_mesh), vtail_cam_connec, color = vec(vtail_cp_points))
+
+Colorbar(fig1[4,1], m1.plots[1], label = L"Pressure Coefficient, $C_p$", vertical = false)
+
+fig1[0, :] = Label(fig1, LS("Vortex Lattice Analysis"), textsize = 20)
+
 
 # Airfoil meshes
 # wing_surf = surface_coordinates(wing_mesh, wing_mesh.n_span, 60)
@@ -223,7 +228,7 @@ lines!(scene, plot_planform(vtail))
 fig1.scene
 
 ## Save figure
-save("plots/VortexLattice.svg", fig1, px_per_unit = 1.5)
+# save("plots/VortexLattice.pdf", fig1, px_per_unit = 1.5)
 
 ## Animation settings
 pts = [ Node(Point3f0[stream]) for stream in streams[1,:] ]
@@ -249,3 +254,82 @@ end
 #                 arrowsize = Vec3f.(0.3, 0.3, 0.4),
 #                 lengthscale = 10,
 #                 label = "Forces (Exaggerated)")
+
+## VARIABLE ANALYSES
+#=========================================================#
+
+using Setfield
+using Base.Iterators: product
+
+## Speed sweep
+Vs = 1.0:10:300
+res_Vs = permutedims(combinedimsview(
+    map(Vs) do V
+        ref = @set refs.speed = V
+        sys = solve_case(aircraft, fs, ref)
+        [ V; farfield(sys)[:]; nearfield(sys) ]
+    end
+))
+
+plot(
+    res_Vs[:,1], res_Vs[:,2:end],
+    layout = (3,3), size = (900, 800),
+    xlabel = "V",
+    labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
+)
+
+## Alpha sweep
+αs = -5:0.5:5
+res_αs = permutedims(combinedimsview(
+    map(αs) do α
+        fst = @set fs.alpha = deg2rad(α)
+        sys = solve_case(aircraft, fst, refs)
+        [ α; farfield(sys); nearfield(sys) ]
+    end
+))
+
+plot(
+    res_αs[:,1], res_αs[:,2:end],
+    layout = (3,3), size = (900, 800),
+    xlabel = "α",
+    labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
+)
+
+## (Speed, alpha) sweep
+res = combinedimsview(
+    map(product(Vs, αs)) do (V, α)
+        ref = @set refs.speed = V
+        fst = @set fs.alpha = deg2rad(α)
+        sys = solve_case(aircraft, fst, ref)
+        [ V; α; farfield(sys); nearfield(sys) ]
+    end
+)
+
+##
+res_p = permutedims(res, (3,1,2))
+
+# CDi
+plt_CDi_ff = plot(camera = (60,45))
+[ plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,3,n], 
+    ylabel = "α", xlabel = "V", zlabel = "CDi_ff", 
+    label = "", c = :black,
+) for n in axes(res_p,3) ]
+
+# CL
+plt_CL_ff = plot(camera = (45,45))
+[ plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,8,n], 
+    ylabel = "α", xlabel = "V", zlabel = "CL_ff", 
+    label = "", c = :black,
+) for n in axes(res_p,3) ]
+
+plt_Cm_ff = plot(camera = (45,45))
+[ plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,10,n], 
+    ylabel = "α", xlabel = "V", zlabel = "Cm", 
+    label = "", c = :black,
+) for n in axes(res_p,3) ]
+
+##
+plot(plt_CDi_ff, plt_CL_ff, plt_Cm_ff, layout = (1,3), size = (1300, 400))

@@ -2,11 +2,12 @@ module VortexLattice
 
 using LinearAlgebra
 using StaticArrays
-using Rotations
+using Rotations, CoordinateTransformations
 using ComponentArrays
 using SplitApplyCombine
 using TimerOutputs
 using LabelledArrays
+using Setfield
 
 ## Package imports
 #==========================================================================================#
@@ -23,7 +24,7 @@ import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coeff
 # Some tools
 import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
 
-import ..AeroMDAO: velocity, solve_system, solve_linear, surface_velocities, surface_coefficients
+import ..AeroMDAO: velocity, solve_system, solve_linear, solve_nonlinear, solve_nonlinear!, surface_velocities, surface_coefficients, collocation_point
 
 ## Vortex types and methods
 #==========================================================================================#
@@ -37,8 +38,10 @@ include("vortex_rings.jl")
 
 include("freestream.jl")
 
-include("lines.jl")
 include("reference_frames.jl")
+
+# Prandl-Glauert transformation
+include("prandtl_glauert.jl")
 
 ## Matrix and residual setups
 #==========================================================================================#
@@ -48,10 +51,10 @@ include("residuals.jl")
 """
     solve_linear(horseshoes, normals, U, Ω) 
 
-Evaluate and return the vortex strengths ``Γ``s given `Horseshoes`, their associated normal vectors (not necessarily the same as the panels' normals), the speed ``U`` and rotation vector ``Ω``.
+Evaluate and return the vortex strengths ``Γ``s given an array of `Horseshoes`, their associated normal vectors, the velocity vector ``U``, and the quasi-steady rotation vector ``Ω``.
 """
 function solve_linear(horseshoes, U, Ω)
-    AIC  = influence_matrix(horseshoes, -normalize(U))
+    AIC  = influence_matrix(horseshoes)
     boco = boundary_condition(horseshoes, U, Ω)
     Γs   = AIC \ boco
 
@@ -74,9 +77,22 @@ include("farfield.jl")
 include("system.jl")
 
 function solve_system(components, fs :: Freestream, refs :: References)
-    Γs, AIC, boco = solve_linear(components, body_frame_velocity(fs), fs.omega)
 
-    VortexLatticeSystem(components, refs.speed * Γs, AIC, boco, fs, refs)
+    # Mach number bound checks
+    M = mach_number(refs)
+    @assert M < 1.  "Only compressible subsonic flow conditions (M < 1) are valid!"
+    if M > 0.7 @warn "Results in transonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
+
+    # Wind axis + Prandtl-Glauert transformation
+    β_pg = √(1 - M^2)
+    comp = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(components, fs), β_pg)
+    U    = geometry_to_wind_axes(body_frame_velocity(fs), fs)
+    Ω    = geometry_to_wind_axes(fs.omega, fs)
+
+    # Solve system
+    Γs, AIC, boco = solve_linear(comp, U, Ω)
+
+    return VortexLatticeSystem(components, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs)
 end
 
 ## Post-processing

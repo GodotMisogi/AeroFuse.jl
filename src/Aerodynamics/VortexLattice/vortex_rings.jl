@@ -3,7 +3,7 @@
 
 A vortex ring consisting of four points ``r_i, i = 1,…,4``, a collocation point ``r_c``, a normal vector ``n̂``, and a core size ``ε``.
 """
-struct VortexRing{T <: Real} <: AbstractVortexArray
+struct VortexRing{T <: Real} <: AbstractVortex
     r1                :: SVector{3,T}
     r2                :: SVector{3,T}
     r3                :: SVector{3,T}
@@ -13,9 +13,6 @@ struct VortexRing{T <: Real} <: AbstractVortexArray
     core              :: T
 end
 
-"""
-Helper function to compute the vortex ring given four points following Panel3D ordering.
-"""
 function vortex_lines(p1, p2, p3, p4)
     v1 = quarter_point(p1, p2)
     v4 = quarter_point(p4, p3)
@@ -29,15 +26,15 @@ end
 Constructor for vortex rings on a Panel3D using Lines. The following convention is adopted:
 
 ```
-    p1 —bound_leg→ p4
+    p1 —front leg→ p4
     |               |
-left_leg       right_leg
+left leg       right leg
     ↓               ↓
-    p2 —back_leg→ p3
+    p2 —back leg-→ p3
 ```
 """
 function VortexRing(panel :: Panel3D{T}, normal = panel_normal(panel)) where T <: Real
-    r_c = collocaiton_point(panel)
+    r_c = collocation_point(panel)
     ε   = 0. # (norm ∘ average_chord)(panel)
     VortexRing{T}(panel.p1, panel.p2, panel.p3, panel.p4, r_c, normal, ε)
 end
