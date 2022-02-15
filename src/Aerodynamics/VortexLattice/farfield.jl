@@ -15,16 +15,14 @@ Compute the aerodynamic influence coefficient matrix of the wake in the Trefftz 
 """
 farfield_influence_matrix(centers, normals, points) = [ dot(farfield_velocity(r_i, r_j2, 1.) - farfield_velocity(r_i, r_j1, 1.), n_i) for (r_i, n_i) in zip(centers, normals), (r_j2, r_j1) in zip(points[2:end], points) ]
 
-
 """
-    doublet_normal_derivatives(wake_lines :: Vector{<: Line}, Δφs, normals)
+    doublet_normal_derivatives(wake_points, Δφs, normals)
 
-Compute the normal derivative strengths of the doublets given the wake `Line`s, net doublet strengths ``Δφ``s, and associated normal vectors.
+Compute the normal derivative strengths of the doublets given the wake points, net doublet strengths ``Δφ``s, and associated normal vectors.
 """
-function doublet_normal_derivatives(wake_lines :: Vector{<: Line}, Δφs, normals)
-    centers = center.(wake_lines)
-    pts     = points(wake_lines)
-    AIC     = farfield_influence_matrix(centers, normals, pts)
+function doublet_normal_derivatives(wake_points, Δφs, normals)
+    centers = @. (wake_points[1:end-1] + wake_points[2:end]) / 2
+    AIC     = farfield_influence_matrix(centers, normals, wake_points)
     ∂φ_∂n   = AIC * Δφs
 end
 
@@ -41,19 +39,21 @@ function trefftz_plane_quantities(horseshoes :: AbstractArray{<: Horseshoe}, α,
     # Reference velocity for broadcasting
     U_ref = (Ref ∘ SVector)(1, 0, 0)
 
-    # Transform to wind axes
-    wake_lines     = @views geometry_to_wind_axes.(vec(horseshoes[end,:]), α, β)
+    # Transform wake to wind axes
+    wake_horsies = @views vec(horseshoes[end,:])                  # Trailing edge
+    wake_points  = [ r1.(wake_horsies); [r2(wake_horsies[end])] ] # Trailing edge points
+    wake_wind    = geometry_to_wind_axes.(wake_points, α, β)      # Wind axis transformation
 
     # Project trailing edge horseshoes' bound legs into Trefftz plane along wind axes
-    wake_vectors   = @. vector(wake_lines); 
-    wake_proj_vecs = @. project_vector(wake_vectors, U_ref)
+    wake_vectors   = @. wake_wind[2:end] - wake_wind[1:end-1] # Vectors
+    wake_proj_vecs = @. project_vector(wake_vectors, U_ref)   # Project to wind axes
 
     # Normals, dihedral angles, and projection lengths
     wake_normals   = @. normal(wake_proj_vecs, U_ref)
     wake_dihedrals = @. dihedral(wake_proj_vecs)
     wake_lengths   = @. norm(wake_proj_vecs)
 
-    wake_lines, wake_normals, wake_dihedrals, wake_lengths
+    wake_points, wake_normals, wake_dihedrals, wake_lengths
 end
 
 """
@@ -69,8 +69,6 @@ function compute_farfield_forces(Δφs, Δs, ∂φ_∂n, θs, V, ρ)
     SVector(D_i, Y, L)
 end
 
-# ifelse(symmetry, SVector(D_i, 0, 2L), SVector(D_i, Y, L))
-
 """
     farfield_forces(Γs, horseshoes, freestream, ρ)
 
@@ -78,11 +76,11 @@ Compute the aerodynamic forces in the Trefftz plane normal to the freestream giv
 """
 function farfield_forces(Γs, horseshoes, speed, α, β, ρ)
     # Get projections of horseshoes into Trefftz plane with the associated normals, dihedral angles and lengths
-    wake_lines, normals, dihedrals, Δs = trefftz_plane_quantities(horseshoes, α, β)
+    wake_points, normals, dihedrals, Δs = trefftz_plane_quantities(horseshoes, α, β)
 
     # Compute directional derivatives of doublets in the normal direction
     Δφs   = vec(sum(Γs, dims = 1))
-    ∂φ_∂n = doublet_normal_derivatives(wake_lines, Δφs, normals)
+    ∂φ_∂n = doublet_normal_derivatives(wake_points, Δφs, normals)
 
     # Compute forces
     compute_farfield_forces(Δφs, Δs, ∂φ_∂n, dihedrals, speed, ρ)

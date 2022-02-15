@@ -1,6 +1,5 @@
 ## Wing analysis case
 using AeroMDAO
-import LinearAlgebra: norm
 
 ## Surfaces
 
@@ -101,6 +100,8 @@ CDv_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], system.reference)
 CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 
 ## Local dissipation form factor friction estimation
+import LinearAlgebra: norm
+
 M = mach_number(system.reference) # Mach number
 edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
 
@@ -253,3 +254,82 @@ end
 #                 arrowsize = Vec3f.(0.3, 0.3, 0.4),
 #                 lengthscale = 10,
 #                 label = "Forces (Exaggerated)")
+
+## VARIABLE ANALYSES
+#=========================================================#
+
+using Setfield
+using Base.Iterators: product
+
+## Speed sweep
+Vs = 1.0:10:300
+res_Vs = permutedims(combinedimsview(
+    map(Vs) do V
+        ref = @set refs.speed = V
+        sys = solve_case(aircraft, fs, ref)
+        [ V; farfield(sys)[:]; nearfield(sys) ]
+    end
+))
+
+plot(
+    res_Vs[:,1], res_Vs[:,2:end],
+    layout = (3,3), size = (900, 800),
+    xlabel = "V",
+    labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
+)
+
+## Alpha sweep
+αs = -5:0.5:5
+res_αs = permutedims(combinedimsview(
+    map(αs) do α
+        fst = @set fs.alpha = deg2rad(α)
+        sys = solve_case(aircraft, fst, refs)
+        [ α; farfield(sys); nearfield(sys) ]
+    end
+))
+
+plot(
+    res_αs[:,1], res_αs[:,2:end],
+    layout = (3,3), size = (900, 800),
+    xlabel = "α",
+    labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
+)
+
+## (Speed, alpha) sweep
+res = combinedimsview(
+    map(product(Vs, αs)) do (V, α)
+        ref = @set refs.speed = V
+        fst = @set fs.alpha = deg2rad(α)
+        sys = solve_case(aircraft, fst, ref)
+        [ V; α; farfield(sys); nearfield(sys) ]
+    end
+)
+
+##
+res_p = permutedims(res, (3,1,2))
+
+# CDi
+plt_CDi_ff = plot(camera = (60,45))
+[ plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,3,n], 
+    ylabel = "α", xlabel = "V", zlabel = "CDi_ff", 
+    label = "", c = :black,
+) for n in axes(res_p,3) ]
+
+# CL
+plt_CL_ff = plot(camera = (45,45))
+[ plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,8,n], 
+    ylabel = "α", xlabel = "V", zlabel = "CL_ff", 
+    label = "", c = :black,
+) for n in axes(res_p,3) ]
+
+plt_Cm_ff = plot(camera = (45,45))
+[ plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,10,n], 
+    ylabel = "α", xlabel = "V", zlabel = "Cm", 
+    label = "", c = :black,
+) for n in axes(res_p,3) ]
+
+##
+plot(plt_CDi_ff, plt_CL_ff, plt_Cm_ff, layout = (1,3), size = (1300, 400))

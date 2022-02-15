@@ -18,7 +18,7 @@
 #     Ω_hat = Ω / speed
 #     for i in eachindex(horseshoes)
 #         # Residual
-#         R[i] = @views velocity(horseshoes, Γs / speed, horseshoe_point(horseshoes[i]), horseshoe_normal(horseshoes[i]), U_hat, Ω_hat)
+#         R[i] = @views velocity(horseshoes, Γs / speed, collocation_point(horseshoes[i]), horseshoe_normal(horseshoes[i]), U_hat, Ω_hat)
         
 #         # Forces
 #         V_trail   = @views surface_velocity(horseshoes[i], Γs, horseshoes, U, Ω)

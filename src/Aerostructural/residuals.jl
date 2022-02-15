@@ -12,7 +12,7 @@ function coupled_residuals!(R, all_horsies, Γs, U, Ω, speed, stiffness_matrix,
     R_W = @view R[end]
 
     # Aerodynamic residuals
-    @timeit "Aerodynamic Residuals" aerodynamic_residuals!(R_A, all_horsies, Γs / speed, U / speed, Ω / speed)
+    @timeit "Aerodynamic Residuals" solve_nonlinear!(R_A, all_horsies, Γs / speed, U / speed, Ω / speed)
 
     # Structural residuals
     @timeit "Structural Residuals" linear_residual!(R_S, stiffness_matrix, δs, fem_loads)

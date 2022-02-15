@@ -81,6 +81,8 @@ end
 # Miscellaneous
 rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freestream, system.reference)
 
+## THINK ABOUT USING ONLY WIND AXES FOR PG-TRANSFORMATION AND MAPPING BACK
+
 # Velocities
 """
     surface_velocities(system :: VortexLatticeSystem; 
@@ -103,7 +105,7 @@ surface_velocities(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axe
     surface_forces(system :: VortexLatticeSystem; 
                    axes   :: AbstractAxisSystem = Geometry())
 
-Compute the forces on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
+Compute the forces on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system (`Geometry` by default).
 """
 surface_forces(system; axes :: AbstractAxisSystem = Geometry()) = surface_forces(system, axes)
 
@@ -230,6 +232,6 @@ function farfield(system :: VortexLatticeSystem)
     if length(ffs) == 1
         return ffs[1]
     else 
-        return sum(reduce(hcat, ffs), dims = 2)
+        return vec(sum(reduce(hcat, ffs), dims = 2))
     end
 end

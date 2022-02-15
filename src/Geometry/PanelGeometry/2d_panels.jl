@@ -19,8 +19,6 @@ Base.length(:: Panel2D) = 1
 Panel2D(p1 :: FieldVector{2,T}, p2 :: FieldVector{2,T}) where T <: Real = Panel2D{T}(p1, p2)
 WakePanel2D(p1 :: FieldVector{2,T}, p2 :: FieldVector{2,T}) where T <: Real = WakePanel2D{T}(p1, p2)
 
-# Panel2D(p1 :: Union{Point2D{T}, MVector{2,T}, SVector{2,T}}, p2 :: Union{Point2D{T}, MVector{2,T}, SVector{2,T}}) where T <: Real = Panel2D{T}(Point2D(p1), Point2D(p2))
-
 a :: AbstractPanel2D + b :: AbstractPanel2D = Panel2D(p1(a) + p1(b), p2(a) + p2(b))
 a :: AbstractPanel2D - b :: AbstractPanel2D = Panel2D(p1(a) - p1(b), p2(a) - p2(b))
 
@@ -63,10 +61,10 @@ function wake_panel(panels, bound, α)
 end
 
 function wake_panels(panels, chord, length, num)
-    firstx, firsty  = (p1 ∘ first)(panels)
-    lastx, lasty    = (p2 ∘ last)(panels)
-    y_mid           = (firsty + lasty) / 2
-    bounds          = cosine_spacing(chord + length / 2, length, num)
+    _, firsty  = (p1 ∘ first)(panels)
+    _, lasty   = (p2 ∘ last)(panels)
+    y_mid      = (firsty + lasty) / 2
+    bounds     = cosine_spacing(chord + length / 2, length, num)
     @. WakePanel2D(SVector(bounds[1:end-1], y_mid), SVector(bounds[2:end], y_mid))
 end
 
