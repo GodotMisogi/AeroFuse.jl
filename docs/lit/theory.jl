@@ -19,7 +19,7 @@
 # ```
 
 # !!! note
-#     Implementations of viscous-inviscid coupled analyses for drag prediction (á là XFOIL) are in progress.
+#     Implementations of viscous-inviscid coupled analyses for drag prediction (á là [XFOIL](https://web.mit.edu/drela/Public/web/xfoil/)) are in progress.
 
 # ### Doublet-Source Panel Method
 
@@ -51,25 +51,9 @@
 # The vortices can be set up in various configurations consisting of bound or semi-infinite filaments, commonly in the form of _horseshoes_ or _vortex rings_.
 
 # 1. _Horseshoe elements:_
-#    These are defined by a finite _bound leg_ and two semi-infinite _trailing legs_. AeroMDAO encodes this using the following `Horseshoe` type.
-#    ```julia 
-#    struct Horseshoe{T <: Real} <: AbstractVortexArray
-#        bound_leg         :: Line{T}
-#        collocation_point :: SVector{3,T}
-#        normal            :: SVector{3,T}
-#        chord             :: T
-#    end
-#    ```
+#    These are defined by a finite _bound leg_ and two semi-infinite _trailing legs_. AeroMDAO encodes this information in the `Horseshoe` type.
 # 2. _Vortex rings:_
-#    These are defined by four _bound legs_. AeroMDAO encodes this using the following `VortexRing` type.
-#    ```julia 
-#    struct VortexRing{T <: Real} <: AbstractVortexArray
-#        left_leg  :: Line{T}
-#        bound_leg :: Line{T}
-#        back_leg  :: Line{T}
-#        right_leg :: Line{T}
-#    end
-#    ```
+#    These are defined by four _bound legs_. AeroMDAO encodes this information in the `VortexRing` type.
 
 # A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\boldsymbol\Omega$ (in the body's frame) defines an external flow. The induced velocity at a point is given by:
 
@@ -90,13 +74,30 @@
 # ```
 
 # ### Compressibility Corrections
-# The Prandtl-Glauert equation is applicable to a weakly compressible flow problem ($0.3 \leq M_\infty \leq 0.7$).
+# The following **Prandtl-Glauert** equation, represented in wind axes, is applied for a weakly compressible flow problem ($0.3 \leq M_\infty \leq 0.7$).
 
 # ```math
-# \beta^2\frac{\partial^2\phi}{\partial x^2} + \frac{\partial^2\phi}{\partial y^2} + \frac{\partial^2\phi}{\partial z^2} = 0, \quad \beta^2 = \left(1 - M_\infty^2\right)
+# \beta_{PG}^2\frac{\partial^2\phi}{\partial x^2} + \frac{\partial^2\phi}{\partial y^2} + \frac{\partial^2\phi}{\partial z^2} = 0, \quad \beta_{PG}^2 = \left(1 - M_\infty^2\right)
 # ```
 
-# The Prandtl-Glauert transformation $\phi(x,y,z; \beta) \to \bar\phi(\bar x, \bar y, \bar z)$ converts this equation into an equivalent incompressible flow problem in a "morphed" geometric space. This "bar" map simultaneously scales the coordinates $(\bar x,\bar y, \bar z) = (x,\beta y, \beta z)$ and the potential $\bar\phi = \beta^2 \phi$. Hence the transformed equation satisfies the Laplace equation $\bar\nabla^2 \bar\phi = 0$, where $\bar\nabla$ is differentiation with respect to the transformed coordinates.
+# The Prandtl-Glauert transformation $\phi(x,y,z; \beta_{PG}) \to \bar\phi(\bar x, \bar y, \bar z)$ converts this equation into an equivalent incompressible flow problem in a transformed geometric space. This "bar" map scales the coordinates $(\bar x,\bar y, \bar z) = (x,\beta_{PG} y, \beta_{PG} z)$ and the potential $\bar\phi = \beta_{PG}^2 \phi$ in sequence. Hence the transformed equation satisfies the Laplace equation with the Neumann boundary condition:
+# ```math
+# \begin{aligned}
+#     \bar\nabla^2 \bar\phi & = 0, \\
+#     \bar{\mathbf V} \cdot \hat{\bar{\mathbf n}} & = 0,
+# \end{aligned}
+# ```
+# where $\bar\nabla$ is differentiation with respect to the transformed coordinates and $\hat{\bar{\mathbf n}} = (\beta_{PG} \hat n_x, \hat n_y, \hat n_z)$ which can be proved by computing the appropriate cross product. 
+
+# As the circulation is a scalar (hence invariant of the coordinate transformation but not the potential scaling), the inverse is also readily derived.
+# ```math
+# \begin{aligned}
+#     \Gamma & = \int \mathbf V \cdot d\boldsymbol\ell = \int \nabla\phi \cdot d\boldsymbol\ell, \\
+#     \bar{\Gamma} & = \int \bar{\mathbf V} \cdot d\bar {\boldsymbol\ell} = \int\bar\nabla\bar\phi \cdot d\bar{\boldsymbol\ell}, \\
+#     \implies \Gamma & = \bar{\Gamma} / \beta_{PG}^2
+# \end{aligned}
+# ```
+# Hence the solution of the resultant incompressible system in transformed coordinates provides the necessary quantities of interest for calculating the dynamics.
 
 # ## Structures
 
@@ -117,20 +118,20 @@
 # Define $\mathbf x = [\boldsymbol\Gamma, \boldsymbol\delta, \alpha]$ as the state vector satisfying the residual equations:
 
 # ```math
-# \begin{align*}
+# \begin{aligned}
 #     \mathcal R_A(\mathbf x) & = \mathbf A(\boldsymbol\delta) \boldsymbol\Gamma - \mathbf V_\infty(\alpha) \cdot [\mathbf n_i(\boldsymbol\delta)]_{i = 1,\ldots, N} \\
 #     \mathcal R_S(\mathbf x) & = \mathbf K \boldsymbol\delta - \mathbf f(\boldsymbol\delta, \boldsymbol\Gamma, \alpha) \\
 #     \mathcal R_L(\mathbf x) & = L(\boldsymbol\delta, \boldsymbol\Gamma, \alpha) - n W \\
-# \end{align*}
+# \end{aligned}
 # ```
 
-# where the lift $L$ is obtained from the Kutta-Jowkowski theorem.
+# where the lift $L$ is obtained by transforming forces computed via the Kutta-Jowkowski theorem into wind axes.
 
 # ```math
-# [D, Y, L] = \mathbf R_B^W(\alpha, \beta)\left(\sum_{i = 1}^N \rho \mathbf V_i \times  \boldsymbol\Gamma_i \mathbf l_i(\boldsymbol\delta)\right)
+# [D, Y, L] = \mathbf R_B^W(\alpha, \beta)\left(\sum_{i = 1}^N \rho \mathbf V_i \times  \boldsymbol\Gamma_i \boldsymbol \ell_i(\boldsymbol\delta)\right)
 # ```
 
-# and the structural load vector $\mathbf f$ is obtained from conservative and consistent load averaging of the nearfield Kutta-Jowkowski forces.
+# and the structural load vector $\mathbf f$ is obtained from conservative and consistent load averaging of the Kutta-Jowkowski forces in geometric axes.
 
 # ```math
 
@@ -140,10 +141,10 @@
 
 # ### Longitudinal Motion
 
-# A standard three degrees-of-freedom rigid body model is used for performing flight dynamics analyses in the 2-dimensional longitudinal plane formulated as an initial-value problem. The coupled differential equations are shown in a canonical state-space representation, with the time-evolution of the state vector $\mathbf x$ driven by the forcing function $\mathbf f$ are shown below subject to initial conditions $\mathbf x_0$.
+# A standard three degrees-of-freedom rigid body model is used for performing flight dynamics analyses in the 2-dimensional longitudinal plane formulated as an initial-value problem. The coupled differential equations are shown in a canonical state-space representation subject to initial conditions $\mathbf x_0$, with the time-evolution of the state vector $\mathbf x$ driven by the forcing function $\mathbf f$.
 
 # ```math
-# \begin{align*}
+# \begin{aligned}
 #     \frac{d\mathbf x}{dt} & = \mathbf f(\mathbf x, t) \\
 #     \frac{d}{dt}
 #     \begin{bmatrix}
@@ -166,7 +167,7 @@
 #         g(\mathbf x, t) \\
 #         -c_T T
 #     \end{bmatrix}
-# \end{align*}
+# \end{aligned}
 # ```
 # The fuel burn over time (viz. reduction of mass $m$) is computed using a specific fuel consumption value with a linear dependence on the thrust. A manual controller law for the elevator deflection angle $\delta_e$ can also be implemented by providing the function $g(\mathbf x, t)$.
 
