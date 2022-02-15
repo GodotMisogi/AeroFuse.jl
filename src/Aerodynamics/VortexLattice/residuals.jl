@@ -65,6 +65,6 @@ function residual(r, n, hs, Γs, U, Ω)
    dot(induced_velocity(r, hs, Γs, U, Ω), n)
 end 
 
-aerodynamic_residuals(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(collocation_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
+solve_nonlinear(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(collocation_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
 
-aerodynamic_residuals!(R, horseshoes, Γs, U_hat, Ω_hat) = map!(hs -> residual(collocation_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)
+solve_nonlinear!(R, horseshoes, Γs, U_hat, Ω_hat) = map!(hs -> residual(collocation_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)

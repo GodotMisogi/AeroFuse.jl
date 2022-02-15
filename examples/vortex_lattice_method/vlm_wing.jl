@@ -30,7 +30,7 @@ fs  = Freestream(
 
 # Reference values
 refs = References(
-                  speed     = 150.0,
+                  speed     = 150,
                   density   = 1.225,
                   viscosity = 1.5e-5,
                   area      = projected_area(wing),
@@ -74,7 +74,6 @@ CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 nf_v = [ CDi_nf + CDv; CDv; nf ]
 ff_v = [ CDi_ff + CDv; CDv; ff ]
 print_coefficients(nf_v, ff_v, :wing)
-
 
 ## Evaluate case with stability derivatives
 @time dv_data = solve_case_derivatives(aircraft, fs, refs;
@@ -211,7 +210,7 @@ plt_CDi_ff = plot(camera = (60,45))
 # CL
 plt_CL_ff = plot(camera = (45,45))
 [ plot!(
-    res_p[:,1,n], res_p[:,2,n], res_p[:,5,n], 
+    res_p[:,1,n], res_p[:,2,n], res_p[:,8,n], 
     ylabel = "α", xlabel = "V", zlabel = "CL_ff", 
     label = "", c = :black,
 ) for n in axes(res_p,3) ]

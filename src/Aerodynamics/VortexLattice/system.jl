@@ -92,12 +92,7 @@ Compute the velocities on the surface given the `VortexLatticeSystem` after perf
 """
 surface_velocities(system :: VortexLatticeSystem; axes = Geometry()) = surface_velocities(system, axes)
 
-function surface_velocities(system :: VortexLatticeSystem, ::Geometry)
-    Vs = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega)
-    M  = mach_number(system.references)
-    # Massive hack to pass tests
-    ifelse(M > 0.3, prandtl_glauert_inverse_scale_velocities.(Vs, √(1 - M^2)), Vs)
-end
+surface_velocities(system :: VortexLatticeSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega)
 
 surface_velocities(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
 
