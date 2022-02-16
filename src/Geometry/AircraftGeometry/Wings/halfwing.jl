@@ -60,7 +60,7 @@ function HalfWing(;
         w_sweep   = 0.0,
         position  = zeros(3),
         angle     = 0.,
-        axis      = SVector(1., 0., 0.)
+        axis      = SVector(0., 1., 0.)
     )
 
     HalfWing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep, position, angle, axis)

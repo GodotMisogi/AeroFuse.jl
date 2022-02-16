@@ -62,7 +62,7 @@ Wing(;
         foils     = fill(naca4(0,0,1,2), length(chords)),
         position  = zeros(3),
         angle     = 0.,
-        axis      = SVector(1., 0., 0.)
+        axis      = SVector(0., 1., 0.)
     ) = Wing(HalfWing(foils = foils, chords = chords, twists = twists, spans = spans / 2, dihedrals = dihedrals, sweeps = sweeps, w_sweep = w_sweep, position = position, angle = angle, axis = axis))
 
 """
