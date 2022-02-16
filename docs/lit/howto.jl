@@ -75,8 +75,9 @@ normals  = normal_vector.(panels)      # Normals
 locs     = panel_location.(panels);   # Upper or lower surface
 
 # ## Wing Geometry
+# How to work with wing geometry.
 # 
-## To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
+# To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
 airfoil    = naca4((2,4,1,2))
 wing_right = HalfWing(foils     = [ airfoil for i in 1:3 ],
                       chords    = [0.4, 0.2, 0.1],
@@ -222,6 +223,12 @@ system = solve_case(
              print            = true, # Prints the results for only the aircraft
              print_components = true, # Prints the results for all components
             )
+
+# If needed, you can access the relevant component influence matrix values and boundary conditions with the following attributes, e.g.
+system.influence_matrix[:wing] # Or :htail, :vtail
+system.influence_matrix[:wing, :htail];
+
+system.boundary_vector[:wing]
 
 # ### Dynamics
 # 
