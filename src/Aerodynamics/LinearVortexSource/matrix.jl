@@ -21,8 +21,8 @@ influence_coefficient(velocity_func :: F, angle_func, panel_j :: AbstractPanel2D
 
 function two_point_matrix(vel_a :: F, vel_b :: G, panels_1, panels_2) where F where G
     N     = min(length(panels_1), length(panels_2))
-    inf_a = neumann_influence_matrix(vel_a, panel_normal, panels_1, panels_2)
-    inf_b = neumann_influence_matrix(vel_b, panel_normal, panels_1, panels_2)
+    inf_a = neumann_influence_matrix(vel_a, normal_vector, panels_1, panels_2)
+    inf_b = neumann_influence_matrix(vel_b, normal_vector, panels_1, panels_2)
     [ inf_a zeros(N) ] + [ zeros(N) inf_b ]
 end
 
@@ -42,7 +42,7 @@ vortex_influence_matrix(panels) = [ linear_vortex_matrix(panels, panels); kutta_
 source_velocity(σ1, panel :: AbstractPanel2D, x, y) = panel_velocity(constant_source_velocity, σ1, panel, x, y)
 source_velocity(σ_j, panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D) = panel_velocity(constant_source_velocity, σ_j, panel_j, panel_i)
 
-constant_source_influence_coefficient(panel_j, panel_i) = ifelse(panel_i === panel_j, 0.5, influence_coefficient(constant_source_velocity, panel_normal, panel_j, panel_i))
+constant_source_influence_coefficient(panel_j, panel_i) = ifelse(panel_i === panel_j, 0.5, influence_coefficient(constant_source_velocity, normal_vector, panel_j, panel_i))
 
 constant_source_matrix(panels) = [ constant_source_influence_coefficient(panel_j, panel_i) for (panel_j, panel_i) in product(panels, panels)]
 
@@ -52,6 +52,6 @@ neumann_influence_matrix(func, angle_func, panel_is, panel_js) = [ influence_coe
 #============================================#
 
 
-constant_source_boundary_condition(panels, u) = -map(pan -> dot(u, panel_normal(pan)), panels)
+constant_source_boundary_condition(panels, u) = -map(pan -> dot(u, normal_vector(pan)), panels)
 
 neumann_boundary_condition(panels, u) = [ constant_source_boundary_condition(panels, u); 0 ]

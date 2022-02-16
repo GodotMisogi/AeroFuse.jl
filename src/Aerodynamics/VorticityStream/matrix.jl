@@ -80,7 +80,7 @@ boundary(colpoints, uni) = - [ [ stream(uni, x, y) for (x, y) in colpoints ]; 0 
 
 # source_matrix(panels_1 :: Vector{<: AbstractPanel2D}, panels_2 :: Vector{<: AbstractPanel2D}) = [ source_influence(panel_j, panel_i) for panel_i ∈ panels_1, panel_j ∈ panels_2 ]
 
-# source_strengths(panels :: Vector{<: AbstractPanel2D}, u) = dot.(Ref(u), panel_normal.(panels))
+# source_strengths(panels :: Vector{<: AbstractPanel2D}, u) = dot.(Ref(u), normal_vector.(panels))
 
 # boundary_vector(panels :: Vector{<: AbstractPanel2D}, u) = [ - source_matrix(panels, panels) * source_strengths(panels, u); 0 ]
 

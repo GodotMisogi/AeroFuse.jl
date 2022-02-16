@@ -14,7 +14,7 @@ import ..Laplace: Uniform2D, magnitude, angle, velocity
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector
 
 import ..AeroMDAO: solve_system, surface_velocities, surface_coefficients
 
@@ -43,7 +43,7 @@ function source_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D
     source_potential(1., xp, yp, 0., panel_length(panel_j))
 end
 
-boundary_condition(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D, u) = -source_influence(panel_j, panel_i) * dot(u, panel_normal(panel_j))
+boundary_condition(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D, u) = -source_influence(panel_j, panel_i) * dot(u, normal_vector(panel_j))
 
 ## Aerodynamic coefficients
 #===========================================================================#

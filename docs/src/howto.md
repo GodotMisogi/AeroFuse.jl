@@ -102,7 +102,7 @@ AeroMDAO provides more helper functions for the panel geometry.
 panels   = system.surface_panels
 pts      = collocation_point.(panels) # Collocation points
 tangents = panel_tangent.(panels)     # Tangents
-normals  = panel_normal.(panels)      # Normals
+normals  = normal_vector.(panels)      # Normals
 locs     = panel_location.(panels);   # Upper or lower surface
 nothing #hide
 ```
