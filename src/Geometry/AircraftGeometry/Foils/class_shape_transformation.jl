@@ -29,7 +29,7 @@ The foil is defined by arrays of coefficients ``(α_u,~ α_l)`` for the upper an
 """
 function kulfan_CST(alpha_u, alpha_l, (dz_u, dz_l) = (0., 0.), (LE_u, LE_l) = (0., 0.), n :: Integer = 40, N1 = 0.5, N2 = 1.)
     # Cosine spacing for airfoil of unit chord length
-    xs = cosine_spacing(0.5, 1, n)
+    xs = cosine_interpolation(0.5, 1, n)
 
     # λ-function for Bernstein polynomials
     bernie(x, alphas, dz, LE) = CST_coordinates(y -> bernstein_class(y, N1, N2), bernstein_basis, x, alphas, dz, LE)
@@ -55,7 +55,7 @@ The foil is defined by arrays of coefficients ``(α_c,~ α_t)`` for the upper an
 """
 function camber_CST(α_cam, α_thicc, dz_thicc = 0., coeff_LE = 0, n :: Integer = 40, N1 = 0.5, N2 = 1.)
     # Cosine spacing for airfoil of unit chord length
-    xs = cosine_spacing(0.5, 1, n)
+    xs = cosine_interpolation(0.5, 1, n)
 
     # λ-function for Bernstein polynomials
     bernie(x, αs, dz = 0.) = CST_coordinates(y -> bernstein_class(y, N1, N2), bernstein_basis, x, αs, dz, coeff_LE)

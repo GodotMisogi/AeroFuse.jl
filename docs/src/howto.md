@@ -38,7 +38,7 @@ A basic cosine interpolation functionality is provided for foils.
 
 ```@example howto
 # Cosine spacing with approx. 51 points on upper and lower surfaces each
-cos_foil = cosine_spacing(my_foil, 51)
+cos_foil = cosine_interpolation(my_foil, 51)
 ```
 
 The upper and lower surfaces can be obtained by the following variety of functions.

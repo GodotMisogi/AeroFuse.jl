@@ -64,7 +64,7 @@ function wake_panels(panels, chord, length, num)
     _, firsty  = (p1 ∘ first)(panels)
     _, lasty   = (p2 ∘ last)(panels)
     y_mid      = (firsty + lasty) / 2
-    bounds     = cosine_spacing(chord + length / 2, length, num)
+    bounds     = cosine_interpolation(chord + length / 2, length, num)
     @. WakePanel2D(SVector(bounds[1:end-1], y_mid), SVector(bounds[2:end], y_mid))
 end
 

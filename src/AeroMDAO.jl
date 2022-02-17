@@ -55,7 +55,7 @@ export solve_linear, solve_nonlinear, solve_nonlinear!, collocation_point
 include("Tools/MathTools.jl")
 import .MathTools: forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
 
-# export forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
+# export forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_interpolation, sine_spacing
 
 
 ## Non-dimensionalization
@@ -79,13 +79,31 @@ export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Pa
 #==========================================================================================#
 
 include("Geometry/AircraftGeometry/AircraftGeometry.jl")
-import .AircraftGeometry: AbstractAircraft, AbstractWing, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_spacing, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, rotate, affine, scale, camber, camber_line, control_surface, # 2D setups
-Fuselage, projected_area, length, cosine_spacing, # Fuselage
-HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_chords, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties
 
-export AbstractAircraft, AbstractWing, AbstractFoil, Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_spacing, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, rotate, affine, scale, camber, camber_line, control_surface, # 2D setups
-Fuselage, projected_area, length, cosine_spacing, # Fuselage
-HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_chords, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties
+# Abstract types
+import .AircraftGeometry: AbstractAircraft, AbstractWing, AbstractFoil
+
+export AbstractAircraft, AbstractWing, AbstractFoil
+
+# Foil
+import .AircraftGeometry: Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, camber, camber_line, control_surface
+
+export Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, camber, camber_line, control_surface
+
+# Fuselage
+import .AircraftGeometry: Fuselage, projected_area, length, cosine_interpolation
+
+export Fuselage, projected_area, length, cosine_interpolation
+
+# Wing
+import .AircraftGeometry: HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_chords, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties
+
+export HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_chords, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, normal_vectors, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties
+
+# Controls
+# import .AircraftGeometry: WingControlSurface
+
+# export WingControlSurface
 
 make_horseshoes(wing :: WingMesh) = StructArray(Horseshoe.(chord_panels(wing), normal_vectors(wing)))
 

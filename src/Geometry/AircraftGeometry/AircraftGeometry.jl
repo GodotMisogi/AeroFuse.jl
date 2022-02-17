@@ -56,6 +56,7 @@ include("Wings/wing.jl")
 include("Wings/mesh_tools.jl")
 include("Wings/mesh_wing.jl")
 include("Wings/controls.jl")
+include("Wings/sections.jl")
 
 """
     span(wing :: AbstractWing)
