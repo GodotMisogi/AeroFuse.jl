@@ -151,7 +151,7 @@ end
 function make_panels(wing :: AbstractWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
     horseshoe_panels = mesh_chords(wing, span_num, chord_num; spacings = spacings)
     camber_panels    = mesh_cambers(wing, span_num, chord_num; spacings = spacings)
-    horseshoe_panels, panel_normal.(camber_panels)
+    horseshoe_panels, normal_vector.(camber_panels)
 end
 
 make_panels(wing :: AbstractWing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(wing, [span_num], chord_num; spacings = spacings)
@@ -191,7 +191,6 @@ surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chor
 
 chord_panels(wing :: WingMesh) = make_panels(wing.chord_mesh)
 camber_panels(wing :: WingMesh) = make_panels(wing.camber_mesh)
-normal_vectors(wing :: WingMesh) = panel_normal.(camber_panels(wing))
 
 function Base.show(io :: IO, mesh :: WingMesh)
     n_c, n_s = size(mesh.chord_mesh) .- 1

@@ -43,7 +43,7 @@ end
 
 panel_angle(panel :: AbstractPanel2D) = let (x, y) = panel_vector(panel); atan(y, x) end
 panel_tangent(panel :: AbstractPanel2D) = rotation(1., 0., -panel_angle(panel))
-panel_normal(panel :: AbstractPanel2D) = inverse_rotation(0., 1., panel_angle(panel))
+normal_vector(panel :: AbstractPanel2D) = inverse_rotation(0., 1., panel_angle(panel))
 panel_location(panel :: AbstractPanel2D) = let angle = panel_angle(panel); ifelse((π/2 <= angle <= π) || (-π <= angle <= -π/2), "lower", "upper") end
 
 panel_points(panels) = [ p1.(panels); [(p2 ∘ last)(panels)] ]
@@ -64,7 +64,7 @@ function wake_panels(panels, chord, length, num)
     _, firsty  = (p1 ∘ first)(panels)
     _, lasty   = (p2 ∘ last)(panels)
     y_mid      = (firsty + lasty) / 2
-    bounds     = cosine_interpolation(chord + length / 2, length, num)
+    bounds     = cosine_spacing(chord + length / 2, length, num)
     @. WakePanel2D(SVector(bounds[1:end-1], y_mid), SVector(bounds[2:end], y_mid))
 end
 
