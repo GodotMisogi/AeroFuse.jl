@@ -11,47 +11,13 @@ function plot_planform(mesh :: Matrix{SVector{3,T}}) where T <: Real
                     mesh[end:-1:1,1] 
                 ]
                     
-    permutedims(combinedimsview(coords)) # .|> coords -> tuple(coords...)
+    permutedims(combinedimsview(coords))
 end
 
 plot_planform(wing :: AbstractWing) = plot_planform(coordinates(wing))
 
 plot_streamlines(system :: VortexLatticeSystem, points, length, num_steps) = Tuple.(streamlines(system, points, length, num_steps))
 
-plot_surface(wing :: AbstractWing, span_num = [5], chord_num = 30) = plot_panels(mesh_wing(wing, span_num, chord_num))
+plot_surface(wing :: AbstractWing) = plot_panels(mesh_wing(wing, [length(spans(wing))], minimum(length, foil.x for foil in foils(wing))))
 
-
-## Doublet-source
-#==========================================================================================#
-
-## Plotting domain
-# x_domain, y_domain = (-1, 2), (-1, 1)
-# grid_size = 50
-# x_dom, y_dom = linspace(x_domain..., grid_size), linspace(y_domain..., grid_size)
-# grid = x_dom × y_dom
-
-# vels, pots = grid_data(dub_src_panels, grid)
-# cp = pressure_coefficient.(uniform.magnitude, vels);
-
-# lower_panels, upper_panels = split_panels(dub_src_panels);
-
-# ## Airfoil plot
-# plot( (first ∘ collocation_point).(upper_panels), (last ∘ collocation_point).(upper_panels), 
-#         label = "Upper", markershape = :circle,
-#         xlabel = "x", ylabel = "C_p")
-# plot!((first ∘ collocation_point).(lower_panels), (last ∘ collocation_point).(lower_panels),
-#         label = "Lower", markershape = :circle,
-#         xlabel = "x", ylabel = "C_p")
-
-# ## Pressure coefficient
-# plot( (first ∘ collocation_point).(upper_panels), :cp .<< upper_panels, 
-#         label = "Upper", markershape = :circle, 
-#         xlabel = "x", ylabel = "C_p")
-# plot!((first ∘ collocation_point).(upper_panels), :cp .<< lower_panels, 
-#         label = "Lower", markershape = :circle, yaxis = :flip)
-
-# ## Control volume
-# p1 = contour(x_dom, y_dom, cp, fill = true)
-# plot(p1)
-# plot!(first.(:start .<< panels), last.(:start .<< panels), 
-#       color = "black", label = "Airfoil", aspect_ratio = :equal)
+plot_surface(wing :: AbstractWing, span_num, chord_num) = plot_panels(mesh_wing(wing, span_num, chord_num))
