@@ -51,37 +51,37 @@ BenchmarkTools.Trial: 54 samples with 1 evaluation.
 2. Desktop i7-8700, 3.2 GHz:
 
 AeroMDAO Aircraft -
-BenchmarkTools.Trial: 117 samples with 1 evaluation.
- Range (min … max):  38.145 ms … 50.611 ms  ┊ GC (min … max): 0.00% … 14.44%
- Time  (median):     42.109 ms              ┊ GC (median):    0.00%
- Time  (mean ± σ):   42.735 ms ±  2.676 ms  ┊ GC (mean ± σ):  2.04% ±  4.23%
+BenchmarkTools.Trial: 129 samples with 1 evaluation.
+ Range (min … max):  35.086 ms … 48.578 ms  ┊ GC (min … max): 0.00% … 19.38%
+ Time  (median):     38.644 ms              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   38.943 ms ±  2.573 ms  ┊ GC (mean ± σ):  1.77% ±  4.76%
 
-          ▂ ▁    ▁▁ █      ▂                                   
-  ▃▁▃▅▃▁█▆█▅██▅▃▆████▆▆▆▆███▆▅▃▆▁▁▆▅▅▃▁▅▁▁▁▁▃▅▃▃▃▁▃▁▅▃▃▁▁▁▁▁▃ ▃
-  38.1 ms         Histogram: frequency by time        50.5 ms <
+             ▂ ▂     ▂ █ ▂
+  ▃▄▅▅▃▄▄▅█▆▄███▆▇▅▆▅███▆█▄▃▃▆▄▄▁▁▁▁▁▁▁▁▁▁▁▁▁▃▁▃▁▅▁▃▁▁▁▁▃▃▃▃▃ ▃
+  35.1 ms         Histogram: frequency by time        46.9 ms <
 
- Memory estimate: 7.74 MiB, allocs estimate: 25676.
+ Memory estimate: 6.75 MiB, allocs estimate: 7347.
 
 AeroMDAO Aircraft ComponentArrays.jl -
-BenchmarkTools.Trial: 105 samples with 1 evaluation.
- Range (min … max):  41.043 ms … 56.288 ms  ┊ GC (min … max): 0.00% … 10.53%
- Time  (median):     48.111 ms              ┊ GC (median):    6.18%
- Time  (mean ± σ):   47.925 ms ±  3.472 ms  ┊ GC (mean ± σ):  4.63% ±  4.15%
+BenchmarkTools.Trial: 110 samples with 1 evaluation.
+ Range (min … max):  38.682 ms … 56.956 ms  ┊ GC (min … max): 0.00% … 16.53%
+ Time  (median):     44.918 ms              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   45.522 ms ±  4.280 ms  ┊ GC (mean ± σ):  4.55% ±  6.03%
 
-            ▆▁ █  ▁ ▃    ▁  ▃ ▁▆   ▃▁▃ █
-  ▄▄▁▄▄▁▄▄▁▇██▇█▄▇█▄█▇▄▄▄█▇▇█▄██▇▇▇███▇█▁▇▇▇▄▁▇▄▄▄▁▁▄▇▄▁▁▄▁▄▄ ▄
-  41 ms           Histogram: frequency by time        55.8 ms <
+          ▄   █▂   ▂     █▂  ▂                    ▂
+  ▆▁▄█▄▆▄██▄▆████▄▆█▄▁█████▄▄█▁▆▆▄▆▄▁█▁▁▄▆▆▁▄▁▆▆▆▆█▄▄█▁▁▁▁▄▄▄ ▄
+  38.7 ms         Histogram: frequency by time        54.7 ms <
 
- Memory estimate: 25.31 MiB, allocs estimate: 27353.
+ Memory estimate: 24.27 MiB, allocs estimate: 7366.
 
 BYU FLOW Lab VortexLattice.jl - 
-BenchmarkTools.Trial: 78 samples with 1 evaluation.
- Range (min … max):  59.888 ms … 74.836 ms  ┊ GC (min … max): 0.00% … 12.88%
- Time  (median):     64.079 ms              ┊ GC (median):    0.00%
- Time  (mean ± σ):   64.720 ms ±  3.722 ms  ┊ GC (mean ± σ):  2.18% ±  3.87%
+BenchmarkTools.Trial: 85 samples with 1 evaluation.
+ Range (min … max):  54.085 ms … 72.181 ms  ┊ GC (min … max): 0.00% … 18.03%
+ Time  (median):     58.068 ms              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   59.100 ms ±  4.199 ms  ┊ GC (mean ± σ):  2.43% ±  5.42%
 
-  ▁   ▁ ▁▆▆▁   ▁   ▁  █▁     ▁           ▁
-  █▄▇▇█▄████▇▄▁█▇▄▁█▇▄██▁▄▁▁▄█▇▄▁▄▁▇▁▁▁▇▁█▁▄▁▁▁▄▄▇▄▁▁▁▁▁▇▁▁▁▄ ▁
-  59.9 ms         Histogram: frequency by time        73.9 ms <
+           ▂   ▂  █
+  ▅▃▁▁▅▆█▅▃█▇███████▇▁▁▁▁▁▁▁▃▁▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▃▁▁▁▁▁▃▃▁▁▅▃▁▅▃▃ ▁
+  54.1 ms         Histogram: frequency by time        70.5 ms <
 
- Memory estimate: 10.44 MiB, allocs estimate: 72602.
+ Memory estimate: 10.07 MiB, allocs estimate: 72620.
