@@ -23,28 +23,29 @@ Define a `HalfWing` consisting of a single trapezoidal section.
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
 function HalfWingSection(;
-    span        = 1.,
-    dihedral    = 0.,
-    sweep       = 0.,
-    w_sweep     = 0.,
-    taper       = 1.,
-    root_chord  = 1.,
-    root_twist  = 0.,
-    tip_twist   = 0.,
-    root_foil   = naca4((0,0,1,2)),
-    tip_foil    = root_foil,
-    position    = zeros(3),
-    angle       = 0.,
-    axis        = SVector(0., 1., 0.),
-    root_control = (0., 0.75),
-    tip_control  = (0., 0.75)
-)
-    # Control surface deflections
+        span         = 1.,
+        dihedral     = 0.,
+        sweep        = 0.,
+        w_sweep      = 0.,
+        taper        = 1.,
+        root_chord   = 1.,
+        root_twist   = 0.,
+        tip_twist    = 0.,
+        root_control = (0., 0.75),
+        tip_control  = root_control,
+        root_foil    = naca4(0,0,1,2),
+        tip_foil     = root_foil,
+        position     = zeros(3),
+        angle        = 0.,
+        axis         = SVector(0., 1., 0.),
+    )
+    # Control surface deflections at root and tip
     root_foil = control_surface(root_foil; 
-                                angle = root_control[1], 
+                                angle = root_control[1],
                                 hinge = root_control[2])
+
     tip_foil  = control_surface(tip_foil; 
-                                angle = tip_control[1], 
+                                angle = tip_control[1],
                                 hinge = tip_control[2])
 
     section = HalfWing(
@@ -70,13 +71,12 @@ function HalfWingSection(S, AR, λ, Λ, δ, τ_r, τ_t, w = 0.25)
     HalfWingSection(span = AR, dihedral = δ, sweep = Λ, w_sweep = w, taper = λ, root_chord = c_r, root_twist = τ_r, tip_twist = τ_t)
 end
 
-
 """
     WingSection(; span, dihedral, sweep, taper, root_chord,
                   root_twist, tip_twist, root_foil, tip_foil,
                   position, angle, axis)
 
-Define a `Wing` consisting of two trapezoidal sections with ``y``-``z`` reflection symmetry.
+Define a `Wing` consisting of two trapezoidal sections with reflection symmetry in the ``x``-``z`` plane.
 
 # Arguments
 - `span       :: Real         = 1.`: Span length 
@@ -92,21 +92,44 @@ Define a `Wing` consisting of two trapezoidal sections with ``y``-``z`` reflecti
 - `angle      :: Real         = 0.`: Angle of rotation (degrees)
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
-WingSection(;
-        span       = 1.,
-        dihedral   = 0.,
-        sweep      = 0.,
-        w_sweep    = 0.,
-        taper      = 1.,
-        root_chord = 1.,
-        root_twist = 0.,
-        tip_twist  = 0.,
-        root_foil  = naca4((0,0,1,2)),
-        tip_foil   = root_foil,
-        position   = zeros(3),
-        angle      = 0.,
-        axis       = SVector(1., 0., 0.)
-    ) = Wing(HalfWingSection(span = span / 2, dihedral = dihedral, sweep = sweep, w_sweep = w_sweep, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis))
+function WingSection(;
+        span         = 1.,
+        dihedral     = 0.,
+        sweep        = 0.,
+        w_sweep      = 0.,
+        taper        = 1.,
+        root_chord   = 1.,
+        root_twist   = 0.,
+        tip_twist    = 0.,
+        root_control = (0., 0.75),
+        tip_control  = root_control,
+        root_foil    = naca4((0,0,1,2)),
+        tip_foil     = root_foil,
+        position     = zeros(3),
+        angle        = 0.,
+        axis         = SVector(1., 0., 0.),
+    )
+    
+    right = HalfWingSection(
+                span         = span / 2,
+                dihedral     = dihedral, 
+                sweep        = sweep, 
+                w_sweep      = w_sweep, 
+                taper        = taper, 
+                root_chord   = root_chord, 
+                root_twist   = root_twist,
+                tip_twist    = tip_twist,
+                root_control = root_control,
+                tip_control  = tip_control,
+                root_foil    = root_foil,
+                tip_foil     = tip_foil,
+                position     = position,
+                angle        = angle,
+                axis         = axis
+            )
+
+    Wing(right)
+end
 
 ## Standard stabilizers (non-exhaustive)
 #==========================================================================================#
