@@ -34,7 +34,7 @@ function HalfWing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep = 0.,
                 )
 
     # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
-    # foils = cosine_spacing.(foils, 60)
+    # foils = cosine_interpolation.(foils, 60)
 
     # Convert angles to radians, adjust twists to leading edge, and generate HalfWing
     HalfWing(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), sweeps, affine)
@@ -64,61 +64,6 @@ function HalfWing(;
     )
 
     HalfWing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep, position, angle, axis)
-end
-
-"""
-    HalfWingSection(; span, dihedral, sweep, taper, root_chord,
-                      root_twist, tip_twist, root_foil, tip_foil,
-                      position, angle, axis)
-
-Define a `HalfWing` consisting of a single trapezoidal section.
-
-# Arguments
-- `span       :: Real         = 1.`: Span length 
-- `dihedral   :: Real         = 1.`: Dihedral angle (degrees)
-- `sweep      :: Real         = 0.`: Leading-edge sweep angle (degrees)
-- `taper      :: Real         = 1.`: Taper ratio of tip to root chord
-- `root_chord :: Real         = 1.`: Root chord length
-- `root_twist :: Real         = 0.`: Twist angle at root (degrees)
-- `tip_twist  :: Real         = 0.`: Twist angle at tip (degrees)
-- `root_foil  :: Foil         = naca4((0,0,1,2))`: Foil coordinates at root
-- `tip_foil   :: Foil         = root_foil`: Foil coordinates at tip
-- `position   :: Vector{Real} = zeros(3)`: Position
-- `angle      :: Real         = 0.`: Angle of rotation (degrees)
-- `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
-"""
-HalfWingSection(;
-        span        = 1.,
-        dihedral    = 0.,
-        sweep       = 0.,
-        w_sweep     = 0.,
-        taper       = 1.,
-        root_chord  = 1.,
-        root_twist  = 0.,
-        tip_twist   = 0.,
-        root_foil   = naca4((0,0,1,2)),
-        tip_foil    = root_foil,
-        position    = zeros(3),
-        angle       = 0.,
-        axis        = SVector(0., 1., 0.)
-    ) = HalfWing(
-            foils     = [root_foil, tip_foil],
-            chords    = [root_chord, taper * root_chord],
-            twists    = [root_twist, tip_twist],
-            spans     = [span],
-            dihedrals = [dihedral],
-            sweeps    = [sweep],
-            w_sweep   = w_sweep,
-            position  = position,
-            angle     = angle,
-            axis      = axis
-        )
-
-function HalfWingSection(S, AR, λ, Λ, δ, τ_r, τ_t, w = 0.25)
-    b    = S^2 / AR
-    c_r  = 2 * S / (b * (1 + λ))
-
-    HalfWingSection(span = AR, dihedral = δ, sweep = Λ, w_sweep = w, taper = λ, root_chord = c_r, root_twist = τ_r, tip_twist = τ_t)
 end
 
 # Getters
@@ -154,13 +99,6 @@ span(wing :: HalfWing) = sum(wing.spans)
 
 taper_ratio(wing :: HalfWing) = last(wing.chords) / first(wing.chords)
 
-"""
-    projected_area(wing :: AbstractWing)
-
-Compute the projected (or planform) area of an `AbstractWing` on the ``x``-``y`` plane.
-"""
-projected_area
-
 function projected_area(wing :: HalfWing)
     mean_chords = forward_sum(wing.chords) / 2 # Mean chord lengths of sections.
     mean_twists = forward_sum(wing.twists) / 2 # Mean twist angles of sections
@@ -171,25 +109,11 @@ section_macs(wing :: HalfWing) = @views mean_aerodynamic_chord.(wing.chords[1:en
 
 section_projected_areas(wing :: HalfWing) = wing.spans .* forward_sum(wing.chords) / 2
 
-"""
-    mean_aerodynamic_chord(wing :: AbstractWing)
-
-Compute the mean aerodynamic chord of an `AbstractWing`.
-"""
-mean_aerodynamic_chord
-
 function mean_aerodynamic_chord(wing :: HalfWing)
     areas = section_projected_areas(wing)
     macs  = section_macs(wing)
     sum(macs .* areas) / sum(areas)
 end
-
-"""
-    mean_aerodynamic_center(wing :: AbstractWing)
-
-Compute the mean aerodynamic center of an `AbstractWing`.
-"""
-mean_aerodynamic_center
 
 function mean_aerodynamic_center(wing :: HalfWing, factor = 0.25)
     # Compute mean aerodynamic chords and projected areas

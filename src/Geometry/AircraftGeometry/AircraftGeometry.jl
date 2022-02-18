@@ -56,6 +56,7 @@ include("Wings/wing.jl")
 include("Wings/mesh_tools.jl")
 include("Wings/mesh_wing.jl")
 include("Wings/controls.jl")
+include("Wings/sections.jl")
 
 """
     span(wing :: AbstractWing)
@@ -105,6 +106,55 @@ taper_ratio(wing :: AbstractWing) = taper_ratio(wing)
 Compute the generic properties of interest (span, area, etc.) of an `AbstractWing`.
 """
 properties(wing :: AbstractWing) = [ aspect_ratio(wing), span(wing), projected_area(wing), mean_aerodynamic_chord(wing), mean_aerodynamic_center(wing) ]
+
+"""
+    mesh_chords(wing :: AbstractWing, n_s :: Vector{Integer}, n_c :: Integer; flip = false)
+
+Mesh the span and chord distributions of an `AbstractWing` with ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions.
+"""
+mesh_chords(wing :: AbstractWing, span_num, chord_num; spacings = symmetric_spacing(wing)) = mesh_chords(wing, span_num, chord_num; spacings = spacings)
+
+"""
+    mesh_wing(wing :: AbstractWing, n_s :: Vector{Integer}, n_c :: Integer; flip = false)
+
+Mesh the span and airfoil coordinate distributions of an `AbstractWing` with ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions.
+"""
+mesh_wing(wing :: AbstractWing, span_num, chord_num; spacings = symmetric_spacing(wing)) = mesh_wing(wing, span_num, chord_num; spacings = spacings)
+
+"""
+    mesh_cambers(wing :: AbstractWing, n_s :: Integer, n_c :: Integer; spacings = symmetric_spacing(wing))
+
+Mesh the camber distribution of a `Wing` into panels of ``n_s`` spanwise divisions per section and ``n_c`` chordwise divisions with an `AbstractSpacing`` distribution.
+"""
+mesh_cambers(wing :: AbstractWing, span_num, chord_num; spacings = symmetric_spacing(wing)) = mesh_cambers(wing, span_num, chord_num; spacings = spacings)
+
+"""
+    coordinates(wing :: AbstractWing, n_s :: Integer, n_c :: Integer, flip = false)
+
+Compute the planform coordinates of a `HalfWing` given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels..
+"""
+coordinates(wing :: AbstractWing, span_num, chord_num; span_spacing = Cosine(), chord_spacing = Cosine()) = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
+
+"""
+    chord_coordinates(wing :: AbstractWing, n_s :: Integer, n_c :: Integer, flip = false)
+
+Compute the chord coordinates of an `AbstractWing` given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+"""
+chord_coordinates(wing :: AbstractWing, span_num, chord_num; span_spacing = Cosine(), chord_spacing = Cosine()) = chord_coordinates(wing, span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
+
+"""
+    camber_coordinates(wing :: AbstractWing, n_s :: Integer, n_c :: Integer, flip = false)
+
+Compute the camber coordinates of an `AbstractWing` given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+"""
+camber_coordinates(wing :: AbstractWing, span_num, chord_num; span_spacing = Cosine(), chord_spacing = Cosine()) = camber_coordinates(wing, span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
+
+"""
+    surface_coordinates(wing :: AbstractWing, n_s :: Integer, n_c :: Integer, flip = false)
+
+Compute the surface coordinates of an `AbstractWing` given numbers of spanwise ``n_s`` and chordwise ``n_c`` panels, with an option to flip the signs of the ``y``-coordinates.
+"""
+surface_coordinates(wing :: AbstractWing, span_num, chord_num; span_spacing = Cosine(), chord_spacing = Cosine()) = surface_coordinates(wing, span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
 
 function Base.show(io :: IO, wing :: AbstractWing)
     println(io, supertype(typeof(wing)),  " with ", length(spans(wing)), " spanwise section(s).")

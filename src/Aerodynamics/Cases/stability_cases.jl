@@ -3,7 +3,7 @@
 
 function scale_inputs(fs :: Freestream, refs :: References)
     # Scaling rate coefficients
-    scale = [refs.span, refs.chord, refs.span] ./ (2 * refs.speed)
+    scale = (refs.span, refs.chord, refs.span) ./ (2 * refs.speed)
 
     # Building input vector
     x0 = [ refs.speed;
@@ -73,10 +73,10 @@ end
 ## Linearized stability analysis
 #==========================================================================================#
 
-function longitudinal_stability_derivatives(dvs, U, m, I, Q, S, c)
+function longitudinal_stability_derivatives(dvs, U, m, Iyy, Q, S, c)
     QS  = Q * S
     c1  = QS / (m * U) 
-    c2  = QS / (I[2] * U)
+    c2  = QS / (Iyy * U)
 
     X_u = c1 * dvs.CX_speed
     Z_u = c1 * dvs.CZ_speed
@@ -99,11 +99,11 @@ longitudinal_stability_matrix(X_u, Z_u, M_u, X_w, Z_w, M_w, X_q, Z_q, M_q, U₀,
       M_u M_w       M_q         0
        0   0         1          0 ]
 
-function lateral_stability_derivatives(dvs, U, m, I, Q, S, b)
+function lateral_stability_derivatives(dvs, U, m, Iyy, Izz, Q, S, b)
     QS  = Q * S
     c1  = QS / (m * U) 
-    c2  = QS / (I[1] * U)
-    c3  = QS / (I[3] * U)
+    c2  = QS / (Ixx * U)
+    c3  = QS / (Izz * U)
 
     Y_v = c1 * dvs.CY_beta
     L_v = c2 * dvs.Cl_beta * b

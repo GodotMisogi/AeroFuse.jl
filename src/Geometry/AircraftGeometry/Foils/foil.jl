@@ -70,6 +70,15 @@ function rotate(foil :: Foil; angle, center = zeros(2))
     @views Foil(rotate[:,1] .+ center[1], rotate[:,2] .+ center[2], foil.name) # Inverse translate
 end
 
+function interpolate(foil :: Foil, xs)
+    upper, lower = split_surface(foil)
+
+    y_u = @views LinearInterpolation(upper[:,1], upper[:,2]).(xs)
+    y_l = @views LinearInterpolation(lower[:,1], lower[:,2]).(xs)
+
+    @views Foil([ xs[end:-1:2]; xs ], [ y_u[end:-1:2]; y_l ], foil.name)
+end
+
 affine(foil :: Foil; angle, vector) = translate(rotate(foil; angle = angle); vector = vector)
 
 """
@@ -103,17 +112,15 @@ Split the `Foil` coordinates into upper and lower surfaces.
 split_surface(foil :: Foil) = upper_surface(foil), lower_surface(foil)
 
 """
-    cosine_spacing(foil :: Foil, num :: Integer)
+    cosine_interpolation(foil :: Foil, n :: Integer = 40)
 
-Interpolate a `Foil` profile's coordinates by projecting the x-coordinates of a circle onto the geometry with ``2n`` points.
+Interpolate a `Foil` profile's coordinates to a cosine by projecting the x-coordinates of a circle onto the geometry with ``2n`` points.
 """
-function cosine_spacing(foil :: Foil, n :: Integer = 40)
-    upper, lower = split_surface(foil)
+function cosine_interpolation(foil :: Foil, n :: Integer = 40)
+    x_min, x_max = extrema(foil.x)
+    x_circ = cosine_spacing((x_min + x_max) / 2, x_max - x_min, n)
 
-    upper_cos = cosine_interp(upper, n)
-    lower_cos = cosine_interp(lower, n)
-
-    @views Foil([ upper_cos[end:-1:2,:]; lower_cos ], foil.name)
+    interpolate(foil, x_circ)
 end
 
 function camber_line(foil :: Foil, n = 60)
@@ -137,7 +144,7 @@ function make_panels(foil :: Foil)
     @views Panel2D.(vecs[2:end,:], vecs[1:end-1,:])[end:-1:1]
 end
 
-make_panels(foil :: Foil, n :: Integer) = make_panels(cosine_spacing(foil, n ÷ 2))
+make_panels(foil :: Foil, n :: Integer) = make_panels(cosine_interpolation(foil, n ÷ 2))
 
 function camber(foil :: Foil, x_by_c)
     upper, lower = split_surface(foil)
@@ -146,7 +153,6 @@ function camber(foil :: Foil, x_by_c)
 
     (y_u + y_l) / 2
 end
-
 
 function control_surface(foil :: Foil, δ, xc_hinge)
     y_hinge  = camber(foil, xc_hinge)
@@ -174,7 +180,7 @@ Convert 2-dimensional coordinates to its camber-thickness representation after c
 """
 function coordinates_to_camber_thickness(foil, n = 40)
     # Cosine interpolation and splitting
-    upper, lower = split_surface(cosine_spacing(foil, n))
+    upper, lower = split_surface(cosine_interpolation(foil, n))
 
     camber       = @views (upper[:,2] + lower[:,2]) / 2
     thickness    = @views  upper[:,2] - lower[:,2]

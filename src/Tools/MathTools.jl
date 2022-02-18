@@ -140,18 +140,10 @@ function sine_spacing(x1, x2, n :: Integer = 40)
     end
 end
 
-function cosine_interp(coords, n :: Integer = 40)
-    xs = @views coords[:,1]
-    ys = @views coords[:,2]
-
+function cosine_interp(xs, n :: Integer = 40)
     d = maximum(xs) - minimum(xs)
     x_center = (maximum(xs) + minimum(xs)) / 2
     x_circ = cosine_spacing(x_center, d, n)
-    
-    itp_circ = LinearInterpolation(xs, ys)
-    y_circ = itp_circ(x_circ)
-
-    [ x_circ y_circ ]
 end
 
 ## Iterator methods
