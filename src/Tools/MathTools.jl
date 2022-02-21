@@ -13,7 +13,7 @@ end
 x(p :: Point2D) = p.x
 y(p :: Point2D) = p.y
 
-struct Point3D{T <: Real} <: FieldVector{2, T} 
+struct Point3D{T <: Real} <: FieldVector{3, T} 
     x :: T
     y :: T
     z :: T
