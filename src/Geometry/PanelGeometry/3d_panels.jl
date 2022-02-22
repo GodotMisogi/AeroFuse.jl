@@ -40,7 +40,7 @@ average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)
 
 Compute the coordinates of a `Panel3D`.
 """
-panel_coordinates(panel :: Panel3D) = [ p1(panel), p2(panel), p3(panel), p4(panel) ]
+panel_coordinates(panel :: Panel3D) = SVector( p1(panel), p2(panel), p3(panel), p4(panel) )
 
 """
     make_panels(xyzs)
@@ -54,7 +54,10 @@ make_panels(xyzs :: AbstractArray{<: SVector{3,<: Real}}) = @views Panel3D.(xyzs
 
 Perform an affine transformation on the coordinates of a `Panel3D` given a rotation matrix and translation vector.
 """
-transform(panel :: Panel3D, rotation, translation) = Panel3D((Translation(translation) ∘ LinearMap(rotation)).(panel_coordinates(panel)))
+function transform(panel :: Panel3D, rotation, translation) 
+    T = Translation(translation) ∘ LinearMap(rotation)
+    Panel3D(T(panel.p1), T(panel.p2), T(panel.p3), T(panel.p4))
+end
 
 """
     midpoint(panel :: Panel3D)

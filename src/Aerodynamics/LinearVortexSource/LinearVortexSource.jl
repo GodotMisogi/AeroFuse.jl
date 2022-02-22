@@ -11,12 +11,13 @@ import ..MathTools: rotation, inverse_rotation, midpair_map
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector, panel_velocity
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, xs, ys, zs, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector, panel_velocity, AbstractPanel3D, Panel3D, panel_coordinates, midpoint
 
 ## Singularities
 #==========================================================================================#
 
 include("singularities.jl")
+include("singularities3D.jl")
 
 # export constant_source_velocity, linear_source_velocity_a, linear_source_velocity_b, linear_vortex_velocity_a, linear_vortex_velocity_b
 
