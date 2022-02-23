@@ -139,10 +139,11 @@ import .LinearVortexSource: total_velocity, source_velocity, vortex_velocity, vo
 
 export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition
 
-include("Aerodynamics/VorticityStream/VorticityStream.jl")
-import .VorticityStream: linear_vortex_stream_1, linear_vortex_stream_2, constant_source_stream
+import .LinearVortexSource: linear_vortex_stream_1, linear_vortex_stream_2, constant_source_stream
 
 export linear_vortex_stream_1, linear_vortex_stream_2, constant_source_stream
+
+# include("Aerodynamics/VorticityStream/VorticityStream.jl")
 
 ## Vortex lattice
 

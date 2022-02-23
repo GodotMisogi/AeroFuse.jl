@@ -77,3 +77,52 @@ function linear_vortex_velocity_b(γ2, x, z, x1, x2)
         @. γ2 / (2π * (x2 - x1)) * SVector(ub, wb)
     # end
 end
+
+# Streamfunctions
+#============================================#
+
+# Somewhat unnecessary, as the point is transformed to coordinates with the first point of the panel as the origin
+
+function linear_vortex_stream_minus(γ, x, z, x1, x2)
+    r1, r2, θ1, θ2 = transform(x, z, x1, x2)
+    d = x2 - x1
+
+    # Singularity checks
+    ϵ = 1e-10
+    if r1 < ϵ; logr1 = 0; else logr1 = log(r1) end
+    if r2 < ϵ; logr2 = 0; else logr2 = log(r2) end
+
+    ψ_m = γ / 2π * (z * (θ2 - θ1) - d + x * logr1 - (x - d) * logr2)
+end
+
+function linear_vortex_stream_plus(γ, x, z, x1, x2)
+    r1, r2, _, _= transform(x, z, x1, x2)
+    d   = x2 - x1
+    ψ_m = linear_vortex_stream_minus(1., x, z, x1, x2)
+
+    ϵ = 1e-10
+    if r1 < ϵ; logr1 = 0; else logr1 = log(r1) end
+    if r2 < ϵ; logr2 = 0; else logr2 = log(r2) end
+    
+    ψ_p = γ / d * (x * ψ_m + 1/4π * (r2^2 * (logr2 - 1/2) - r1^2 * (logr1 - 1/2)))
+end
+
+function constant_source_stream(σ, x, z, x1, x2)
+    r1, r2, θ1, θ2 = transform(x, z, x1, x2)
+    d = x2 - x1
+
+    # Singularity checks
+    ϵ = 1e-9;
+    if r1 < ϵ; logr1 = 0; θ1 = π; θ2 = π; else logr1 = log(r1); end
+    if r2 < ϵ; logr2 = 0; θ1 = 0; θ2 = 0; else logr2 = log(r2); end
+
+    ψ = σ / 2π * (x * (θ1 - θ2) + d * θ2 + z * (logr1 - logr2)) 
+
+    # Branch cuts
+    dψ = x2
+    if (θ1 + θ2) > π
+      ψ -= 0.25 * dψ
+    else
+      ψ += 0.75 * dψ
+    end
+end

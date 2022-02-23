@@ -27,8 +27,6 @@ cl = 2 * sum(@. (γs[1:end-1] + γs[2:end]) / 2 * panel_length(panels)) / unifor
 # panel_vels = [ velocity(uniform) .+ sum(vortex_velocity.(γs[1:end-1], γs[2:end], panels, Ref(panel_i))) for panel_i in panels ]
 
 ## Plotting
-using GLMakie
-
 using CairoMakie
 
 CairoMakie.activate!()
