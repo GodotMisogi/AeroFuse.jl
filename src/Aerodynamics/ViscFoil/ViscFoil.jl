@@ -4,7 +4,7 @@ import ..MathTools: midpair_map, forward_difference, forward_sum, weighted_vecto
 
 import ..Laplace: Uniform2D, velocity
 
-import ..PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, distance, panel_length, panel_angle, panel_tangent, panel_points, panel_location, collocation_point
+import ..PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, distance, panel_length, panel_angle, tangent_vector, panel_points, panel_location, collocation_point
 
 import ..DoubletSource: doublet_matrix, source_matrix, source_strengths, boundary_vector, solve_linear, lift_coefficient
 
@@ -44,7 +44,7 @@ function solve_inviscid_doublets(panels, wakes, u)
     # Inviscid velocities
     φs          = A_inv * boundary_vector(panels, u, (0., 0.))
     q0s, Δrs    = tangential_velocities(panels, φs, u, false)
-    U_invs      = [ q0s; Ref(u) .+ panel_tangent.(wakes) ]
+    U_invs      = [ q0s; Ref(u) .+ tangent_vector.(wakes) ]
 
     U_invs, D, all_lengths
 end

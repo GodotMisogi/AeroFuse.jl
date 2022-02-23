@@ -47,7 +47,7 @@ function surface_velocities end
 
 function surface_coefficients end
 
-export solve_linear, solve_nonlinear, solve_nonlinear!, collocation_point
+export solve_linear, solve_nonlinear, solve_linear!, solve_nonlinear!, collocation_point
 
 ## Math tools
 #==========================================================================================#
@@ -70,9 +70,9 @@ export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient
 #==========================================================================================#
 
 include("Geometry/PanelGeometry/PanelGeometry.jl")
-import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, p1, p2, p3, p4, zero, panel_length, transform_panel, transform_panel_points, panel_angle, panel_tangent, normal_vector, panel_location, panel_area, panel_coordinates, transform, midpoint, panel_points, wake_panel, wake_panels, reverse_panel, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, panel_vector, distance, average_chord, average_width, wetted_area, make_panels, local_coordinate_system
+import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, p1, p2, p3, p4, panel_normal, panel_length, transform_panel, transform_panel_points, panel_angle, tangent_vector, normal_vector, panel_location, panel_area, panel_coordinates, transform, midpoint, panel_points, wake_panel, wake_panels, reverse_panel, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, panel_vector, distance, average_chord, average_width, wetted_area, make_panels, local_coordinate_system
 
-export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, p1, p2, p3, p4, transform, normal_vector, midpoint, panel_location, panel_tangent, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels, local_coordinate_system
+export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, p1, p2, p3, p4, transform, normal_vector, midpoint, panel_location, tangent_vector, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_normal, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels, local_coordinate_system
 
 
 ## Aircraft geometry
@@ -138,6 +138,11 @@ include("Aerodynamics/LinearVortexSource/LinearVortexSource.jl")
 import .LinearVortexSource: total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition
 
 export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition
+
+include("Aerodynamics/VorticityStream/VorticityStream.jl")
+import .VorticityStream: linear_vortex_stream_1, linear_vortex_stream_2, constant_source_stream
+
+export linear_vortex_stream_1, linear_vortex_stream_2, constant_source_stream
 
 ## Vortex lattice
 

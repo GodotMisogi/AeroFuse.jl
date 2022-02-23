@@ -14,7 +14,7 @@ import ..Laplace: Uniform2D, magnitude, angle, velocity
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, tangent_vector, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector
 
 import ..AeroMDAO: solve_system, surface_velocities, surface_coefficients
 
@@ -131,7 +131,7 @@ function surface_velocities(prob :: DoubletSourceSystem)
     # Panel properties
     ps   = prob.surface_panels
     Δrs  = @views @. distance(ps[2:end], ps[1:end-1])
-    αs   = @views panel_tangent.(ps[2:end])
+    αs   = @views tangent_vector.(ps[2:end])
     
     @views surface_velocities(prob.singularities[1:end-1], Δrs, αs, velocity(prob.freestream), false)
 end
