@@ -4,6 +4,7 @@ authors = ["GodotMisogi <arjitseth@gmail.com>"]
 version = "0.3.4"
 
 [deps]
+BSplineKit = "093aae92-e908-43d7-9660-e50ee39d5a0a"
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"

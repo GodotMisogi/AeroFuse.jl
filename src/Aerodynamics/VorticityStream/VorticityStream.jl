@@ -6,21 +6,24 @@ using StaticArrays
 using Statistics
 using TimerOutputs
 
-using ..AeroMDAO: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, Point2D, Uniform2D, collocation_point, p1, p2, transform_panel, transform_panel_points, affine_2D, panel_length, panel_angle, panel_tangent, normal_vector, distance, panel_points, stream, pressure_coefficient, rotation, inverse_rotation, midpair_map, panel_points, reverse_panel, panel_scalar, trailing_edge_panel
+import ..PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, transform_panel_points, affine_2D, panel_length, panel_angle, panel_vector, tangent_vector, normal_vector, distance, panel_points, reverse_panel, panel_scalar, trailing_edge_panel
+
+import ..Laplace: Uniform2D
+
+import ..NonDimensional: pressure_coefficient
+
+import ..MathTools: rotation, inverse_rotation, midpair_map
+
+import ..AeroMDAO: solve_linear, solve_linear!
 
 include("singularities.jl")
 include("matrix.jl")
 
-## Dynamics helpers
-#===========================================================================#
-
-lift_coefficient(cp, dist_colpoints, panel_angle) = - cp * dist_colpoints * cos(panel_angle)
-
-lift_coefficient(wake_strength, speed) = 2. * wake_strength / speed
-
-## Matrix assembly
-#===========================================================================#
-
+struct VorticityStreamSystem{N,T}
+    influence_matrix :: SMatrix{N,N,T}
+    boundary_vector  :: SMatrix{N,2,T}
+    singularities    :: SMatrix{N,2,T}
+end
 
 # export solve_problem
 
