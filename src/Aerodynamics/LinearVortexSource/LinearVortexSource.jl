@@ -7,7 +7,7 @@ using LinearAlgebra
 using StaticArrays
 using Base.Iterators
 
-import ..MathTools: rotation, inverse_rotation, midpair_map
+import ..MathTools: rotation, inverse_rotation, midpair_map, Point2D, Point3D
 
 import ..NonDimensional: pressure_coefficient
 

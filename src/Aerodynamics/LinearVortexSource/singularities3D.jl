@@ -54,7 +54,7 @@ h_k(k :: Int64, local_coordinates, local_point) = (local_point.x - local_coordin
 
     Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant quadrilateral source
 """
-function constant_quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local_point)
+function constant_quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local_point :: Point3D)
     # A panel of type `Panel3D` has 4 points of type `SVector{3, Any}` whose coordinates are in the format of
     # [
     #     [x1 y1 0]
@@ -62,7 +62,7 @@ function constant_quadrilateral_source_velocity(σ, local_panel :: AbstractPanel
     #     [x3 y3 0]
     #     [x4 y4 0]
     # ]
-    local_coord = panel_coordinates(local_panel)
+    coord = panel_coordinates(local_panel)
 
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
     local_zs = zs(local_panel)
@@ -75,30 +75,30 @@ function constant_quadrilateral_source_velocity(σ, local_panel :: AbstractPanel
 
     z = local_point[3]
 
-    r1 = r_k(1, local_coord, local_point)
-    r2 = r_k(2, local_coord, local_point)
-    r3 = r_k(3, local_coord, local_point)
-    r4 = r_k(4, local_coord, local_point)
+    r1 = r_k(1, coord, local_point)
+    r2 = r_k(2, coord, local_point)
+    r3 = r_k(3, coord, local_point)
+    r4 = r_k(4, coord, local_point)
 
-    d12 = d_ij(1, 2, local_coord)
-    d23 = d_ij(2, 3, local_coord)
-    d34 = d_ij(3, 4, local_coord)
-    d41 = d_ij(4, 1, local_coord)
+    d12 = d_ij(1, 2, coord)
+    d23 = d_ij(2, 3, coord)
+    d34 = d_ij(3, 4, coord)
+    d41 = d_ij(4, 1, coord)
 
-    m12 = m_ij(1, 2, local_coord)
-    m23 = m_ij(2, 3, local_coord)
-    m34 = m_ij(3, 4, local_coord)
-    m41 = m_ij(4, 1, local_coord)
+    m12 = m_ij(1, 2, coord)
+    m23 = m_ij(2, 3, coord)
+    m34 = m_ij(3, 4, coord)
+    m41 = m_ij(4, 1, coord)
 
-    e1 = e_k(1, local_coord, local_point)
-    e2 = e_k(2, local_coord, local_point)
-    e3 = e_k(3, local_coord, local_point)
-    e4 = e_k(4, local_coord, local_point)
+    e1 = e_k(1, coord, local_point)
+    e2 = e_k(2, coord, local_point)
+    e3 = e_k(3, coord, local_point)
+    e4 = e_k(4, coord, local_point)
 
-    h1 = h_k(1, local_coord, local_point)
-    h2 = h_k(2, local_coord, local_point)
-    h3 = h_k(3, local_coord, local_point)
-    h4 = h_k(4, local_coord, local_point)
+    h1 = h_k(1, coord, local_point)
+    h2 = h_k(2, coord, local_point)
+    h3 = h_k(3, coord, local_point)
+    h4 = h_k(4, coord, local_point)
 
     # Results from textbook differs from a minus sign
     u = -σ / 4π * (
@@ -155,8 +155,13 @@ end
 
 Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant quadrilateral source at FARFIELD
 """
-function constant_quadrilateral_source_velocity_farfield(σ, local_panel :: AbstractPanel3D, local_point)
-    A = quadrilateral_panel_area(local_panel) # From Arjit's implementation
+function constant_quadrilateral_source_velocity_farfield(σ, local_panel :: AbstractPanel3D, local_point :: Point3D)
+    local_zs = zs(local_panel)
+    if norm(local_zs) >= 1e-10
+        AssertionError("Panel is not in its local coordinate!")
+    end
+
+    A = quadrilateral_panel_area(local_panel)
     centroid = midpoint(local_panel) # It is better to use centroid
 
     u = ( σ * A * (local_point.x - centroid.x) ) / ( 4π * norm(local_point - centroid)^3 )
@@ -204,12 +209,17 @@ const_quad_doublet_num_w(i, j, ri, xi, yi, x, y) = (ri[i] + ri[j]) * ((x - xi[j]
 
 Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant doublet source
 """
-function constant_quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, local_point)
-    coord = panel_coordinates(local_panel)
+function constant_quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, local_point :: Point3D)
+    local_zs = zs(local_panel)
+    if norm(local_zs) >= 1e-10
+        AssertionError("Panel is not in its local coordinate!")
+    end
+
     ri = SVector(
-        r_k(1, coord, local_point), 
-        r_k(2, coord, local_point), 
-        r_k(3, coord, local_point)
+        r_k(1, local_panel, local_point), 
+        r_k(2, local_panel, local_point), 
+        r_k(3, local_panel, local_point),
+        r_k(4, local_panel, local_point)
         )
     xi = xs(local_panel)
     yi = ys(local_panel)
@@ -222,7 +232,7 @@ function constant_quadrilateral_doublet_velocity(μ, local_panel :: AbstractPane
         const_quad_doublet_num_u(4, 1, ri, yi, z) / const_quad_doublet_den(4, 1, ri, xi, yi, x, y, z)
     )
 
-    u = μ / 4π * (
+    v = μ / 4π * (
         const_quad_doublet_num_v(1, 2, ri, xi, z) / const_quad_doublet_den(1, 2, ri, xi, yi, x, y, z) +
         const_quad_doublet_num_v(2, 3, ri, xi, z) / const_quad_doublet_den(2, 3, ri, xi, yi, x, y, z) +
         const_quad_doublet_num_v(3, 4, ri, xi, z) / const_quad_doublet_den(3, 4, ri, xi, yi, x, y, z) +
@@ -244,12 +254,19 @@ end
 
 Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant doublet source at FARFIELD
 """
-function constant_quadrilateral_doublet_velocity_farfield(μ, local_panel :: AbstractPanel3D, local_point)
-    A = quadrilateral_panel_area(local_panel) # From Arjit's implementation
+function constant_quadrilateral_doublet_velocity_farfield(μ, local_panel :: AbstractPanel3D, local_point:: Point3D)
+    local_zs = zs(local_panel)
+    if norm(local_zs) >= 1e-10
+        AssertionError("Panel is not in its local coordinate!")
+    end
+
+    A = quadrilateral_panel_area(local_panel)
     centroid = midpoint(local_panel) # It is better to use centroid
-    u = ( 3μ * A * (local_point.x - centroid.x) * local_point.z ) / ( 4π * norm(local_point - centroid)^5 )
-    v = ( 3μ * A * (local_point.y - centroid.y) * local_point.z ) / ( 4π * norm(local_point - centroid)^5 )
-    w = ( -μ * A * ( (local_point.x - centroid.x)^2 + (local_point.y - centroid.y)^2 - 2 * local_point.z^2 ) ) / ( 4π * norm(local_point - centroid)^5 )
+    x, y, z = local_point.x, local_point.y, local_point.z
+    x0, y0 = centroid.x, centroid.y
+    u = ( 3μ * A * (x - x0) * z ) / ( 4π * norm(local_point - centroid)^5 )
+    v = ( 3μ * A * (y - y0) * z ) / ( 4π * norm(local_point - centroid)^5 )
+    w = ( -μ * A * ( (x - x0)^2 + (y - y0)^2 - 2 * z^2 ) ) / ( 4π * norm(local_point - centroid)^5 )
 
     @. return SVector(u, v, w)
 end
