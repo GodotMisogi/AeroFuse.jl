@@ -14,24 +14,24 @@ Here we will show you how to perform an aerodynamic analysis of a conventional a
 
 For this, we will need to import some packages which will be convenient for plotting.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 using AeroMDAO      # Main package
 using Plots         # Plotting library
 gr(dpi = 300)       # Plotting backend
 using LaTeXStrings  # For LaTeX printing in plots
-```
+````
 
 ## Your First Wing
 
 Here you will learn how to define a wing using an intuitive parametrization scheme. First, we define a `Vector` of `Foil`s.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 # Define one airfoil
 airfoil_1 = naca4(4,4,1,2)
 
 # Define vector of airfoils
 airfoils  = [ airfoil_1, naca4((0,0,1,2)) ]
-```
+````
 
 !!! note
     Refer to the [Airfoil Aerodynamic Analysis](tutorials-airfoil.md) tutorial for an introduction to the `Foil` type.
@@ -40,7 +40,7 @@ airfoils  = [ airfoil_1, naca4((0,0,1,2)) ]
 The following function defines a symmetric wing and prints the relevant information. Named arguments corresponding to the foil shapes, chord and span lengths, twist, dihedral and sweep angles. The following parametrization is used for the wing, presented for visual understanding.
 ![](https://godot-bloggy.xyz/post/diagrams/WingGeometry.svg)
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 wing = Wing(
         foils     = airfoils,    # Foil profiles
         chords    = [1.0, 0.6],  # Chord lengths
@@ -50,7 +50,7 @@ wing = Wing(
         sweeps    = [5.],        # Sweep angles (degrees)
         w_sweep   = 0.,          # Sweep angle location w.r.t. normalized chord lengths ∈ [0,1]
     )
-```
+````
 
 !!! info
     See the [How-to Guide](howto.md) for the various ways of constructing wings.
@@ -59,13 +59,13 @@ wing = Wing(
 
 The following function generates the coordinates of the wing's outline.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 wing_outline = plot_planform(wing)
-```
+````
 
 Let's plot the geometry!
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 plt = plot(
            wing_outline[:,1], wing_outline[:,2], wing_outline[:,3],
            label = "Wing",
@@ -74,7 +74,7 @@ plt = plot(
            camera = (30, 45),
            zlim = (-0.1, span(wing) / 2),
           )
-```
+````
 
 ## Your First Vortex Lattice Analysis
 Now we would like to analyze the aerodynamics of this wing in conjunction with other lifting surfaces pertinent to aircraft.
@@ -82,7 +82,7 @@ Now we would like to analyze the aerodynamics of this wing in conjunction with o
 ### Geometry
 We define the horizontal tail similarly to the wing. However, we also add additional position (by specifying a vector) and orientation attributes (by specifying an angle and axis of rotation) to place it at the desired location.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 # Horizontal tail
 htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              chords    = [0.7, 0.42],
@@ -94,11 +94,11 @@ htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
              position  = [4., 0, 0],
              angle     = -2.,
              axis      = [0., 1., 0.])
-```
+````
 
 For the vertical tail, we simply replace `Wing` with `HalfWing` to define its shape.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 # Vertical tail
 vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  chords    = [0.7, 0.42],
@@ -110,11 +110,11 @@ vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
                  position  = [4., 0, 0],
                  angle     = 90.,
                  axis      = [1., 0., 0.])
-```
+````
 
 Let's visualize the geometry of the aircraft's configuration.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 htail_outline = plot_planform(htail)
 vtail_outline = plot_planform(vtail)
 
@@ -126,31 +126,33 @@ plot!(plt,
    vtail_outline[:,1], vtail_outline[:,2], vtail_outline[:,3],
    label = "Vertical Tail"
   )
-```
+````
 
 ### Meshing
 To perform the aerodynamic analysis, we will need to discretize our geometry into a _mesh_. The following `WingMesh` function constructs a mesh for you by providing a `HalfWing` or `Wing` type with specification of spanwise panels and chordwise panels. As the wing has only one spanwise section, we provide a vector with a single  integer entry for the spanwise panel distribution.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 wing_mesh = WingMesh(wing, [12], 6) # (Wing, [Spanwise panels], Chordwise panels)
-```
+````
 
 Let's see what this discretization looks like on the camber distribution of the wing.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 # Compute camber panel distribution
 wing_cam_panels = camber_panels(wing_mesh)
 
 # Generate plotting points
 plt_wing_pans   = plot_panels(wing_cam_panels)
 
-[ plot!(plt, panel, label = "", color = :lightblue) for panel in plt_wing_pans ]
+[ plot!(plt, panel, label = "", color = :lightblue)
+    for panel in plt_wing_pans ]
+
 plot!(plt)
-```
+````
 
 Similarly we define the meshes for the other surfaces and plot them.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 htail_mesh = WingMesh(htail, [6], 4)
 vtail_mesh = WingMesh(vtail, [4], 3)
 
@@ -158,58 +160,61 @@ vtail_mesh = WingMesh(vtail, [4], 3)
     for panel in plot_panels(camber_panels(htail_mesh)) ]
 [ plot!(plt, panel, label = "", color = :lightgreen)
     for panel in plot_panels(camber_panels(vtail_mesh)) ]
+
 plot!(plt)
-```
+````
 
 ### Aerodynamic Analysis
 For the analysis, you have to assemble the meshes into a `ComponentVector`.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 aircraft = ComponentVector(
                            wing  = make_horseshoes(wing_mesh),
                            htail = make_horseshoes(htail_mesh),
                            vtail = make_horseshoes(vtail_mesh)
                           )
-```
+````
 
 You can define the freestream condition as follows, by providing the angles of attack $\alpha$ and sideslip $\beta$ in degrees with a rotation vector $\Omega$.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 fs  = Freestream(
                  alpha = 3.0, # degrees
                  beta  = 0.0, # degrees
                  omega = [0., 0., 0.]
                 );
 nothing #hide
-```
+````
 
 You can define the reference values for the speed, area, span, chord, density, and location  as follows.
 
-```@example tutorials-aircraft
-refs = References(speed    = 1.0,
+````@example tutorials-aircraft
+refs = References(
+                  speed    = 1.0,
                   area     = projected_area(wing),
                   span     = span(wing),
                   chord    = mean_aerodynamic_chord(wing),
                   density  = 1.225,
-                  location = mean_aerodynamic_center(wing));
+                  location = mean_aerodynamic_center(wing)
+                 );
 nothing #hide
-```
+````
 
 You can run the aerodynamic analysis by providing the aircraft configuration, freestream, and reference values. Optionally you can also print the results.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 system = solve_case(
-        aircraft, fs, refs;
-        print            = true, # Prints the results for only the aircraft
-        print_components = true, # Prints the results for all components
-    )
-```
+            aircraft, fs, refs;
+            print            = true, # Prints the results for only the aircraft
+            print_components = true, # Prints the results for all components
+        )
+````
 
 You can obtain the aerodynamic coefficients from this system. The nearfield aerodynamic force and moment coefficients are ordered as $(C_{D_i}, C_Y, C_L, C_\ell, C_m, C_n)$.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 nf = nearfield(system)
-```
+````
 
 !!! tip
     Refer to the [how-to guide](howto.md) to see how to compute the aerodynamic coefficients of each component and perform stability analyses.
@@ -218,7 +223,7 @@ nf = nearfield(system)
 
 Now let's analyze the drag polar of this aircraft configuration by varying the angle of attack and collecting the induced drag coefficient $C_{D_i}$.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 # Define function to compute system varying with angle of attack.
 vary_alpha(aircraft, α, refs) = solve_case(aircraft, Freestream(alpha = α), refs)
 
@@ -232,22 +237,22 @@ coeffs = nearfield.(systems)
 CDis   = [ c[1] for c in coeffs ]
 CLs    = [ c[3] for c in coeffs ];
 nothing #hide
-```
+````
 
 Let's plot the drag polar!
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 plot(CDis, CLs,
      label  = "",
      xlabel = L"C_{D_i}",
      ylabel = L"C_L",
      title  = "Drag Polar",
      ls     = :solid)
-```
+````
 
 Let's also take a look at the variations of all the coefficients.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 # Concatenate results into one array
 data = permutedims(reduce(hcat, [α; c] for (α, c) in zip(αs, coeffs)))
 
@@ -259,28 +264,24 @@ plot(data[:,1], round.(data[:,2:end], digits = 4),
      labels = "",
      size   = (800, 600)
     )
-```
+````
 
 > **Tip:** You can convert this into a DataFrame for convenient reference.
 > ```julia
 > using DataFrames, StatsPlots
 > data = DataFrame([ xs for xs in zip(αs, coeffs) ])
 > rename!(data, [:α, :CD, :CY, :CL, :Cl, :Cm, :Cn])
-> @df data plot()
 > ```
 
 ### Spanwise Loading
 
 You can compute the aerodynamic coefficients on the panels from the system.
 
-```@example tutorials-aircraft
+````@example tutorials-aircraft
 CFs, CMs = surface_coefficients(system)
 
-# Get panels along the chord-lines of the wing.
-wing_panels = chord_panels(wing_mesh)
-
 # Compute spanwise loads
-span_loads  = spanwise_loading(wing_panels, CFs.wing, projected_area(wing))
+span_loads  = spanwise_loading(wing_mesh, CFs.wing, projected_area(wing))
 CL_loads    = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord);
 
 # Plot spanwise loadings
@@ -291,7 +292,7 @@ plot_CL = begin
             plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = L"y")
           end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
-```
+````
 
 ---
 

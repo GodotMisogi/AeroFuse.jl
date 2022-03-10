@@ -52,8 +52,8 @@ If you use AeroMDAO in your research, please cite the following until any releva
   author  = {Arjit Seth, Rhea P. Liem, Stephane Redonnet},
   title   = {AeroMDAO},
   url     = {https://github.com/GodotMisogi/AeroMDAO},
-  version = {0.3.4},
-  date    = {2021-02-15},
+  version = {0.3.5},
+  date    = {2021-03-10},
 }
 ```
 

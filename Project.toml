@@ -1,7 +1,7 @@
 name = "AeroMDAO"
 uuid = "ae1513eb-aba2-415b-9b88-80f66c7c7c76"
 authors = ["GodotMisogi <arjitseth@gmail.com>"]
-version = "0.3.4"
+version = "0.3.5"
 
 [deps]
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"

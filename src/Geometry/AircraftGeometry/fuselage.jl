@@ -15,12 +15,12 @@ projected_area(fuse :: Fuselage) = forward_sum(fuse.radii) / 2 .* fuse.weights
 Base.length(fuse :: Fuselage) = fuse.length
 
 function coordinates(fuse :: Fuselage, n)
-    ws_rads = cosine_spacing(fuse, n)
+    ws_rads = cosine_interpolation(fuse, n)
 
     [ ws_rads[:,1] .* fuse.length ws_rads[:,2] ]
 end
 
-function cosine_spacing(fuse :: Fuselage, n)
+function cosine_interpolation(fuse :: Fuselage, n)
     xs = fuse.weights
     ys = fuse.radii
     cosine_interp([ xs ys ], n)
