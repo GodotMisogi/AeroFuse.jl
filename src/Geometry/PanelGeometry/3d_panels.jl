@@ -119,23 +119,21 @@ local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - 
 function panel_transformation_3d(panel :: Panel3D)
     coord = panel_coordinates(panel)
 
-    # Step 1: Translate p1 to xy plane
+    # Translate p1 to xy plane
     tr1 = Translation(0., 0., -coord[1].z)
     coord = tr1.(coord)
 
-    # Step 2: Rotate p3 to xy plane
-    d = coord[3] - coord[1]
-    θ = asin(d.z/norm(d))
-    tr2 = recenter(LinearMap(AngleAxis(θ, -d.y, d.x, 0.)), coord[1])
-    coord = tr2.(coord)
+    # Find normal of panel
+    n = panel_normal(panel)
 
-    # Step 3: Rotate p2 to xy plane
-    n = (coord[2] - coord[1]) × (coord[3] - coord[1])
-    θ = acos(n.z/norm(n))
-    tr3 = recenter(LinearMap(AngleAxis(-θ, d.x, d.y, 0.)), coord[1])
-    coord = tr3.(coord)
+    # Find rotation axis
+    d = n × SVector(0,0,1)
 
-    tr = tr1 ∘ tr2 ∘ tr3
+    # Find rotation angle
+    θ = acos(n.z / norm(n))
+    tr2 = recenter(LinearMap(AngleAxis(θ, d.x, d.y, d.z)), coord[1])
+
+    tr = tr1 ∘ tr2
     invtr = inv(tr)
 
     return Panel3D(coord), tr, invtr
