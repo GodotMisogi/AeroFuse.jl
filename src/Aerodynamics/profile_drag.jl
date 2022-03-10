@@ -47,7 +47,7 @@ end
 
 function wetted_area_drag(wing :: WingMesh, x_tr, V, ρ, a_ref = 330., μ = 1.5e-5)
     # Chord processing
-    mean_chords = (forward_sum ∘ chords)(wing.surface) / 2
+    mean_chords = (forward_sum ∘ chords)(wing.surf) / 2
 
     # Wetted areas
     surf_pans = camber_panels(wing)
@@ -55,7 +55,7 @@ function wetted_area_drag(wing :: WingMesh, x_tr, V, ρ, a_ref = 330., μ = 1.5e
 
     # Form factors
     M       = V / a_ref
-    K_fs    = form_factor(wing.surface, M)
+    K_fs    = form_factor(wing.surf, M)
 
     wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
 end
@@ -73,7 +73,7 @@ end
 
 function local_dissipation_drag(wing :: WingMesh, ρ_es, u_es, x_tr, V, ρ, M, μ)
     # Chord processing
-    mean_chords = (forward_sum ∘ chords)(wing.surface) / 2
+    mean_chords = (forward_sum ∘ chords)(wing.surf) / 2
 
     # Compute weighted wetted areas based on inviscid edge velocity distribution.
     S_wets = panel_area.(camber_panels(wing))

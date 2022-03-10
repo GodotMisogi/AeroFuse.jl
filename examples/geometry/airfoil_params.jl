@@ -23,7 +23,7 @@ naca_foil = naca4((2,4,1,2)) # NACA 4-digit
 doublet_source_case(naca_foil, uniform)
 
 ## Cosine spacing
-cos_foil = cosine_interpolation(naca_foil, 81)
+cos_foil = cosine_spacing(naca_foil, 81)
 
 doublet_source_case(cos_foil, uniform)
 

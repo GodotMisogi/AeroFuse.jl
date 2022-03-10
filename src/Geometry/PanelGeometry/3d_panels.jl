@@ -67,11 +67,11 @@ Compute the midpoint of a `Panel3D`.
 midpoint(panel :: Panel3D) = (p1(panel) + p2(panel) + p3(panel) + p4(panel)) / 4
 
 """
-    normal_vector(panel :: Panel3D)
+    panel_normal(panel :: Panel3D)
 
 Compute the normal vector of a `Panel3D`.
 """
-normal_vector(panel :: Panel3D) = let p31 = p3(panel) - p1(panel), p42 = p4(panel) - p2(panel); p31 × p42 end
+panel_normal(panel :: Panel3D) = let p31 = p3(panel) - p1(panel), p42 = p4(panel) - p2(panel); p31 × p42 end
 
 """
     transform_normal(panel :: Panel3D, h_l, g_l)
@@ -80,14 +80,14 @@ Transform the normal vector ``n̂₀`` of a `Panel3D` about the hinge axis ``ĥ�
 
 The transformation is the following: ``n̂ₗ = gₗ ĥₗ × n̂₀`` (FVA, Drela, 6.36).
 """
-transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, normal_vector(panel))
+transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, panel_normal(panel))
 
 """
     panel_area(panel :: Panel3D)
 
 Compute the (possibly non-planar, hence nonsensical) area of a `Panel3D`.
 """
-panel_area(panel :: Panel3D) = 1/2 * norm(normal_vector(panel)) # (norm ∘ cross)(average_chord(panel), average_width(panel))
+panel_area(panel :: Panel3D) = 1/2 * norm(panel_normal(panel)) # (norm ∘ cross)(average_chord(panel), average_width(panel))
 
 """
     wetted_area(panels :: Array{Panel3D})
@@ -113,4 +113,4 @@ function local_coordinate_system(stream, normie)
 end
 
 # Compute local axis coordinates
-local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, normal_vector(panel))
+local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, panel_normal(panel))

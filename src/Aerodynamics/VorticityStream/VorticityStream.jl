@@ -6,7 +6,7 @@ using StaticArrays
 using Statistics
 using TimerOutputs
 
-using ..AeroMDAO: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, Point2D, Uniform2D, collocation_point, p1, p2, transform_panel, transform_panel_points, affine_2D, panel_length, panel_angle, panel_tangent, normal_vector, distance, panel_points, stream, pressure_coefficient, rotation, inverse_rotation, midpair_map, panel_points, reverse_panel, panel_scalar, trailing_edge_panel
+using ..AeroMDAO: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, Point2D, Uniform2D, collocation_point, p1, p2, transform_panel, transform_panel_points, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, panel_points, stream, pressure_coefficient, rotation, inverse_rotation, midpair_map, panel_points, reverse_panel, panel_scalar, trailing_edge_panel
 
 include("singularities.jl")
 include("matrix.jl")
