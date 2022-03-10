@@ -60,7 +60,7 @@ const_quad_source_u(i, j, yi, dij, ri) = (yi[j] -yi[i]) / dij[i] * log( (ri[i] +
 """
     const_quad_source_v(i, j, x, y, xi, yi, dij, ri)
 
-Helper function: term u for constant_quadrilateral_source_velocity().
+Helper function: term v for constant_quadrilateral_source_velocity().
 """
 const_quad_source_v(i, j, xi, dij, ri) = (xi[i] -xi[j]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
 
