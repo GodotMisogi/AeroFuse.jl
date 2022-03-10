@@ -8,15 +8,17 @@ import Base.Iterators: product
 using StaticArrays
 import SplitApplyCombine: combinedimsview
 
-import ..MathTools: rotation, inverse_rotation, midpair_map
+import ..MathTools: rotation, inverse_rotation, midpair_map, Point3D
 
 import ..Laplace: Uniform2D, magnitude, angle, velocity
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector, AbstractPanel3D, Panel3D, panel_coordinates, midpoint
 
 import ..AeroMDAO: solve_system, surface_velocities, surface_coefficients
+
+include("singularities3D.jl")
 
 ## Doublet-source Dirichlet boundary condition
 #===========================================================================#
