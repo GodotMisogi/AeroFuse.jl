@@ -16,7 +16,7 @@ using Setfield
 import ..MathTools: weighted_vector, structtolist
 
 # Panel geometry
-import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, panel_normal, transform, p1, p2, p3, p4, average_chord, average_width
+import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, normal_vector, transform, p1, p2, p3, p4, average_chord, average_width
 
 # Non-dimensionalization
 import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient

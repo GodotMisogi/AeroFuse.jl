@@ -43,7 +43,7 @@ end
 
 panel_angle(panel :: AbstractPanel2D) = let (x, y) = panel_vector(panel); atan(y, x) end
 panel_tangent(panel :: AbstractPanel2D) = rotation(1., 0., -panel_angle(panel))
-panel_normal(panel :: AbstractPanel2D) = inverse_rotation(0., 1., panel_angle(panel))
+normal_vector(panel :: AbstractPanel2D) = inverse_rotation(0., 1., panel_angle(panel))
 panel_location(panel :: AbstractPanel2D) = let angle = panel_angle(panel); ifelse((π/2 <= angle <= π) || (-π <= angle <= -π/2), "lower", "upper") end
 
 panel_points(panels) = [ p1.(panels); [(p2 ∘ last)(panels)] ]

@@ -17,7 +17,7 @@ import ..Beams: tube_stiffness_matrix, AbstractBeam, Beam, Tube
 import ..Laplace: freestream_to_cartesian
 
 # Panelling
-import ..PanelGeometry: make_panels, panel_normal
+import ..PanelGeometry: make_panels, normal_vector
 
 import ..AircraftGeometry: WingMesh
 
