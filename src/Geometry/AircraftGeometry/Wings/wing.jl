@@ -62,45 +62,8 @@ Wing(;
         foils     = fill(naca4(0,0,1,2), length(chords)),
         position  = zeros(3),
         angle     = 0.,
-        axis      = SVector(1., 0., 0.)
+        axis      = SVector(0., 1., 0.)
     ) = Wing(HalfWing(foils = foils, chords = chords, twists = twists, spans = spans / 2, dihedrals = dihedrals, sweeps = sweeps, w_sweep = w_sweep, position = position, angle = angle, axis = axis))
-
-"""
-    WingSection(; span, dihedral, sweep, taper, root_chord,
-                  root_twist, tip_twist, root_foil, tip_foil,
-                  position, angle, axis)
-
-Define a `Wing` consisting of two trapezoidal sections with ``y``-``z`` reflection symmetry.
-
-# Arguments
-- `span       :: Real         = 1.`: Span length 
-- `dihedral   :: Real         = 1.`: Dihedral angle (degrees)
-- `LE_sweep   :: Real         = 0.`: Leading-edge sweep angle (degrees)
-- `taper      :: Real         = 1.`: Taper ratio of tip to root chord
-- `root_chord :: Real         = 1.`: Root chord length
-- `root_twist :: Real         = 0.`: Twist angle at root (degrees)
-- `tip_twist  :: Real         = 0.`: Twist angle at tip (degrees)
-- `root_foil  :: Foil         = naca4((0,0,1,2))`: Foil coordinates at root
-- `tip_foil   :: Foil         = root_foil`: Foil coordinates at tip
-- `position   :: Vector{Real} = zeros(3)`: Position
-- `angle      :: Real         = 0.`: Angle of rotation (degrees)
-- `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
-"""
-WingSection(;
-        span       = 1.,
-        dihedral   = 0.,
-        sweep      = 0.,
-        w_sweep    = 0.,
-        taper      = 1.,
-        root_chord = 1.,
-        root_twist = 0.,
-        tip_twist  = 0.,
-        root_foil  = naca4((0,0,1,2)),
-        tip_foil   = root_foil,
-        position   = zeros(3),
-        angle      = 0.,
-        axis       = SVector(1., 0., 0.)
-    ) = Wing(HalfWingSection(span = span / 2, dihedral = dihedral, sweep = sweep, w_sweep = w_sweep, taper = taper, root_chord = root_chord, root_twist = root_twist, tip_twist = tip_twist, root_foil = root_foil, tip_foil = tip_foil, position = position, angle = angle, axis = axis))
 
 span(wing :: Wing) = (span ∘ left)(wing) + (span ∘ right)(wing)
 
