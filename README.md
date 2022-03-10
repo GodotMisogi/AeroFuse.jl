@@ -61,7 +61,7 @@ If you use AeroMDAO in your research, please cite the following until any releva
   title   = {AeroMDAO},
   url     = {https://github.com/GodotMisogi/AeroMDAO},
   version = {0.3.5},
-  date    = {2021-03-10},
+  date    = {2021-09-10},
 }
 ```
 
