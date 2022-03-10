@@ -28,7 +28,7 @@ Foil(coords :: Vector{<: FieldVector{2,<: Real}}, name = "") = Foil(getindex.(co
 Foil((name, coords)) = Foil(coords, name)
 
 function Foil(coords :: AbstractMatrix{<: Real}, name = "") 
-    @assert size(coords)[2] == 2 "The array must have only two columns for coordinates!"
+    @assert size(coords, 2) == 2 "The array must have only two columns for coordinates!"
 
     @views Foil(coords[:,1], coords[:,2], name)
 end

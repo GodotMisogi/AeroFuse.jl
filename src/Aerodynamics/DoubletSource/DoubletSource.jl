@@ -14,7 +14,7 @@ import ..Laplace: Uniform2D, magnitude, angle, velocity
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, affine_2D, panel_length, panel_angle, tangent_vector, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, transform_panel, affine_2D, panel_length, panel_angle, tangent_vector, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector
 
 import ..AeroMDAO: solve_system, surface_velocities, surface_coefficients
 
