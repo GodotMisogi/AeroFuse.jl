@@ -48,5 +48,5 @@ mesh_rotation(δs)    = @views rotation_matrix(δs[4:6,:])
 function new_horseshoes(dxs, Ts, chord_mesh, camber_mesh, fem_mesh)
     new_chord_mesh = transfer_displacements(dxs, Ts, chord_mesh, fem_mesh)
     new_camber_mesh = transfer_displacements(dxs, Ts, camber_mesh, fem_mesh)
-    Horseshoe.(make_panels(new_chord_mesh), normal_vector.(make_panels(new_camber_mesh)))
+    Horseshoe.(make_panels(new_chord_mesh), panel_normal.(make_panels(new_camber_mesh)))
 end

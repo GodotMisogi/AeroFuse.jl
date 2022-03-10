@@ -33,7 +33,7 @@ left leg       right leg
     p2 —back leg-→ p3
 ```
 """
-function VortexRing(panel :: Panel3D{T}, normal = normal_vector(panel)) where T <: Real
+function VortexRing(panel :: Panel3D{T}, normal = panel_normal(panel)) where T <: Real
     r_c = collocation_point(panel)
     ε   = 0. # (norm ∘ average_chord)(panel)
     VortexRing{T}(panel.p1, panel.p2, panel.p3, panel.p4, r_c, normal, ε)

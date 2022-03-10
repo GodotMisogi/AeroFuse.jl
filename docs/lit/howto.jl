@@ -26,7 +26,7 @@ plot(my_foil.x, my_foil.y,
 
 # A basic cosine interpolation functionality is provided for foils.
 ## Cosine spacing with approx. 51 points on upper and lower surfaces each
-cos_foil = cosine_interpolation(my_foil, 51)
+cos_foil = cosine_spacing(my_foil, 51)
 
 # The upper and lower surfaces can be obtained by the following variety of functions.
 
@@ -71,13 +71,12 @@ cl     = lift_coefficient(system)
 panels   = system.surface_panels
 pts      = collocation_point.(panels) # Collocation points
 tangents = panel_tangent.(panels)     # Tangents
-normals  = normal_vector.(panels)      # Normals
+normals  = panel_normal.(panels)      # Normals
 locs     = panel_location.(panels);   # Upper or lower surface
 
 # ## Wing Geometry
-# How to work with wing geometry.
 # 
-# To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
+## To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
 airfoil    = naca4((2,4,1,2))
 wing_right = HalfWing(foils     = [ airfoil for i in 1:3 ],
                       chords    = [0.4, 0.2, 0.1],
@@ -223,12 +222,6 @@ system = solve_case(
              print            = true, # Prints the results for only the aircraft
              print_components = true, # Prints the results for all components
             )
-
-# If needed, you can access the relevant component influence matrix values and boundary conditions with the following attributes, e.g.
-system.influence_matrix[:wing] # Or :htail, :vtail
-system.influence_matrix[:wing, :htail];
-
-system.boundary_vector[:wing]
 
 # ### Dynamics
 # 

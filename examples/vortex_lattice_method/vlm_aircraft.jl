@@ -52,11 +52,11 @@ vtail_mesh = WingMesh(vtail, [12], 6,
                       span_spacing = Cosine()
                      )
 
-aircraft =  (
-                wing  = make_horseshoes(wing_mesh),
-                htail = make_horseshoes(htail_mesh),
-                vtail = make_horseshoes(vtail_mesh)
-            );
+aircraft = ComponentArray(
+                          wing  = make_horseshoes(wing_mesh),
+                          htail = make_horseshoes(htail_mesh),
+                          vtail = make_horseshoes(vtail_mesh)
+                         );
 
 ## Case
 fs  = Freestream(alpha = 0.0, 
@@ -74,8 +74,8 @@ ref = References(speed     = 1.0,
 ##
 @time begin 
     system = solve_case(aircraft, fs, ref;
-                        # print            = true, # Prints the results for only the aircraft
-                        # print_components = true, # Prints the results for all components
+                        print            = true, # Prints the results for only the aircraft
+                        print_components = true, # Prints the results for all components
                       #   finite_core      = true
                        );
 

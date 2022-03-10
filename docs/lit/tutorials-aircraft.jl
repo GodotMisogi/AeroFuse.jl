@@ -114,9 +114,7 @@ wing_cam_panels = camber_panels(wing_mesh)
 ## Generate plotting points
 plt_wing_pans   = plot_panels(wing_cam_panels)
 
-[ plot!(plt, panel, label = "", color = :lightblue) 
-    for panel in plt_wing_pans ]
-
+[ plot!(plt, panel, label = "", color = :lightblue) for panel in plt_wing_pans ]
 plot!(plt)
 
 # Similarly we define the meshes for the other surfaces and plot them.
@@ -127,7 +125,6 @@ vtail_mesh = WingMesh(vtail, [4], 3)
     for panel in plot_panels(camber_panels(htail_mesh)) ]
 [ plot!(plt, panel, label = "", color = :lightgreen) 
     for panel in plot_panels(camber_panels(vtail_mesh)) ]
-
 plot!(plt)
 
 # ### Aerodynamic Analysis
@@ -146,21 +143,19 @@ fs  = Freestream(
                 );
 
 # You can define the reference values for the speed, area, span, chord, density, and location  as follows.
-refs = References(
-                  speed    = 1.0, 
+refs = References(speed    = 1.0, 
                   area     = projected_area(wing),
                   span     = span(wing),
                   chord    = mean_aerodynamic_chord(wing),
                   density  = 1.225,
-                  location = mean_aerodynamic_center(wing)
-                 );
+                  location = mean_aerodynamic_center(wing));
 
 # You can run the aerodynamic analysis by providing the aircraft configuration, freestream, and reference values. Optionally you can also print the results.
 system = solve_case(
-            aircraft, fs, refs;
-            print            = true, # Prints the results for only the aircraft
-            print_components = true, # Prints the results for all components
-        )
+        aircraft, fs, refs;
+        print            = true, # Prints the results for only the aircraft
+        print_components = true, # Prints the results for all components
+    )
 
 # You can obtain the aerodynamic coefficients from this system. The nearfield aerodynamic force and moment coefficients are ordered as $(C_{D_i}, C_Y, C_L, C_\ell, C_m, C_n)$.
 nf = nearfield(system)
@@ -212,6 +207,7 @@ plot(data[:,1], round.(data[:,2:end], digits = 4),
 # > using DataFrames, StatsPlots
 # > data = DataFrame([ xs for xs in zip(αs, coeffs) ])
 # > rename!(data, [:α, :CD, :CY, :CL, :Cl, :Cm, :Cn])
+# > @df data plot()
 # > ```
 
 # ### Spanwise Loading
@@ -219,8 +215,11 @@ plot(data[:,1], round.(data[:,2:end], digits = 4),
 # You can compute the aerodynamic coefficients on the panels from the system.
 CFs, CMs = surface_coefficients(system)
 
+## Get panels along the chord-lines of the wing.
+wing_panels = chord_panels(wing_mesh)
+
 ## Compute spanwise loads
-span_loads  = spanwise_loading(wing_mesh, CFs.wing, projected_area(wing))
+span_loads  = spanwise_loading(wing_panels, CFs.wing, projected_area(wing))
 CL_loads    = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord);
 
 ## Plot spanwise loadings

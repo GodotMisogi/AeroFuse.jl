@@ -60,20 +60,6 @@ rate_coefficient(fs :: Freestream, refs :: References) = rate_coefficient(fs.ome
 ## System
 #==========================================================================================#
 
-"""
-    VortexLatticeSystem
-
-A system consisting of the relevant variables for a vortex lattice analysis for post-processing.
-
-# Arguments
-The accessible fields are:
-- `vortices`:  The array of vortices (currently `Horseshoe`).
-- `circulations`: The circulation strengths of the vortices obtained by solving the linear system.
-- `influence_matrix`: The influence matrix of the linear system.
-- `boundary_vector`: The boundary condition corresponding to the right-hand-side of the linear system.
-- `freestream :: Freestream`: The freestream conditions.
-- `reference :: References`: The reference values.
-"""
 struct VortexLatticeSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
     vortices          :: M
     circulations      :: N 
@@ -102,7 +88,7 @@ rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freest
     surface_velocities(system :: VortexLatticeSystem; 
                        axes   :: AbstractAxisSystem = Geometry())
 
-Compute the induced velocities for all components of the `VortexLatticeSystem` in the reference axis system.
+Compute the velocities on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
 """
 surface_velocities(system :: VortexLatticeSystem; axes = Geometry()) = surface_velocities(system, axes)
 
@@ -119,7 +105,7 @@ surface_velocities(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axe
     surface_forces(system :: VortexLatticeSystem; 
                    axes   :: AbstractAxisSystem = Geometry())
 
-Compute the forces for all components of the `VortexLatticeSystem` in the reference axis system.
+Compute the forces on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system (`Geometry` by default).
 """
 surface_forces(system; axes :: AbstractAxisSystem = Geometry()) = surface_forces(system, axes)
 
@@ -136,7 +122,7 @@ surface_forces(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(s
     surface_moments(system :: VortexLatticeSystem; 
                     axes   :: AbstractAxisSystem = Geometry())
 
-Compute the moments for all components of the `VortexLatticeSystem` in the reference axis system.
+Compute the moments on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
 """
 surface_moments(system; axes :: AbstractAxisSystem = Geometry()) = surface_moments(system, axes)
 
@@ -154,7 +140,7 @@ surface_moments(system :: VortexLatticeSystem, ::Wind) =  surface_moments(system
     surface_dynamics(system :: VortexLatticeSystem; 
                      axes   :: AbstractAxisSystem = Geometry())
 
-Compute the forces and moments for all components of the `VortexLatticeSystem` in the reference axis system.
+Compute the forces and moments on the surface given the `VortexLatticeSystem` after performing an analysis, and the reference axis system.
 """
 function surface_dynamics(system :: VortexLatticeSystem)
     # Compute nearfield forces and moments
@@ -208,12 +194,6 @@ end
 
 surface_dynamics(system; axes :: AbstractAxisSystem = Wind()) = surface_dynamics(system, axes)
 
-"""
-    surface_coefficients(system :: VortexLatticeSystem; 
-                         axes   :: AbstractAxisSystem = Wind())
-
-Compute the force and moment coefficients on the surface given the `VortexLatticeSystem` in the reference axis system.
-"""
 function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Wind()) 
     # Compute surface forces in whichever axes
     forces, moments = surface_dynamics(system, axes)
@@ -225,28 +205,14 @@ function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxi
     CFs, CMs
 end
 
-"""
-    nearfield_coefficients(system :: VortexLatticeSystem)
-
-Compute the force and moment coefficients in **wind axes** for all components of the `VortexLatticeSystem`.
-"""
 function nearfield_coefficients(system :: VortexLatticeSystem) 
     CFs, CMs = surface_coefficients(system; axes = Wind())
     NamedTuple(key => [sum(CFs[key]); sum(CMs[key])] for key in keys(CFs))
 end
 
-"""
-    nearfield(system :: VortexLatticeSystem)
-
-Compute the **total** force and moment coefficients in **wind axes** for all components of the `VortexLatticeSystem`.
-"""
 nearfield(system :: VortexLatticeSystem) = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
 
-"""
-    farfield_forces(system :: VortexLatticeSystem)
-
-Compute the **farfield** forces in **wind axes** for all components of the `VortexLatticeSystem`.
-"""
+# Compute farfield forces in Trefftz plane
 function farfield_forces(system :: VortexLatticeSystem)
     hs = system.vortices 
     Γs = system.circulations
@@ -258,18 +224,8 @@ function farfield_forces(system :: VortexLatticeSystem)
     NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
 end
 
-"""
-    farfield_coefficients(system :: VortexLatticeSystem)
-
-Compute the **total farfield** force coefficients in **wind axes** for all components of the `VortexLatticeSystem`.
-"""
 farfield_coefficients(system :: VortexLatticeSystem) = map(ff -> force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area), farfield_forces(system))
 
-"""
-    farfield_coefficients(system :: VortexLatticeSystem)
-
-Compute the **total farfield** force in **wind axes** for all components of the `VortexLatticeSystem`.
-"""
 function farfield(system :: VortexLatticeSystem)
     ffs = farfield_coefficients(system)
     # Massive hack

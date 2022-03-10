@@ -40,7 +40,7 @@ source_matrix(panels_1, panels_2) = [ source_influence(panel_j, panel_i) for (pa
 
 Create the vector of source strengths for the Dirichlet boundary condition ``σ = \\vec U_{\\infty} \\cdot \\hat{n}`` given Panel2Ds and a Uniform2D.
 """
-source_strengths(panels, u) = dot.(Ref(u), normal_vector.(panels))
+source_strengths(panels, u) = dot.(Ref(u), panel_normal.(panels))
 
 """
     boundary_vector(panels, u)

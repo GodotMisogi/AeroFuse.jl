@@ -10,7 +10,7 @@ projected_area(fuse)
 length(fuse)
 
 ## Cosine interpolation
-lens_rads = cosine_interpolation(fuse, 40)
+lens_rads = cosine_spacing(fuse, 40)
 
 # Circles for plotting
 n_pts          = 20
