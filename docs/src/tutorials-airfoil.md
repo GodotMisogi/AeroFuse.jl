@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "<unknown>/D:/.julia/dev/AeroMDAO/docs/lit/tutorials-airfoil.jl"
+EditURL = "<unknown>/docs/lit/tutorials-airfoil.jl"
 ```
 
 ## Objectives

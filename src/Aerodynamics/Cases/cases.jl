@@ -7,7 +7,7 @@
                print = false :: Boolean,
                print_components = false :: Boolean)
 
-Perform a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `Reference` values.
+Perform a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `References` values.
 """
 function solve_case(components :: DenseArray, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false)
     system = solve_system(components, freestream, refs)

@@ -133,7 +133,7 @@ end
              surface :: AbstractWing, 
              n_span :: Vector{Integer}, n_chord :: Integer;
              span_spacing :: AbstractSpacing = symmetric_spacing(surface)
-             )
+            )
 
 Define a container to generate meshes and panels for a given `AbstractWing` with a specified distribution of number of spanwise panels, and a number of chordwise panels.
 
@@ -157,7 +157,18 @@ surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num
 
 surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
 
+"""
+    chord_panels(wing_mesh :: WingMesh)
+
+Generate the chord panel distribution from a `WingMesh`.
+"""
 chord_panels(wing :: WingMesh) = make_panels(wing.chord_mesh)
+
+"""
+    camber_panels(wing_mesh :: WingMesh)
+
+Generate the camber panel distribution from a `WingMesh`.
+"""
 camber_panels(wing :: WingMesh) = make_panels(wing.camber_mesh)
 
 function Base.show(io :: IO, mesh :: WingMesh)

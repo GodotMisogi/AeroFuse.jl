@@ -22,7 +22,7 @@ end
                            print = false,
                            print_components = false)
 
-Obtain the values and derivatives of a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `Reference` values.
+Obtain the force and moment coefficients of a vortex lattice analysis and their derivatives with respect to freestream values, given a vector of `Horseshoe`s, a `Freestream` condition, and `Reference` values.
 """
 function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; axes = Wind(), name = :aircraft, print = false, print_components = false)
     # Reference values and scaling inputs
@@ -73,6 +73,13 @@ end
 ## Linearized stability analysis
 #==========================================================================================#
 
+"""
+    longitudinal_stability_derivatives(dvs, U, m, Iyy, Q, S, c)
+
+Compute the stability derivatives for the forces and moments in the longitudinal plane ``[X,Z,M]_{u,w,q}``.
+
+The inputs are force and moment coefficient stability derivatives matrix `dvs`, the freestream speed `U`, the mass `m` and longitudinal moment of inertia ``I_{yy}``, the dynamic pressure Q, reference area ``S`` and chord length ``c``.
+"""
 function longitudinal_stability_derivatives(dvs, U, m, Iyy, Q, S, c)
     QS  = Q * S
     c1  = QS / (m * U) 
@@ -99,7 +106,14 @@ longitudinal_stability_matrix(X_u, Z_u, M_u, X_w, Z_w, M_w, X_q, Z_q, M_q, U₀,
       M_u M_w       M_q         0
        0   0         1          0 ]
 
-function lateral_stability_derivatives(dvs, U, m, Iyy, Izz, Q, S, b)
+"""
+    lateral_stability_derivatives(dvs, U, m, Iyy, Q, S, c)
+
+Compute the stability derivatives for the forces and moments in the lateral plane ``[Y,L,N]_{v,p,r}``.
+
+The inputs are force and moment coefficient stability derivatives matrix `dvs`, the freestream speed `U`, the mass `m` and lateral moment sof inertia ``I_{xx}, I_{zz}``, the dynamic pressure Q, reference area ``S`` and span length ``b``.
+"""
+function lateral_stability_derivatives(dvs, U, m, Ixx, Izz, Q, S, b)
     QS  = Q * S
     c1  = QS / (m * U) 
     c2  = QS / (Ixx * U)
