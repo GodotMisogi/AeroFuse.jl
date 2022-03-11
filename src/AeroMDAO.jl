@@ -141,12 +141,6 @@ import .LinearVortexSource: total_velocity, source_velocity, vortex_velocity, vo
 
 export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_neumann_matrix, linear_source_neumann_matrix, linear_vortex_neumann_matrix, constant_source_matrix, constant_source_boundary_condition
 
-import .LinearVortexSource: vortex_stream, source_stream, linear_source_stream, linear_vortex_stream, linear_vortex_stream_1, linear_vortex_stream_2, linear_source_stream_1, linear_source_stream_2, constant_source_stream, linear_vortex_velocity_a, linear_vortex_velocity_b, constant_source_velocity, linear_source_velocity, linear_vortex_velocity
-
-export vortex_stream, source_stream, linear_source_stream, linear_vortex_stream, linear_vortex_stream_1, linear_vortex_stream_2, linear_source_stream_1, linear_source_stream_2, constant_source_stream, linear_vortex_velocity_a, linear_vortex_velocity_b, constant_source_velocity, linear_source_velocity, linear_vortex_velocity
-
-# include("Aerodynamics/VorticityStream/VorticityStream.jl")
-
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
@@ -159,14 +153,6 @@ export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability
 include("Aerodynamics/profile_drag.jl")
 
 export wetted_area_drag, profile_drag_coefficient, local_dissipation_drag
-
-## Viscous airfoil analysis
-
-include("Aerodynamics/ViscFoil/ViscFoil.jl")
-
-import .ViscFoil: BoundaryLayer2D, solve_inviscid_doublets, solve_inviscid_vortices, defect_block, edge_velocities, solve_viscous_case, thwaites_initialization, residual_station
-
-export BoundaryLayer2D, solve_inviscid_doublets, solve_inviscid_vortices, defect_block, edge_velocities, solve_viscous_case, thwaites_initialization, residual_station
 
 ## Cases
 
