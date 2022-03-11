@@ -60,6 +60,8 @@ rate_coefficient(fs :: Freestream, refs :: References) = rate_coefficient(fs.ome
 ## System
 #==========================================================================================#
 
+abstract type AbstractVortexLatticeSystem end
+
 """
     VortexLatticeSystem
 
@@ -74,7 +76,7 @@ The accessible fields are:
 - `freestream :: Freestream`: The freestream conditions.
 - `reference :: References`: The reference values.
 """
-struct VortexLatticeSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences}
+struct VortexLatticeSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences} <: AbstractVortexLatticeSystem
     vortices          :: M
     circulations      :: N 
     influence_matrix  :: R
@@ -240,7 +242,11 @@ end
 
 Compute the **total** force and moment coefficients in **wind axes** for all components of the `VortexLatticeSystem`.
 """
-nearfield(system :: VortexLatticeSystem) = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
+function nearfield(system :: VortexLatticeSystem)
+    CDi, CY, CL, Cl, Cm, Cn = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
+
+    (CDi = CDi, CY = CY, CL = CL, Cl = Cl, Cm = Cm, Cn = Cn)
+end
 
 """
     farfield_forces(system :: VortexLatticeSystem)
@@ -274,8 +280,10 @@ function farfield(system :: VortexLatticeSystem)
     ffs = farfield_coefficients(system)
     # Massive hack
     if length(ffs) == 1
-        return ffs[1]
+        coeffs = ffs[1]
     else 
-        return vec(sum(reduce(hcat, ffs), dims = 2))
+        coeffs = vec(sum(reduce(hcat, ffs), dims = 2))
     end
+
+    return (CDi_ff = coeffs[1], CY_ff = coeffs[2], CL_ff = coeffs[3])
 end

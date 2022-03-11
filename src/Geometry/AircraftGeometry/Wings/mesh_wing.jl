@@ -26,7 +26,18 @@ function surface_coordinates(wing :: HalfWing, span_num :: Vector{<: Integer}, c
     affine_transformation(wing).(chop_spanwise_sections(scaled_foils, twists(wing), leading_xyz, span_num, spacings, flip))
 end
 
-number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) = ceil.(Int, span_num .* spans(wing) / span(wing))
+function number_of_spanwise_panels(wing :: HalfWing, span_num :: Integer) 
+    # Compute contribution of each section to total span length
+    weights = spans(wing) / span(wing)
+
+    weights[findall(<(0.2), weights)] .*= 3
+
+    # Heuristic (aka hAx0rZ) check to ensure small sections also get some panel love
+    # weights = ifelse(any(<(0.2), weights), fill(1. / length(spans(wing)), length(spans(wing))), weights)
+
+    # Generate spanwise panel distribution
+    ceil.(Int, span_num .* weights)
+end
 
 function number_of_spanwise_panels(wing :: HalfWing, span_num :: Vector{<: Integer})
     @assert (length ∘ spans)(wing) > 1 "Provide a positive integer of spanwise panels for 1 wing section."
@@ -118,7 +129,7 @@ panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer
 ## Meshing type for convenience
 #==========================================================================================#
 
-mutable struct WingMesh{M <: AbstractWing, N <: Integer, P, Q, T} <: AbstractWing
+struct WingMesh{M <: AbstractWing, N <: Integer, P, Q, T} <: AbstractWing
     surface       :: M
     num_span      :: Vector{N}
     num_chord     :: N
@@ -146,6 +157,8 @@ function WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N; chord
     T = promote_type(eltype(chord_mesh), eltype(camber_mesh))
     WingMesh{M,N,P,Q,T}(surface, n_span, n_chord, chord_spacing, span_spacing, chord_mesh, camber_mesh)
 end
+
+WingMesh(surface, n_span :: Integer, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) = WingMesh(surface, number_of_spanwise_panels(surface, n_span), n_chord; chord_spacing = chord_spacing, span_spacing = span_spacing)
 
 check_definition(surf :: HalfWing, n_span) = @assert length(n_span) == length(surf.spans) "The spanwise number vector's length must be the same as the number of sections of the surface."
 check_definition(surf :: Wing, n_span) = @assert length(n_span) == length(surf.right.spans) == length(surf.left.spans) "The spanwise number vector's length must be the same as the number of sections of the surface."
