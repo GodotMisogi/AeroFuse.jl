@@ -76,8 +76,7 @@ ff_v = [ CDi_ff + CDv; CDv; ff ]
 print_coefficients(nf_v, ff_v, :wing)
 
 ## Evaluate case with stability derivatives
-@time dv_data = solve_case_derivatives(aircraft, fs, refs;
-                                       print = true
+@code_warntype solve_case_derivatives(aircraft, fs, refs;
                                       );
 
 ## Plotting
@@ -118,7 +117,9 @@ scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
 plot!()
 
 ## Compute spanwise loads
-span_loads = spanwise_loading(horseshoe_panels, CFs.wing, projected_area(wing))
+@code_warntype spanwise_loading(horseshoe_panels, CFs.wing, projected_area(wing))
+
+##
 CL_loads   = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
 
 ## Plot spanwise loadings

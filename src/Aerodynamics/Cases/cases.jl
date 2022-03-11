@@ -24,6 +24,24 @@ end
 
 solve_case(meshes, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false) = solve_case(ComponentVector(meshes), freestream, refs; name = name, print = print, print_components = print_components)
 
+# Method forwarding
+#
+# macro forward(ex, fs)
+#     @capture(ex, T_.field_) || error("Syntax: @forward T.x f, g, h")
+#     T = esc(T)
+#     fs = isexpr(fs, :tuple) ? map(esc, fs.args) : [esc(fs)]
+#     :($([:($f(x::$T, args...; kwargs...) =
+#            (Base.@_inline_meta; $f(x.$field, args...; kwargs...)))
+#          for f in fs]...);
+#       nothing)
+# end
+
+# struct MeshVortexLatticeSystem{M <: WingMesh, VLM <: AbstractVortexLatticeSystem} <: AbstractVortexLatticeSystem
+#     meshes :: Vector{M}
+#     system :: VLM 
+# end
+
+# @forward MeshVortexLatticeSystem.system surface_coefficients, surface_forces, surface_forces, surface_moments, surface_velocities, surface_dynamics, nearfield_coefficients, farfield_coefficients, farfield_forces, nearfield, farfield
 
 ## Placeholder for functions I'm not sure where to put
 #==========================================================================================#

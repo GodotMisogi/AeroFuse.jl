@@ -112,7 +112,7 @@ wing_mesh = WingMesh(wing, [12], 6) # (Wing, [Spanwise panels], Chordwise panels
 wing_cam_panels = camber_panels(wing_mesh)
 
 ## Generate plotting points
-plt_wing_pans   = plot_panels(wing_cam_panels)
+plt_wing_pans = plot_panels(wing_cam_panels)
 
 [ plot!(plt, panel, label = "", color = :lightblue) 
     for panel in plt_wing_pans ]
@@ -131,7 +131,10 @@ vtail_mesh = WingMesh(vtail, [4], 3)
 plot!(plt)
 
 # ### Aerodynamic Analysis
-# For the analysis, you have to assemble the meshes into a `ComponentVector`.
+# For the analysis, we need to generate a `Horseshoe` type, corresponding to horseshoe singularity elements used in the vortex lattice method. This is generated as follows:
+make_horseshoes(wing_mesh)
+
+# To perform the aerodynamic analysis, you have to assemble these horseshoes for each surface into a `ComponentVector`.
 aircraft = ComponentVector(
                            wing  = make_horseshoes(wing_mesh),
                            htail = make_horseshoes(htail_mesh),
@@ -196,7 +199,7 @@ plot(CDis, CLs,
 # Let's also take a look at the variations of all the coefficients.
 
 ## Concatenate results into one array
-data = permutedims(reduce(hcat, [α; c] for (α, c) in zip(αs, coeffs)))
+data = permutedims(reduce(hcat, [α; c...] for (α, c) in zip(αs, coeffs)))
 
 ## Plot
 plot(data[:,1], round.(data[:,2:end], digits = 4), 
