@@ -10,7 +10,6 @@ using Rotations
 using ForwardDiff: jacobian!
 using DiffResults: JacobianResult, jacobian, value
 using PrettyTables
-using StructArrays
 
 using Statistics: mean
 
@@ -108,9 +107,9 @@ import .AircraftGeometry: HorizontalTail, VerticalTail
 
 # export WingControlSurface
 
-make_horseshoes(wing :: WingMesh) = StructArray(Horseshoe.(chord_panels(wing), normal_vector.(camber_panels(wing))))
+make_horseshoes(wing :: WingMesh) = Horseshoe.(chord_panels(wing), normal_vector.(camber_panels(wing)))
 
-make_vortex_rings(wing :: WingMesh) = StructArray(VortexRing.(camber_panels(wing)))
+make_vortex_rings(wing :: WingMesh) = VortexRing.(camber_panels(wing))
 
 export make_horseshoes, make_vortex_rings
 
