@@ -24,7 +24,7 @@ sum(σs)
 pts = collocation_point.(panels);
 panel_vels = [ velocity(uniform) .+ sum(source_velocity.(σs, panels, Ref(panel_i))) for panel_i in panels ]
 
-qts = @. dot(panel_vels, panel_tangent(panels))
+qts = @. dot(panel_vels, tangent_vector(panels))
 cps = @. 1 - qts^2 / uniform.magnitude^2
 
 ##

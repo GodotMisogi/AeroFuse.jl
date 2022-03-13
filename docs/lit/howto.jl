@@ -70,7 +70,7 @@ cl     = lift_coefficient(system)
 # AeroMDAO provides more helper functions for the panel geometry.
 panels   = system.surface_panels
 pts      = collocation_point.(panels) # Collocation points
-tangents = panel_tangent.(panels)     # Tangents
+tangents = tangent_vector.(panels)     # Tangents
 normals  = normal_vector.(panels)      # Normals
 locs     = panel_location.(panels);   # Upper or lower surface
 
