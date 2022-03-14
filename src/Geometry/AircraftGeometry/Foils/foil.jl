@@ -28,7 +28,7 @@ Foil(coords :: Vector{<: FieldVector{2,<: Real}}, name = "") = Foil(getindex.(co
 Foil((name, coords)) = Foil(coords, name)
 
 function Foil(coords :: AbstractMatrix{<: Real}, name = "") 
-    @assert size(coords)[2] == 2 "The array must have only two columns for coordinates!"
+    @assert size(coords, 2) == 2 "The array must have only two columns for coordinates!"
 
     @views Foil(coords[:,1], coords[:,2], name)
 end
@@ -223,16 +223,15 @@ end
 """
     read_foil(path :: String; header = true; name = "")
 
-Generate a `Foil` from a file consisting of 2D coordinates with named arguments to skip the header or assign a name.
+Generate a `Foil` from a file consisting of 2D coordinates with named arguments to skip the header (first line of the file) or assign a name.
 
 By default, the header is assumed to exist and should contain the airfoil name, which is assigned to the name of the `Foil`.
 """
-function read_foil(path :: String; header = true, name = "") 
-    if header
-        coords, name = readdlm(path, header = header)
-        return Foil(coords, name[1])
-    else
-        coords = readdlm(path)
+function read_foil(path :: String; name = "") 
+    coords, foil_name = readdlm(path, header = true)
+    if name != ""
         return Foil(coords, name)
+    else
+        return Foil(coords, strip(join(foil_name, " ")))
     end
 end

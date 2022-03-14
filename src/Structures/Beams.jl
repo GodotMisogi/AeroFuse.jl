@@ -198,7 +198,7 @@ tube_stiffness_matrix(E, G, A, Iy, Iz, J, L, num :: Integer) = tube_stiffness_ma
 tube_stiffness_matrix(tube :: Tube) = tube_stiffness_matrix(elastic_modulus(material(tube)), shear_modulus(material(tube)), area(tube), moment_of_inertia(tube), moment_of_inertia(tube), polar_moment_of_inertia(tube), length(tube))
 
 function tube_stiffness_matrix(x :: Matrix{<: Real})
-    @assert size(x)[2] == 7 "Input must have 7 columns."
+    @assert size(x, 2) == 7 "Input must have 7 columns."
     @views tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
 end
 

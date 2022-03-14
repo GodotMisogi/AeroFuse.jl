@@ -2073,7 +2073,7 @@ a.box:active {
 .content pre {
   -webkit-overflow-scrolling: touch;
   overflow-x: auto;
-  padding: 0.7rem 0.5rem;
+  padding: 0;
   white-space: pre;
   word-wrap: normal; }
 
@@ -7001,7 +7001,16 @@ h1:hover .docs-heading-anchor-permalink, h2:hover .docs-heading-anchor-permalink
   display: none !important; }
 
 pre {
-  position: relative; }
+  position: relative;
+  overflow: hidden; }
+  pre code, pre code.hljs {
+    padding: 0 0.5rem;
+    overflow: auto;
+    display: block; }
+  pre code:first-of-type, pre code.hljs:first-of-type {
+    padding-top: 0.7rem; }
+  pre code:last-of-type, pre code.hljs:last-of-type {
+    padding-bottom: 0.7rem; }
   pre .copy-button {
     opacity: 0.2;
     transition: opacity 0.2s;
@@ -7217,8 +7226,7 @@ pre, code {
     color: #2a5398; }
 
 .hljs {
-  background: initial !important;
-  padding: initial !important; }
+  background: initial !important; }
 
 .katex .katex-mathml {
   top: 0;
@@ -7645,8 +7653,7 @@ Typically this "required" baseline CSS is added by `makestuff.js` during build.
 */
 pre code.hljs {
   display: block;
-  overflow-x: auto;
-  padding: 1em; }
+  overflow-x: auto; }
 
 code.hljs {
   padding: 3px 5px; }

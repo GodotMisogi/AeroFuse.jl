@@ -2060,7 +2060,7 @@ html.theme--documenter-dark {
   html.theme--documenter-dark .content pre {
     -webkit-overflow-scrolling: touch;
     overflow-x: auto;
-    padding: 0.7rem 0.5rem;
+    padding: 0;
     white-space: pre;
     word-wrap: normal; }
   html.theme--documenter-dark .content sup,
@@ -6854,7 +6854,16 @@ html.theme--documenter-dark {
   html.theme--documenter-dark .docs-light-only {
     display: none !important; }
   html.theme--documenter-dark pre {
-    position: relative; }
+    position: relative;
+    overflow: hidden; }
+    html.theme--documenter-dark pre code, html.theme--documenter-dark pre code.hljs {
+      padding: 0 0.5rem;
+      overflow: auto;
+      display: block; }
+    html.theme--documenter-dark pre code:first-of-type, html.theme--documenter-dark pre code.hljs:first-of-type {
+      padding-top: 0.7rem; }
+    html.theme--documenter-dark pre code:last-of-type, html.theme--documenter-dark pre code.hljs:last-of-type {
+      padding-bottom: 0.7rem; }
     html.theme--documenter-dark pre .copy-button {
       opacity: 0.2;
       transition: opacity 0.2s;
@@ -7035,8 +7044,7 @@ html.theme--documenter-dark {
     html.theme--documenter-dark .breadcrumb a.is-disabled, html.theme--documenter-dark .breadcrumb a.is-disabled:hover {
       color: #97b3e2; }
   html.theme--documenter-dark .hljs {
-    background: initial !important;
-    padding: initial !important; }
+    background: initial !important; }
   html.theme--documenter-dark .katex .katex-mathml {
     top: 0;
     right: 0; }
