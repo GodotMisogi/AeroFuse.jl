@@ -15,7 +15,7 @@ using LaTeXStrings # hide
 How to work with airfoil geometry.
 
 ### Import Coordinates File
-You can specify the path consisting of the foil's coordinates to the `read_foil` function. The format requires a header for the name by default, but this can be disabled and a custom name can be provided by setting the optional `header` and `name` variables.
+You can specify the path consisting of the foil's coordinates to the `read_foil` function. The format for the coordinates file requires a header for the name in the first line of the file. A custom name can be provided by setting the optional `name` variable.
 
 ````@example howto
 # Airfoil coordinates file path
@@ -23,8 +23,8 @@ foilpath = string(@__DIR__, "/misc/s1223.dat")
 
 # Read coordinates file
 my_foil = read_foil(foilpath;
-                    header = true,
-                    name   = "")
+                    name   = "S1223" # To overwrite name in header
+                   )
 ````
 
 ````@example howto

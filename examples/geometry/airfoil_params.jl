@@ -18,7 +18,7 @@ end
 uniform = Uniform2D(angle = 5)
 
 ## Foil processing
-naca_foil = naca4((2,4,1,2)) # NACA 4-digit
+naca_foil = naca4(2,4,1,2) # NACA 4-digit
 
 doublet_source_case(naca_foil, uniform)
 
