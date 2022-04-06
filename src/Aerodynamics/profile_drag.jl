@@ -18,10 +18,14 @@ cf_turb(Re_c, M) = 0.455 / log10(Re_c)^2.58 / (1 + 0.144M^2)^0.65
 cf_schlichting(Re, Re_xtr, M) = max(cf_lam(Re), cf_turb(Re, M) - (Re_xtr / 320 - 39) / Re)
 
 function skin_friction_coefficients(mean_chords, x_tr, V, ρ, M, μ)
+    # Reynolds numbers for chord lengths
+    Re_c = reynolds_number.(ρ, V, mean_chords, μ)
+
+    # Reynolds numbers at transition locations
+    Re_xtr = reynolds_number.(ρ, V, mean_chords .* x_tr, μ)
+
     # Skin-friction coefficients
-    Re_c    = reynolds_number.(ρ, V, mean_chords, μ)
-    Re_xtr  = reynolds_number.(ρ, V, mean_chords .* x_tr, μ)
-    cfs     = cf_schlichting.(Re_c, Re_xtr, M)
+    cfs = cf_schlichting.(Re_c, Re_xtr, M)
 end
 
 function wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
@@ -90,7 +94,12 @@ struct Dissipation <: AbstractProfileDrag end
 profile_drag_coefficient(wing :: HalfWing, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
 profile_drag_coefficient(wing :: WingMesh, x_tr, V, rho_ref, a_ref, area_ref, μ) = wetted_area_drag(wing, x_tr, V, rho_ref, a_ref, μ) / area_ref
 profile_drag_coefficient(wing :: Wing, x_tr, V, rho_ref, a_ref, area_ref, μ) = profile_drag_coefficient(wing.left, x_tr, V, rho_ref, a_ref, area_ref, μ) + profile_drag_coefficient(wing.right, x_tr, V, rho_ref, a_ref, area_ref, μ)
+
 profile_drag_coefficient(wing :: AbstractWing, x_tr, refs :: References) = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, refs.sound_speed, refs.area, refs.viscosity)
+
+profile_drag_coefficient(wing :: AbstractWing, x_tr, edge_speeds, panels, refs :: References) = local_dissipation_drag(wing, panel_area.(panels), refs.density, edge_speeds, x_tr, refs.speed, refs.density, mach_number(refs), refs.viscosity) / refs.area
+
+profile_drag_coefficient(wing :: WingMesh, x_tr, edge_speeds, refs :: References) = local_dissipation_drag(wing, refs.density, edge_speeds, x_tr, refs.speed, refs.density, mach_number(refs), refs.viscosity) / refs.area
 
 function wave_drag(M, Λ, t_by_c, Cl, κ_A)
     M_drag_divergence = κ_A / cos(Λ) - t_by_c / cos(Λ)^2 - Cl / (10 * cos(Λ)^3) # Drag divergence Mach number

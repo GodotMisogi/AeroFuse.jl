@@ -46,8 +46,6 @@ function surface_velocities end
 
 function surface_coefficients end
 
-function reynolds_number end
-
 export solve_linear, solve_nonlinear, solve_linear!, solve_nonlinear!, collocation_point, reynolds_number
 
 ## Math tools
@@ -63,9 +61,9 @@ import .MathTools: forward_sum, forward_difference, forward_division, weighted_v
 #==========================================================================================#
 
 include("Tools/NonDimensional.jl")
-import .NonDimensional: dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, force, moment
+import .NonDimensional: dynamic_pressure, reynolds_number, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, force, moment
 
-export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, force, moment
+export dynamic_pressure, reynolds_number, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, force, moment
 
 ## Panels
 #==========================================================================================#
@@ -148,10 +146,9 @@ import .VortexLattice: Horseshoe, AbstractVortexLatticeSystem, VortexLatticeSyst
 export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, kinematic_viscosity, mach_number
 
 ## Profile drag estimation
-
 include("Aerodynamics/profile_drag.jl")
 
-export wetted_area_drag, profile_drag_coefficient, local_dissipation_drag
+export profile_drag_coefficient, wetted_area_drag, local_dissipation_drag, form_factor
 
 ## Cases
 
