@@ -93,28 +93,28 @@ end;
 ## Viscous drag prediction
 
 # Equivalent flat-plate skin friction estimation
-CDv_wing  = profile_drag_coefficient(wing_mesh, [0.8, 0.8], system.reference)
-CDv_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], system.reference)
-CDv_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], system.reference)
+CDv_wing  = profile_drag_coefficient(wing,  [0.8, 0.8], system.reference)
+CDv_htail = profile_drag_coefficient(htail, [0.6, 0.6], system.reference)
+CDv_vtail = profile_drag_coefficient(vtail, [0.6, 0.6], system.reference)
 
 CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 
-## Local dissipation form factor friction estimation
+## Local dissipation form factor friction estimation (WRONG???)
 import LinearAlgebra: norm
 
 edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
 
 # Drag coefficients
-CDvd_wing   = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  refs)
-CDvd_htail  = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, refs)
-CDvd_vtail  = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, refs)
+CDvd_wing  = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  ref)
+CDvd_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, ref)
+CDvd_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, ref)
 
-CDv_diss    = CDvd_wing + CDvd_htail + CDvd_vtail
+CDv_diss   = CDvd_wing + CDvd_htail + CDvd_vtail
 
 ## Viscous drag coefficient
 CDv = CDv_plate
 
-## Total force coefficients with viscous drag prediction
+## Total force coefficients with empirical viscous drag prediction
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
 CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 
@@ -122,7 +122,7 @@ nf_v = (CD = CDi_nf + CDv, CDv = CDv, nf...)
 ff_v = (CD = CDi_ff + CDv, CDv = CDv, ff...)
 
 ## Spanwise forces/lifting line loads
-wing_ll  = spanwise_loading(chord_panels(wing_mesh), CFs.wing, S)
+wing_ll  = spanwise_loading(chord_panels(wing_mesh),  CFs.wing,  S)
 htail_ll = spanwise_loading(chord_panels(htail_mesh), CFs.htail, S)
 vtail_ll = spanwise_loading(chord_panels(vtail_mesh), CFs.vtail, S);
 

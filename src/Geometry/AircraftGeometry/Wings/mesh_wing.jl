@@ -86,6 +86,8 @@ chord_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spaci
 
 camber_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = camber_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
 
+surface_coordinates(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = surface_coordinates(wing, number_of_spanwise_panels(wing, span_num), chord_num; spacings = spacings)
+
 ## Panelling
 #==========================================================================================#
 
@@ -164,11 +166,37 @@ check_definition(surf :: HalfWing, n_span) = @assert length(n_span) == length(su
 check_definition(surf :: Wing, n_span) = @assert length(n_span) == length(surf.right.spans) == length(surf.left.spans) "The spanwise number vector's length must be the same as the number of sections of the surface."
 
 ##
+"""
+    chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)
+
+Generate the chord coordinates of a `WingMesh` with default spanwise ``n_s`` and chordwise ``n_c`` panel distributions from the mesh.
+"""
 chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = chord_coordinates(wing.surface, n_span, n_chord)
+
+"""
+    camber_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)
+
+Generate the camber coordinates of a `WingMesh` with default spanwise ``n_s`` and chordwise ``n_c`` panel distributions from the mesh.
+"""
 camber_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = camber_coordinates(wing.surface, n_span, n_chord)
+
+"""
+    surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)
+
+Generate the surface coordinates of a `WingMesh` with default spanwise ``n_s`` and chordwise ``n_c`` panel distributions from the mesh.
+"""
 surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = surface_coordinates(wing.surface, n_span, n_chord)
 
-surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
+"""
+    surface_panels(wing_mesh :: WingMesh, 
+                   n_s = wing_mesh.num_span, 
+                   n_c = length(first(foils(wing_mesh.surface))).x)
+
+Generate the surface panel distribution from a `WingMesh` with the default spanwise ``n_s`` panel distribution from the mesh and the chordwise panel ``n_c`` distribution from the airfoil.
+
+In case of strange results, provide a higher number of chordwise panels to represent the airfoils more accurately
+""" 
+surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foils(wing.surface)).x))  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
 
 """
     chord_panels(wing_mesh :: WingMesh)
@@ -183,6 +211,24 @@ chord_panels(wing :: WingMesh) = make_panels(wing.chord_mesh)
 Generate the camber panel distribution from a `WingMesh`.
 """
 camber_panels(wing :: WingMesh) = make_panels(wing.camber_mesh)
+
+"""
+    wetted_area(wing_mesh :: WingMesh, 
+                n_s = wing_mesh.num_span, 
+                n_c = length(first(foils(wing_mesh.surface))).x)
+
+Determine the wetted area ``S_{wet}`` of a `WingMesh` by calculating the total area of the surface panels.
+"""
+wetted_area(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foils(wing.surface)).x)) = wetted_area(surface_panels(wing, n_span, n_chord))
+
+"""
+    wetted_area_ratio(wing_mesh :: WingMesh, 
+                      n_s = wing_mesh.num_span, 
+                      n_c = length(first(foils(wing_mesh.surface))).x)
+
+Determine the wetted area ratio ``S_{wet}/S`` of a `WingMesh` by calculating the ratio of the total area of the surface panels to the projected area of the `Wing`.
+"""
+wetted_area_ratio(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foils(wing.surface)).x)) = wetted_area(wing, n_span, n_chord) / projected_area(wing.surface)
 
 function Base.show(io :: IO, mesh :: WingMesh)
     n_c, n_s = size(mesh.chord_mesh) .- 1

@@ -60,7 +60,7 @@ If you use AeroMDAO in your research, please cite the following until any releva
   author  = {Arjit Seth, Stephane Redonnet, Rhea P. Liem},
   title   = {AeroMDAO},
   url     = {https://github.com/GodotMisogi/AeroMDAO},
-  version = {0.3.8},
+  version = {0.3.9},
   date    = {2022-4-06},
 }
 ```
