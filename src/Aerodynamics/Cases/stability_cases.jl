@@ -40,8 +40,15 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; a
         
         # Create array of nearfield and farfield coefficients for each component as a row vector.
         comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
-        
-        [ comp_coeffs sum(comp_coeffs, dims = 2) ] # Append sum of all forces for aircraft
+
+        # Some retarded hack
+        if length(size(comp_coeffs)) > 1
+            sum_coeffs = sum(comp_coeffs, dims = 2)
+        else 
+            sum_coeffs = comp_coeffs
+        end
+
+        [ comp_coeffs sum_coeffs ] # Append sum of all forces for aircraft
     end
 
     names     = [ reduce(vcat, keys(aircraft)); name ]

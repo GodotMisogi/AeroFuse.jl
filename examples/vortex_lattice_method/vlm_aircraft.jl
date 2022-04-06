@@ -102,12 +102,12 @@ CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 ## Local dissipation form factor friction estimation
 import LinearAlgebra: norm
 
-M = mach_number(system.reference) # Mach number
 edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
 
-CDvd_wing   = local_dissipation_drag(wing_mesh, system.reference.density, edge_speeds.wing, [0.8, 0.8], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
-CDvd_htail  = local_dissipation_drag(htail_mesh, system.reference.density, edge_speeds.htail, [0.6, 0.6], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
-CDvd_vtail  = local_dissipation_drag(vtail_mesh, system.reference.density, edge_speeds.vtail, [0.6, 0.6], system.reference.speed, system.reference.density, M, system.reference.viscosity) / system.reference.area
+# Drag coefficients
+CDvd_wing   = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  refs)
+CDvd_htail  = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, refs)
+CDvd_vtail  = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, refs)
 
 CDv_diss    = CDvd_wing + CDvd_htail + CDvd_vtail
 
@@ -118,10 +118,8 @@ CDv = CDv_plate
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
 CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 
-nf_v = [ CDi_nf + CDv; CDv; nf ]
-ff_v = [ CDi_ff + CDv; CDv; ff ]
-
-print_coefficients(nf_v, ff_v, :aircraft)
+nf_v = (CD = CDi_nf + CDv, CDv = CDv, nf...)
+ff_v = (CD = CDi_ff + CDv, CDv = CDv, ff...)
 
 ## Spanwise forces/lifting line loads
 wing_ll  = spanwise_loading(chord_panels(wing_mesh), CFs.wing, S)

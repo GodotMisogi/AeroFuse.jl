@@ -53,16 +53,21 @@ CFs, CMs = surface_coefficients(system; axes = ax)
 
 ## Viscous drag prediction using empirical models
 
+CFs, CMs = surface_coefficients(system; axes = ax)
+FFs = farfield_coefficients(system)
+
+# Create array of nearfield and farfield coefficients for each component as a row vector.
+comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
+
 ## Equivalent flat-plate skin-friction estimation
 x_tr        = [0.98, 0.98]              # Transition locations over sections
-CDv_plate   = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, 330., refs.area, refs.viscosity)
+CDv_plate   = profile_drag_coefficient(wing, x_tr, refs)
 
 ## Local-dissipation drag estimation (WRONG???)
 x_tr        = fill(0.98, 4)
 cam_panels  = camber_panels(wing_mesh)
 edge_speeds = surface_velocities(system).wing
-M           = mach_number(system.reference)  # Mach number
-CDv_diss    = local_dissipation_drag(wing, panel_area.(cam_panels), refs.density, edge_speeds, x_tr, refs.speed, refs.density, M, refs.viscosity) / system.reference.area
+CDv_diss    = profile_drag_coefficient(wing, x_tr, edge_speeds, cam_panels, refs)
 
 ## Viscous drag coefficient
 CDv = CDv_plate
@@ -71,13 +76,12 @@ CDv = CDv_plate
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
 CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 
-nf_v = [ CDi_nf + CDv; CDv; nf ]
-ff_v = [ CDi_ff + CDv; CDv; ff ]
-print_coefficients(nf_v, ff_v, :wing)
+nf_v = (CD = CDi_nf + CDv, CDv = CDv, nf...)
+ff_v = (CD = CDi_ff + CDv, CDv = CDv, ff...)
 
 ## Evaluate case with stability derivatives
-@code_warntype solve_case_derivatives(aircraft, fs, refs;
-                                      );
+dvs = solve_case_derivatives(aircraft, fs, refs;
+                             print_components = true);
 
 ## Plotting
 using Plots
