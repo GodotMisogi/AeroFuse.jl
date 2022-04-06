@@ -60,11 +60,10 @@ FFs = farfield_coefficients(system)
 comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
 
 ## Equivalent flat-plate skin-friction estimation
-x_tr        = [0.98, 0.98]              # Transition locations over sections
-CDv_plate   = profile_drag_coefficient(wing, x_tr, refs)
+x_tr        = fill(0.98, 4)              # Transition locations over sections
+CDv_plate   = profile_drag_coefficient(wing_mesh, x_tr, refs)
 
 ## Local-dissipation drag estimation (WRONG???)
-x_tr        = fill(0.98, 4)
 cam_panels  = camber_panels(wing_mesh)
 edge_speeds = surface_velocities(system).wing
 CDv_diss    = profile_drag_coefficient(wing, x_tr, edge_speeds, cam_panels, refs)
