@@ -10,7 +10,7 @@ function form_factor(wing :: HalfWing, M)
     Kf  = form_factor_wing.(xcs, tcs, sweeps, M)
 end
 
-form_factor(wing :: Wing, M) = [ form_factor(wing.left, M); form_factor(wing.right, M) ]
+form_factor(wing :: Wing, M) = [ reverse(form_factor(wing.left, M)); form_factor(wing.right, M) ]
 
 # Schlichting averaged skin-friction coefficients
 cf_lam(Re_c, k_lam = 1.) = 1.328 / √(Re_c * k_lam)
@@ -54,7 +54,7 @@ end
 wetted_area_drag(wing :: WingMesh, x_tr, V, ρ, a_ref, μ) = wetted_area_drag(wing.surface, x_tr, V, ρ, a_ref, μ)
 
 # Sato's local-friction and local-dissipation based on power balance method from Mark Drela, Flight Vehicle Aerodynamics, eq. 4.115.
-function local_dissipation_drag(wing :: Wing, wetted_areas, ρ_es, u_es, x_tr, V, ρ, M, μ)
+function local_dissipation_drag(wing :: AbstractWing, wetted_areas, ρ_es, u_es, x_tr, V, ρ, M, μ)
     # Chord processing
     mean_chords = (forward_sum ∘ chords)(wing) / 2
 
@@ -87,18 +87,23 @@ profile_drag_coefficient(wing :: AbstractWing, x_tr, V, rho_ref, a_ref, area_ref
 """
     profile_drag_coefficient(wing :: AbstractWing, x_tr, refs :: References)
 
-Estimate the profile drag coefficient of a `Wing`` using the **wetted-area method** based on Schlichting's skin-friction coefficient formula.
+Estimate the profile drag coefficient of a ``Wing`` using the **wetted-area method** based on Schlichting's skin-friction coefficient formula with specified transition ratio(s) ``xₜᵣ`` and reference values.
 """
 profile_drag_coefficient(wing :: AbstractWing, x_tr, refs :: References) = profile_drag_coefficient(wing, x_tr, refs.speed, refs.density, refs.sound_speed, refs.area, refs.viscosity)
 
-profile_drag_coefficient(wing :: AbstractWing, x_tr, edge_speeds, panels, refs :: References) = local_dissipation_drag(wing, panel_area.(panels), refs.density, edge_speeds, x_tr, refs.speed, refs.density, mach_number(refs), refs.viscosity) / refs.area
-
 """
-    profile_drag_coefficient(wing :: WingMesh, x_tr, edge_speeds, panels, refs :: References)
+    profile_drag_coefficient(wing :: AbstractWing, x_tr, edge_speeds, panels, refs :: References)
 
 Estimate the profile drag coefficient of a `Wing` using the **local-friction and local-dissipation method** based on Schlichting's skin-friction coefficient formula.
 """
-profile_drag_coefficient(wing :: WingMesh, x_tr, edge_speeds, refs :: References) = local_dissipation_drag(wing, refs.density, edge_speeds, x_tr, refs.speed, refs.density, mach_number(refs), refs.viscosity) / refs.area
+profile_drag_coefficient(wing :: AbstractWing, x_tr, edge_speeds, panels, refs :: References) = local_dissipation_drag(wing, panel_area.(panels), refs.density, edge_speeds, x_tr, refs.speed, refs.density, mach_number(refs), refs.viscosity) / refs.area
+
+"""
+    profile_drag_coefficient(wing :: WingMesh, x_tr, edge_speeds, refs :: References)
+
+Estimate the profile drag coefficient of a `Wing` using the **local-friction and local-dissipation method** based on Schlichting's skin-friction coefficient formula.
+"""
+profile_drag_coefficient(wing :: WingMesh, x_tr, edge_speeds, refs :: References) = profile_drag_coefficient(wing.surface, x_tr, edge_speeds, camber_panels(wing), refs)
 
 function wave_drag(M, Λ, t_by_c, Cl, κ_A)
     M_drag_divergence = κ_A / cos(Λ) - t_by_c / cos(Λ)^2 - Cl / (10 * cos(Λ)^3) # Drag divergence Mach number

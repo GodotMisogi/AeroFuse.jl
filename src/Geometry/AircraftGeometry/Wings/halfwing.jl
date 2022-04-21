@@ -11,13 +11,13 @@
 
 Definition for a `HalfWing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees.
 """
-struct HalfWing{S <: AbstractVector{<: Real}, F <: AbstractVector{<: AbstractFoil}, N <: AbstractAffineMap} <: AbstractWing
-    foils      :: F
-    chords     :: S
-    twists     :: S
-    spans      :: S
-    dihedrals  :: S
-    sweeps     :: S
+struct HalfWing{T <: Real, N <: AbstractAffineMap} <: AbstractWing
+    foils      :: Vector{<: AbstractFoil}
+    chords     :: Vector{T}
+    twists     :: Vector{T}
+    spans      :: Vector{T}
+    dihedrals  :: Vector{T}
+    sweeps     :: Vector{T}
     affine     :: N
 end
 
@@ -36,8 +36,11 @@ function HalfWing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep = 0.,
     # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
     # foils = cosine_interpolation.(foils, 60)
 
+    T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps), typeof(w_sweep))
+    N = typeof(affine)
+
     # Convert angles to radians, adjust twists to leading edge, and generate HalfWing
-    HalfWing(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), sweeps, affine)
+    HalfWing{T,N}(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), sweeps, affine)
 end
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
@@ -60,7 +63,7 @@ function HalfWing(;
         w_sweep   = 0.0,
         position  = zeros(3),
         angle     = 0.,
-        axis      = SVector(0., 1., 0.)
+        axis      = [0., 1., 0.]
     )
 
     HalfWing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep, position, angle, axis)

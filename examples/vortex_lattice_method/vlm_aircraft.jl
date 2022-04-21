@@ -76,7 +76,6 @@ ref = References(speed     = 1.0,
     system = solve_case(aircraft, fs, ref;
                         # print            = true, # Prints the results for only the aircraft
                         # print_components = true, # Prints the results for all components
-                      #   finite_core      = true
                        );
 
     # Compute dynamics
@@ -237,13 +236,13 @@ pts = [ Node(Point3f0[stream]) for stream in streams[1,:] ]
 fps     = 30
 nframes = length(streams[:,1])
 
-record(fig, "plots/vlm_animation.mp4", 1:nframes) do i 
-    for j in eachindex(streams[1,:])
-        pts[j][] = push!(pts[j][], Point3f0(streams[i,j]))
-    end
-    sleep(1/fps) # refreshes the display!
-    notify(pts[i])
-end
+# record(fig, "plots/vlm_animation.mp4", 1:nframes) do i 
+#     for j in eachindex(streams[1,:])
+#         pts[j][] = push!(pts[j][], Point3f0(streams[i,j]))
+#     end
+#     sleep(1/fps) # refreshes the display!
+#     notify(pts[i])
+# end
 
 ## Arrows
 # hs_pts = vec(Tuple.(bound_leg_center.(horses)))
@@ -258,35 +257,62 @@ end
 
 using Setfield
 using Base.Iterators: product
+using Plots
+
+pyplot()
 
 ## Speed sweep
 Vs = 1.0:10:300
 res_Vs = permutedims(combinedimsview(
     map(Vs) do V
-        ref = @set refs.speed = V
-        sys = solve_case(aircraft, fs, ref)
-        [ V; farfield(sys)[:]; nearfield(sys) ]
+        ref1 = @set ref.speed = V
+        sys = solve_case(aircraft, fs, ref1)
+        [ V; farfield(sys)...; nearfield(sys)... ]
     end
 ))
 
-plot(
+## 
+Plots.plot(
     res_Vs[:,1], res_Vs[:,2:end],
     layout = (3,3), size = (900, 800),
     xlabel = "V",
     labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
 )
 
+##
+f2 = Figure()
+ax1 = Axis(f2[1,1], xlabel = L"V", ylabel = L"C_{D_{ff}}")
+lines!(res_Vs[:,1], res_Vs[:,2]) # CD_ff
+ax2 = Axis(f2[1,2], xlabel = L"V", ylabel = L"C_{Y_{ff}}")
+lines!(res_Vs[:,1], res_Vs[:,3])
+ax3 = Axis(f2[1,3], xlabel = L"V", ylabel = L"CL_{ff}")
+lines!(res_Vs[:,1], res_Vs[:,4])
+ax4 = Axis(f2[2,1], xlabel = L"V", ylabel = L"C_D")
+lines!(res_Vs[:,1], res_Vs[:,5])
+ax5 = Axis(f2[2,2], xlabel = L"V", ylabel = L"C_Y")
+lines!(res_Vs[:,1], res_Vs[:,6])
+ax6 = Axis(f2[2,3], xlabel = L"V", ylabel = L"C_L")
+lines!(res_Vs[:,1], res_Vs[:,7])
+ax7 = Axis(f2[3,1], xlabel = L"V", ylabel = L"C_\ell")
+lines!(res_Vs[:,1], res_Vs[:,8])
+ax8 = Axis(f2[3,2], xlabel = L"V", ylabel = L"C_m")
+lines!(res_Vs[:,1], res_Vs[:,9])
+ax9 = Axis(f2[3,3], xlabel = L"V", ylabel = L"C_n")
+lines!(res_Vs[:,1], res_Vs[:,10])
+
+f2
+
 ## Alpha sweep
 αs = -5:0.5:5
 res_αs = permutedims(combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, refs)
-        [ α; farfield(sys); nearfield(sys) ]
+        sys = solve_case(aircraft, fst, ref)
+        [ α; farfield(sys)...; nearfield(sys)... ]
     end
 ))
 
-plot(
+Plots.plot(
     res_αs[:,1], res_αs[:,2:end],
     layout = (3,3), size = (900, 800),
     xlabel = "α",
@@ -296,10 +322,10 @@ plot(
 ## (Speed, alpha) sweep
 res = combinedimsview(
     map(product(Vs, αs)) do (V, α)
-        ref = @set refs.speed = V
+        ref1 = @set ref.speed = V
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, ref)
-        [ V; α; farfield(sys); nearfield(sys) ]
+        sys = solve_case(aircraft, fst, ref1)
+        [ V; α; farfield(sys)...; nearfield(sys)... ]
     end
 )
 
@@ -307,27 +333,22 @@ res = combinedimsview(
 res_p = permutedims(res, (3,1,2))
 
 # CDi
-plt_CDi_ff = plot(camera = (60,45))
-[ plot!(
-    res_p[:,1,n], res_p[:,2,n], res_p[:,3,n], 
-    ylabel = "α", xlabel = "V", zlabel = "CDi_ff", 
-    label = "", c = :black,
-) for n in axes(res_p,3) ]
+plt_CDi_ff = Plots.plot(camera = (75, 30), ylabel = L"\alpha", xlabel = "V", zlabel = L"C_{D_i}")
+[ Plots.plot!(res_p[:,1,n], res_p[:,2,n], res_p[:,3,n], label = "", c = :black) for n in axes(res_p,3) ]
 
 # CL
-plt_CL_ff = plot(camera = (45,45))
-[ plot!(
-    res_p[:,1,n], res_p[:,2,n], res_p[:,8,n], 
-    ylabel = "α", xlabel = "V", zlabel = "CL_ff", 
-    label = "", c = :black,
-) for n in axes(res_p,3) ]
+plt_CL_ff = Plots.plot(camera = (75,15), 
+ylabel = L"\alpha", xlabel = "V", zlabel = L"C_{L}", 
+label = "", c = :black)
+[ Plots.plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,8,n], label = "", c = :black) for n in axes(res_p,3) ]
 
-plt_Cm_ff = plot(camera = (45,45))
-[ plot!(
-    res_p[:,1,n], res_p[:,2,n], res_p[:,10,n], 
-    ylabel = "α", xlabel = "V", zlabel = "Cm", 
-    label = "", c = :black,
-) for n in axes(res_p,3) ]
+plt_Cm_ff = Plots.plot(camera = (100,30), ylabel = L"\alpha", xlabel = "V", zlabel = L"C_m", label = "")
+[ Plots.plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,10,n], label = "", c = :black) for n in axes(res_p,3) ]
 
 ##
-plot(plt_CDi_ff, plt_CL_ff, plt_Cm_ff, layout = (1,3), size = (1300, 400))
+p = Plots.plot(plt_CDi_ff, plt_CL_ff, plt_Cm_ff, layout = (1,3), size = (1300, 400))
+
+##
+savefig(p, "coeffs.png")

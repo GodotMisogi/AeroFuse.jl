@@ -14,7 +14,7 @@ linear_source_stream_1(σ1, panel, xi, yi), linear_source_stream_2(σ2, panel, x
 
 source_stream(σ1, σ2, panel :: AbstractPanel2D, xi, yi) = linear_source_stream_1(σ1, panel, xi, yi) + linear_source_stream_2(σ2, panel, xi, yi)
 
-source_stream(σ, panel :: AbstractPanel2D, xi, yi) = panel_scalar(linear_source_stream_minus, σ, panel, xi, yi)
+source_stream(σ, panel :: AbstractPanel2D, xi, yi) = panel_scalar(constant_source_stream, σ, panel, xi, yi)
 
 linear_source_velocity(σ1, σ2, panel :: AbstractPanel2D, xi, yi) = panel_velocity(linear_source_velocity_a, σ1, panel, xi, yi), panel_velocity(linear_source_velocity_b, σ2, panel, xi, yi)
 
@@ -43,6 +43,8 @@ vortex_velocity(γ1, γ2, panel :: AbstractPanel2D, x, y) = panel_velocity(linea
 vortex_velocity(γ, panel :: AbstractPanel2D, x, y) = vortex_velocity(γ, γ, panel :: AbstractPanel2D, x, y)
 
 vortex_velocity(γ1, γ2, panel :: AbstractPanel2D, panel_i :: AbstractPanel2D) = panel_velocity(linear_vortex_velocity_a, linear_vortex_velocity_b, γ1, γ2, panel, panel_i)
+
+linear_vortex_velocity(γ1, γ2, panel :: AbstractPanel2D, xi, yi) = panel_velocity(linear_vortex_velocity_a, γ1, panel, xi, yi), panel_velocity(linear_vortex_velocity_b, γ2, panel, xi, yi)
 
 # Total velocity
 
@@ -84,7 +86,7 @@ constant_source_matrix(panels) = [ constant_source_influence_coefficient(panel_j
 
 neumann_influence_matrix(func, angle_func, panel_is, panel_js) = [ influence_coefficient(func, angle_func, panel_j, panel_i) for (panel_i, panel_j) in product(panel_is, panel_js) ]
 
-function two_point_dirichlet_matrix(src_a :: F, src_b :: G, panels_1, panels_2) where F where G
+function two_point_dirichlet_matrix(src_a :: F, src_b :: G, panels_1, panels_2) where {F,G}
     N     = min(length(panels_1), length(panels_2))
     inf_a = dirichlet_influence_matrix(src_a, normal_vector, panels_1, panels_2)
     inf_b = dirichlet_influence_matrix(src_b, normal_vector, panels_1, panels_2)
@@ -115,7 +117,7 @@ function influence_matrix(panels, pts)
     AIC_pts = [ A1 zeros(N) ] + [ zeros(N) A2 ]
 
     ## Trailing edge
-    te_panel, h_TE, tcp, tdp, dtdx = trailing_edge_info(panels)
+    te_panel, h_TE, tcp, tdp, _ = trailing_edge_info(panels)
 
     # Constant-strength vortex and source terms
     A_TE = [ 
@@ -174,7 +176,7 @@ function assemble_system!(AIC, boco, panels)
     pts = panel_points(panels)
 
     # Trailing edge info
-    te_panel, h_TE, tcp, tdp, dtdx = trailing_edge_info(panels)
+    te_panel, h_TE, tcp, tdp, _ = trailing_edge_info(panels)
 
     # Construct everything in one loop
     for i in eachindex(pts)
@@ -188,18 +190,18 @@ function assemble_system!(AIC, boco, panels)
 
         # Constant-strength vortex panel
         a_TE = linear_vortex_stream_1(1., te_panel, x, y) + linear_vortex_stream_2(1., te_panel, x, y)
-        AIC[i,1]     -= a_TE * (-tdp / 2)
+        AIC[i,1]     += a_TE * ( tdp / 2)
         AIC[i,end-1] += a_TE * (-tdp / 2)
 
         # Constant-strength source panel
         b_TE = constant_source_stream(1., te_panel, x, y)
-        AIC[i,1]     -= b_TE * (tcp / 2)
-        AIC[i,end-1] += b_TE * (tcp / 2)
+        AIC[i,1]     += b_TE * (-tcp / 2)
+        AIC[i,end-1] += b_TE * ( tcp / 2)
 
         # Constant streamfunction value on the surface
         AIC[i,end] = -1
 
-        # Check trailing edge thickness and augment last equation
+        # Check trailing edge thickness and augment last equation accordingly
         if abs(h_TE) < 1e-10 
             AIC[end-1,:] .= 0
             AIC[end-1,[1,2,3,end-3,end-2,end-1]] = [1,-2,1,-1,2,-1]
@@ -211,7 +213,7 @@ function assemble_system!(AIC, boco, panels)
     end
     
     # Kutta condition
-    AIC[end,1] = 1
+    AIC[end,1]     = 1
     AIC[end,end-1] = 1
 
     nothing
