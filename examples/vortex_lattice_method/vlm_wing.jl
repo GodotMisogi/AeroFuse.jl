@@ -4,7 +4,7 @@ using AeroMDAO
 ## Wing section setup
 wing_right = HalfWing(
                       foils     = fill(naca4((0,0,1,2)), 3),
-                      chords    = [1.0, 0.6, 0.2],
+                      chords    = [2.0, 1.6, 0.2],
                       twists    = [0.0, 0.0, 0.0],
                       spans     = [2.5, 0.5],
                       dihedrals = [5., 5.],
@@ -66,7 +66,7 @@ CDv_plate   = profile_drag_coefficient(wing_mesh, x_tr, refs)
 ## Local-dissipation drag estimation (WRONG???)
 cam_panels  = camber_panels(wing_mesh)
 edge_speeds = surface_velocities(system).wing
-CDv_diss    = profile_drag_coefficient(wing, x_tr, edge_speeds, cam_panels, refs)
+CDv_diss    = profile_drag_coefficient(wing_mesh, x_tr, edge_speeds, refs)
 
 ## Viscous drag coefficient
 CDv = CDv_plate

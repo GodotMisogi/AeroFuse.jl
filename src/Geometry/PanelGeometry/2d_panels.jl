@@ -49,7 +49,7 @@ function panel_angle(panel :: AbstractPanel2D)
     # ifelse(θ < 0., θ + 2π, θ) # Branch cut
 end
 
-panel_normal(panel :: AbstractPanel2D) = let (x, y) = panel_vector(panel); [-y; x] end
+panel_normal(panel :: AbstractPanel2D) = let (x, y) = panel_vector(panel); normalize([-y; x]) end
 
 tangent_vector(panel :: AbstractPanel2D) = rotation(1., 0., -panel_angle(panel))
 
@@ -126,7 +126,7 @@ function panel_velocity(velocity_func, strength, panel_j :: AbstractPanel2D, pan
     u, w = panel_velocity(velocity_func, strength, panel_j, x, y)
 end
 
-panel_velocity(f1, f2, str1, str2, panel :: AbstractPanel2D, x, y) = panel_velocity(f1, str1, panel, x, y) .+ panel_velocity(f2, str2, panel, x, y)
+panel_velocity(f1, f2, str1, str2, panel :: AbstractPanel2D, x, y) = panel_velocity(f1, str1, panel, x, y) + panel_velocity(f2, str2, panel, x, y)
 
 panel_velocity(f1, f2, str_j1, str_j2, panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D) = panel_velocity(f1, str_j1, panel_j, panel_i) .+ panel_velocity(f2, str_j2, panel_j, panel_i)
 

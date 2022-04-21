@@ -129,20 +129,22 @@ println("Spiral Stability      γ: $γ")
 ## Plotting everything
 using Plots
 
+gr(dpi = 300)
+
 wing_plan  = plot_planform(wing)
 htail_plan = plot_planform(htail)
 vtail_plan = plot_planform(vtail)
 
 #
 z_limit = b
-aircraft_plot =
-plot(xaxis = "x", yaxis = "y", zaxis = "z",
-     camera = (30, 60),
-     xlim = (0, z_limit),
-    #  ylim = (-z_limit/2, z_limit/2),
-     zlim = (-z_limit/2, z_limit/2),
-    #  size = (1920, 1080),
-    #  legend = false
+aircraft_plot = plot(
+    xaxis = "x", yaxis = "y", zaxis = "z",
+    camera = (30, 60),
+    xlim = (0, z_limit),
+    # ylim = (-z_limit/2, z_limit/2),
+    zlim = (-z_limit/2, z_limit/2),
+    size = (900, 600),
+    # legend = false
     )
 
 plot!(wing_plan[:,1], wing_plan[:,2], wing_plan[:,3],  label = "Wing")
@@ -155,7 +157,7 @@ scatter!(Tuple(vtail_mac), color = :green, label = "Vertical Tail MAC")
 
 scatter!(Tuple(loc_np), color = :orange, label = "Neutral Point")
 scatter!(Tuple(loc_cp), color = :brown, label = "Center of Pressure")
-# savefig(aircraft_plot, "Aircraft.png")
+savefig(aircraft_plot, "AircraftData.png")
 plot!()
 
 
