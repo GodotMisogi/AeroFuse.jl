@@ -23,7 +23,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
-ComponentArrays = "0.11"
+ComponentArrays = "0.11, 0.12"
 CoordinateTransformations = "0.6"
 DiffResults = "1"
 ForwardDiff = "0.10"
