@@ -1,5 +1,5 @@
 # Create the FEM mesh for the beam based on the VLM mesh
-make_beam_mesh(chord_mesh, fem_w) =  (1 - fem_w) * chord_mesh[1,:] + fem_w * chord_mesh[end,:]
+make_beam_mesh(chord_mesh, fem_w) = (1 - fem_w) * chord_mesh[1,:] + fem_w * chord_mesh[end,:]
 
 # Axis transformation
 function axis_transformation(stream, normie) 

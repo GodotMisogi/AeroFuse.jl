@@ -64,11 +64,24 @@ function HalfWingSection(;
     return section
 end
 
-function HalfWingSection(S, AR, λ, Λ, δ, τ_r, τ_t, w = 0.25)
+HalfWingSection(c_r, λ, b, δ, Λ, foil_r, foil_t, w, pos, ang, ax) = HalfWing(
+        foils     = [foil_r, foil_t],
+        chords    = [c_r, λ * c_r],
+        twists    = [τ_r, τ_t],
+        spans     = [b],
+        dihedrals = [δ],
+        sweeps    = [Λ],
+        w_sweep   = w,
+        position  = pos,
+        angle     = ang,
+        axis      = ax
+    )
+
+function HalfWingSection(S, AR, λ, Λ, δ, τ_r, τ_t, w = 0.25, pos = zeros(3), angle = 0., axis = [0., 1., 0.])
     b    = S^2 / AR
     c_r  = 2 * S / (b * (1 + λ))
 
-    HalfWingSection(span = AR, dihedral = δ, sweep = Λ, w_sweep = w, taper = λ, root_chord = c_r, root_twist = τ_r, tip_twist = τ_t)
+    HalfWingSection(span = AR, dihedral = δ, sweep = Λ, w_sweep = w, taper = λ, root_chord = c_r, root_twist = τ_r, tip_twist = τ_t, position = pos, angle = angle, axis = axis)
 end
 
 """
@@ -129,6 +142,13 @@ function WingSection(;
             )
 
     Wing(right)
+end
+
+function WingSection(S, AR, λ, Λ, δ, τ_r, τ_t, w = 0.25, pos = zeros(3), angle = 0., axis = [0., 1., 0.])
+    b    = S^2 / AR
+    c_r  = 2 * S / (b * (1 + λ))
+
+    WingSection(span = AR, dihedral = δ, sweep = Λ, w_sweep = w, taper = λ, root_chord = c_r, root_twist = τ_r, tip_twist = τ_t, position = pos, angle = angle, axis = axis)
 end
 
 ## Standard stabilizers (non-exhaustive)

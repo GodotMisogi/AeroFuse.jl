@@ -80,7 +80,7 @@ Compute the mean aerodynamic chord of an `AbstractWing`.
 mean_aerodynamic_chord(wing :: AbstractWing) = mean_aerodynamic_chord(wing)
 
 """
-    mean_aerodynamic_chord(wing :: AbstractWing)
+    mean_aerodynamic_center(wing :: AbstractWing)
 
 Compute the coordinates of the mean aerodynamic center of an `AbstractWing`.
 """

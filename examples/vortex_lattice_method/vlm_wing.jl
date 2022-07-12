@@ -51,15 +51,15 @@ CFs, CMs = surface_coefficients(system; axes = ax)
 # Ms       = surface_moments(system)
 # Fs, Ms   = surface_dynamics(system; axes = ax)
 
-## Viscous drag prediction using empirical models
-
 CFs, CMs = surface_coefficients(system; axes = ax)
 FFs = farfield_coefficients(system)
 
 # Create array of nearfield and farfield coefficients for each component as a row vector.
 comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
 
-## Equivalent flat-plate skin-friction estimation
+## Viscous drag prediction using empirical models
+
+# Equivalent flat-plate skin-friction estimation
 x_tr        = fill(0.98, 4)              # Transition locations over sections
 CDv_plate   = profile_drag_coefficient(wing_mesh, x_tr, refs)
 
@@ -108,11 +108,13 @@ ys               = getindex.(horseshoe_points, 2)
 
 ## Coordinates
 z_limit = 5
-plot(xaxis = "x", yaxis = "y", zaxis = "z",
-     aspect_ratio = 1,
-     camera = (30, 60),
-     zlim = (-0.1, z_limit),
-     size = (800, 600))
+plot(
+    xaxis = "x", yaxis = "y", zaxis = "z",
+    aspect_ratio = 1,
+    camera = (30, 60),
+    zlim = (-0.1, z_limit),
+    size = (800, 600)
+    )
 # plot!(wing_coords[:,1], wing_coords[:,2], wing_coords[:,3])
 plot!.(horseshoe_coords, color = :black, label = :none)
 scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
@@ -120,10 +122,7 @@ scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
 plot!()
 
 ## Compute spanwise loads
-@code_warntype spanwise_loading(horseshoe_panels, CFs.wing, projected_area(wing))
-
-##
-CL_loads   = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
+CL_loads = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
 
 ## Plot spanwise loadings
 plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = "CDi")
