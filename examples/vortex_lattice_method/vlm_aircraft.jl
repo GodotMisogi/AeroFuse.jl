@@ -4,37 +4,46 @@ using AeroMDAO
 ## Surfaces
 
 # Wing
-wing = Wing(foils     = fill(naca4(2,4,1,2), 2),
-            chords    = [1.0, 0.6],
-            twists    = [2.0, 0.0],
-            spans     = [8.0],
-            dihedrals = [5.],
-            sweeps    = [5.]);
+wing = Wing(
+    foils     = fill(naca4(2,4,1,2), 2),
+    chords    = [1.0, 0.6],
+    twists    = [2.0, 0.0],
+    spans     = [4.0],
+    dihedrals = [5.],
+    sweeps    = [5.],
+    # symmetry  = true,
+    flip      = true
+);
 
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 
 # Horizontal tail
-htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
-             chords    = [0.7, 0.42],
-             twists    = [0.0, 0.0],
-             spans     = [2.5],
-             dihedrals = [0.],
-             sweeps    = [6.39],
-             position  = [4., 0, -0.1],
-             angle     = -2.,
-             axis      = [0., 1., 0.])
+htail = Wing(
+    foils     = fill(naca4(0,0,1,2), 2),
+    chords    = [0.7, 0.42],
+    twists    = [0.0, 0.0],
+    spans     = [2.5],
+    dihedrals = [0.],
+    sweeps    = [6.39],
+    position  = [4., 0, -0.1],
+    angle     = -2.,
+    axis      = [0., 1., 0.],
+    symmetry  = true
+)
 
 # Vertical tail
-vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
-                 chords    = [0.7, 0.42],
-                 twists    = [0.0, 0.0],
-                 spans     = [1.0],
-                 dihedrals = [0.],
-                 sweeps    = [7.97],
-                 position  = [4., 0, 0],
-                 angle     = 90.,
-                 axis      = [1., 0., 0.])
+vtail = Wing(
+    foils     = fill(naca4(0,0,0,9), 2),
+    chords    = [0.7, 0.42],
+    twists    = [0.0, 0.0],
+    spans     = [1.0],
+    dihedrals = [0.],
+    sweeps    = [7.97],
+    position  = [4., 0, 0],
+    angle     = 90.,
+    axis      = [1., 0., 0.]
+)
 
 # Print info
 print_info(wing, "Wing")
@@ -48,14 +57,14 @@ wing_mesh  = WingMesh(wing, [12], 6,
 htail_mesh = WingMesh(htail, [12], 6, 
                       span_spacing = Cosine()
                      )
-vtail_mesh = WingMesh(vtail, [12], 6, 
-                      span_spacing = Cosine()
-                     )
+# vtail_mesh = WingMesh(vtail, [12], 6, 
+#                       span_spacing = Cosine()
+#                      )
 
-aircraft =  (
+aircraft =  ComponentVector(
                 wing  = make_horseshoes(wing_mesh),
-                htail = make_horseshoes(htail_mesh),
-                vtail = make_horseshoes(vtail_mesh)
+                # htail = make_horseshoes(htail_mesh),
+                # vtail = make_horseshoes(vtail_mesh)
             );
 
 ## Case
@@ -74,8 +83,8 @@ ref = References(speed     = 1.0,
 ##
 @time begin 
     system = solve_case(aircraft, fs, ref;
-                        # print            = true, # Prints the results for only the aircraft
-                        # print_components = true, # Prints the results for all components
+                        print            = true, # Prints the results for only the aircraft
+                        print_components = true, # Prints the results for all components
                        );
 
     # Compute dynamics
@@ -263,13 +272,13 @@ pyplot()
 
 ## Speed sweep
 Vs = 1.0:10:300
-res_Vs = permutedims(combinedimsview(
+res_Vs = combinedimsview(
     map(Vs) do V
         ref1 = @set ref.speed = V
         sys = solve_case(aircraft, fs, ref1)
         [ V; farfield(sys)...; nearfield(sys)... ]
-    end
-))
+    end, (1)
+)
 
 ## 
 Plots.plot(
@@ -304,13 +313,13 @@ f2
 
 ## Alpha sweep
 αs = -5:0.5:5
-res_αs = permutedims(combinedimsview(
+res_αs = combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, ref)
         [ α; farfield(sys)...; nearfield(sys)... ]
-    end
-))
+    end, (1)
+)
 
 Plots.plot(
     res_αs[:,1], res_αs[:,2:end],

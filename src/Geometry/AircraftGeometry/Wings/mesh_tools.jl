@@ -30,7 +30,7 @@ chop_wing(xyzs, span_num, chord_num; span_spacing = Cosine(), chord_spacing = Co
 
 transform_coordinates(xyz, twist, section) = eachrow(xyz * RotY(-twist)') .+ Ref(section)
 
-function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_num, spacings, flip = false)
+function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_num, spacings, flip)
     # Reverse direction if left side
     if flip
         scaled_foils = reverse(scaled_foils)

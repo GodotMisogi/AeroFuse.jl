@@ -2,16 +2,25 @@
 using AeroMDAO
 
 ## Wing section setup
-wing_right = HalfWing(
-                      foils     = fill(naca4((0,0,1,2)), 3),
-                      chords    = [2.0, 1.6, 0.2],
-                      twists    = [0.0, 0.0, 0.0],
-                      spans     = [2.5, 0.5],
-                      dihedrals = [5., 5.],
-                      sweeps    = [10., 10.],
-                      w_sweep   = 0.25 # Quarter-chord
-                     );
-wing = Wing(wing_right, wing_right)
+wing = Wing(
+    foils     = fill(naca4((2,4,1,2)), 3),
+    chords    = [2.0, 1.6, 0.2],
+    twists    = [0.0, 0.0, 0.0],
+    spans     = [5., 0.6],
+    dihedrals = [5., 45.],
+    sweeps    = [20.,45.],
+    w_sweep   = 0.25, # Quarter-chord sweep
+    symmetry  = true,
+    # flip      = true
+)
+
+function move_wing(xs, wing)
+    wing = @set wing.chords = xs
+    mean_aerodynamic_chord(wing)
+end
+
+##
+# wing = Wing(wing_right, wing_right)
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
@@ -23,7 +32,7 @@ aircraft = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
 fs  = Freestream(
-                 alpha = 1.0,
+                 alpha = 0.0,
                  beta  = 0.0,
                  omega = [0.,0.,0.]
                 )
@@ -55,7 +64,7 @@ CFs, CMs = surface_coefficients(system; axes = ax)
 FFs = farfield_coefficients(system)
 
 # Create array of nearfield and farfield coefficients for each component as a row vector.
-comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
+comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name]... ], hcat, keys(system.vortices))
 
 ## Viscous drag prediction using empirical models
 
@@ -84,7 +93,7 @@ dvs = solve_case_derivatives(aircraft, fs, refs;
 
 ## Plotting
 using Plots
-gr()
+()
 
 ## Streamlines
 
@@ -99,30 +108,50 @@ distance = 5
 num_stream_points = 100
 streams = plot_streamlines(system, seed, distance, num_stream_points);
 
+coords = [ SVector(-10., r...) for r in Base.Iterators.product(-5:0.01:5, -0.1:0.005:0.5) ]
+vels = norm.(stream_velocity.(coords, Ref(system)))
+
+##
+coords_new = combinedimsview(coords, (1,2))
+
+## Trying velocity maps
+using CairoMakie
+
+fig = Figure()
+ax = Axis(fig[1,1])
+
+@views sc = CairoMakie.scatter!(coords_new[:,:,2][:], coords_new[:,:,3][:], color = vels[:], colormap = :thermal)
+
+Colorbar(fig[1,2], sc)
+
+fig
+
 ## Display
 horseshoe_panels = chord_panels(wing_mesh)
 horseshoe_coords = plot_panels(horseshoe_panels)
-wing_coords      = plot_planform(wing);
+wing_coords = plot_planform(wing)
 horseshoe_points = Tuple.(collocation_point.(system.vortices))
-ys               = getindex.(horseshoe_points, 2)
+ys = getindex.(horseshoe_points, 2)
 
 ## Coordinates
 z_limit = 5
 plot(
     xaxis = "x", yaxis = "y", zaxis = "z",
     aspect_ratio = 1,
-    camera = (30, 60),
+    camera = (30, 30),
     zlim = (-0.1, z_limit),
     size = (800, 600)
-    )
+)
 # plot!(wing_coords[:,1], wing_coords[:,2], wing_coords[:,3])
-plot!.(horseshoe_coords, color = :black, label = :none)
-scatter!(vec(horseshoe_points), marker = 1, color = :black, label = :none)
-[ plot!(stream, color = :green, label = :none) for stream in eachcol(Tuple.(streams)) ]
+# plot!.(horseshoe_coords, color = :black, label = :none)
+plot!(wing_mesh)
+[ plot!(stream, color = :green, label = :none) for stream in eachcol(streams) ]
 plot!()
 
 ## Compute spanwise loads
 CL_loads = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
+
+span_loads = spanwise_loading(wing_mesh, CFs.wing, refs.area)
 
 ## Plot spanwise loadings
 plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = "CDi")
@@ -157,13 +186,12 @@ using Base.Iterators: product
 
 ## Speed sweep
 Vs = 1.0:10:300
-res_Vs = permutedims(combinedimsview(
+res_Vs = combinedimsview(
     map(Vs) do V
         ref = @set refs.speed = V
         sys = solve_case(aircraft, fs, ref)
-        [ V; farfield(sys)[:]; nearfield(sys) ]
-    end
-))
+        [ V; farfield(sys)...; nearfield(sys)... ]
+    end, (1))
 
 plot(
     res_Vs[:,1], res_Vs[:,2:end],
@@ -174,13 +202,13 @@ plot(
 
 ## Alpha sweep
 αs = -5:0.5:5
-res_αs = permutedims(combinedimsview(
+res_αs = combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, refs)
         [ α; farfield(sys); nearfield(sys) ]
-    end
-))
+    end, (1)
+)
 
 plot(
     res_αs[:,1], res_αs[:,2:end],

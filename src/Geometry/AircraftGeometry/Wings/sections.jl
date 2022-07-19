@@ -1,44 +1,8 @@
 ## Section definitions
 #==========================================================================================#
 
-"""
-HalfWingSection(; span, dihedral, sweep, taper, root_chord,
-                  root_twist, tip_twist, root_foil, tip_foil,
-                  position, angle, axis)
+function WingSection(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 
-Define a `HalfWing` consisting of a single trapezoidal section.
-
-# Arguments
-- `span       :: Real         = 1.`: Span length 
-- `dihedral   :: Real         = 1.`: Dihedral angle (degrees)
-- `sweep      :: Real         = 0.`: Leading-edge sweep angle (degrees)
-- `taper      :: Real         = 1.`: Taper ratio of tip to root chord
-- `root_chord :: Real         = 1.`: Root chord length
-- `root_twist :: Real         = 0.`: Twist angle at root (degrees)
-- `tip_twist  :: Real         = 0.`: Twist angle at tip (degrees)
-- `root_foil  :: Foil         = naca4((0,0,1,2))`: Foil coordinates at root
-- `tip_foil   :: Foil         = root_foil`: Foil coordinates at tip
-- `position   :: Vector{Real} = zeros(3)`: Position
-- `angle      :: Real         = 0.`: Angle of rotation (degrees)
-- `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
-"""
-function HalfWingSection(;
-        span         = 1.,
-        dihedral     = 0.,
-        sweep        = 0.,
-        w_sweep      = 0.,
-        taper        = 1.,
-        root_chord   = 1.,
-        root_twist   = 0.,
-        tip_twist    = 0.,
-        root_control = (0., 0.75),
-        tip_control  = root_control,
-        root_foil    = naca4(0,0,1,2),
-        tip_foil     = root_foil,
-        position     = zeros(3),
-        angle        = 0.,
-        axis         = SVector(0., 1., 0.),
-    )
     # Control surface deflections at root and tip
     root_foil = control_surface(root_foil; 
                                 angle = root_control[1],
@@ -48,7 +12,7 @@ function HalfWingSection(;
                                 angle = tip_control[1],
                                 hinge = tip_control[2])
 
-    section = HalfWing(
+    section = Wing(
         foils     = [root_foil, tip_foil],
         chords    = [root_chord, taper * root_chord],
         twists    = [root_twist, tip_twist],
@@ -56,32 +20,19 @@ function HalfWingSection(;
         dihedrals = [dihedral],
         sweeps    = [sweep],
         w_sweep   = w_sweep,
-        position  = position,
-        angle     = angle,
-        axis      = axis
+        affine    = affine,
+        symmetry = symmetry,
+        flip      = flip
     )
 
     return section
 end
 
-HalfWingSection(c_r, λ, b, δ, Λ, foil_r, foil_t, w, pos, ang, ax) = HalfWing(
-        foils     = [foil_r, foil_t],
-        chords    = [c_r, λ * c_r],
-        twists    = [τ_r, τ_t],
-        spans     = [b],
-        dihedrals = [δ],
-        sweeps    = [Λ],
-        w_sweep   = w,
-        position  = pos,
-        angle     = ang,
-        axis      = ax
-    )
+function WingSection(S, taper, sweep, w_sweep, dihedral, root_twist, tip_twist, root_foil, tip_foil, affine, symmetry)
+    span = S^2 / AR
+    root_chord = 2 * S / (b * (1 + λ))
 
-function HalfWingSection(S, AR, λ, Λ, δ, τ_r, τ_t, w = 0.25, pos = zeros(3), angle = 0., axis = [0., 1., 0.])
-    b    = S^2 / AR
-    c_r  = 2 * S / (b * (1 + λ))
-
-    HalfWingSection(span = AR, dihedral = δ, sweep = Λ, w_sweep = w, taper = λ, root_chord = c_r, root_twist = τ_r, tip_twist = τ_t, position = pos, angle = angle, axis = axis)
+    WingSection(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist , root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 end
 
 """
@@ -120,40 +71,18 @@ function WingSection(;
         tip_foil     = root_foil,
         position     = zeros(3),
         angle        = 0.,
-        axis         = SVector(1., 0., 0.),
+        axis         = SVector(0., 1., 0.),
+        affine       = AffineMap(AngleAxis(angle, axis...), position),
+        symmetry     = false,
+        flip         = false
     )
     
-    right = HalfWingSection(
-                span         = span / 2,
-                dihedral     = dihedral, 
-                sweep        = sweep, 
-                w_sweep      = w_sweep, 
-                taper        = taper, 
-                root_chord   = root_chord, 
-                root_twist   = root_twist,
-                tip_twist    = tip_twist,
-                root_control = root_control,
-                tip_control  = tip_control,
-                root_foil    = root_foil,
-                tip_foil     = tip_foil,
-                position     = position,
-                angle        = angle,
-                axis         = axis
-            )
-
-    Wing(right)
-end
-
-function WingSection(S, AR, λ, Λ, δ, τ_r, τ_t, w = 0.25, pos = zeros(3), angle = 0., axis = [0., 1., 0.])
-    b    = S^2 / AR
-    c_r  = 2 * S / (b * (1 + λ))
-
-    WingSection(span = AR, dihedral = δ, sweep = Λ, w_sweep = w, taper = λ, root_chord = c_r, root_twist = τ_r, tip_twist = τ_t, position = pos, angle = angle, axis = axis)
+    return WingSection(span / 2, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 end
 
 ## Standard stabilizers (non-exhaustive)
 #==========================================================================================#
 
-HorizontalTail(; root_chord = 1.0, taper = 1.0, span = 1.0, sweep = 0., w_sweep = 0., root_twist = 0., tip_twist = 0., root_foil = naca4(0,0,1,2), tip_foil = root_foil, angle = 0.) = WingSection(root_chord = root_chord, taper = taper, span = span, sweep = sweep, w_sweep = w_sweep, root_twist = root_twist, tip_twist = tip_twist, root_foil = naca4(0,0,1,2), tip_foil = tip_foil, angle = angle, axis = [0., 1., 0.])
+# HorizontalTail(; root_chord = 1.0, taper = 1.0, span = 1.0, sweep = 0., w_sweep = 0., root_twist = 0., tip_twist = 0., root_foil = naca4(0,0,1,2), tip_foil = root_foil, angle = 0.) = WingSection(root_chord = root_chord, taper = taper, span = span, sweep = sweep, w_sweep = w_sweep, root_twist = root_twist, tip_twist = tip_twist, root_foil = naca4(0,0,1,2), tip_foil = tip_foil, angle = angle, axis = [0., 1., 0.])
 
-VerticalTail(; root_chord = 1.0, taper = 1.0, span = 1.0, sweep = 0., w_sweep = 0., root_foil = naca4(0,0,1,2), tip_foil = root_foil) = HalfWingSection(root_chord = root_chord, taper = taper, span = span, sweep = sweep, w_sweep = w_sweep, tip_foil = tip_foil, angle = 90., axis = [1., 0., 0.])
+# VerticalTail(; root_chord = 1.0, taper = 1.0, span = 1.0, sweep = 0., w_sweep = 0., root_foil = naca4(0,0,1,2), tip_foil = root_foil) = HalfWingSection(root_chord = root_chord, taper = taper, span = span, sweep = sweep, w_sweep = w_sweep, tip_foil = tip_foil, angle = 90., axis = [1., 0., 0.])

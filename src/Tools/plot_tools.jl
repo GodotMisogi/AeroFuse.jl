@@ -17,7 +17,7 @@ function plot_planform(mesh :: Matrix{SVector{3,T}}) where T <: Real
                     mesh[end:-1:1,1] 
                 ]
                     
-    permutedims(combinedimsview(coords))
+    combinedimsview(coords, (1))
 end
 
 """
@@ -25,9 +25,12 @@ end
 
 Get the planform coordinates of an `AbstractWing` for plotting.
 """
-plot_planform(wing :: AbstractWing) = plot_planform(coordinates(wing))
+function plot_planform(wing :: Wing) 
+    
+    plot_planform(coordinates(wing))
+end
 
-plot_streamlines(system :: VortexLatticeSystem, points, length, num_steps) = Tuple.(streamlines(system, points, length, num_steps))
+plot_streamlines(system :: VortexLatticeSystem, points, length, num_steps) = combinedimsview(streamlines(system, points, length, num_steps), (1,3))
 
 """
     plot_surface(wing :: AbstractWing)
@@ -53,4 +56,111 @@ function plot_surface(fuse :: Fuselage, n_secs = 5)
     plot_circs = [ reduce(vcat, splitdimsview(circs[n:(n+1),:,k:(k+1)])) for n in axes(circs, 1)[1:end-1] for k in axes(circs, 3)[1:end-1] ]
 
     return plot_circs
+end
+
+## Plots.jl recipes
+#============================================#
+
+@recipe function wing_plot(wing :: AbstractWing, w = 0.25)
+    wing_plan = plot_planform(wing)
+    wing_mac = mean_aerodynamic_center(wing, w)
+
+    # set a default value for an attribute with `-->`
+    xlabel --> "x"
+    ylabel --> "y"
+    zlabel --> "z"
+    aspect_ratio --> true
+    zlim --> span(wing) .* (-0.5, 0.5)
+
+    @series begin
+        wing_plan[:,1], wing_plan[:,2], wing_plan[:,3]
+    end
+
+    @series begin
+        seriestype := :scatter
+        [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
+    end
+end
+
+@recipe function wing_mesh_plot(wing :: WingMesh, w = 0.25)
+    wing_plan = plot_planform(wing.surface)
+    wing_pans = plot_panels(camber_panels(wing))
+    wing_mac = mean_aerodynamic_center(wing.surface, w)
+    xlabel --> "x"
+    ylabel --> "y"
+    zlabel --> "z"
+    aspect_ratio --> true
+    zlim --> span(wing.surface) .* (-0.5, 0.5)
+
+    for coords in wing_pans
+        @series begin
+            seriestype := :path
+            primary := false
+            linecolor := :lightgray
+            # fillcolor := :lightgray
+            coords
+        end
+    end
+
+    @series begin
+        seriestype := :scatter
+        # label --> "Mean Aerodynamic Chord"
+        [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
+    end
+
+    @series begin
+        # primary := false
+        # linewidth := 2
+        @views wing_plan[:,1], wing_plan[:,2], wing_plan[:,3]
+    end
+end
+
+@recipe function fuselage_plot(fuse :: Fuselage, n = 20)
+    fuse_pans = plot_surface(fuse, n)
+    for coords in fuse_pans
+        @series begin
+            seriestype := :path
+            primary := false
+            linecolor := :lightgray
+            # fillcolor := :lightgray
+            @views coords[:,1], coords[:,2], coords[:,3]
+        end
+    end
+end
+
+@recipe function streamline_plot(system :: VortexLatticeSystem, seed, distance, num_stream_points = 100)
+    streams = plot_streamlines(system, seed, distance, num_stream_points)
+
+    for i in axes(streams, 3)
+        @series begin 
+            seriestype := :line
+            primary := false
+            linecolor := :green
+            @views streams[:,1,i], streams[:,2,i], streams[:,3,i]
+        end
+    end
+end
+
+# get_span_points(wing :: Wing, pts) = (wing.right.affine).(chop_leading_edge(wing, pts))
+get_span_points(wing :: Wing, pts) = (wing.affine).(chop_leading_edge(wing, pts))
+
+
+@recipe function streamline_plot(system :: VortexLatticeSystem, wing :: AbstractWing, distance = 5 * mean_aerodynamic_chord(wing), num_stream_points = 100, span_points = 20)
+    # ys          = LinRange(-span(wing) / 2, span(wing) / 2, span_points)
+    # init        = SVector.(0., ys, -0.5) 
+    init        = get_span_points(wing, span_points)
+    dx, dy, dz  = 0, 0, 1e-3
+    seed        = [ init .+ Ref([dx, dy,  dz])  ;
+                    init .+ Ref([dx, dy, -dz]) ];
+
+    streams = plot_streamlines(system, seed, distance, num_stream_points)
+
+    for i in axes(streams, 3)
+        @series begin 
+            seriestype := :scatter
+            primary := false
+            color := :darkblue
+            @views streams[:,1,i], streams[:,2,i], streams[:,3,i]
+        end
+    end
 end

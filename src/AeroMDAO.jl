@@ -10,11 +10,14 @@ using Rotations
 using ForwardDiff: jacobian!
 using DiffResults: JacobianResult, jacobian, value
 using PrettyTables
+using RecipesBase
+# using ReusePatterns
 
 using Statistics: mean
+using StatsBase: weights
 
-using SplitApplyCombine: combinedimsview, combinedims, splitdimsview
-export combinedimsview, combinedims
+using SplitApplyCombine: combinedimsview, combinedims, splitdimsview, splitdims
+export combinedimsview, combinedims, splitdimsview, splitdims
 
 using ComponentArrays
 
@@ -95,14 +98,16 @@ import .AircraftGeometry: Fuselage, projected_area, length, cosine_interpolation
 export Fuselage, projected_area, length, cosine_interpolation, volume
 
 # Wing
-import .AircraftGeometry: HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_chords, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio
+import .AircraftGeometry: Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_chords, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio
 
-export HalfWing, HalfWingSection, Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_chords, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio
+# export Wing, WingSection
+
+export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, wing_bounds, make_panels, mesh_chords, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio
 
 # Surfaces
-import .AircraftGeometry: HorizontalTail, VerticalTail
+# import .AircraftGeometry: HorizontalTail, VerticalTail
 
-export HorizontalTail, VerticalTail
+# export HorizontalTail, VerticalTail
 
 # Controls
 # import .AircraftGeometry: WingControlSurface
@@ -143,9 +148,9 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, AbstractVortexLatticeSystem, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, kinematic_viscosity, mach_number
+import .VortexLattice: Horseshoe, AbstractVortexLatticeSystem, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, kinematic_viscosity, mach_number, stream_velocity
 
-export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, kinematic_viscosity, mach_number
+export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,  rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, body_frame_velocity, kinematic_viscosity, mach_number, stream_velocity
 
 ## Profile drag estimation
 include("Aerodynamics/profile_drag.jl")
