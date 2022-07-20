@@ -76,13 +76,13 @@ ref = References(speed     = 1.0,
 using Setfield
 
 αs = -5:0.5:5
-results = permutedims(combinedimsview(
+results = combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, ref)
-        [ α; farfield(sys); nearfield(sys) ]
-    end
-))
+        [ α; farfield(sys)...; nearfield(sys)... ]
+    end, (1)
+)
 
 ## Generate DataFrame
 data = DataFrame(results, :auto)

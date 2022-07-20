@@ -36,12 +36,14 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; a
                             name      = name)
 
         CFs, CMs = surface_coefficients(system; axes = axes)
-        FFs = farfield_coefficients(system)
+        # FFs = farfield_coefficients(system)
+
+        FFs = map(F -> force_coefficient(F, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area), farfield_forces(system))
         
         # Create array of nearfield and farfield coefficients for each component as a row vector.
         comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
 
-        # Some retarded hack
+        # Massive hack
         if length(size(comp_coeffs)) > 1
             sum_coeffs = sum(comp_coeffs, dims = 2)
         else 

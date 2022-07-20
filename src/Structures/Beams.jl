@@ -8,12 +8,6 @@ using StaticArrays
 using LinearAlgebra
 using SplitApplyCombine
 
-abstract type AbstractBeam end
-
-struct Beam{T <: AbstractBeam}
-    section :: Vector{T}
-end
-
 ## Material definition
 #==========================================================================================#
 
@@ -57,6 +51,12 @@ density(mat :: Material)         = mat.density
 ## Tube definition
 #==========================================================================================#
 
+abstract type AbstractBeam end
+
+struct Beam{T <: AbstractBeam}
+    section :: Vector{T}
+end
+
 """
     Tube(material :: Material, length, radius, thickness)
 
@@ -72,7 +72,7 @@ end
 function Tube(material :: Material, length, radius, thickness)
     T = promote_type(eltype(length), eltype(radius), eltype(thickness))
     @assert length > 0. && radius > 0. && thickness > 0. "Length, outer radius and thickness must be positive."
-    Material{T}(material, length, radius, thickness)
+    Tube{T}(material, length, radius, thickness)
 end
 
 Base.length(tube :: Tube) = tube.length
@@ -202,26 +202,35 @@ function tube_stiffness_matrix(x :: Matrix{<: Real})
     @views tube_stiffness_matrix(x[:,1], x[:,2], x[:,3], x[:,4], x[:,5], x[:,6], x[:,7])
 end
 
-tube_stiffness_matrix(tubes :: Vector{<: Tube}) = tube_stiffness_matrix((elastic_modulus ∘ material).(tubes), (shear_modulus ∘ material).(tubes), area.(tubes), moment_of_inertia.(tubes), moment_of_inertia.(tubes), polar_moment_of_inertia.(tubes), length.(tubes))
+tube_stiffness_matrix(tubes :: Vector{<: Tube}) = tube_stiffness_matrix(@. (elastic_modulus ∘ material)(tubes), (shear_modulus ∘ material)(tubes), area(tubes), moment_of_inertia(tubes), moment_of_inertia(tubes), polar_moment_of_inertia(tubes), length(tubes))
 
-function sparse_stiffness_matrix(num_Ks, D_start, D_end, D_mid, D_12, D_21)
-    # Build sparse matrix
-    stiffness = spzeros(6 * (num_Ks + 2), 6 * (num_Ks + 2))
-    @views stiffness[7:12,7:12]           = D_start
-    @views stiffness[end-5:end,end-5:end] = D_end
+function sparse_stiffness_matrix!(K, num_Ks, D_start, D_end, D_mid, D_12, D_21)
+    @views K[7:12,7:12]           = D_start
+    @views K[end-5:end,end-5:end] = D_end
 
     for m in 1:num_Ks
         mid_inds = 6(m+1)+1:6(m+1)+6
         off_inds = 6(m)+1:6(m)+6
         if m < num_Ks
-            @views stiffness[mid_inds,mid_inds] = D_mid[:,:,m]
+            @views K[mid_inds,mid_inds] = D_mid[:,:,m]
         end
-        @views stiffness[off_inds,mid_inds] = D_12[:,:,m]
-        @views stiffness[mid_inds,off_inds] = D_21[:,:,m]
+        @views K[off_inds,mid_inds] = D_12[:,:,m]
+        @views K[mid_inds,off_inds] = D_21[:,:,m]
     end
     
-    stiffness
+    return K
 end
+
+function sparse_stiffness_matrix(num_Ks, D_start, D_end, D_mid, D_12, D_21)
+    # Allocate sparse matrix
+    K = spzeros(6 * (num_Ks + 2), 6 * (num_Ks + 2))
+
+    # Fill values
+    sparse_stiffness_matrix!(K, num_Ks, D_start, D_end, D_mid, D_12, D_21)
+
+    return K
+end
+
 
 function build_stiffness_matrix(D, constraint_indices)
     # Number of elements

@@ -14,11 +14,6 @@ wing = Wing(
     # flip      = true
 )
 
-function move_wing(xs, wing)
-    wing = @set wing.chords = xs
-    mean_aerodynamic_chord(wing)
-end
-
 ##
 # wing = Wing(wing_right, wing_right)
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
@@ -32,24 +27,25 @@ aircraft = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
 fs  = Freestream(
-                 alpha = 0.0,
-                 beta  = 0.0,
-                 omega = [0.,0.,0.]
-                )
+    alpha = 0.0,
+    beta  = 0.0,
+    omega = [0.,0.,0.]
+)
 
 # Reference values
 refs = References(
-                  speed     = 150,
-                  density   = 1.225,
-                  viscosity = 1.5e-5,
-                  area      = projected_area(wing),
-                  span      = span(wing), 
-                  chord     = mean_aerodynamic_chord(wing), 
-                  location  = mean_aerodynamic_center(wing)
-                 )
+    speed     = 150,
+    density   = 1.225,
+    viscosity = 1.5e-5,
+    area      = projected_area(wing),
+    span      = span(wing), 
+    chord     = mean_aerodynamic_chord(wing), 
+    location  = mean_aerodynamic_center(wing)
+)
 
 ## Solve system
-system  = solve_case(aircraft, fs, refs; 
+system  = solve_case(aircraft, fs, refs;
+                     symmetry = true,
                      print = true
                     );
 
