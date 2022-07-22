@@ -142,22 +142,22 @@ end
 end
 
 # get_span_points(wing :: Wing, pts) = (wing.right.affine).(chop_leading_edge(wing, pts))
-get_span_points(wing :: Wing, pts) = (wing.affine).(chop_leading_edge(wing, pts))
+get_span_points(wing :: Wing, pts) = chop_leading_edge(wing, pts)
 
 
-@recipe function streamline_plot(system :: VortexLatticeSystem, wing :: AbstractWing, distance = 5 * mean_aerodynamic_chord(wing), num_stream_points = 100, span_points = 20)
+@recipe function streamline_plot(system :: VortexLatticeSystem, wing :: AbstractWing; dist = 5 * mean_aerodynamic_chord(wing), num = 100, span = 20)
     # ys          = LinRange(-span(wing) / 2, span(wing) / 2, span_points)
     # init        = SVector.(0., ys, -0.5) 
-    init        = get_span_points(wing, span_points)
+    init        = get_span_points(wing, span)
     dx, dy, dz  = 0, 0, 1e-3
     seed        = [ init .+ Ref([dx, dy,  dz])  ;
                     init .+ Ref([dx, dy, -dz]) ];
 
-    streams = plot_streamlines(system, seed, distance, num_stream_points)
+    streams = plot_streamlines(system, seed, dist, num)
 
     for i in axes(streams, 3)
         @series begin 
-            seriestype := :scatter
+            seriestype := :line
             primary := false
             color := :darkblue
             @views streams[:,1,i], streams[:,2,i], streams[:,3,i]

@@ -41,19 +41,9 @@ end
 
 chop_coordinates(coords, n :: Vector{<:Integer}, space :: AbstractSpacing) = chop_coordinates(coords, n, fill(space, length(n)))
 
-# function chop_spans(xyzs, div, spacing) 
-#     # @show spacing
-#     combinedimsview(map(xyz -> chop_coordinates(xyz, div, spacing), eachrow(xyzs)), (1))
-# end
-
-chop_spans(xyzs, span_num, spacing) = 
-    combinedimsview(map(axes(xyzs, 1)) do i
-        chop_coordinates(xyzs[i,:], span_num, spacing)
+chop_spans(xyzs, span_num, spacing) = combinedimsview(map(eachrow(xyzs)) do xyz
+        chop_coordinates(xyz, span_num, spacing)
     end, (1))
-
-# chop_spans(xyzs, span_nums :: Vector{S}, spacings :: Vector{T}) where T <: AbstractSpacing where S <: Integer = combinedimsview(map(axes(xyzs, 1)) do i
-#         chop_coordinates(xyzs[i,:], span_nums, spacings)
-#     end, (1))
 
 chop_chords(xyzs, div, spacing) = combinedimsview(map(xyz -> chop_coordinates(xyz, div, spacing), eachcol(xyzs)))
 
@@ -72,7 +62,7 @@ end
 # Maybe switch to tensors?
 transform_coordinates(xyz, twist, section) = eachrow(xyz * RotY(-twist)') .+ Ref(section)
 
-function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, spacings, symmetry = false)
+function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, spacings, symmetry = false, flip = false)
 
     if symmetry
         scaled_foils = [ scaled_foils[end:-1:2]; scaled_foils ]

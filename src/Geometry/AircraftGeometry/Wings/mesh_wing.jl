@@ -39,7 +39,7 @@ function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_
     coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry)
 
     # Transform
-    # return affine_transformation(wing).(coords)
+    return coords
 end
 
 function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
@@ -50,10 +50,10 @@ function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord
     scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_interpolation)(wing.foils, chord_num)
 
     # Discretize spanwise sections
-    coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, spacing, wing.symmetry)
+    coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, spacings, wing.symmetry, wing.flip)
 
     # Transform
-    affine_transformation(wing).(coords)
+    return coords
 end
 
 function number_of_spanwise_panels(wing :: Wing, span_num :: Integer) 
@@ -66,7 +66,7 @@ function number_of_spanwise_panels(wing :: Wing, span_num :: Integer)
     # weights = ifelse(any(<(0.2), weights), fill(1. / length(spans(wing)), length(spans(wing))), weights)
 
     # Generate spanwise panel distribution
-    ceil.(Int, span_num .* weights)
+    return ceil.(Int, span_num .* weights)
 end
 
 function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer})
@@ -77,9 +77,9 @@ end
 # Spacing
 function symmetric_spacing(wing :: Wing)
     if length(wing.spans) == 1 && wing.symmetry
-        [Sine(1); Sine(0)]
+        return [Sine(1); Sine(0)]
     else
-        fill(Cosine(), (length ∘ spans)(wing))
+        return fill(Cosine(), (length ∘ spans)(wing))
     end
 end
 
@@ -184,7 +184,7 @@ surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num
         n_c = length(first(foils(wing_mesh.surface))).x
     )
 
-Generate the surface panel distribution from a `WingMesh` with the default spanwise ``n_s`` panel distribution from the mesh and the chordwise panel ``n_c`` distribution from the airfoil.
+Generate the surface panel distribution from a `WingMesh` with the default spanwise ``n_s`` panel distribution from the mesh and the chordwise panel ``n_c`` distribution from the number of points defining the root airfoil.
 
 In case of strange results, provide a higher number of chordwise panels to represent the airfoils more accurately
 """ 
@@ -223,6 +223,8 @@ wetted_area(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foi
     )
 
 Determine the wetted area ratio ``S_{wet}/S`` of a `WingMesh` by calculating the ratio of the total area of the surface panels to the projected area of the `Wing`.
+
+Should be approximately above 2 for thin airfoils.
 """
 wetted_area_ratio(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foils(wing.surface)).x)) = wetted_area(wing, n_span, n_chord) / projected_area(wing.surface)
 

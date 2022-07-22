@@ -116,7 +116,7 @@ section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) /
 
 function section_projected_areas(wing :: Wing)
     spans = ifelse(wing.symmetry, 2 * wing.spans, wing.spans)
-    @. section_projected_area.(spans, wing.chords[1:end-1], wing.chords[2:end], wing.twists[1:end-1], wing.twists[2:end])
+    @views section_projected_area.(spans, wing.chords[1:end-1], wing.chords[2:end], wing.twists[1:end-1], wing.twists[2:end])
 end
 
 projected_area(wing :: Wing) = sum(section_projected_areas(wing))
