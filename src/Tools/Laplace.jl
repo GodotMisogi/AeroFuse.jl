@@ -91,10 +91,16 @@ struct DoubletLine3D{T <: Real} <: AbstractLaplace
     eta      :: SVector{3,T}
 end
 
+function DoubletLine3D(str, r1, r2, η)
+    T = promote_type(typeof(str), eltype(r1), eltype(r2), eltype(η))
+
+    DoubletLine3D{T}(str, r1, r2, η)
+end
+
 function doublet_influence(r, φ, η)
     r_φ = dot(r, φ)
     r_η = dot(r, η)
-    den = (norm(r)^2 - dot(r, φ)^2 ) * r
+    den = (norm(r)^2 - dot(r, φ)^2) * norm(r)
 
     ((r_φ * η + r_η * φ) * den - (den * r / norm(r)^2 + 2 * (r - r_φ * η) * r) * r_φ * r_η) / den^2
 end

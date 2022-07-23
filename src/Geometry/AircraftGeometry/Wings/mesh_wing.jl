@@ -4,7 +4,7 @@
 chop_leading_edge(obj :: Wing, span_num) = @views chop_coordinates(coordinates(obj)[1,:], span_num, Uniform())
 chop_trailing_edge(obj :: Wing, span_num) = @views chop_coordinates(coordinates(obj)[end,:], span_num, Uniform())
 
-function coordinates(wing :: Wing)
+function coordinates(wing :: Wing, affine = false)
     bounds = combinedimsview(wing_bounds(wing), (1,3))
 
     if wing.symmetry
@@ -23,7 +23,13 @@ function coordinates(wing :: Wing)
     bounds = splitdimsview(bounds,(1,3))
 
     # Weird hack
-    return AffineMap(I, zeros(3)).(bounds)
+    if affine
+        aff = wing.affine
+    else
+        aff = AffineMap(I, zeros(3))
+    end
+
+    return aff.(bounds)
 end
 
 function chord_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; span_spacing = symmetric_spacing(wing), chord_spacing = Cosine())

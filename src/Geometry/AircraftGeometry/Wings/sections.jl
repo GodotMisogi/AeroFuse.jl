@@ -1,6 +1,28 @@
 ## Section definitions
 #==========================================================================================#
 
+# mutable struct WingSection{T <: Real, F <: AbstractFoil, A <: AbstractAffineMap}
+#     S :: T
+#     AR :: T
+#     b  :: T
+#     dihedral :: T
+#     sweep :: T
+#     w_sweep :: T
+#     c_r:: T
+#     c_t :: T
+#     tau_r :: T
+#     tau_t :: T
+#     foil_r :: F
+#     foil_t :: F
+#     affine :: A
+# end
+
+# Span length from aspect ratio and area
+span_length(b, AR) = √(b * AR)
+
+# Root chord
+root_chord(S, b, λ) = (2 * S) / (b * (1 + λ))
+
 function WingSection(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 
     # Control surface deflections at root and tip
@@ -21,7 +43,7 @@ function WingSection(span, dihedral, sweep, w_sweep, taper, root_chord, root_twi
         sweeps    = [sweep],
         w_sweep   = w_sweep,
         affine    = affine,
-        symmetry = symmetry,
+        symmetry  = symmetry,
         flip      = flip
     )
 
@@ -57,12 +79,12 @@ Define a `Wing` consisting of two trapezoidal sections with reflection symmetry 
 - `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
 function WingSection(;
-        span         = 1.,
+        area         = 1.,
+        aspect       = 6.,
         dihedral     = 0.,
         sweep        = 0.,
         w_sweep      = 0.,
         taper        = 1.,
-        root_chord   = 1.,
         root_twist   = 0.,
         tip_twist    = 0.,
         root_control = (0., 0.75),
@@ -72,12 +94,19 @@ function WingSection(;
         position     = zeros(3),
         angle        = 0.,
         axis         = SVector(0., 1., 0.),
-        affine       = AffineMap(AngleAxis(angle, axis...), position),
+        affine       = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
         symmetry     = false,
         flip         = false
     )
+
+    b_w = span_length(area, aspect)
+    c_root_w = root_chord(area, b_w, taper)
+
+    if symmetry
+        b_w /= 2
+    end
     
-    return WingSection(span / 2, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
+    return WingSection(b_w, dihedral, sweep, w_sweep, taper, c_root_w, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 end
 
 ## Standard stabilizers (non-exhaustive)

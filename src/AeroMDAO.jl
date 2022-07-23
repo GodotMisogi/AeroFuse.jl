@@ -124,9 +124,13 @@ export make_horseshoes, make_vortex_rings
 #==========================================================================================#
 
 include("Tools/Laplace.jl")
-import .Laplace: Uniform2D, potential, stream,  cartesian_to_freestream, freestream_to_cartesian
+import .Laplace: Uniform2D, potential, stream, cartesian_to_freestream, freestream_to_cartesian
 
 export Uniform2D, stream, vortex_stream_1, vortex_stream_2, source_stream, cartesian_to_freestream, freestream_to_cartesian
+
+import .Laplace: DoubletLine3D, velocity
+
+export DoubletLine3D, velocity
 
 ## Aerodynamic analyses
 #==========================================================================================#

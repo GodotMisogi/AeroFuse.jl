@@ -66,8 +66,8 @@ end
     xlabel --> "x"
     ylabel --> "y"
     zlabel --> "z"
-    aspect_ratio --> true
-    zlim --> span(wing) .* (-0.5, 0.5)
+    # aspect_ratio --> true
+    # zlim --> span(wing) .* (-0.5, 0.5)
 
     @series begin
         wing_plan[:,1], wing_plan[:,2], wing_plan[:,3]
@@ -86,8 +86,8 @@ end
     xlabel --> "x"
     ylabel --> "y"
     zlabel --> "z"
-    aspect_ratio --> true
-    zlim --> span(wing.surface) .* (-0.5, 0.5)
+    # aspect_ratio --> true
+    # zlim --> span(wing.surface) .* (-0.5, 0.5)
 
     for coords in wing_pans
         @series begin
@@ -118,7 +118,7 @@ end
         @series begin
             seriestype := :path
             primary := false
-            linecolor := :lightgray
+            # linecolor := :lightgray
             # fillcolor := :lightgray
             @views coords[:,1], coords[:,2], coords[:,3]
         end
@@ -147,8 +147,7 @@ get_span_points(wing :: Wing, pts) = affine_transformation(wing).(chop_leading_e
     # init        = SVector.(0., ys, -0.5) 
     init        = get_span_points(wing, span)
     dx, dy, dz  = 0, 0, 1e-3
-    seed        = [ init .+ Ref([dx, dy,  dz])  ;
-                    init .+ Ref([dx, dy, -dz]) ];
+    seed        = init .+ Ref([dx, dy,  dz]);
 
     streams = plot_streamlines(system, seed, dist, num)
 

@@ -23,7 +23,7 @@ struct Wing{T <: Real, N <: AbstractAffineMap} <: AbstractWing
     flip       :: Bool
 end
 
-function Wing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep, affine, symmetry = false, flip = false)
+function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep = 0., symmetry = false, flip = false)
     # Error handling
     check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 
@@ -68,12 +68,12 @@ function Wing(;
         position  = zeros(3),
         angle     = 0.,
         axis      = [0., 1., 0.],
-        affine    = AffineMap(AngleAxis(deg2rad(angle), axis...), position),
+        affine    = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
         symmetry  = false,
         flip      = false
     )
 
-    Wing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep, affine, symmetry, flip)
+    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep, symmetry, flip)
 end
 
 # Getters
@@ -129,31 +129,34 @@ function mean_aerodynamic_chord(wing :: Wing)
     sum(macs .* areas) / sum(areas)
 end
 
-function mean_aerodynamic_center(wing :: Wing, factor = 0.25)
+function mean_aerodynamic_center(wing :: Wing, factor = 0.25; symmetry = wing.symmetry, flip = wing.flip)
     # Compute mean aerodynamic chords and projected areas
     macs = section_macs(wing)
     areas = section_projected_areas(wing)
 
-    # Computing leading edge coordinates
-    wing_LE = leading_edge(wing)
-    x_LEs = getindex.(wing_LE, 1)
-    y_LEs = getindex.(wing_LE, 2)
+    # Get leading edge coordinates
+    wing_LE = combinedimsview(leading_edge(wing), (1))
+    x_LEs   = @views wing_LE[:,1]
+    y_LEs   = @views wing_LE[:,2]
 
-    # Compute x-y locations of MACs
+    # Compute x-y locations of section MACs
     x_mac_LEs = @views @. y_mac(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
     y_macs = @views @. y_mac(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
 
+    # Calculate section MAC coords
     mac_coords = @. SVector(x_mac_LEs + factor * macs, y_macs, 0.)
 
-    # Do affine transformation
+    # Calculate weighted MAC by section areas
     mac = sum(mac_coords .* areas) / sum(areas)
 
-    if wing.symmetry
+    # Symmetry/flipping adjustments
+    if symmetry
         mac = SVector(mac[1], 0., mac[3])
-    elseif wing.flip
+    elseif flip
         mac = SVector(mac[1], -mac[2], mac[3])
     end
 
+    # Do affine transformation
     return affine_transformation(wing)(mac)
 end
 

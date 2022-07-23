@@ -234,7 +234,7 @@ Compute the force and moment coefficients in **wind axes** for all components of
 """
 function nearfield_coefficients(system :: VortexLatticeSystem) 
     CFs, CMs = surface_coefficients(system; axes = Wind())
-    NamedTuple(key => [sum(CFs[key]); sum(CMs[key])] for key in keys(CFs))
+    @views NamedTuple(key => [sum(CFs[key]); sum(CMs[key])] for key in keys(CFs))
 end
 
 """
