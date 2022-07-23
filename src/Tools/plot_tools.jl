@@ -139,7 +139,7 @@ end
 end
 
 # get_span_points(wing :: Wing, pts) = (wing.right.affine).(chop_leading_edge(wing, pts))
-get_span_points(wing :: Wing, pts) = chop_leading_edge(wing, pts)
+get_span_points(wing :: Wing, pts) = affine_transformation(wing).(chop_leading_edge(wing, pts))
 
 
 @recipe function streamline_plot(system :: VortexLatticeSystem, wing :: AbstractWing; dist = 5 * mean_aerodynamic_chord(wing), num = 100, span = 20)
