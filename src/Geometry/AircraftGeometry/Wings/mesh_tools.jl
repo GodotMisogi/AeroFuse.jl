@@ -24,26 +24,17 @@ spacing(n, distribution :: AbstractSpacing) = spacing(n, distribution)
 Base.reverse(q :: AbstractSpacing) = q
 Base.Broadcast.broadcastable(q::AbstractSpacing) = Ref(q)
 
-function chop_sections(set1, set2, n :: Integer, distribution)
-    space = spacing(n, distribution)
-    @views [ weighted_vector.(set1, set2, μ) for μ ∈ space ][1:end-1]
-end
+chop_sections(set1, set2, n :: Integer, distribution) = @views [ weighted_vector.(set1, set2, μ) for μ ∈ spacing(n, distribution) ][1:end-1]
 
-function chop_coordinates(coords, ns :: Vector{T}, spacings :: Vector{N}) where T <: Integer where N <: AbstractSpacing 
-    # @show spacing
+chop_coordinates(coords, ns :: Vector{T}, spacings :: Vector{N}) where T <: Integer where N <: AbstractSpacing =
     @views [ mapreduce((c1, c2, n, space) -> chop_sections(c1, c2, n, space), vcat, coords[1:end-1], coords[2:end], ns, spacings); [ coords[end] ] ]
-end
 
-function chop_coordinates(coords, n :: Integer, space :: AbstractSpacing)
-    # @show spacing
+chop_coordinates(coords, n :: Integer, space :: AbstractSpacing) =
     @views [ mapreduce((c1, c2) -> chop_sections(c1, c2, n, space), vcat, coords[1:end-1], coords[2:end]); [ coords[end] ] ]
-end
 
 chop_coordinates(coords, n :: Vector{<:Integer}, space :: AbstractSpacing) = chop_coordinates(coords, n, fill(space, length(n)))
 
-chop_spans(xyzs, span_num, spacing) = combinedimsview(map(eachrow(xyzs)) do xyz
-        chop_coordinates(xyz, span_num, spacing)
-    end, (1))
+chop_spans(xyzs, span_num, spacing) = combinedimsview(map(xyz -> chop_coordinates(xyz, span_num, spacing), eachrow(xyzs)), (1))
 
 chop_chords(xyzs, div, spacing) = combinedimsview(map(xyz -> chop_coordinates(xyz, div, spacing), eachcol(xyzs)))
 

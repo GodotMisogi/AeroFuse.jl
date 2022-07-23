@@ -19,13 +19,17 @@ function coordinates(wing :: Wing)
         bounds = sym_bounds
     end
 
+    # Reshape into matrix of vectors
     bounds = splitdimsview(bounds,(1,3))
 
-    affine_transformation(wing).(bounds)
+    # Weird hack
+    return AffineMap(I, zeros(3)).(bounds)
 end
 
 function chord_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; span_spacing = symmetric_spacing(wing), chord_spacing = Cosine())
-    chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
+    coords = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
+
+    return affine_transformation(wing).(coords)
 end
 
 function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; span_spacing = symmetric_spacing(wing))
@@ -36,13 +40,13 @@ function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_
     scaled_foils = @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num)
 
     # Discretize spanwise sections
-    coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry)
+    coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
 
     # Transform
-    return coords
+    return affine_transformation(wing).(coords)
 end
 
-function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
+function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; span_spacing = symmetric_spacing(wing))
     # Get leading edge coordinates
     leading_xyz  = @views coordinates(wing)[1,:]
 
@@ -50,10 +54,10 @@ function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord
     scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_interpolation)(wing.foils, chord_num)
 
     # Discretize spanwise sections
-    coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, spacings, wing.symmetry, wing.flip)
+    coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
 
     # Transform
-    return coords
+    return affine_transformation(wing).(coords)
 end
 
 function number_of_spanwise_panels(wing :: Wing, span_num :: Integer) 
@@ -71,15 +75,17 @@ end
 
 function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer})
     @assert (length ∘ spans)(wing) > 1 "Provide a positive integer of spanwise panels for 1 wing section."
-    span_num
+    return span_num
 end
 
 # Spacing
 function symmetric_spacing(wing :: Wing)
+    sins = [Sine(1); Sine(0)]
     if length(wing.spans) == 1 && wing.symmetry
-        return [Sine(1); Sine(0)]
+        return sins
     else
-        return fill(Cosine(), (length ∘ spans)(wing))
+        cosins = fill(Cosine(), (length(spans(wing)) - 1))
+        return [ cosins; sins; cosins ]
     end
 end
 
@@ -88,7 +94,7 @@ end
 
 mesh_chords(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(chord_coordinates(wing, span_num, chord_num; span_spacing = spacings))
 
-mesh_wing(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(surface_coordinates(wing, span_num, chord_num, spacings = spacings))
+mesh_wing(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(surface_coordinates(wing, span_num, chord_num, span_spacing = spacings))
 
 mesh_cambers(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(camber_coordinates(wing, span_num, chord_num; span_spacing = spacings))
 

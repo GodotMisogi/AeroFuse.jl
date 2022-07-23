@@ -25,10 +25,7 @@ end
 
 Get the planform coordinates of an `AbstractWing` for plotting.
 """
-function plot_planform(wing :: Wing) 
-    
-    plot_planform(coordinates(wing))
-end
+plot_planform(wing :: Wing) = plot_planform(affine_transformation(wing).(coordinates(wing)))
 
 plot_streamlines(system :: VortexLatticeSystem, points, length, num_steps) = combinedimsview(streamlines(system, points, length, num_steps), (1,3))
 
