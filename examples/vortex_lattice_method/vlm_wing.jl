@@ -7,8 +7,8 @@ wing = Wing(
     chords    = [2.0, 1.6, 0.2],
     twists    = [0.0, 0.0, 0.0],
     spans     = [5., 0.6],
-    dihedrals = [5., 45.],
-    sweeps    = [20.,45.],
+    dihedrals = [5., 5.],
+    sweeps    = [20.,20.],
     w_sweep   = 0.25, # Quarter-chord sweep
     symmetry  = true,
     # flip      = true
@@ -20,7 +20,7 @@ x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
 ## Meshing and assembly
-wing_mesh = WingMesh(wing, [12,6], 6, 
+wing_mesh = WingMesh(wing, [24,12], 6, 
                      span_spacing = Cosine()
                     );
 aircraft = ComponentVector(wing = make_horseshoes(wing_mesh))
@@ -45,7 +45,6 @@ refs = References(
 
 ## Solve system
 system  = solve_case(aircraft, fs, refs;
-                     symmetry = true,
                      print = true
                     );
 
@@ -60,12 +59,12 @@ CFs, CMs = surface_coefficients(system; axes = ax)
 FFs = farfield_coefficients(system)
 
 # Create array of nearfield and farfield coefficients for each component as a row vector.
-comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name]... ], hcat, keys(system.vortices))
+# comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name]... ], hcat, keys(system.vortices))
 
 ## Viscous drag prediction using empirical models
 
 # Equivalent flat-plate skin-friction estimation
-x_tr        = fill(0.98, 4)              # Transition locations over sections
+x_tr        = fill(0.98, 2)              # Transition locations over sections
 CDv_plate   = profile_drag_coefficient(wing_mesh, x_tr, refs)
 
 ## Local-dissipation drag estimation (WRONG???)
@@ -89,60 +88,23 @@ dvs = solve_case_derivatives(aircraft, fs, refs;
 
 ## Plotting
 using Plots
-()
-
-## Streamlines
-
-# Spanwise distribution
-span_points = 20
-init        = chop_trailing_edge(wing, span_points)
-dx, dy, dz  = 0, 0, 1e-3
-seed        = [ init .+ Ref([dx, dy,  dz])  ;
-                init .+ Ref([dx, dy, -dz]) ];
-
-distance = 5
-num_stream_points = 100
-streams = plot_streamlines(system, seed, distance, num_stream_points);
-
-coords = [ SVector(-10., r...) for r in Base.Iterators.product(-5:0.01:5, -0.1:0.005:0.5) ]
-vels = norm.(stream_velocity.(coords, Ref(system)))
-
-##
-coords_new = combinedimsview(coords, (1,2))
-
-## Trying velocity maps
-using CairoMakie
-
-fig = Figure()
-ax = Axis(fig[1,1])
-
-@views sc = CairoMakie.scatter!(coords_new[:,:,2][:], coords_new[:,:,3][:], color = vels[:], colormap = :thermal)
-
-Colorbar(fig[1,2], sc)
-
-fig
+gr()
 
 ## Display
 horseshoe_panels = chord_panels(wing_mesh)
 horseshoe_coords = plot_panels(horseshoe_panels)
-wing_coords = plot_planform(wing)
 horseshoe_points = Tuple.(collocation_point.(system.vortices))
 ys = getindex.(horseshoe_points, 2)
 
 ## Coordinates
-z_limit = 5
 plot(
-    xaxis = "x", yaxis = "y", zaxis = "z",
     aspect_ratio = 1,
     camera = (30, 30),
-    zlim = (-0.1, z_limit),
+    zlim = span(wing) .* (-0.5, 0.5),
     size = (800, 600)
 )
-# plot!(wing_coords[:,1], wing_coords[:,2], wing_coords[:,3])
-# plot!.(horseshoe_coords, color = :black, label = :none)
-plot!(wing_mesh)
-[ plot!(stream, color = :green, label = :none) for stream in eachcol(streams) ]
-plot!()
+plot!(wing_mesh, label = "Wing")
+plot!(system, wing, dist = 3, num_stream = 50, span = 10, color = :green)
 
 ## Compute spanwise loads
 CL_loads = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
@@ -161,18 +123,18 @@ plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 ## Lift distribution
 
 # Exaggerated CF distribution for plot
-hs_pts = vec(Tuple.(bound_leg_center.(system.vortices)))
+# hs_pts = vec(Tuple.(bound_leg_center.(system.vortices)))
 
-plot(xaxis = "x", yaxis = "y", zaxis = "z",
-     aspect_ratio = 1,
-     camera = (60, 60),
-     zlim = (-0.1, z_limit),
-     title = "Forces (Exaggerated)"
-    )
-plot!.(horseshoe_coords, color = :gray, label = :none)
-# scatter!(cz_pts, zcolor = vec(CLs), marker = 2, label = "CL (Exaggerated)")
-quiver!(hs_pts, quiver=(span_loads[:,2], span_loads[:,3], span_loads[:,4]) .* 10)
-plot!(size = (800, 600))
+# plot(xaxis = "x", yaxis = "y", zaxis = "z",
+#      aspect_ratio = 1,
+#      camera = (60, 60),
+#      zlim = span(wing) .* (-0.5, 0.5),
+#      title = "Forces (Exaggerated)"
+#     )
+# plot!.(horseshoe_coords, color = :gray, label = :none)
+# # scatter!(cz_pts, zcolor = vec(CLs), marker = 2, label = "CL (Exaggerated)")
+# quiver!(hs_pts, quiver=(span_loads[:,2], span_loads[:,3], span_loads[:,4]) .* 10)
+# plot!(size = (800, 600))
 
 ## VARIABLE ANALYSES
 #=========================================================#

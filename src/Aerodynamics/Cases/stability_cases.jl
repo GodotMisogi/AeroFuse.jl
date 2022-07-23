@@ -65,7 +65,7 @@ function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; a
     data   = cat(values, reshape(derivs, 9, num_comps, 6), dims = 3) # Reshaping
 
     # Labelled array for convenience
-    Comp = @SLArray (9,7) (:CX,:CY,:CZ,:Cl,:Cm,:Cn,:CD_ff,:CY_ff,:CL_ff,:CX_speed,:CY_speed,:CZ_speed,:Cl_speed,:Cm_speed,:Cn_speed,:CD_ff_speed,:CY_ff_speed,:CL_ff_speed,:CX_alpha,:CY_alpha,:CZ_alpha,:Cl_alpha,:Cm_alpha,:Cn_alpha,:CD_ff_alpha,:CY_ff_alpha,:CL_ff_alpha,:CX_beta,:CY_beta,:CZ_beta,:Cl_beta,:Cm_beta,:Cn_beta,:CD_ff_beta,:CY_ff_beta,:CL_ff_beta,:CX_pb,:CY_pbar,:CZ_pbar,:Cl_pbar,:Cm_pbar,:Cn_pbar,:CD_ff_pbar,:CY_ff_pbar,:CL_ff_pbar,:CX_qbar,:CY_qbar,:CZ_qbar,:Cl_qbar,:Cm_qbar,:Cn_qbar,:CD_ff_qbar,:CY_ff_qbar,:CL_ff_qbar,:CX_rbar,:CY_rbar,:CZ_rbar,:Cl_rbar,:Cm_rbar,:Cn_rbar,:CD_ff_rbar,:CY_ff_rbar,:CL_ff_rbar)
+    Comp = @SLArray (9,7) (:CX,:CY,:CZ,:Cl,:Cm,:Cn,:CD,:CY,:CL,:CX_speed,:CY_speed,:CZ_speed,:Cl_speed,:Cm_speed,:Cn_speed,:CD_speed,:CY_speed,:CL_speed,:CX_alpha,:CY_alpha,:CZ_alpha,:Cl_alpha,:Cm_alpha,:Cn_alpha,:CD_alpha,:CY_alpha,:CL_alpha,:CX_beta,:CY_beta,:CZ_beta,:Cl_beta,:Cm_beta,:Cn_beta,:CD_beta,:CY_beta,:CL_beta,:CX_pb,:CY_pb,:CZ_pb,:Cl_pb,:Cm_pb,:Cn_pb,:CD_pb,:CY_pb,:CL_pb,:CX_qb,:CY_qb,:CZ_qb,:Cl_qb,:Cm_qb,:Cn_qb,:CD_qb,:CY_qb,:CL_qb,:CX_rb,:CY_rb,:CZ_rb,:Cl_rb,:Cm_rb,:Cn_rb,:CD_rb,:CY_rb,:CL_rb)
 
     comps = @views NamedTuple(names[i] => Comp(data[:,i,:]) for i in Base.axes(data, 2))
 

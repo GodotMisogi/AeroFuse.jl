@@ -11,8 +11,8 @@ wing = Wing(
     spans     = [4.0],
     dihedrals = [5.],
     sweeps    = [5.],
-    # symmetry  = true,
-    flip      = true
+    symmetry  = true,
+    # flip      = true
 );
 
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
@@ -23,7 +23,7 @@ htail = Wing(
     foils     = fill(naca4(0,0,1,2), 2),
     chords    = [0.7, 0.42],
     twists    = [0.0, 0.0],
-    spans     = [2.5],
+    spans     = [1.25],
     dihedrals = [0.],
     sweeps    = [6.39],
     position  = [4., 0, -0.1],
@@ -51,34 +51,38 @@ print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
 ## WingMesh type
-wing_mesh  = WingMesh(wing, [12], 6, 
-                      span_spacing = Cosine()
-                     )
-htail_mesh = WingMesh(htail, [12], 6, 
-                      span_spacing = Cosine()
-                     )
-# vtail_mesh = WingMesh(vtail, [12], 6, 
-#                       span_spacing = Cosine()
-#                      )
+wing_mesh  = WingMesh(wing, [24], 6,
+    # span_spacing = Cosine()
+)
+htail_mesh = WingMesh(htail, [24], 6, 
+    # span_spacing = Cosine()
+)
+vtail_mesh = WingMesh(vtail, [24], 6, 
+    span_spacing = Cosine()
+)
 
 aircraft =  ComponentVector(
-                wing  = make_horseshoes(wing_mesh),
-                # htail = make_horseshoes(htail_mesh),
-                # vtail = make_horseshoes(vtail_mesh)
-            );
+    wing  = make_horseshoes(wing_mesh),
+    htail = make_horseshoes(htail_mesh),
+    vtail = make_horseshoes(vtail_mesh)
+);
 
 ## Case
-fs  = Freestream(alpha = 0.0, 
-                 beta  = 0.0, 
-                 omega = [0., 0., 0.]);
+fs  = Freestream(
+    alpha = 0.0, 
+    beta  = 0.0, 
+    omega = [0., 0., 0.]
+);
 
-ref = References(speed     = 1.0, 
-                 density   = 1.225,
-                 viscosity = 1.5e-5,
-                 area      = projected_area(wing),
-                 span      = span(wing),
-                 chord     = mean_aerodynamic_chord(wing),
-                 location  = mean_aerodynamic_center(wing))
+ref = References(
+    speed     = 1.0, 
+    density   = 1.225,
+    viscosity = 1.5e-5,
+    area      = projected_area(wing),
+    span      = span(wing),
+    chord     = mean_aerodynamic_chord(wing),
+    location  = mean_aerodynamic_center(wing)
+)
 
 ##
 @time begin 
@@ -117,7 +121,7 @@ CDvd_wing  = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing, 
 CDvd_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, ref)
 CDvd_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, ref)
 
-CDv_diss   = CDvd_wing + CDvd_htail + CDvd_vtail
+CDv_diss = CDvd_wing + CDvd_htail + CDvd_vtail
 
 ## Viscous drag coefficient
 CDv = CDv_plate
@@ -130,9 +134,9 @@ nf_v = (CD = CDi_nf + CDv, CDv = CDv, nf...)
 ff_v = (CD = CDi_ff + CDv, CDv = CDv, ff...)
 
 ## Spanwise forces/lifting line loads
-wing_ll  = spanwise_loading(chord_panels(wing_mesh),  CFs.wing,  S)
-htail_ll = spanwise_loading(chord_panels(htail_mesh), CFs.htail, S)
-vtail_ll = spanwise_loading(chord_panels(vtail_mesh), CFs.vtail, S);
+wing_ll  = spanwise_loading(wing_mesh, CFs.wing,  S)
+htail_ll = spanwise_loading(htail_mesh, CFs.htail, S)
+vtail_ll = spanwise_loading(vtail_mesh, CFs.vtail, S);
 
 ## Plotting
 using CairoMakie
@@ -148,10 +152,10 @@ const LS = LaTeXString
 
 ## Streamlines
 # Spanwise distribution
-span_points = 30
+span_points = 20
 init        = chop_leading_edge(wing, span_points)
-dx, dy, dz  = 0, 0, 1e-1
-seed        = init # [ init .+ Ref([dx, dy,  dz])
+dx, dy, dz  = 0, 0, 1e-3
+seed        = init .+ Ref([dx, dy,  dz])
                    #   init .+ Ref([dx, dy, -dz]) ];
 
 distance = 5
@@ -229,7 +233,7 @@ lines!(scene, plot_planform(vtail))
 # l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(vtail_mesh)) ]
 
 # Streamlines
-[ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]
+[ lines!(scene, Point3f.(stream[:]), color = :green) for stream in eachcol(streams) ]
 
 fig1.scene
 

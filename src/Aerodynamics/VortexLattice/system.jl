@@ -234,7 +234,10 @@ Compute the force and moment coefficients in **wind axes** for all components of
 """
 function nearfield_coefficients(system :: VortexLatticeSystem) 
     CFs, CMs = surface_coefficients(system; axes = Wind())
-    @views NamedTuple(key => [sum(CFs[key]); sum(CMs[key])] for key in keys(CFs))
+    @views NamedTuple(key => 
+        NamedTuple((:CX,:CY,:CZ,:Cl,:Cm,:Cn) .=> [sum(CFs[key]); sum(CMs[key])])
+        for key in keys(CFs)
+    )
 end
 
 """
@@ -269,7 +272,11 @@ end
 
 Compute the **total farfield** force coefficients in **wind axes** for all components of the `VortexLatticeSystem`.
 """
-farfield_coefficients(system :: VortexLatticeSystem) = map(ff -> force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area), farfield_forces(system))
+farfield_coefficients(system :: VortexLatticeSystem) = map(farfield_forces(system)) do ff
+    NamedTuple(
+        (:CDi,:CY,:CL) .=> force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area)
+    )
+end
 
 """
     farfield_coefficients(system :: VortexLatticeSystem)
@@ -277,13 +284,8 @@ farfield_coefficients(system :: VortexLatticeSystem) = map(ff -> force_coefficie
 Compute the **total farfield** force in **wind axes** for all components of the `VortexLatticeSystem`.
 """
 function farfield(system :: VortexLatticeSystem)
-    ffs = farfield_coefficients(system)
-    # Massive hack
-    if length(ffs) == 1
-        coeffs = ffs[1]
-    else 
-        coeffs = vec(sum(reduce(hcat, ffs), dims = 2))
-    end
-
+    q = dynamic_pressure(system.reference.density, system.reference.speed)
+    coeffs = force_coefficient(sum(farfield_forces(system)), q, system.reference.area)
+    
     return (CDi_ff = coeffs[1], CY_ff = coeffs[2], CL_ff = coeffs[3])
 end
