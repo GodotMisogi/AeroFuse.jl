@@ -5,10 +5,10 @@ abstract type AbstractFreestream end
     Freestream(α, β, Ω_x, Ω_y, Ω_z)
     Freestream(U, Ω)
     Freestream(; 
-                 alpha = 0., 
-                 beta  = 0., 
-                 omega = [0,0,0]
-               )
+        alpha = 0., 
+        beta  = 0., 
+        omega = [0,0,0]
+    )
 
 Define freestream conditions with angle of attack ``α`` (degrees), sideslip angle ``β`` (degrees), and (quasi-steady) rotation vector ``Ω`` for a vortex lattice analysis.
 
@@ -26,7 +26,7 @@ Freestream(α_deg, β_deg, Ω) = let T = promote_type(eltype(α_deg), eltype(β_
 
 Freestream(α_deg, β_deg, Ω_x, Ω_y, Ω_z) = Freestream(deg2rad(α_deg), deg2rad(β_deg), SVector(Ω_x, Ω_y, Ω_z))
 
-Freestream(U, Ω) = let (V, α, β) = cartesian_to_freestream(normalize(U)); Freestream{T}(V, α, β, Ω) end
+Freestream(U, Ω) = let (_, α, β) = cartesian_to_freestream(normalize(U)); Freestream{T}(α, β, Ω) end
 
 Freestream(; alpha = 0., beta = 0., omega = zeros(3)) = Freestream(alpha, beta, omega)
 
@@ -49,4 +49,4 @@ velocity(fs :: Freestream) = freestream_to_cartesian(1., fs.alpha, fs.beta)
 
 Compute the velocity of Freestream in the body reference frame.
 """
-body_frame_velocity(fs :: Freestream) = -velocity(fs)
+velocity(fs :: Freestream, ::Body) = -velocity(fs)

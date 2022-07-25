@@ -1,83 +1,112 @@
 ## Stability derivatives prediction
 #==========================================================================================#
 
-function scale_inputs(fs :: Freestream, refs :: References)
-    # Scaling rate coefficients
-    scale = (refs.span, refs.chord, refs.span) ./ (2 * refs.speed)
+# Derivative labels
+const Comp = @SLArray (9,7) (# Forces and moment values
+        :CX,:CY,:CZ,:Cl,:Cm,:Cn,:CDiff,:CYff,:CLff, 
+        # Now their derivatives, using abbreviations for typing convenience
+        :CX_M,:CY_M,:CZ_M,:Cl_M,:Cm_M,:Cn_M,:CDiff_M,:CYff_M,:CLff_M, # Mach
+        :CX_a,:CY_a,:CZ_a,:Cl_a,:Cm_a,:Cn_a,:CDiff_a,:CYff_a,:CLff_a, # Angle of attack
+        :CX_b,:CY_b,:CZ_b,:Cl_b,:Cm_b,:Cn_b,:CDiff_b,:CYff_b,:CLff_b, # Sideslip
+        :CX_pb,:CY_pb,:CZ_pb,:Cl_pb,:Cm_pb,:Cn_pb,:CDiff_pb,:CYff_pb,:CLff_pb, # Roll rates 
+        :CX_qb,:CY_qb,:CZ_qb,:Cl_qb,:Cm_qb,:Cn_qb,:CDiff_qb,:CYff_qb,:CLff_qb, # Pitch rates
+        :CX_rb,:CY_rb,:CZ_rb,:Cl_rb,:Cm_rb,:Cn_rb,:CDiff_rb,:CYff_rb,:CLff_rb  # Yaw rates
+    )
 
-    # Building input vector
-    x0 = [ refs.speed;
-           fs.alpha;
-           fs.beta;
-           fs.omega .* scale ]
+# ...and assemble into components
+label_derivatives(data, names, Comp = Comp) = @views NamedTuple(names[i] => Comp(data[:,i,:]) for i in Base.axes(data, 2))
 
-    x0, scale
+# Convert speed and rates into non-dimensional  coefficients
+scale_freestream(fs :: Freestream, refs :: References) = 
+    [ 
+        refs.speed / refs.sound_speed; # Mach number
+        fs.alpha;
+        fs.beta;
+        rate_coefficient(fs, refs)
+    ]
+
+# Closure to generate results with input vector
+function freestream_derivatives!(y, x, aircraft, fs, ref, name, axes = Wind())
+    # Scale Mach number
+    ref = @views setproperties(ref, 
+        speed = x[1] * ref.sound_speed
+    )
+
+    # Transform angles and scale rotation vector
+    fs = @views setproperties(fs, 
+        alpha = rad2deg(x[2]), 
+        beta = rad2deg(x[3]), 
+        omega = x[4:end] ./ rate_coefficient(1, ref.speed, ref.span, ref.chord)
+    )
+
+    # Solve system
+    system = solve_case(
+        aircraft, fs, ref,
+        name = name
+    )
+
+    # Evaluate nearfield coefficients
+    CFs, CMs = surface_coefficients(system; axes = axes)
+
+    # Evaluate farfield coefficients
+    q = dynamic_pressure(system.reference.density, system.reference.speed)
+    FFs = map(farfield_forces(system)) do F
+        force_coefficient(F, q, system.reference.area)
+    end
+    
+    # Create array of nearfield and farfield coefficients as a column, for each component as a row.
+    comp_coeffs = @views mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
+
+    # Massive hack to perform summation for multiple components
+    if length(size(comp_coeffs)) > 1
+        y[:,1:end-1] = comp_coeffs
+        y[:,end] = sum(comp_coeffs, dims = 2)
+    else
+        y[:,1] = comp_coeffs
+        y[:,end] = comp_coeffs
+    end
+
+    # return [ comp_coeffs sum_coeffs ] # Append sum of all forces for aircraft
 end
 
-"""
-    solve_case_derivatives(components :: Vector{Horseshoe}, 
-                           fs :: Freestream, 
-                           refs :: References;
-                           name = :aircraft, 
-                           print = false,
-                           print_components = false)
-
-Obtain the force and moment coefficients of a vortex lattice analysis and their derivatives with respect to freestream values, given a vector of `Horseshoe`s, a `Freestream` condition, and `Reference` values.
-"""
-function solve_case_derivatives(aircraft, fs :: Freestream, ref :: References; axes = Wind(), name = :aircraft, print = false, print_components = false)
+function freestream_derivatives(aircraft, fs, ref; axes = Wind(), name = :aircraft, print = false, print_components = false, farfield = false)
     # Reference values and scaling inputs
-    x, scale = scale_inputs(fs, ref)
-
-    # Closure to generate results with input vector
-    function freestream_derivatives(x)
-        ref_c  = setproperties(ref, speed = x[1])
-        fs_c   = setproperties(fs, alpha = rad2deg(x[2]), beta = rad2deg(x[3]), omega = x[4:end] ./ scale)
-        system = solve_case(aircraft, fs_c, ref_c,
-                            name      = name)
-
-        CFs, CMs = surface_coefficients(system; axes = axes)
-        # FFs = farfield_coefficients(system)
-
-        FFs = map(F -> force_coefficient(F, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area), farfield_forces(system))
-        
-        # Create array of nearfield and farfield coefficients for each component as a row vector.
-        comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
-
-        # Massive hack
-        if length(size(comp_coeffs)) > 1
-            sum_coeffs = sum(comp_coeffs, dims = 2)
-        else 
-            sum_coeffs = comp_coeffs
-        end
-
-        [ comp_coeffs sum_coeffs ] # Append sum of all forces for aircraft
-    end
+    x = scale_freestream(fs, ref)
 
     names     = [ reduce(vcat, keys(aircraft)); name ]
     num_comps = length(names)
 
-    y       = zeros(9, num_comps)
-    result  = JacobianResult(y, x)
-    jacobian!(result, freestream_derivatives, x)
-
-    values = value(result)
-    derivs = jacobian(result)
-    data   = cat(values, reshape(derivs, 9, num_comps, 6), dims = 3) # Reshaping
+    y = zeros(eltype(x), 9, num_comps)
+    ∂y∂x = zeros(eltype(x), 9, num_comps, length(x))
+    jacobian!(∂y∂x, (y, x) -> freestream_derivatives!(y, x, aircraft, fs, ref, name, axes), y, x)
+    
+    data = cat(y, ∂y∂x, dims = 3) # Appending outputs with derivatives
 
     # Labelled array for convenience
-    Comp = @SLArray (9,7) (:CX,:CY,:CZ,:Cl,:Cm,:Cn,:CD,:CY,:CL,:CX_speed,:CY_speed,:CZ_speed,:Cl_speed,:Cm_speed,:Cn_speed,:CD_speed,:CY_speed,:CL_speed,:CX_alpha,:CY_alpha,:CZ_alpha,:Cl_alpha,:Cm_alpha,:Cn_alpha,:CD_alpha,:CY_alpha,:CL_alpha,:CX_beta,:CY_beta,:CZ_beta,:Cl_beta,:Cm_beta,:Cn_beta,:CD_beta,:CY_beta,:CL_beta,:CX_pb,:CY_pb,:CZ_pb,:Cl_pb,:Cm_pb,:Cn_pb,:CD_pb,:CY_pb,:CL_pb,:CX_qb,:CY_qb,:CZ_qb,:Cl_qb,:Cm_qb,:Cn_qb,:CD_qb,:CY_qb,:CL_qb,:CX_rb,:CY_rb,:CZ_rb,:Cl_rb,:Cm_rb,:Cn_rb,:CD_rb,:CY_rb,:CL_rb)
-
-    comps = @views NamedTuple(names[i] => Comp(data[:,i,:]) for i in Base.axes(data, 2))
+    comps = label_derivatives(data, names)
 
     # Printing
     if print_components
-        @views [ print_derivatives(comps[comp], comp) for comp in keys(comps) ]
+        @views [ print_derivatives(comps[comp], comp, farfield) for comp in keys(comps) ]
     elseif print
-        @views print_derivatives(comps[name], name)
+        @views print_derivatives(comps[name], name, farfield)
     end
 
-    comps
+    return comps
 end
+
+"""
+    freestream_derivatives(
+        system :: VortexLatticeSystem,
+        name = :aircraft,
+        axes = Wind(),
+        print = false,
+        print_components = false
+    )
+
+Obtain the force and moment coefficients of a `VortexLatticeAnalysis` and their derivatives with respect to freestream values.
+"""
+freestream_derivatives(system :: VortexLatticeSystem; axes = Wind(), name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; axes = axes, name = name, print = print, print_components = print_components, farfield = farfield)
 
 ## Linearized stability analysis
 #==========================================================================================#

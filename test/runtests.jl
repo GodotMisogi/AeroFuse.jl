@@ -106,17 +106,20 @@ end
 
     # Define freestream and reference values
     fs   = Freestream(2.0, 2.0, [0.0, 0.0, 0.0])
-    refs = References(speed    = 1.0, 
-                      area     = projected_area(wing), 
-                      span     = span(wing), 
-                      chord    = mean_aerodynamic_chord(wing), 
-                      density  = 1.225, 
-                      location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.])
+    refs = References(
+        speed    = 1.0, 
+        area     = projected_area(wing), 
+        span     = span(wing), 
+        chord    = mean_aerodynamic_chord(wing), 
+        density  = 1.225, 
+        location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
+    )
 
     aircraft = ComponentArray(wing = make_horseshoes(WingMesh(wing, [20], 5, span_spacing = [Sine(1); Sine()])))
 
     # Evaluate stability case
-    dv_data = solve_case_derivatives(aircraft, fs, refs)
+    system = solve_case(aircraft, fs, refs)
+    dv_data = freestream_derivatives(system)
 
     dcf = dv_data.wing
     nfs = @views dcf[1:6,1]
@@ -208,7 +211,8 @@ end
     )
 
     ## Stability case
-    dv_data = solve_case_derivatives(aircraft, fs, refs);
+    system = solve_case(aircraft, fs, refs)
+    dv_data = freestream_derivatives(system)
 
     dcf = dv_data.aircraft
     nfs = @views dcf[1:6,1]
@@ -283,33 +287,38 @@ end
     )
 
     ## Reference quantities
-    fs      = Freestream(alpha    = 1.0, 
-                         beta     = 1.0, 
-                         omega    = zeros(3))
+    fs = Freestream(
+        alpha    = 1.0, 
+        beta     = 1.0, 
+        omega    = zeros(3)
+    )
                          
-    refs    = References(speed    = 150.0,
-                         area     = projected_area(wing),
-                         span     = span(wing),
-                         chord    = mean_aerodynamic_chord(wing),
-                         density  = 1.225,
-                         location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.])
+    refs = References(
+        speed    = 150.0,
+        area     = projected_area(wing),
+        span     = span(wing),
+        chord    = mean_aerodynamic_chord(wing),
+        density  = 1.225,
+        location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
+    )
 
     ## Stability case
-    dv_data = solve_case_derivatives(aircraft, fs, refs);
+    system = solve_case(aircraft, fs, refs)
+    dv_data = freestream_derivatives(system)
 
     dcf = dv_data.aircraft
     nfs = @views dcf[1:6,1]
     ffs = @views dcf[7:9,1]
-    dvs = @views dcf[1:6,3:end]
+    dvs = @views dcf[1:6,2:end]
 
     nf_tests = [0.0004394, -0.0096616, 0.0710165, -0.0027487, 0.0643144, 0.0063322]
     ff_tests = [0.0005934, -0.0097369, 0.0709867]
-    dv_tests = [ 0.0318917  0.0065702  -0.6380811    -1.3022877    1.8906515;
-                 0.0063291 -0.542542   47.3510327   -16.8276434 -159.4190293;
-                 5.1640333  0.0671273  -9.0759321   2150.559606    5.2457761;
-                 0.0468793 -0.1592905  77.192654     27.2895215  -15.6091835;
-                -1.5506993 -0.0366944 -13.4122289 -4464.6998256  -20.6719332;
-                 0.0117921  0.3544702   1.1794656    19.5810734  123.8328465]
+    dv_tests = [ 0.000303126   0.0318917    0.00657018   0.00105799    0.0840928  -0.000608665
+                -0.00222327    0.00632911  -0.542542     0.31718      -0.0952224  -1.07032
+                0.0285508     5.164033      0.0671273   -0.0606896    14.2909359      0.0398133
+                -0.000318489   0.0468793   -0.15929      0.514803      0.184925   -0.11513
+                0.0205454    -1.5507      -0.0366944   -0.0862627   -29.7754714     -0.149386
+                0.00161937    0.0117921    0.35447      0.0190155     0.119573    0.825448 ]
 
     # Nearfield coefficients test
     [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]

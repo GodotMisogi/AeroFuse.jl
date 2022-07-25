@@ -69,13 +69,13 @@ aircraft =  ComponentVector(
 
 ## Case
 fs  = Freestream(
-    alpha = 0.0, 
+    alpha = 4.0, 
     beta  = 0.0, 
     omega = [0., 0., 0.]
 );
 
 ref = References(
-    speed     = 1.0, 
+    speed     = 150., 
     density   = 1.225,
     viscosity = 1.5e-5,
     area      = projected_area(wing),
@@ -86,20 +86,31 @@ ref = References(
 
 ##
 @time begin 
-    system = solve_case(aircraft, fs, ref;
-                        print            = true, # Prints the results for only the aircraft
-                        print_components = true, # Prints the results for all components
-                       );
+    system = solve_case(
+        aircraft, fs, ref;
+        # print            = true, # Prints the results for only the aircraft
+        # print_components = true, # Prints the results for all components
+    );
 
     # Compute dynamics
-    ax       = Geometry() # Geometry, Stability(), Body()
+    ax       = Wind() # Geometry, Stability(), Body()
     CFs, CMs = surface_coefficients(system; axes = ax)
-    Fs, Ms   = surface_dynamics(system; axes = ax)
+    # Fs, Ms   = surface_dynamics(system; axes = ax)
     # Fs       = surface_forces(system; axes = ax)
     # vels     = surface_velocities(system)
 
+    nf  = nearfield(system)
+    ff  = farfield(system)
+    
     nfs = nearfield_coefficients(system)
     ffs = farfield_coefficients(system)
+        
+    # Force/moment coefficients and derivatives
+    dvs = freestream_derivatives(system; 
+        axes = ax,
+        print_components = true,
+        farfield = false
+    )
 end;
 
 ## Viscous drag prediction
@@ -112,19 +123,20 @@ CDv_vtail = profile_drag_coefficient(vtail, [0.6, 0.6], system.reference)
 CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 
 ## Local dissipation form factor friction estimation (WRONG???)
+
 import LinearAlgebra: norm
 
 edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
 
 # Drag coefficients
-CDvd_wing  = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  ref)
-CDvd_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, ref)
-CDvd_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, ref)
+CDvd_wing  = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  system.reference)
+CDvd_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, system.reference)
+CDvd_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, system.reference)
 
 CDv_diss = CDvd_wing + CDvd_htail + CDvd_vtail
 
 ## Viscous drag coefficient
-CDv = CDv_plate
+CDv = CDv_diss
 
 ## Total force coefficients with empirical viscous drag prediction
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
@@ -155,7 +167,7 @@ const LS = LaTeXString
 span_points = 20
 init        = chop_leading_edge(wing, span_points)
 dx, dy, dz  = 0, 0, 1e-3
-seed        = init .+ Ref([dx, dy,  dz])
+seed        = init .+ Ref([dx, dy, dz])
                    #   init .+ Ref([dx, dy, -dz]) ];
 
 distance = 5

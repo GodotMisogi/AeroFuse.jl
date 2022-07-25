@@ -27,53 +27,64 @@ aircraft = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
 fs  = Freestream(
-    alpha = 0.0,
-    beta  = 0.0,
+    alpha = 2.0, # deg
+    beta  = 2.0, # deg
     omega = [0.,0.,0.]
 )
 
 # Reference values
-refs = References(
-    speed     = 150,
-    density   = 1.225,
-    viscosity = 1.5e-5,
-    area      = projected_area(wing),
-    span      = span(wing), 
-    chord     = mean_aerodynamic_chord(wing), 
-    location  = mean_aerodynamic_center(wing)
+ref = References(
+    speed     = 150, # m/s
+    density   = 1.225, # kg/m³
+    viscosity = 1.5e-5, # ???
+    area      = projected_area(wing), # m²
+    span      = span(wing), # m
+    chord     = mean_aerodynamic_chord(wing), # m
+    location  = mean_aerodynamic_center(wing) # m
 )
 
 ## Solve system
-system  = solve_case(aircraft, fs, refs;
-                     print = true
-                    );
+@time begin 
+    system = solve_case(
+        aircraft, fs, ref;
+        # print            = true, # Prints the results for only the aircraft
+        # print_components = true, # Prints the results for all components
+    );
 
-## Compute dynamics
-ax       = Wind()
-CFs, CMs = surface_coefficients(system; axes = ax)
-# Fs       = surface_forces(system)
-# Ms       = surface_moments(system)
-# Fs, Ms   = surface_dynamics(system; axes = ax)
+    # Compute dynamics
+    ax       = Wind() # Geometry, Stability(), Body()
+    CFs, CMs = surface_coefficients(system; axes = ax)
+    # Fs, Ms   = surface_dynamics(system; axes = ax)
+    # Fs       = surface_forces(system; axes = ax)
+    # vels     = surface_velocities(system)
 
-CFs, CMs = surface_coefficients(system; axes = ax)
-FFs = farfield_coefficients(system)
+    nf  = nearfield(system)
+    ff  = farfield(system)
 
-# Create array of nearfield and farfield coefficients for each component as a row vector.
-# comp_coeffs = mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name]... ], hcat, keys(system.vortices))
+    nfs = nearfield_coefficients(system)
+    ffs = farfield_coefficients(system)
+        
+    # Force/moment coefficients and derivatives
+    dvs = freestream_derivatives(system; 
+        axes = ax,
+        print_components = true,
+        farfield = false
+    )
+end;
 
 ## Viscous drag prediction using empirical models
 
 # Equivalent flat-plate skin-friction estimation
-x_tr        = fill(0.98, 2)              # Transition locations over sections
-CDv_plate   = profile_drag_coefficient(wing_mesh, x_tr, refs)
+x_tr        = fill(0.98, 2) # Transition locations over sections
+CDv_plate   = profile_drag_coefficient(wing_mesh, x_tr, ref)
 
 ## Local-dissipation drag estimation (WRONG???)
 cam_panels  = camber_panels(wing_mesh)
 edge_speeds = surface_velocities(system).wing
-CDv_diss    = profile_drag_coefficient(wing_mesh, x_tr, edge_speeds, refs)
+CDv_diss    = profile_drag_coefficient(wing_mesh, x_tr, edge_speeds, ref)
 
 ## Viscous drag coefficient
-CDv = CDv_plate
+CDv = CDv_diss
 
 ## Total force coefficients with viscous drag prediction
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
@@ -81,10 +92,6 @@ CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 
 nf_v = (CD = CDi_nf + CDv, CDv = CDv, nf...)
 ff_v = (CD = CDi_ff + CDv, CDv = CDv, ff...)
-
-## Evaluate case with stability derivatives
-dvs = solve_case_derivatives(aircraft, fs, refs;
-                             print_components = true);
 
 ## Plotting
 using Plots

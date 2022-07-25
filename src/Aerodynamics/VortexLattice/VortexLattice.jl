@@ -36,9 +36,24 @@ include("vortex_rings.jl")
 ## Reference frames
 #==========================================================================================#
 
+## Axis transformations
+abstract type AbstractAxisSystem end
+
+struct Geometry <: AbstractAxisSystem end
+struct Body      <: AbstractAxisSystem end
+struct Stability <: AbstractAxisSystem end
+struct Wind      <: AbstractAxisSystem end
+
+Base.show(io :: IO, :: Geometry)  = print(io, "Geometry")
+Base.show(io :: IO, :: Body)      = print(io, "Body")
+Base.show(io :: IO, :: Stability) = print(io, "Stability")
+Base.show(io :: IO, :: Wind)      = print(io, "Wind")
+
 include("freestream.jl")
 
 include("reference_frames.jl")
+
+
 
 # Prandl-Glauert transformation
 include("prandtl_glauert.jl")
@@ -86,8 +101,10 @@ function solve_system(components, fs :: Freestream, refs :: References)
     # Wind axis + Prandtl-Glauert transformation
     β_pg = √(1 - M^2)
     comp = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(components, fs), β_pg)
-    U    = geometry_to_wind_axes(body_frame_velocity(fs), fs)
-    Ω    = geometry_to_wind_axes(fs.omega, fs)
+
+    # Quasi-steady freestream velocity
+    U = geometry_to_wind_axes(velocity(fs, Body()), fs)
+    Ω = geometry_to_wind_axes(fs.omega, fs) / refs.speed
 
     # Solve system
     Γs, AIC, boco = solve_linear(comp, U, Ω)
