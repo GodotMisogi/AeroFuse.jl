@@ -48,15 +48,54 @@ function plot_surface(fuse :: Fuselage, n_secs = 5)
     n_pts = 20
     xys = cosine_interpolation(fuse, n_secs)
     
-    circs = combinedimsview(permutedims.(combinedimsview.([ eachrow(circ) .+ Ref([x; 0.; 0.] + fuse.position) for (x, circ) in zip(xys[:,1] .* fuse.length, circle3D.(xys[:,2], n_pts)) ])))
+    circs = combinedimsview(
+        permutedims.(
+            combinedimsview.(
+                [ 
+                    eachrow(circ) .+ Ref([x; 0.; 0.] + fuse.position) 
+                    for (x, circ) in zip(
+                        xys[:,1] .* fuse.length, 
+                        circle3D.(xys[:,2], n_pts)
+                    ) 
+                ]
+            )
+        )
+    )
 
-    plot_circs = [ reduce(vcat, splitdimsview(circs[n:(n+1),:,k:(k+1)])) for n in axes(circs, 1)[1:end-1] for k in axes(circs, 3)[1:end-1] ]
+    # plot_circs = [ reduce(vcat, splitdimsview(circs[n:(n+1),:,k:(k+1)])) for n in axes(circs, 1)[1:end-1] for k in axes(circs, 3)[1:end-1] ]
 
-    return plot_circs
+    return circs
 end
 
 ## Plots.jl recipes
 #============================================#
+
+@recipe function foil_plot(foil :: Foil; camber = false, thickness = false)
+    xlabel --> "x"
+    ylabel --> "y"
+    # aspect_ratio --> 1
+    label --> foil.name
+
+    if camber || thickness
+        xcamthick = camber_thickness(foil)
+        if camber
+            @series begin
+                ls := :dash
+                label := foil.name * " Camber"
+                xcamthick[:,1], xcamthick[:,2]
+            end
+        end
+        if thickness
+            @series begin
+                ls := :dot
+                label := foil.name * " Thickness"
+                xcamthick[:,1], xcamthick[:,3]
+            end
+        end
+    end
+
+    foil.x, foil.y
+end
 
 @recipe function wing_plot(wing :: AbstractWing, w = 0.25)
     wing_plan = plot_planform(wing)
@@ -114,13 +153,26 @@ end
 
 @recipe function fuselage_plot(fuse :: Fuselage, n = 20)
     fuse_pans = plot_surface(fuse, n)
-    for coords in fuse_pans
-        @series begin
-            seriestype := :path
-            primary := false
-            # linecolor := :lightgray
-            # fillcolor := :lightgray
-            @views coords[:,1], coords[:,2], coords[:,3]
+
+    # for coords in fuse_pans
+    #     @series begin
+    #         seriestype := :path
+    #         primary := false
+    #         # linecolor := :lightgray
+    #         # fillcolor := :lightgray
+    #         @views coords[:,1], coords[:,2], coords[:,3]
+    #     end
+    # end
+    for k in axes(fuse_pans, 3)[1:end-1]
+        for n in axes(fuse_pans, 1)[1:end-1]
+                @series begin
+                seriestype := :path
+                primary := false
+
+                coo = fuse_pans[n:(n+1),:,(k+1):-1:k]
+                coords = @views [ coo[:,:,1]; coo[:,:,2] ]
+                @views coords[:,1], coords[:,2], coords[:,3]
+            end
         end
     end
 end
@@ -155,7 +207,7 @@ get_span_points(wing :: Wing, pts) = affine_transformation(wing).(chop_leading_e
         @series begin 
             seriestype := :line
             primary := false
-            color := :darkblue
+            linecolor := :green
             @views streams[:,1,i], streams[:,2,i], streams[:,3,i]
         end
     end

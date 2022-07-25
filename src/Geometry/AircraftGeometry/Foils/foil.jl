@@ -79,6 +79,8 @@ function interpolate(foil :: Foil, xs)
     @views Foil([ xs[end:-1:2]; xs ], [ y_u[end:-1:2]; y_l ], foil.name)
 end
 
+reflect(foil :: Foil) = setproperties(foil, y = -foil.y, name = "Inverted " * foil.name)
+
 affine(foil :: Foil; angle, vector) = translate(rotate(foil; angle = angle); vector = vector)
 
 """
@@ -160,7 +162,7 @@ function control_surface(foil :: Foil, δ, xc_hinge)
     coords   = coordinates(foil)
     @views coords[foil.x .>= xc_hinge,1] = rot_foil.x[foil.x .>= xc_hinge]
     @views coords[foil.x .>= xc_hinge,2] = rot_foil.y[foil.x .>= xc_hinge]
-    Foil(coords, foil.name)
+    Foil(coords, foil.name * " Deflected $(δ)° at $xc_hinge (x/c)")
 end
 
 """

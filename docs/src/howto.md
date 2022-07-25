@@ -66,6 +66,12 @@ You can also do the inverse transformation.
 coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
 ````
 
+You can also reflect the $y$-coordinates about the $x$-axis, called inversion.
+
+````@example howto
+inv_foil = reflect(my_foil)
+````
+
 ### Control Surfaces
 
 You can (somewhat) mimic the behaviour of a control surface by specifying a deflection angle $\delta$ (in degrees, clockwise-positive convention) with the specification of the hinge location's $x$-coordinate normalized in $[0,1]$ to the chord length.
