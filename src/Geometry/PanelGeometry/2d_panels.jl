@@ -38,6 +38,11 @@ function transform_panel_points(panel_1 :: AbstractPanel2D, panel_2 :: AbstractP
     xp1, yp1, xp2, yp2
 end
 
+"""
+    `transform_panel(panel :: AbstractPanel2D, point :: SVector{2,<: Real})`
+
+Transform a 2D panel from global coordinate to local coordinate
+"""
 function transform_panel(panel :: AbstractPanel2D, point :: SVector{2,<: Real})
     xs, ys = p1(panel)
     affine_2D(first(point), last(point), xs, ys, panel_angle(panel))

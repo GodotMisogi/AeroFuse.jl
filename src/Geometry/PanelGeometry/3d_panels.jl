@@ -116,7 +116,12 @@ end
 local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, panel_normal(panel))
 
 
-function panel_transformation_3d(panel :: Panel3D)
+"""
+    transform_panel(panel :: Panel3D)
+
+Transform a 3D panel from global coordinate to local coordinate
+"""
+function transform_panel(panel :: AbstractPanel3D)
     coord = panel_coordinates(panel)
 
     # Translate p1 to xy plane
