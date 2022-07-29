@@ -256,10 +256,14 @@ function quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, loca
     rvs = [local_point - coord[i] for i=1:4]
     rs = norm.(rvs)
     ds = [d_ij(i, i%4+1, coord) for i=1:4]
+    
+    return -μ / 4π * (
+        ( rvs[1] × rvs[2] * (rs[1] + rs[2]) ) / ( (rs[1] * rs[2]) * (rs[1] * rs[2] + rvs[1] ⋅ rvs[2]) + 0.005 * ds[1] ) +
+        ( rvs[2] × rvs[3] * (rs[2] + rs[3]) ) / ( (rs[2] * rs[3]) * (rs[2] * rs[3] + rvs[2] ⋅ rvs[3]) + 0.005 * ds[2] ) +
+        ( rvs[3] × rvs[4] * (rs[3] + rs[4]) ) / ( (rs[3] * rs[4]) * (rs[3] * rs[4] + rvs[3] ⋅ rvs[4]) + 0.005 * ds[3] ) +
+        ( rvs[4] × rvs[1] * (rs[4] + rs[1]) ) / ( (rs[4] * rs[1]) * (rs[4] * rs[1] + rvs[4] ⋅ rvs[1]) + 0.005 * ds[4] )
+    )
 
-    v = [( rvs[i] × rvs[i%4+1] * (rs[i] + rs[i%4+1]) ) / ( (rs[i] * rs[i%4+1]) * (rs[i] * rs[i%4+1] + rvs[i] ⋅ rvs[i%4+1]) + 0.005 * ds[i] ) for i=1:4]
-
-    return SVector(-sum(v) / 4π)
 end
 
 """

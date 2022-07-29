@@ -117,7 +117,7 @@ local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - 
 
 
 """
-    transform_panel(panel :: Panel3D)
+    transform_panel(panel :: AbstractPanel3D)
 
 Transform a 3D panel from global coordinate to local coordinate
 """
