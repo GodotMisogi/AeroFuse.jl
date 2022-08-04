@@ -40,6 +40,11 @@ function doublet_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2
     ifelse(panel_i == panel_j, 0.5, doublet_potential(1., xp, yp, 0., panel_length(panel_j)))
 end
 
+function doublet_influence(panel_j :: AbstractPanel3D, panel_i :: AbstractPanel3D)
+    xp, yp = transform_panel(panel_j, panel_i)
+    ifelse(panel_i == panel_j, 0.5, doublet_potential(1., xp, yp, 0., panel_length(panel_j)))
+end
+
 function source_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D)
     xp, yp = transform_panel(panel_j, panel_i)
     source_potential(1., xp, yp, 0., panel_length(panel_j))
