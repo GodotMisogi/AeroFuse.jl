@@ -1,6 +1,5 @@
 ## 3D Panels
 #==========================================================================================#
-
 abstract type AbstractPanel3D <: AbstractPanel end
 
 """
@@ -121,25 +120,73 @@ local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - 
 
 Transform a 3D panel from global coordinate to local coordinate
 """
-function transform_panel(panel :: AbstractPanel3D)
-    coord = panel_coordinates(panel)
-
+function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
     # Translate p1 to xy plane
-    tr1 = Translation(0., 0., -coord[1].z)
-    coord = tr1.(coord)
+    tr1 = Translation(0., 0., -panel.p1.z)
+    local_panel = tr1(panel)
+    local_point = tr1(point)
 
     # Find normal of panel
     n = panel_normal(panel)
 
     # Find rotation axis
-    d = n × SVector(0,0,1)
+    d = n × SVector(0.,0.,1.)
+
+    # No rotation if already aligned
+    if norm(d) <= 1e-7
+        return local_panel, local_point
+    end
 
     # Find rotation angle
     θ = acos(n.z / norm(n))
-    tr2 = recenter(LinearMap(AngleAxis(θ, d.x, d.y, d.z)), coord[1])
+    tr2 = recenter(LinearMap(AngleAxis(θ, d.x, d.y, d.z)), local_panel.p1)
 
-    tr = tr1 ∘ tr2
-    invtr = inv(tr)
+    local_panel = tr2(local_panel)
+    local_point = tr2(local_point)
 
-    return Panel3D(coord), tr, invtr
+    # tr = tr1 ∘ tr2
+    # invtr = inv(tr)
+
+    return local_panel, local_point
 end
+
+
+function +(p::Panel3D{T}, v::SVector{3, T}) where T <: Real
+    return Panel3D(
+        p.p1 + v,
+        p.p2 + v,
+        p.p3 + v,
+        p.p4 + v
+    )
+end
+
+function -(p::Panel3D{T}, v::SVector{3, T}) where T <: Real
+    return Panel3D(
+        p.p1 - v,
+        p.p2 - v,
+        p.p3 - v,
+        p.p4 - v
+    )
+end
+
+function ×(p::Panel3D{T}, v::SVector{3, T}) where T <: Real
+    return Panel3D(
+        p.p1 × v,
+        p.p2 × v,
+        p.p3 × v,
+        p.p4 × v
+    )
+end
+
+function (trans::AffineMap)(p::Panel3D{T}) where T <: Real
+    l = LinearMap(trans.linear)
+    t = Translation(trans.translation)
+    return Panel3D(
+        t(l(p.p1)),
+        t(l(p.p2)),
+        t(l(p.p3)),
+        t(l(p.p4))
+    )
+end
+
+

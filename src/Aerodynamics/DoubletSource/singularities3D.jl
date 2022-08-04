@@ -92,32 +92,23 @@ function quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local
     z = local_point.z
 
     yi = ys(local_panel)
-    ri = SVector(r_k(1, coord, local_point), r_k(2, coord, local_point), r_k(3, coord, local_point), r_k(4, coord, local_point))
-    dij = SVector(d_ij(1, 2, coord), d_ij(2, 3, coord), d_ij(3, 4, coord), d_ij(4, 1, coord))
-    mij = SVector(m_ij(1, 2, coord),m_ij(2, 3, coord),m_ij(3, 4, coord),m_ij(4, 1, coord))
-    ei = SVector(e_k(1, coord, local_point),e_k(2, coord, local_point),e_k(3, coord, local_point),e_k(4, coord, local_point))
-    hi = SVector(h_k(1, coord, local_point),h_k(2, coord, local_point),h_k(3, coord, local_point),h_k(4, coord, local_point))
+    ri  = @SVector [r_k(i, coord, local_point)  for i=1:4]
+    ei  = @SVector [e_k(i, coord, local_point)  for i=1:4]
+    hi  = @SVector [h_k(i, coord, local_point)  for i=1:4]
+    dij = @SVector [d_ij(i, i%4+1, coord)       for i=1:4]
+    mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
 
     # Results from textbook differs from a minus sign
-    u = -σ / 4π * (
-        const_quad_source_u(1, 2, yi, dij, ri) +
-        const_quad_source_u(2, 3, yi, dij, ri) +
-        const_quad_source_u(3, 4, yi, dij, ri) +
-        const_quad_source_u(4, 1, yi, dij, ri)
+    u = -σ / 4π * sum(
+        [const_quad_source_u(i, i%4+1, yi, dij, ri) for i=1:4]
     )
 
-    v = -σ / 4π * (
-        const_quad_source_v(1, 2, yi, dij, ri) +
-        const_quad_source_v(2, 3, yi, dij, ri) +
-        const_quad_source_v(3, 4, yi, dij, ri) +
-        const_quad_source_v(4, 1, yi, dij, ri)
+    v = -σ / 4π * sum(
+        [const_quad_source_v(i, i%4+1, yi, dij, ri) for i=1:4]
     )
 
-    w = -σ / 4π * (
-        const_quad_source_phi_term2(1, 2, z, mij, ei, hi, ri) + 
-        const_quad_source_phi_term2(2, 3, z, mij, ei, hi, ri) +
-        const_quad_source_phi_term2(3, 4, z, mij, ei, hi, ri) +
-        const_quad_source_phi_term2(4, 1, z, mij, ei, hi, ri)
+    w = -σ / 4π * sum(
+        [const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4]
     )
 
     return SVector(u, v, w)
@@ -197,22 +188,18 @@ function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, loca
 
     x, y, z = local_point.x, local_point.y, local_point.z
 
-    ri  = SVector(r_k(1, coord, local_point), r_k(2, coord, local_point), r_k(3, coord, local_point), r_k(4, coord, local_point))
-    dij = SVector(d_ij(1, 2, coord),          d_ij(2, 3, coord),          d_ij(3, 4, coord),          d_ij(4, 1, coord))
-    mij = SVector(m_ij(1, 2, coord),          m_ij(2, 3, coord),          m_ij(3, 4, coord),          m_ij(4, 1, coord))
-    ei  = SVector(e_k(1, coord, local_point), e_k(2, coord, local_point), e_k(3, coord, local_point), e_k(4, coord, local_point))
-    hi  = SVector(h_k(1, coord, local_point), h_k(2, coord, local_point), h_k(3, coord, local_point), h_k(4, coord, local_point))
+    ri  = @SVector [r_k(i, coord, local_point)  for i=1:4]
+    ei  = @SVector [e_k(i, coord, local_point)  for i=1:4]
+    hi  = @SVector [h_k(i, coord, local_point)  for i=1:4]
+    dij = @SVector [d_ij(i, i%4+1, coord)       for i=1:4]
+    mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
 
     return σ / 4π * (
-        const_quad_source_phi_term1(1, 2, x, y, xi, yi, dij, ri) + 
-        const_quad_source_phi_term1(2, 3, x, y, xi, yi, dij, ri) +
-        const_quad_source_phi_term1(3, 4, x, y, xi, yi, dij, ri) +
-        const_quad_source_phi_term1(4, 1, x, y, xi, yi, dij, ri) -
-        abs(z) * (
-            const_quad_source_phi_term2(1, 2, z, mij, ei, hi, ri) + 
-            const_quad_source_phi_term2(2, 3, z, mij, ei, hi, ri) +
-            const_quad_source_phi_term2(3, 4, z, mij, ei, hi, ri) +
-            const_quad_source_phi_term2(4, 1, z, mij, ei, hi, ri)
+        sum(
+            [const_quad_source_phi_term1(i, i%4+1, x, y, xi, yi, dij, ri) for i=1:4]
+        ) -
+        abs(z) * sum(
+            [const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4]
         )
     )
 end
@@ -253,15 +240,12 @@ function quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, loca
 
     coord = panel_coordinates(local_panel)
 
-    rvs = [local_point - coord[i] for i=1:4]
+    rvs = @SVector [local_point - coord[i] for i=1:4]
     rs = norm.(rvs)
-    ds = [d_ij(i, i%4+1, coord) for i=1:4]
+    ds = @SVector [d_ij(i, i%4+1, coord) for i=1:4]
     
-    return -μ / 4π * (
-        ( rvs[1] × rvs[2] * (rs[1] + rs[2]) ) / ( (rs[1] * rs[2]) * (rs[1] * rs[2] + rvs[1] ⋅ rvs[2]) + 0.005 * ds[1] ) +
-        ( rvs[2] × rvs[3] * (rs[2] + rs[3]) ) / ( (rs[2] * rs[3]) * (rs[2] * rs[3] + rvs[2] ⋅ rvs[3]) + 0.005 * ds[2] ) +
-        ( rvs[3] × rvs[4] * (rs[3] + rs[4]) ) / ( (rs[3] * rs[4]) * (rs[3] * rs[4] + rvs[3] ⋅ rvs[4]) + 0.005 * ds[3] ) +
-        ( rvs[4] × rvs[1] * (rs[4] + rs[1]) ) / ( (rs[4] * rs[1]) * (rs[4] * rs[1] + rvs[4] ⋅ rvs[1]) + 0.005 * ds[4] )
+    return -μ / 4π * sum(
+        [ ( rvs[i] × rvs[i%4+1] * (rs[i] + rs[i%4+1]) ) / ( (rs[i] * rs[i%4+1]) * (rs[i] * rs[i%4+1] + rvs[i] ⋅ rvs[i%4+1]) + 0.005 * ds[i] ) for i=1:4 ]
     )
 
 end
@@ -299,15 +283,12 @@ function quadrilateral_doublet_potential(μ, local_panel :: AbstractPanel3D, loc
 
     z = local_point.z
 
-    ri  = SVector(r_k(1, coord, local_point), r_k(2, coord, local_point), r_k(3, coord, local_point), r_k(4, coord, local_point))
-    mij = SVector(m_ij(1, 2, coord),          m_ij(2, 3, coord),          m_ij(3, 4, coord),          m_ij(4, 1, coord))
-    ei  = SVector(e_k(1, coord, local_point), e_k(2, coord, local_point), e_k(3, coord, local_point), e_k(4, coord, local_point))    
-    hi  = SVector(h_k(1, coord, local_point), h_k(2, coord, local_point), h_k(3, coord, local_point), h_k(4, coord, local_point))
-
-    return -μ / 4π * (
-        const_quad_source_phi_term2(1, 2, z, mij, ei, hi, ri) +
-        const_quad_source_phi_term2(2, 3, z, mij, ei, hi, ri) +
-        const_quad_source_phi_term2(3, 4, z, mij, ei, hi, ri) +
-        const_quad_source_phi_term2(4, 1, z, mij, ei, hi, ri)
+    ri  = @SVector [r_k(i, coord, local_point)  for i=1:4]
+    ei  = @SVector [e_k(i, coord, local_point)  for i=1:4]
+    hi  = @SVector [h_k(i, coord, local_point)  for i=1:4]
+    mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
+    
+    return -μ / 4π * sum(
+        [const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4]
     )
 end
