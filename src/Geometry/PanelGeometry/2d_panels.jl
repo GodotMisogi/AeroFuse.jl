@@ -39,9 +39,9 @@ function transform_panel_points(panel_1 :: AbstractPanel2D, panel_2 :: AbstractP
 end
 
 """
-    `transform_panel(panel :: AbstractPanel2D, point :: SVector{2,<: Real})`
+    transform_panel(panel :: AbstractPanel2D, point :: SVector{2,<: Real})
 
-Transform a 2D panel from global coordinate to local coordinate
+Transform point from GCS into panel LCS.
 """
 function transform_panel(panel :: AbstractPanel2D, point :: SVector{2,<: Real})
     xs, ys = p1(panel)

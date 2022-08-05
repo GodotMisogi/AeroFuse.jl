@@ -29,6 +29,12 @@ Panel3D(p1, p2, p3, p4) = let T = promote_type(eltype(p1), eltype(p2), eltype(p3
 
 Panel3D((p1, p2, p3, p4)) = Panel3D(p1, p2, p3, p4)
 
+## Some algebraic operations on Panel3D
++(p :: AbstractPanel3D, v) = Panel3D(p.p1 + v, p.p2 + v, p.p3 + v, p.p4 + v)
+-(p :: AbstractPanel3D, v) = Panel3D(p.p1 - v, p.p2 - v, p.p3 - v, p.p4 - v)
+×(p :: AbstractPanel3D, v) = Panel3D(p.p1 × v, p.p2 × v, p.p3 × v, p.p4 × v)
+(trans::AffineMap)(p::Panel3D) = Panel3D(trans(p.p1), trans(p.p2), trans(p.p3), trans(p.p4))
+
 Base.length(:: Panel3D) = 1
 
 average_chord(panel :: Panel3D) = (p2(panel) - p1(panel) + p3(panel) - p4(panel)) / 2
@@ -114,11 +120,12 @@ end
 # Compute local axis coordinates
 local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, panel_normal(panel))
 
+collocation_point(panel :: AbstractPanel3D) = midpoint(panel)
 
 """
-    transform_panel(panel :: AbstractPanel3D)
+    transform_panel(panel :: AbstractPanel3D, point :: Point3D) -> panel :: AbstractPanel3D, point :: Point3D
 
-Transform a 3D panel from global coordinate to local coordinate
+Transform point and panel from GCS into panel LCS.
 """
 function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
     # Translate p1 to xy plane
@@ -151,42 +158,30 @@ function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
 end
 
 
-function +(p::Panel3D{T}, v::SVector{3, T}) where T <: Real
-    return Panel3D(
-        p.p1 + v,
-        p.p2 + v,
-        p.p3 + v,
-        p.p4 + v
-    )
+"""
+	get_transformation(panel :: AbstractPanel3D) -> tr :: AffineMap
+
+Calculate required transformation from GCS to panel LCS.
+"""
+function get_transformation(panel :: AbstractPanel3D)
+    # Translate p1 to xy plane
+	p1 = panel.p1
+    tr1 = Translation(0., 0., -p1.z)
+
+    # Find normal of panel
+    n = panel_normal(panel)
+
+    # Find rotation axis
+    d = n × SVector(0.,0.,1.)
+
+    # No rotation if already aligned
+    if norm(d) <= 1e-7
+        return local_panel, local_point
+    end
+
+    # Find rotation angle
+    θ = acos(n.z / norm(n))
+    tr2 = recenter(LinearMap(AngleAxis(θ, d.x, d.y, d.z)), tr1(p1))
+
+    return tr1 ∘ tr2
 end
-
-function -(p::Panel3D{T}, v::SVector{3, T}) where T <: Real
-    return Panel3D(
-        p.p1 - v,
-        p.p2 - v,
-        p.p3 - v,
-        p.p4 - v
-    )
-end
-
-function ×(p::Panel3D{T}, v::SVector{3, T}) where T <: Real
-    return Panel3D(
-        p.p1 × v,
-        p.p2 × v,
-        p.p3 × v,
-        p.p4 × v
-    )
-end
-
-function (trans::AffineMap)(p::Panel3D{T}) where T <: Real
-    l = LinearMap(trans.linear)
-    t = Translation(trans.translation)
-    return Panel3D(
-        t(l(p.p1)),
-        t(l(p.p2)),
-        t(l(p.p3)),
-        t(l(p.p4))
-    )
-end
-
-

@@ -12,10 +12,10 @@ wing = WingSection(root_foil  = naca4(0,0,1,2),
                    sweep      = 0.0)
 
 ## Meshing
-wing_mesh = WingMesh(wing, 15, 30)
+wing_mesh = WingMesh(wing, [15], 30)
 
 surf_pts  = surface_coordinates(wing_mesh)
-surf_pans = make_panels(wing_mesh)
+surf_pans = make_panels(surf_pts)
 
 ## Freestream velocity
 fs = Freestream(alpha = 5.0)
@@ -26,8 +26,19 @@ V = V∞ * velocity(fs)
 ## Template:
 
 # Aerodynamic Influence Coefficient matrix
-AIC = [ constant_quadrilateral_doublet_potential(1., pan_i, p_j) 
-        for pan_i in surf_pans, p_j in ??? ]
+npan = len(surf_pans)
+AIC_ff = doublet_matrix(panels, panels)
+
+for i=1:npan
+	tr = get_transformation(surf_pans[i])
+	for j=npan
+		point = collocation_point(surf_pans[j])
+		AIC_ff[j, i] = ifelse(
+			surf_pans[i] == surf_pans[j],
+			0.5,
+			quadrilateral_doublet_potential(1., panel, point)
+		)
+end
 
 # Boundary condition (no sources yet)
 RHS = [ dot(V∞, pt) for p_j in ??? ]

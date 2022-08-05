@@ -13,14 +13,14 @@ Create the vector describing Morino's Kutta condition given Panel2Ds.
 kutta_condition(panels) = [ 1 zeros(length(panels) - 2)' -1 ]
 
 """
-    wake_vector(wake_panel, panels)
+    wake_vector(woke_panel :: AbstractPanel2D, panels)
 
 Create the vector of doublet potential influence coefficients from the wake on the panels given the wake panel and the array of Panel2Ds.
 """
 wake_vector(woke_panel :: AbstractPanel2D, panels) = doublet_influence.(Ref(woke_panel), panels)
 
 """
-    influence_matrix(panels, wake_panel)
+    influence_matrix(panels, wake_panel :: AbstractPanel2D)
 
 Assemble the Aerodynamic Influence Coefficient matrix consisting of the doublet matrix, wake vector, Kutta condition given Panel2Ds and the wake panel.
 """
@@ -69,7 +69,7 @@ function solve_linear(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     woke_vector = wake_vector(woke_panel, panels)
     woke_matrix = [ -woke_vector zeros(length(panels), length(panels) -2) woke_vector ]
 
-    # AIC
+    # AI
     AIC     = doublet_matrix(panels, panels) + woke_matrix
     boco    = dot.(collocation_point.(panels), Ref(u)) - woke_vector * dot(u, r_te)
 
