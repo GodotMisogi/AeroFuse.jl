@@ -59,7 +59,7 @@ reverse_panel(panel :: AbstractPanel2D) = Panel2D(panel.p2, panel.p1)
 
 trailing_edge_panel(panels) = Panel2D((p2 ∘ last)(panels), (p1 ∘ first)(panels))
 
-function wake_panel(panels, bound, α)
+function wake_panel(panels :: AbstractArray{<: AbstractPanel2D}, bound, α)
     firstx, firsty   = (p1 ∘ first)(panels)
     lastx, lasty     = (p2 ∘ last)(panels)
     y_mid            = (firsty + lasty) / 2
@@ -67,7 +67,7 @@ function wake_panel(panels, bound, α)
     WakePanel2D(SVector(lastx, y_mid), SVector(x_bound * lastx, y_bound * y_mid))
 end
 
-function wake_panels(panels, chord, length, num)
+function wake_panels(panels :: AbstractArray{<: AbstractPanel2D}, chord, length, num)
     firstx, firsty  = (p1 ∘ first)(panels)
     lastx, lasty    = (p2 ∘ last)(panels)
     y_mid           = (firsty + lasty) / 2

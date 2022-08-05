@@ -1,4 +1,5 @@
 ##
+using Revise
 using AeroMDAO
 using LinearAlgebra
 
@@ -16,6 +17,7 @@ wing_mesh = WingMesh(wing, [15], 30)
 
 surf_pts  = surface_coordinates(wing_mesh)
 surf_pans = make_panels(surf_pts)
+wake_pans = wake_panels(surf_pans)
 
 ## Freestream velocity
 fs = Freestream(alpha = 5.0)
@@ -23,22 +25,14 @@ V∞ = 15.
 
 V = V∞ * velocity(fs)
 
-## Template:
+## Aerodynamic Influence Coefficient matrix
+# Foil panel interaction
+npanscd, npanssp = size(surf_pans)
+npans = prod([npanscd, npanssp])
+AIC_ff = doublet_matrix(surf_pans[:], surf_pans[:])
 
-# Aerodynamic Influence Coefficient matrix
-npan = len(surf_pans)
-AIC_ff = doublet_matrix(panels, panels)
+# Wake panel interaction
 
-for i=1:npan
-	tr = get_transformation(surf_pans[i])
-	for j=npan
-		point = collocation_point(surf_pans[j])
-		AIC_ff[j, i] = ifelse(
-			surf_pans[i] == surf_pans[j],
-			0.5,
-			quadrilateral_doublet_potential(1., panel, point)
-		)
-end
 
 # Boundary condition (no sources yet)
 RHS = [ dot(V∞, pt) for p_j in ??? ]
