@@ -18,7 +18,6 @@ kutta_condition(panels) = [ 1 zeros(length(panels) - 2)' -1 ]
 Create the vector of doublet potential influence coefficients from the wake on the panels given the wake panel and the array of Panel2Ds.
 """
 wake_vector(woke_panel :: AbstractPanel2D, panels) = doublet_influence.(Ref(woke_panel), panels)
-wake_vector(woke_panel :: AbstractArray{<:AbstractPanel3D}, panels) = doublet_influence.(Ref(woke_panel), panels)
 
 """
     influence_matrix(panels, wake_panel :: AbstractPanel2D)
@@ -100,15 +99,33 @@ end
 #==========================#
 
 """
-    solve_linear(panels, u, wakes, bound = 1e5)
+    solve_linear(panels, u, wakes)
 
 Solve the linear aerodynamic system given the array of Panel2Ds, a velocity ``\\vec U``, a vector of wake `Panel2D`s, and an optional named bound for the length of the wake.
 
 The system of equations ``A[\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` is solved, where ``A`` is the doublet influence coefficient matrix, ``\\phi`` is the vector of doublet strengths, ``B`` is the source influence coefficient matrix, and ``\\sigma`` is the vector of source strengths.
 """
-function solve_linear(panels, u, wakes)
+function solve_linear(panels :: AbstractArray{<:AbstractPanel2D}, u, wakes)
     AIC  = influence_matrix(panels, wakes)
     boco = boundary_vector(panels, u, [0., 0.])
 
     AIC \ boco, AIC, boco
+end
+
+function solve_linear(panels :: AbstractArray{<:AbstractPanel3D}, U, fs, wakes)
+	# Foil panel interaction
+	AIC_ff = doublet_matrix(panels, panels)
+
+	# Wake panel interaction
+	AIC_wf = doublet_matrix(panels, wakes)
+
+	# Kutta condition
+	AIC_ff[:,1:npanw] 			+= AIC_wf
+	AIC_ff[:,end-npanw+1:end] 	-= AIC_wf
+
+	# Boundary condition (no sources yet)
+	V∞ = U * velocity(fs)
+	boco = [ dot(V∞, pt) for pt in collocation_point.(panels) ]
+
+	return AIC \ boco, AIC, boco
 end

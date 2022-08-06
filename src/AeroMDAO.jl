@@ -26,9 +26,6 @@ using LabelledArrays
 
 ## Methods to be extended in submodules
 #==========================================================================================#
-
-function collocation_point end
-
 function velocity end
 
 function solve_linear end
@@ -47,7 +44,7 @@ function surface_velocities end
 
 function surface_coefficients end
 
-export solve_linear, solve_nonlinear, solve_nonlinear!, collocation_point
+export solve_linear, solve_nonlinear, solve_nonlinear!
 
 ## Math tools
 #==========================================================================================#
@@ -57,6 +54,13 @@ import .MathTools: forward_sum, forward_difference, forward_division, weighted_v
 
 export forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
 
+## Laplace
+#==========================================================================================#
+
+include("Tools/Laplace.jl")
+import .Laplace: Uniform2D, potential, stream, AbstractFreestream, Freestream, velocity, body_frame_velocity, cartesian_to_freestream, freestream_to_cartesian
+
+export Uniform2D, stream, source_stream, AbstractFreestream, Freestream, velocity, body_frame_velocity, cartesian_to_freestream, freestream_to_cartesian
 
 ## Non-dimensionalization
 #==========================================================================================#
@@ -70,9 +74,9 @@ export dynamic_pressure, force_coefficient, moment_coefficient, rate_coefficient
 #==========================================================================================#
 
 include("Geometry/PanelGeometry/PanelGeometry.jl")
-import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, WakePanel3D, p1, p2, p3, p4, xs, ys, zs, zero, panel_length, transform_panel, transform_panel_points, panel_angle, panel_tangent, panel_normal, panel_location, panel_area, panel_coordinates, midpoint, panel_points, wake_panel, wake_panels, reverse_panel, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, panel_vector, distance, average_chord, average_width, wetted_area, make_panels, local_coordinate_system
+import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, WakePanel3D, p1, p2, p3, p4, xs, ys, zs, zero, panel_length, transform_panel, transform_panel_points, panel_angle, panel_tangent, panel_normal, panel_location, panel_area, panel_coordinates, midpoint, panel_points, wake_panel, wake_panels, reverse_panel, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, panel_vector, distance, average_chord, average_width, wetted_area, make_panels, local_coordinate_system, collocation_point
 
-export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, WakePanel3D, p1, p2, p3, p4, xs, ys, zs, panel_normal, midpoint, panel_location, panel_tangent, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels, local_coordinate_system, panel_coordinates
+export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, WakePanel3D, p1, p2, p3, p4, xs, ys, zs, panel_normal, midpoint, panel_location, panel_tangent, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels, local_coordinate_system, panel_coordinates, collocation_point
 
 ## Aircraft geometry
 #==========================================================================================#
@@ -91,14 +95,6 @@ make_horseshoes(wing :: WingMesh) = StructArray(Horseshoe.(chord_panels(wing), n
 make_vortex_rings(wing :: WingMesh) = StructArray(VortexRing.(camber_panels(wing)))
 
 export make_horseshoes, make_vortex_rings
-
-## Laplace
-#==========================================================================================#
-
-include("Tools/Laplace.jl")
-import .Laplace: Uniform2D, potential, stream, AbstractFreestream, Freestream, velocity, body_frame_velocity, cartesian_to_freestream, freestream_to_cartesian
-
-export Uniform2D, stream, source_stream, AbstractFreestream, Freestream, velocity, body_frame_velocity, cartesian_to_freestream, freestream_to_cartesian
 
 ## Aerodynamic analyses
 #==========================================================================================#

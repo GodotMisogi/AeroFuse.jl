@@ -32,19 +32,20 @@ struct WakePanel3D{T <: Real} <: AbstractPanel3D
     p4 :: Point3D{T}
 end
 
-function Panel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
-	Panel3D{T}(p1, p2, p3, p4)
-end
+# function Panel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
+# 	Panel3D{T}(p1, p2, p3, p4)
+# end
 
-function WakePanel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
-	WakePanel3D{T}(p1, p2, p3, p4)
-end
+# function WakePanel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
+# 	WakePanel3D{T}(p1, p2, p3, p4)
+# end
 
 
 Panel3D(p1, p2, p3, p4) = let T = promote_type(eltype(p1), eltype(p2), eltype(p3), eltype(p4)); Panel3D{T}(p1, p2, p3, p4) end
 
 Panel3D((p1, p2, p3, p4)) = Panel3D(p1, p2, p3, p4)
 
+collocation_point(panel :: AbstractPanel3D, a = 0.5) = (p1(panel) + p2(panel) + p3(panel) + p4(panel)) / 4
 
 ## Some algebraic operations on Panel3D
 +(p :: AbstractPanel3D, v) = Panel3D(p.p1 + v, p.p2 + v, p.p3 + v, p.p4 + v)
@@ -85,7 +86,7 @@ midpoint(panel :: AbstractPanel3D) = (p1(panel) + p2(panel) + p3(panel) + p4(pan
 """
     panel_normal(panel :: AbstractPanel3D)
 
-Compute the normal vector of an `AbstractPanel3D` **without** normalisation.
+Compute the unit normal vector of an `AbstractPanel3D` normalisation.
 """
 panel_normal(panel :: AbstractPanel3D) = normalize(×(p4(panel) - p2(panel), p3(panel) - p1(panel)))
 
@@ -151,9 +152,6 @@ end
 
 # Compute local axis coordinates
 local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, panel_normal(panel))
-
-collocation_point(panel :: AbstractPanel3D) = midpoint(panel)
-
 
 """
     transform_panel(panel :: AbstractPanel3D, point :: Point3D) -> panel :: AbstractPanel3D, point :: Point3D
