@@ -21,7 +21,7 @@ import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, panel_
 import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
 
 # Some tools
-import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
+import ..Laplace: AbstractFreestream, Freestream, cartesian_to_freestream, freestream_to_cartesian
 
 import ..AeroMDAO: velocity, solve_system, solve_linear, surface_velocities, surface_coefficients
 

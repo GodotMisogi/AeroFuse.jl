@@ -12,6 +12,7 @@ using Rotations
 using CoordinateTransformations
 using SplitApplyCombine
 
+import ..Laplace: AbstractFreestream, Freestream, velocity, body_frame_velocity
 import ..MathTools: affine_2D, rotation, inverse_rotation, structtolist, sine_spacing, cosine_spacing, partition, Point2D, Point3D
 
 ## Panel setup

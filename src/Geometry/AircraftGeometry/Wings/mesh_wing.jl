@@ -171,6 +171,11 @@ mutable struct WingMesh{M <: AbstractWing, N <: Integer, P, Q, T} <: AbstractWin
     camber_mesh   :: Matrix{T}
 end
 
+"""
+	WingMesh(surf :: AbstractWing, n_span :: AbstractVector{Integer}, n_chord :: Integer; chord_spacing :: AbstractSpacing = Cosine(), span_spacing :: Union{AbstractSpacing, Vector{<:AbstractSpacing}} = symmetric_spacing(surf))
+
+Create a WingMesh with (n_chord - 1) * 2 chordwise panels from TE-LE-TE and (n_span * 2) spanwise panels.
+"""
 function WingMesh(surf :: M, n_span :: AbstractVector{N}, n_chord :: N; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surf)) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}}
     check_definition(surf, n_span)
     chord_mesh  = chord_coordinates(surf, n_span, n_chord; spacings = span_spacing)

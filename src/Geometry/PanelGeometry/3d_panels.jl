@@ -25,11 +25,18 @@ struct Panel3D{T <: Real} <: AbstractPanel3D
     p4 :: Point3D{T}
 end
 
-function Panel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D, p4 :: Point3D) where T <: Real
+struct WakePanel3D{T <: Real} <: AbstractPanel3D
+    p1 :: Point3D{T}
+    p2 :: Point3D{T}
+    p3 :: Point3D{T}
+    p4 :: Point3D{T}
+end
+
+function Panel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
 	Panel3D{T}(p1, p2, p3, p4)
 end
 
-function WakePanel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D, p4 :: Point3D) where T <: Real
+function WakePanel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
 	WakePanel3D{T}(p1, p2, p3, p4)
 end
 
@@ -218,11 +225,12 @@ wake_panel(panels :: AbstractPanel3D, bound, α)
 
 Calculate required transformation from GCS to panel LCS.
 """
-function wake_panel(panels :: AbstractPanel3D, bound, α)
+function wake_panel(panels :: AbstractArray{<: AbstractPanel3D}, bound, α, β)
     pt1 = 0.5 * ( p1(first(panels)) + p2(last(panels)) )
 	pt4 = 0.5 * ( p4(first(panels)) + p3(last(panels)) )
-	y_bound, x_bound = bound .* sincos(α)
-	return WakePanel3D(
-		pt1, pt1 + Point3D(x_bound, y_bound)
-	)
+	dx, dy, dz = velocity(Freestream(α, β, zeros(3))) * bound
+	pt2 = pt1 + Point3D(dx, dy, dz)
+	pt3 = pt4 + Point3D(dx, dy, dz)
+
+	return WakePanel3D(pt1, pt2, pt3, pt4)
 end

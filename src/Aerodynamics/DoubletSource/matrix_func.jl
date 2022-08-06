@@ -18,6 +18,7 @@ kutta_condition(panels) = [ 1 zeros(length(panels) - 2)' -1 ]
 Create the vector of doublet potential influence coefficients from the wake on the panels given the wake panel and the array of Panel2Ds.
 """
 wake_vector(woke_panel :: AbstractPanel2D, panels) = doublet_influence.(Ref(woke_panel), panels)
+wake_vector(woke_panel :: AbstractArray{<:AbstractPanel3D}, panels) = doublet_influence.(Ref(woke_panel), panels)
 
 """
     influence_matrix(panels, wake_panel :: AbstractPanel2D)

@@ -13,17 +13,21 @@ wing = WingSection(root_foil  = naca4(0,0,1,2),
                    sweep      = 0.0)
 
 ## Meshing
-wing_mesh = WingMesh(wing, [15], 30)
+wing_mesh = WingMesh(wing, [10], 10)
 
 surf_pts  = surface_coordinates(wing_mesh)
 surf_pans = make_panels(surf_pts)
-wake_pans = wake_panels(surf_pans)
 
 ## Freestream velocity
-fs = Freestream(alpha = 5.0)
+alpha = 5.0
+beta = 0.0
+fs = Freestream(alpha, beta, zeros(3))
 V∞ = 15.
 
 V = V∞ * velocity(fs)
+
+## Wake panels
+wake_pans = wake_panel.(eachcol(surf_pans), 100., alpha, beta)
 
 ## Aerodynamic Influence Coefficient matrix
 # Foil panel interaction
@@ -32,7 +36,11 @@ npans = prod([npanscd, npanssp])
 AIC_ff = doublet_matrix(surf_pans[:], surf_pans[:])
 
 # Wake panel interaction
+AIC_wf = doublet_matrix(surf_pans[:], wake_pans[:])
 
+# Kutta condition
+AIC = [	AIC_ff				AIC_wf		;
+							I(npanssp)	]
 
 # Boundary condition (no sources yet)
 RHS = [ dot(V∞, pt) for p_j in ??? ]
