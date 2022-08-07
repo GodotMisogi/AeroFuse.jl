@@ -7,8 +7,6 @@ using LinearAlgebra
 using StaticArrays
 using CoordinateTransformations
 using Rotations
-using ForwardDiff: jacobian!
-using DiffResults: JacobianResult, jacobian, value
 using PrettyTables
 using RecipesBase
 # using ReusePatterns
@@ -122,7 +120,7 @@ export make_horseshoes, make_vortex_rings
 #==========================================================================================#
 
 include("Tools/Laplace.jl")
-import .Laplace: Uniform2D, potential, stream, cartesian_to_freestream, freestream_to_cartesian
+import .Laplace: Freestream, Uniform2D, potential, stream, cartesian_to_freestream, freestream_to_cartesian
 
 export Uniform2D, stream, vortex_stream_1, vortex_stream_2, source_stream, cartesian_to_freestream, freestream_to_cartesian
 
@@ -150,9 +148,9 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, AbstractVortexLatticeSystem, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure
+import .VortexLattice: Horseshoe, AbstractVortexLatticeSystem, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
 
-export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure
+export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
 
 ## Profile drag estimation
 include("Aerodynamics/profile_drag.jl")
@@ -163,7 +161,7 @@ export profile_drag_coefficient, wetted_area_drag, local_dissipation_drag, form_
 
 include("Aerodynamics/Cases/printing.jl")
 
-export print_case, print_info, print_coefficients, print_derivatives
+export print_info
 
 include("Aerodynamics/Cases/cases.jl")
 
@@ -171,7 +169,7 @@ export solve_case, spanwise_loading, triangle_connectivities, extrapolate_point_
 
 include("Aerodynamics/Cases/stability_cases.jl")
 
-export  freestream_derivatives!, freestream_derivatives, longitudinal_stability_derivatives, longitudinal_stability_matrix, lateral_stability_derivatives, lateral_stability_matrix
+export longitudinal_stability_derivatives, longitudinal_stability_matrix, lateral_stability_derivatives, lateral_stability_matrix
 
 include("Aerodynamics/Cases/foil_cases.jl")
 

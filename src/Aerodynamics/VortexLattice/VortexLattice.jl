@@ -8,6 +8,9 @@ using SplitApplyCombine
 using TimerOutputs
 using LabelledArrays
 using Setfield
+using PrettyTables
+using ForwardDiff: jacobian!
+using DiffResults: JacobianResult, jacobian, value
 
 ## Package imports
 #==========================================================================================#
@@ -16,15 +19,15 @@ using Setfield
 import ..MathTools: weighted_vector, structtolist
 
 # Panel geometry
-import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, normal_vector, transform, p1, p2, p3, p4, average_chord, average_width
+import ..PanelGeometry: Panel3D, panel_area, coordinates, midpoint, normal_vector, transform, p1, p2, p3, p4, average_chord, average_width
 
 # Non-dimensionalization
 import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
 
 # Some tools
-import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
+import ..Laplace: AbstractFreestream, Freestream
 
-import ..AeroMDAO: velocity, solve_system, solve_linear, solve_nonlinear, solve_nonlinear!, surface_velocities, surface_coefficients, collocation_point
+import ..AeroMDAO: velocity, solve_system, solve_linear, solve_nonlinear, solve_nonlinear!, surface_velocities, surface_coefficients
 
 ## Vortex types and methods
 #==========================================================================================#
@@ -50,6 +53,13 @@ Base.show(io :: IO, :: Stability) = print(io, "Stability")
 Base.show(io :: IO, :: Wind)      = print(io, "Wind")
 
 include("freestream.jl")
+
+"""
+    velocity(freestream :: Freestream, ::Body)
+
+Compute the velocity of Freestream in the body reference frame.
+"""
+velocity(fs :: Freestream, ::Body) = -velocity(fs)
 
 include("reference_frames.jl")
 
@@ -89,8 +99,13 @@ include("farfield.jl")
 # System setups
 #==========================================================================================#
 
+# System
 include("system.jl")
 
+# Derivatives
+include("stability.jl")
+
+# CONVERT THIS TO VLM CONSTRUCTOR
 function solve_system(components, fs :: Freestream, refs :: References)
 
     # Mach number bound checks
@@ -114,6 +129,9 @@ end
 
 ## Post-processing
 #==========================================================================================#
+
+# Pretty-printing
+include("printing.jl")
 
 # Streamlines
 include("streamlines.jl")
