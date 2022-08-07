@@ -54,14 +54,6 @@ import .MathTools: forward_sum, forward_difference, forward_division, weighted_v
 
 # export forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_interpolation, sine_spacing
 
-## Laplace
-#==========================================================================================#
-
-include("Tools/Laplace.jl")
-import .Laplace: Uniform2D, potential, stream, AbstractFreestream, Freestream, velocity, body_frame_velocity, cartesian_to_freestream, freestream_to_cartesian
-
-export Uniform2D, stream, source_stream, AbstractFreestream, Freestream, velocity, body_frame_velocity, cartesian_to_freestream, freestream_to_cartesian
-
 ## Non-dimensionalization
 #==========================================================================================#
 
@@ -69,6 +61,18 @@ include("Tools/NonDimensional.jl")
 import .NonDimensional: dynamic_pressure, reynolds_number, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, force, moment
 
 export dynamic_pressure, reynolds_number, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, force, moment
+
+## Laplace
+#==========================================================================================#
+
+include("Tools/Laplace.jl")
+import .Laplace: Freestream, Uniform2D, potential, stream, cartesian_to_freestream, freestream_to_cartesian
+
+export Uniform2D, stream, vortex_stream_1, vortex_stream_2, source_stream, cartesian_to_freestream, freestream_to_cartesian
+
+import .Laplace: DoubletLine3D, velocity
+
+export DoubletLine3D, velocity
 
 ## Panels
 #==========================================================================================#
@@ -122,18 +126,6 @@ make_horseshoes(wing :: WingMesh) = Horseshoe.(chord_panels(wing), normal_vector
 make_vortex_rings(wing :: WingMesh) = VortexRing.(camber_panels(wing))
 
 export make_horseshoes, make_vortex_rings
-
-## Laplace
-#==========================================================================================#
-
-include("Tools/Laplace.jl")
-import .Laplace: Freestream, Uniform2D, potential, stream, cartesian_to_freestream, freestream_to_cartesian
-
-export Uniform2D, stream, vortex_stream_1, vortex_stream_2, source_stream, cartesian_to_freestream, freestream_to_cartesian
-
-import .Laplace: DoubletLine3D, velocity
-
-export DoubletLine3D, velocity
 
 ## Aerodynamic analyses
 #==========================================================================================#
