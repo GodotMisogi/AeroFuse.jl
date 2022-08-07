@@ -1,6 +1,7 @@
 ## 3D Panels
 #==========================================================================================#
 abstract type AbstractPanel3D <: AbstractPanel end
+abstract type AbstractWakePanel3D <: AbstractWakePanel end
 
 """
     Panel3D(p1, p2, p3, p4)
@@ -25,7 +26,7 @@ struct Panel3D{T <: Real} <: AbstractPanel3D
     p4 :: Point3D{T}
 end
 
-struct WakePanel3D{T <: Real} <: AbstractPanel3D
+struct WakePanel3D{T <: Real} <: AbstractWakePanel3D
     p1 :: Point3D{T}
     p2 :: Point3D{T}
     p3 :: Point3D{T}
