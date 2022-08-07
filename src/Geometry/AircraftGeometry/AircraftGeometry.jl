@@ -13,6 +13,7 @@ using LinearAlgebra
 using SplitApplyCombine
 using Interpolations
 using Setfield
+using MacroTools
 
 # Math tools
 import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, forward_sum, forward_division, forward_difference, weighted_vector, vectarray, extend_yz
