@@ -22,7 +22,7 @@ import ..PanelGeometry: make_panels, normal_vector
 import ..AircraftGeometry: WingMesh
 
 # VLM Aerodynamics
-import ..VortexLattice: velocity, induced_velocity, induced_trailing_velocity, Horseshoe, horseshoe_normal, collocation_point, bound_leg_center, influence_coefficient, influence_matrix, boundary_condition, geometry_to_wind_axes, bound_leg_vector, kutta_joukowsky, surface_forces
+import ..VortexLattice: velocity, induced_velocity, induced_trailing_velocity, Horseshoe, horseshoe_normal, bound_leg_center, influence_coefficient, influence_matrix, boundary_condition, geometry_to_wind_axes, bound_leg_vector, kutta_joukowsky, surface_forces
 
 import ..AeroMDAO: solve_linear, solve_nonlinear, solve_nonlinear!
 
@@ -37,23 +37,15 @@ struct AerostructSystem{T}
 end
 
 ## Structural analysis
-#==========================================================================================#
-
 include("structures.jl")
 
 ## Load-displacement transfer mechanisms
-#==========================================================================================#
-
 include("transfers.jl")
 
 ## Weights, engine, and fuel loads
-#==========================================================================================#
-
 # ???
 
 ## Coupled residual systems
-#==========================================================================================#
-
 include("residuals.jl")
 
 end

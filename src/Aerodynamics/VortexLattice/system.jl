@@ -49,6 +49,8 @@ function Base.show(io :: IO, refs :: References)
     end
 end
 
+dynamic_pressure(refs :: References) = 1/2 * refs.density * refs.speed^2
+
 kinematic_viscosity(refs :: References) = refs.viscosity / refs.density
 mach_number(refs :: References) = refs.speed / refs.sound_speed
 
@@ -158,12 +160,6 @@ surface_moments(system :: VortexLatticeSystem, ::Wind) =  surface_moments(system
 
 
 ## Dynamics
-"""
-    surface_dynamics(system :: VortexLatticeSystem; 
-                     axes   :: AbstractAxisSystem = Geometry())
-
-Compute the forces and moments for all components of the `VortexLatticeSystem` in the reference axis system.
-"""
 function surface_dynamics(system :: VortexLatticeSystem)
     # Compute nearfield forces and moments
     surf_forces  = surface_forces(system)
@@ -171,6 +167,14 @@ function surface_dynamics(system :: VortexLatticeSystem)
 
     surf_forces, surf_moments
 end
+
+"""
+    surface_dynamics(system :: VortexLatticeSystem; 
+                     axes   :: AbstractAxisSystem = Geometry())
+
+Compute the forces and moments for all components of the `VortexLatticeSystem` in the reference axis system.
+"""
+surface_dynamics(system; axes :: AbstractAxisSystem = Wind()) = surface_dynamics(system, axes)
 
 surface_dynamics(system :: VortexLatticeSystem, ::Geometry) = surface_dynamics(system)
 
@@ -214,8 +218,6 @@ function surface_dynamics(system :: VortexLatticeSystem, ::Wind)
     wind_forces, wind_moments
 end
 
-surface_dynamics(system; axes :: AbstractAxisSystem = Wind()) = surface_dynamics(system, axes)
-
 """
     surface_coefficients(system :: VortexLatticeSystem; 
                          axes   :: AbstractAxisSystem = Wind())
@@ -240,10 +242,8 @@ Compute the force and moment coefficients in **wind axes** for all components of
 """
 function nearfield_coefficients(system :: VortexLatticeSystem) 
     CFs, CMs = surface_coefficients(system; axes = Wind())
-    @views NamedTuple(key => 
-        NamedTuple((:CX,:CY,:CZ,:Cl,:Cm,:Cn) .=> [sum(CFs[key]); sum(CMs[key])])
-        for key in keys(CFs)
-    )
+    COEFFS = @SLArray (6) (:CX,:CY,:CZ,:Cl,:Cm,:Cn)
+    @views NamedTuple(key => COEFFS(sum(CFs[key])..., sum(CMs[key])...) for key in keys(CFs))
 end
 
 """
@@ -254,7 +254,8 @@ Compute the **total** force and moment coefficients in **wind axes** for all com
 function nearfield(system :: VortexLatticeSystem)
     CX, CY, CZ, Cl, Cm, Cn = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
 
-    (CX = CX, CY = CY, CZ = CZ, Cl = Cl, Cm = Cm, Cn = Cn)
+    COEFFS = @SLArray (6) (:CX, :CY, :CZ, :Cl, :Cm, :Cn) 
+    COEFFS(CX, CY, CZ, Cl, Cm, Cn)
 end
 
 """
@@ -270,7 +271,7 @@ function farfield_forces(system :: VortexLatticeSystem)
     V  = system.reference.speed
     ρ  = system.reference.density
     
-    NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
+    @views NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
 end
 
 """
@@ -278,10 +279,10 @@ end
 
 Compute the **total farfield** force coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by definition.
 """
-farfield_coefficients(system :: VortexLatticeSystem) = map(farfield_forces(system)) do ff
-    NamedTuple(
-        (:CDi,:CY,:CL) .=> force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area)
-    )
+farfield_coefficients(system :: VortexLatticeSystem) = let COEFFS = @SLArray (3) (:CDi,:CY,:CL); 
+    map(farfield_forces(system)) do ff
+        COEFFS(force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area))
+    end
 end
 
 """
@@ -292,8 +293,9 @@ Compute the **total farfield** force coefficients for all components of the `Vor
 function farfield(system :: VortexLatticeSystem)
     q = dynamic_pressure(system.reference.density, system.reference.speed)
     coeffs = force_coefficient(sum(farfield_forces(system)), q, system.reference.area)
-    
-    return (CDi = coeffs[1], CY = coeffs[2], CL = coeffs[3])
+
+    COEFFS = @SLArray (3) (:CDi, :CYff, :CL) 
+    COEFFS(coeffs...)
 end
 
 function center_of_pressure(system :: VortexLatticeSystem)

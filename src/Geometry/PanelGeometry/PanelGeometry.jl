@@ -11,8 +11,7 @@ using Rotations
 using CoordinateTransformations
 using SplitApplyCombine
 
-import ..MathTools: affine_2D, rotation, inverse_rotation, structtolist, sine_spacing, cosine_spacing, partition
-import ..AeroMDAO: collocation_point
+import ..MathTools: affine_2D, rotation, inverse_rotation, structtolist, sine_spacing, cosine_spacing, partition, Point3D
 
 ## Panel setup
 #==========================================================================================#

@@ -38,7 +38,7 @@ source_matrix(panels_1, panels_2) = [ source_influence(panel_j, panel_i) for (pa
 """
     source_strengths(panels, freestream)
 
-Create the vector of source strengths for the Dirichlet boundary condition ``σ = \\vec U_{\\infty} \\cdot \\hat{n}`` given Panel2Ds and a Uniform2D.
+Create the vector of source strengths for the Dirichlet boundary condition ``σ = \\vec U_{\\infty} ⋅ n̂`` given Panel2Ds and a Uniform2D.
 """
 source_strengths(panels, u) = dot.(Ref(u), normal_vector.(panels))
 
@@ -61,7 +61,7 @@ end
 """
     solve_linear(panels, u, sources, bound)
 
-Solve the system of equations ``[AIC][\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` condition given the array of Panel2Ds, a velocity ``\\vec U``, a condition whether to disable source terms (``σ = 0``), and an optional named bound for the length of the wake.
+Solve the system of equations ``[AIC][φ] = [\\vec{U} ⋅ n̂] - B[σ]`` condition given the array of Panel2Ds, a velocity ``\\vec U``, a condition whether to disable source terms (``σ = 0``), and an optional named bound for the length of the wake.
 """
 function solve_linear(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     # Wake
@@ -103,7 +103,7 @@ end
 
 Solve the linear aerodynamic system given the array of Panel2Ds, a velocity ``\\vec U``, a vector of wake `Panel2D`s, and an optional named bound for the length of the wake.
 
-The system of equations ``A[\\phi] = [\\vec{U} \\cdot \\hat{n}] - B[\\sigma]`` is solved, where ``A`` is the doublet influence coefficient matrix, ``\\phi`` is the vector of doublet strengths, ``B`` is the source influence coefficient matrix, and ``\\sigma`` is the vector of source strengths.
+The system of equations ``A[φ] = [\\vec{U} ⋅ n̂] - B[σ]`` is solved, where ``A`` is the doublet influence coefficient matrix, ``φ`` is the vector of doublet strengths, ``B`` is the source influence coefficient matrix, and ``σ`` is the vector of source strengths.
 """
 function solve_linear(panels, u, wakes)
     AIC  = influence_matrix(panels, wakes)

@@ -32,6 +32,11 @@ Panel3D((p1, p2, p3, p4)) = Panel3D(p1, p2, p3, p4)
 
 Base.length(:: Panel3D) = 1
 
+# Transformation laws with vectors
++(p, v) = Panel3D(p.p1 + v, p.p2 + v, p.p3 + v, p.p4 + v)
+-(p, v) = Panel3D(p.p1 - v, p.p2 - v, p.p3 - v, p.p4 - v)
+×(p, v) = Panel3D(p.p1 × v, p.p2 × v, p.p3 × v, p.p4 × v)
+
 average_chord(panel :: Panel3D) = (p2(panel) - p1(panel) + p3(panel) - p4(panel)) / 2
 average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)) / 2
 
@@ -40,7 +45,7 @@ average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)
 
 Compute the coordinates of a `Panel3D`.
 """
-panel_coordinates(panel :: Panel3D) = [ p1(panel), p2(panel), p3(panel), p4(panel) ]
+panel_coordinates(panel :: Panel3D) = combinedimsview([ p1(panel), p2(panel), p3(panel), p4(panel) ], (1))
 
 """
     make_panels(xyzs)
@@ -59,6 +64,8 @@ function transform(panel :: Panel3D, rotation, translation)
     Panel3D(T(panel.p1), T(panel.p2), T(panel.p3), T(panel.p4))
 end
 
+(trans :: AffineMap)(p :: Panel3D) = Panel3D(trans(p.p1), trans(p.p2), trans(p.p3), trans(p.p4))
+
 """
     midpoint(panel :: Panel3D)
 
@@ -71,14 +78,14 @@ midpoint(panel :: Panel3D) = (p1(panel) + p2(panel) + p3(panel) + p4(panel)) / 4
 
 Compute the normal vector of a `Panel3D`.
 """
-normal_vector(panel :: Panel3D) = let p31 = p3(panel) - p1(panel), p42 = p4(panel) - p2(panel); p31 × p42 end
+normal_vector(panel :: Panel3D) = let p31 = panel.p3 - panel.p1, p42 = panel.p4 - panel.p2; cross(p31, p42) end
 
 """
     transform_normal(panel :: Panel3D, h_l, g_l)
 
 Transform the normal vector ``n̂₀`` of a `Panel3D` about the hinge axis ``ĥₗ`` by the control gain ``gₗ``.
 
-The transformation is the following: ``n̂ₗ = gₗ ĥₗ × n̂₀`` (FVA, Drela, 6.36).
+The transformation is the following: ``n̂ₗ = gₗ ĥₗ × n̂₀`` (Flight Vehicle Aerodynamics, Drela, Eq. 6.36).
 """
 transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, normal_vector(panel))
 
@@ -114,3 +121,39 @@ end
 
 # Compute local axis coordinates
 local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, normal_vector(panel))
+
+
+"""
+    transform_panel(panel :: AbstractPanel3D)
+    
+Transform a 3D panel from global coordinate to local coordinate
+"""
+function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
+    # Translate p1 to xy plane
+    tr1 = Translation(0., 0., -panel.p1.z)
+    local_panel = tr1(panel)
+    local_point = tr1(point)
+
+    # Find normal of panel
+    n = panel_normal(panel)
+
+    # Find rotation axis
+    d = n × SVector(0.,0.,1.)
+
+    # No rotation if already aligned
+    if norm(d) <= 1e-7
+        return local_panel, local_point
+    end
+
+    # Find rotation angle
+    θ = acos(n.z / norm(n))
+    tr2 = recenter(LinearMap(AngleAxis(θ, d.x, d.y, d.z)), local_panel.p1)
+
+    local_panel = tr2(local_panel)
+    local_point = tr2(local_point)
+
+    # tr = tr1 ∘ tr2
+    # invtr = inv(tr)
+
+    return local_panel, local_point
+end

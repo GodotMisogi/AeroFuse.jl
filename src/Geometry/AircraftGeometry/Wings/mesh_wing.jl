@@ -7,11 +7,13 @@ chop_trailing_edge(obj :: Wing, span_num) = @views chop_coordinates(coordinates(
 function coordinates(wing :: Wing, affine = false)
     bounds = combinedimsview(wing_bounds(wing), (1,3))
 
+    # Symmetry
     if wing.symmetry
         sym_bounds = bounds[:,:,end:-1:2]
         sym_bounds[:,2,:] .*= -1
 
         bounds = [ sym_bounds ;;; bounds ]
+    # Reflection
     elseif wing.flip
         sym_bounds = bounds[:,:,end:-1:1]
         sym_bounds[:,2,:] .*= -1
@@ -22,7 +24,7 @@ function coordinates(wing :: Wing, affine = false)
     # Reshape into matrix of vectors
     bounds = splitdimsview(bounds,(1,3))
 
-    # Weird hack
+    # TODO: Weird hack
     if affine
         aff = wing.affine
     else
@@ -158,6 +160,9 @@ function WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N; chord
     
     return WingMesh{M,N,P,Q,T}(surface, n_span, n_chord, chord_spacing, span_spacing, chord_mesh, camber_mesh)
 end
+
+# Forwarding functions for Wing type
+MacroTools.@forward WingMesh.surface chords, spans, twists, sweeps, mean_aerodynamic_chord, camber_thickness, leading_edge, trailing_edge, wing_bounds, mean_aerodynamic_center, projected_area, span, position, orientation, affine_transformation, maximum_thickness_to_chord
 
 WingMesh(surface, n_span :: Integer, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) = WingMesh(surface, number_of_spanwise_panels(surface, n_span), n_chord; chord_spacing = chord_spacing, span_spacing = span_spacing)
 

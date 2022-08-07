@@ -1,11 +1,11 @@
-plot_panel(panel :: Panel3D) = let ps = panel_coordinates(panel); Tuple.([ ps; [ps[1]] ]) end
+plot_panel(panel :: Panel3D) = panel_coordinates(panel)
 
 """
     plot_panels(panels :: Array{Panel3D})
 
 Get the coordinates of an array of `Panel3D` for plotting.
 """
-plot_panels(panels) = plot_panel.(vec(panels))
+plot_panels(panels) = plot_panel.(panels)
 
 # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coordinates ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
 
@@ -134,7 +134,7 @@ end
             primary := false
             linecolor := :lightgray
             # fillcolor := :lightgray
-            coords
+            coords[:,1], coords[:,2], coords[:,3]
         end
     end
 

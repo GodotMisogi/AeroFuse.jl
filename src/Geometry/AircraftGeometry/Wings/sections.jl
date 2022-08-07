@@ -26,13 +26,17 @@ root_chord(S, b, λ) = (2 * S) / (b * (1 + λ))
 function WingSection(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 
     # Control surface deflections at root and tip
-    root_foil = control_surface(root_foil; 
-                                angle = root_control[1],
-                                hinge = root_control[2])
+    root_foil = control_surface(
+        root_foil; 
+        angle = root_control[1],
+        hinge = root_control[2]
+    )
 
-    tip_foil  = control_surface(tip_foil; 
-                                angle = tip_control[1],
-                                hinge = tip_control[2])
+    tip_foil  = control_surface(
+        tip_foil; 
+        angle = tip_control[1],
+        hinge = tip_control[2]
+    )
 
     section = Wing(
         foils     = [root_foil, tip_foil],
