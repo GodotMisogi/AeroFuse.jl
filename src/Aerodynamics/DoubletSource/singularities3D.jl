@@ -53,7 +53,7 @@ h_k(k :: Int64, local_coordinates, local_point) = (local_point.x - local_coordin
 
 """
 function check_panel_status(panel :: AbstractPanel3D, point :: Point3D, transformation_error = 1e-7)
-	if prod(zs(panel) .>= transformation_error)
+	if prod([panel.p1.z; panel.p2.z; panel.p3.z; panel.p4.z] .>= transformation_error)
 		@warn "Panel is not in local coordinate system! Check AIC matrix assembly!"
 		@info "Transform to local coordinate system now."
 		return transform_panel(panel, point)

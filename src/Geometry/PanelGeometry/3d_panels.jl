@@ -68,7 +68,8 @@ average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)
 
 Compute the coordinates of a `Panel3D`.
 """
-panel_coordinates(panel :: Panel3D) = combinedimsview([ p1(panel), p2(panel), p3(panel), p4(panel) ], (1))
+panel_coordinates(panel :: Panel3D) = [ p1(panel), p2(panel), p3(panel), p4(panel) ]
+coordinates(panel :: Panel3D) = combinedimsview(panel_coordinates(panel), (1))
 
 """
     make_panels(xyzs)
@@ -102,7 +103,7 @@ midpoint(panel :: AbstractPanel3D) = (p1(panel) + p2(panel) + p3(panel) + p4(pan
 
 Compute the unit normal vector of an `AbstractPanel3D` normalisation.
 """
-normal_vector(panel :: Panel3D) = let p31 = panel.p3 - panel.p1, p42 = panel.p4 - panel.p2; cross(p31, p42) end
+normal_vector(panel :: AbstractPanel3D) = let p31 = panel.p3 - panel.p1, p42 = panel.p4 - panel.p2; cross(p31, p42) end
 
 """
     transform_normal(panel :: Panel3D, h_l, g_l)
@@ -215,7 +216,7 @@ Calculate required transformation from GCS to panel LCS.
 """
 function get_transformation(panel :: AbstractPanel3D)
     o = midpoint(panel)
-    n = panel_normal(panel)
+    n = normalize(normal_vector(panel))
     m = normalize((p3(panel) + p4(panel)) / 2 - o)
     l = normalize(m × n)
 

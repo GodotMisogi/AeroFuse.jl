@@ -1,19 +1,23 @@
 ##
-using Pkg
-Pkg.activate(".")
-using Revise
 using AeroMDAO
 using LinearAlgebra
 using StaticArrays
 
 ## Geometry
-wing = WingSection(root_foil  = naca4(0,0,1,2),
-                   tip_foil   = naca4(0,0,1,2),
-                   root_chord = 1.0,
-                   taper      = 1.0,
-                   span       = 4.0,
-                   dihedral   = 0.0,
-                   sweep      = 0.0)
+wing = WingSection(
+    area      = 19.0, # Projected area
+    aspect    = 8.3, # Aspect ratio
+    dihedral  = 3.0, # Dihedral angle (deg)
+    sweep     = 10.0, # Sweep angle (deg)
+    w_sweep   = 0.25, # Sweep location normalized to chords ∈ [0,1]
+    taper     = 0.4, # Taper ratio
+    root_foil = naca4(0,0,1,2), # Root airfoil
+    tip_foil  = naca4(0,0,1,2), # Tip airfoil
+    position  = [4.0, 0, -0.5], # Location (m)
+    angle     = 0., # Angle of incidence (deg)
+    axis      = [0., 1., 0.0], # Spanwise direction
+    symmetry  = true # Symmetric about x-z plane
+)
 
 # Meshing
 wing_mesh = WingMesh(wing, [10], 10)
@@ -31,7 +35,7 @@ fs = Freestream( α, β, zeros(3))
 V∞ = Umag * velocity(fs)
 
 ##
-system = solve_system(surf_pans, Umag, fs, 1.0e5)
+system = solve_system(surf_pans, Umag, fs, 1.0e5);
 
 ##
 npancd, npansp = size(surf_pans)
