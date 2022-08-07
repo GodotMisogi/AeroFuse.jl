@@ -113,7 +113,6 @@ end
 
 ## Freestream
 #============================================#
-
 abstract type AbstractFreestream end
 
 """

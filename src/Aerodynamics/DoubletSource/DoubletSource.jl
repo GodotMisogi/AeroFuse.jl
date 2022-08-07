@@ -8,15 +8,17 @@ import Base.Iterators: product
 using StaticArrays
 import SplitApplyCombine: combinedimsview
 
-import ..MathTools: rotation, inverse_rotation, midpair_map
+import ..MathTools: rotation, inverse_rotation, midpair_map, Point3D
 
-import ..Laplace: Uniform2D, magnitude, angle, velocity
+import ..Laplace: Uniform2D, magnitude, angle, velocity, Freestream
 
 import ..NonDimensional: pressure_coefficient
 
 import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, transform_panel, affine_2D, panel_length, panel_angle, tangent_vector, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector, collocation_point
 
 import ..AeroMDAO: solve_system, surface_velocities, surface_coefficients
+
+include("singularities3D.jl")
 
 ## Doublet-source Dirichlet boundary condition
 #===========================================================================#
@@ -38,12 +40,22 @@ function doublet_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2
     ifelse(panel_i == panel_j, 0.5, doublet_potential(1., xp, yp, 0., panel_length(panel_j)))
 end
 
+function doublet_influence(panel_j :: AbstractPanel3D, panel_i :: AbstractPanel3D)
+    panel, point = transform_panel(panel_j, panel_i)
+    ifelse(panel_i == panel_j, 0.5, quadrilateral_doublet_potential(1., panel, point))
+end
+
 function source_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D)
     xp, yp = transform_panel(panel_j, panel_i)
     source_potential(1., xp, yp, 0., panel_length(panel_j))
 end
 
-boundary_condition(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D, u) = -source_influence(panel_j, panel_i) * dot(u, normal_vector(panel_j))
+function source_influence(panel_j :: AbstractPanel3D, panel_i :: AbstractPanel3D)
+    panel, point = transform_panel(panel_j, panel_i)
+    quadrilateral_source_potential(1., panel, point)
+end
+
+boundary_condition(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D, u) = -source_influence(panel_j, panel_i) * dot(u, panel_normal(panel_j))
 
 ## Aerodynamic coefficients
 #===========================================================================#
@@ -75,6 +87,16 @@ struct DoubletSourceSystem{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVecto
     surface_panels     :: O
     wake_panels        :: R
     freestream         :: P
+end
+
+struct DoubletSourceSystem3D{T <: Real, M <: AbstractMatrix{T}, N <: AbstractArray{T}, O <: AbstractMatrix{<: AbstractPanel3D}, R <: AbstractArray{<: WakePanel3D}, P <: Freestream}
+    influence_matrix   :: M
+    boundary_condition :: N
+    singularities      :: N
+    surface_panels     :: O
+    wake_panels        :: R
+    freestream         :: P
+	Umag			   :: T
 end
 
 function Base.show(io :: IO, sys :: DoubletSourceSystem)
@@ -115,7 +137,7 @@ function solve_system(panels, uni :: Uniform2D, sources :: Bool, wake_length)
     # cls, cms, cps, cl_wake
 end
 
-function solve_system(panels, uni :: Uniform2D, num_wake :: Integer, wake_length)
+function solve_system(panels :: AbstractArray{<:AbstractPanel2D}, uni :: Uniform2D, num_wake :: Integer, wake_length)
     u, α  = velocity(uni), uni.angle
 
     wake_pan = wake_panel(panels, wake_length, α)
@@ -126,6 +148,13 @@ function solve_system(panels, uni :: Uniform2D, num_wake :: Integer, wake_length
 
     DoubletSourceSystem(AIC, boco, φs, panels, wake_pan, uni)
 end
+
+function solve_system(surf_pans :: AbstractMatrix{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
+	wake_pans = wake_panel.(eachcol(surf_pans), wake_length, fs.alpha, fs.beta)
+	φs, AIC, boco = solve_linear(surf_pans, U, fs, wake_pans)
+	return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
+end
+
 
 function surface_velocities(prob :: DoubletSourceSystem)
     # Panel properties

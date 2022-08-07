@@ -26,7 +26,6 @@ using LabelledArrays
 
 ## Methods to be extended in submodules
 #==========================================================================================#
-
 function velocity end
 
 function solve_linear end
@@ -55,6 +54,13 @@ import .MathTools: forward_sum, forward_difference, forward_division, weighted_v
 
 # export forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_interpolation, sine_spacing
 
+## Laplace
+#==========================================================================================#
+
+include("Tools/Laplace.jl")
+import .Laplace: Uniform2D, potential, stream, AbstractFreestream, Freestream, velocity, body_frame_velocity, cartesian_to_freestream, freestream_to_cartesian
+
+export Uniform2D, stream, source_stream, AbstractFreestream, Freestream, velocity, body_frame_velocity, cartesian_to_freestream, freestream_to_cartesian
 
 ## Non-dimensionalization
 #==========================================================================================#
@@ -72,6 +78,7 @@ import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, Abs
 
 export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, transform, normal_vector, midpoint, panel_location, tangent_vector, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_normal, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels, local_coordinate_system, trailing_edge_info
 
+export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, WakePanel3D, p1, p2, p3, p4, xs, ys, zs, panel_normal, midpoint, panel_location, panel_tangent, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels, local_coordinate_system, panel_coordinates, collocation_point
 
 ## Aircraft geometry
 #==========================================================================================#
@@ -134,16 +141,16 @@ export DoubletLine3D, velocity
 ## Doublet-source panel method
 
 include("Aerodynamics/DoubletSource/DoubletSource.jl")
-import .DoubletSource: doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, surface_velocities, lift_coefficient
+import .DoubletSource: doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, surface_velocities, lift_coefficient, quadrilateral_source_velocity, quadrilateral_source_velocity_farfield, quadrilateral_source_potential, quadrilateral_doublet_velocity, quadrilateral_doublet_velocity_farfield, quadrilateral_doublet_potential
 
-export doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, surface_velocities, lift_coefficient
+export doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, surface_velocities, lift_coefficient, quadrilateral_source_velocity, quadrilateral_source_velocity_farfield, quadrilateral_source_potential, quadrilateral_doublet_velocity, quadrilateral_doublet_velocity_farfield, quadrilateral_doublet_potential
 
 ## Linear-strength source and vorticity panel method
 
 include("Aerodynamics/LinearVortexSource/LinearVortexSource.jl")
 import .LinearVortexSource: total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_neumann_matrix, linear_source_neumann_matrix, linear_vortex_neumann_matrix, constant_source_matrix, constant_source_boundary_condition
 
-export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_neumann_matrix, linear_source_neumann_matrix, linear_vortex_neumann_matrix, constant_source_matrix, constant_source_boundary_condition
+export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition, constant_quadrilateral_source_velocity, constant_quadrilateral_source_velocity_farfield, constant_quadrilateral_doublet_velocity, constant_quadrilateral_doublet_velocity_farfield
 
 ## Vortex lattice
 
