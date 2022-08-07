@@ -85,33 +85,32 @@ ref = References(
 )
 
 ##
-@time begin 
-    system = solve_case(
-        aircraft, fs, ref;
-        # print            = true, # Prints the results for only the aircraft
-        # print_components = true, # Prints the results for all components
-    );
+@time system = solve_case(
+    aircraft, fs, ref;
+    # print            = true, # Prints the results for only the aircraft
+    # print_components = true, # Prints the results for all components
+);
 
-    # Compute dynamics
-    ax       = Wind() # Geometry, Stability(), Body()
-    CFs, CMs = surface_coefficients(system; axes = ax)
-    # Fs, Ms   = surface_dynamics(system; axes = ax)
-    # Fs       = surface_forces(system; axes = ax)
-    # vels     = surface_velocities(system)
+## Compute dynamics
+ax_sys = Wind() # Geometry, Stability(), Body()
+@time CFs, CMs = surface_coefficients(system; axes = ax_sys)
+# Fs, Ms   = surface_dynamics(system; axes = ax)
+# Fs       = surface_forces(system; axes = ax)
+# vels     = surface_velocities(system)
 
-    nf  = nearfield(system)
-    ff  = farfield(system)
+nf  = nearfield(system)
+ff  = farfield(system)
+
+nfs = nearfield_coefficients(system)
+ffs = farfield_coefficients(system)
     
-    nfs = nearfield_coefficients(system)
-    ffs = farfield_coefficients(system)
-        
-    # Force/moment coefficients and derivatives
-    dvs = freestream_derivatives(system; 
-        axes = ax,
-        print_components = true,
-        farfield = false
-    )
-end;
+## Force/moment coefficients and derivatives
+@time dvs = freestream_derivatives(system; 
+    axes = ax_sys,
+    print = true,
+    # print_components = true,
+    # farfield = false
+);
 
 ## Viscous drag prediction
 
@@ -253,7 +252,7 @@ fig1.scene
 # save("plots/VortexLattice.pdf", fig1, px_per_unit = 1.5)
 
 ## Animation settings
-pts = [ Node(Point3f0[stream]) for stream in streams[1,:] ]
+pts = [ Point3f[stream] for stream in streams[1,:] ]
 
 [ lines!(scene, pts[i], color = :green, axis = (; type = Axis3)) for i in eachindex(pts) ]
 
@@ -292,7 +291,7 @@ res_Vs = combinedimsview(
     map(Vs) do V
         ref1 = @set ref.speed = V
         sys = solve_case(aircraft, fs, ref1)
-        [ V; farfield(sys)...; nearfield(sys)... ]
+        [ mach_number(ref1); farfield(sys)...; nearfield(sys)... ]
     end, (1)
 )
 
@@ -300,29 +299,29 @@ res_Vs = combinedimsview(
 Plots.plot(
     res_Vs[:,1], res_Vs[:,2:end],
     layout = (3,3), size = (900, 800),
-    xlabel = "V",
+    xlabel = "M",
     labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
 )
 
 ##
 f2 = Figure()
-ax1 = Axis(f2[1,1], xlabel = L"V", ylabel = L"C_{D_{ff}}")
+ax1 = Axis(f2[1,1], xlabel = L"M", ylabel = L"C_{D_{ff}}")
 lines!(res_Vs[:,1], res_Vs[:,2]) # CD_ff
-ax2 = Axis(f2[1,2], xlabel = L"V", ylabel = L"C_{Y_{ff}}")
+ax2 = Axis(f2[1,2], xlabel = L"M", ylabel = L"C_{Y_{ff}}")
 lines!(res_Vs[:,1], res_Vs[:,3])
-ax3 = Axis(f2[1,3], xlabel = L"V", ylabel = L"CL_{ff}")
+ax3 = Axis(f2[1,3], xlabel = L"M", ylabel = L"CL_{ff}")
 lines!(res_Vs[:,1], res_Vs[:,4])
-ax4 = Axis(f2[2,1], xlabel = L"V", ylabel = L"C_D")
+ax4 = Axis(f2[2,1], xlabel = L"M", ylabel = L"C_D")
 lines!(res_Vs[:,1], res_Vs[:,5])
-ax5 = Axis(f2[2,2], xlabel = L"V", ylabel = L"C_Y")
+ax5 = Axis(f2[2,2], xlabel = L"M", ylabel = L"C_Y")
 lines!(res_Vs[:,1], res_Vs[:,6])
-ax6 = Axis(f2[2,3], xlabel = L"V", ylabel = L"C_L")
+ax6 = Axis(f2[2,3], xlabel = L"M", ylabel = L"C_L")
 lines!(res_Vs[:,1], res_Vs[:,7])
-ax7 = Axis(f2[3,1], xlabel = L"V", ylabel = L"C_\ell")
+ax7 = Axis(f2[3,1], xlabel = L"M", ylabel = L"C_\ell")
 lines!(res_Vs[:,1], res_Vs[:,8])
-ax8 = Axis(f2[3,2], xlabel = L"V", ylabel = L"C_m")
+ax8 = Axis(f2[3,2], xlabel = L"M", ylabel = L"C_m")
 lines!(res_Vs[:,1], res_Vs[:,9])
-ax9 = Axis(f2[3,3], xlabel = L"V", ylabel = L"C_n")
+ax9 = Axis(f2[3,3], xlabel = L"M", ylabel = L"C_n")
 lines!(res_Vs[:,1], res_Vs[:,10])
 
 f2
@@ -344,13 +343,36 @@ Plots.plot(
     labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
 )
 
+## Makie
+f3 = Figure()
+ax1 = Axis(f3[1,1], xlabel = L"α", ylabel = L"C_{D_{ff}}")
+lines!(res_αs[:,1], res_αs[:,2]) # CD_ff
+ax2 = Axis(f3[1,2], xlabel = L"M", ylabel = L"C_{Y_{ff}}")
+lines!(res_αs[:,1], res_αs[:,3])
+ax3 = Axis(f3[1,3], xlabel = L"M", ylabel = L"CL_{ff}")
+lines!(res_αs[:,1], res_αs[:,4])
+ax4 = Axis(f3[2,1], xlabel = L"M", ylabel = L"C_D")
+lines!(res_αs[:,1], res_αs[:,5])
+ax5 = Axis(f3[2,2], xlabel = L"M", ylabel = L"C_Y")
+lines!(res_αs[:,1], res_αs[:,6])
+ax6 = Axis(f3[2,3], xlabel = L"M", ylabel = L"C_L")
+lines!(res_αs[:,1], res_αs[:,7])
+ax7 = Axis(f3[3,1], xlabel = L"M", ylabel = L"C_\ell")
+lines!(res_αs[:,1], res_αs[:,8])
+ax8 = Axis(f3[3,2], xlabel = L"M", ylabel = L"C_m")
+lines!(res_αs[:,1], res_αs[:,9])
+ax9 = Axis(f3[3,3], xlabel = L"M", ylabel = L"C_n")
+lines!(res_αs[:,1], res_αs[:,10])
+
+f3
+
 ## (Speed, alpha) sweep
 res = combinedimsview(
     map(product(Vs, αs)) do (V, α)
         ref1 = @set ref.speed = V
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, ref1)
-        [ V; α; farfield(sys)...; nearfield(sys)... ]
+        [ mach_number(ref1); α; farfield(sys)...; nearfield(sys)... ]
     end
 )
 

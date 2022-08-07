@@ -15,7 +15,6 @@ wing = Wing(
 )
 
 ##
-# wing = Wing(wing_right, wing_right)
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
@@ -100,7 +99,7 @@ gr()
 ## Display
 horseshoe_panels = chord_panels(wing_mesh)
 horseshoe_coords = plot_panels(horseshoe_panels)
-horseshoe_points = Tuple.(collocation_point.(system.vortices))
+horseshoe_points = Tuple.(control_point.(system.vortices))
 ys = getindex.(horseshoe_points, 2)
 
 ## Coordinates
@@ -114,9 +113,9 @@ plot!(wing_mesh, label = "Wing")
 plot!(system, wing, dist = 3, num_stream = 50, span = 10, color = :green)
 
 ## Compute spanwise loads
-CL_loads = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord)
+CL_loads = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * ref.speed * ref.chord)
 
-span_loads = spanwise_loading(wing_mesh, CFs.wing, refs.area)
+span_loads = spanwise_loading(wing_mesh, CFs.wing, ref.area)
 
 ## Plot spanwise loadings
 plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = "CDi")
@@ -153,15 +152,15 @@ using Base.Iterators: product
 Vs = 1.0:10:300
 res_Vs = combinedimsview(
     map(Vs) do V
-        ref = @set refs.speed = V
-        sys = solve_case(aircraft, fs, ref)
-        [ V; farfield(sys)...; nearfield(sys)... ]
+        refs = @set ref.speed = V
+        sys = solve_case(aircraft, fs, refs)
+        [ mach_number(refs); farfield(sys)...; nearfield(sys)... ]
     end, (1))
 
 plot(
     res_Vs[:,1], res_Vs[:,2:end],
     layout = (3,3), size = (900, 800),
-    xlabel = "V",
+    xlabel = "M",
     labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
 )
 
@@ -170,8 +169,8 @@ plot(
 res_αs = combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, refs)
-        [ α; farfield(sys); nearfield(sys) ]
+        sys = solve_case(aircraft, fst, ref)
+        [ α; farfield(sys)...; nearfield(sys)... ]
     end, (1)
 )
 
@@ -185,10 +184,10 @@ plot(
 ## (Speed, alpha) sweep
 res = combinedimsview(
     map(product(Vs, αs)) do (V, α)
-        ref = @set refs.speed = V
+        refs = @set ref.speed = V
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, ref)
-        [ V; α; farfield(sys); nearfield(sys) ]
+        sys = solve_case(aircraft, fst, refs)
+        [ mach_number(refs); α; farfield(sys)...; nearfield(sys)... ]
     end
 )
 
@@ -199,7 +198,7 @@ res_p = permutedims(res, (3,1,2))
 plt_CDi_ff = plot(camera = (60,45))
 [ plot!(
     res_p[:,1,n], res_p[:,2,n], res_p[:,3,n], 
-    ylabel = "α", xlabel = "V", zlabel = "CDi_ff", 
+    ylabel = "α", xlabel = "M", zlabel = "CDi_ff", 
     label = "", c = :black,
 ) for n in axes(res_p,3) ]
 
@@ -207,14 +206,14 @@ plt_CDi_ff = plot(camera = (60,45))
 plt_CL_ff = plot(camera = (45,45))
 [ plot!(
     res_p[:,1,n], res_p[:,2,n], res_p[:,8,n], 
-    ylabel = "α", xlabel = "V", zlabel = "CL_ff", 
+    ylabel = "α", xlabel = "M", zlabel = "CL_ff", 
     label = "", c = :black,
 ) for n in axes(res_p,3) ]
 
 plt_Cm_ff = plot(camera = (45,45))
 [ plot!(
     res_p[:,1,n], res_p[:,2,n], res_p[:,10,n], 
-    ylabel = "α", xlabel = "V", zlabel = "Cm", 
+    ylabel = "α", xlabel = "M", zlabel = "Cm", 
     label = "", c = :black,
 ) for n in axes(res_p,3) ]
 
