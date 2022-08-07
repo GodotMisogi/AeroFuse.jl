@@ -8,7 +8,7 @@ using StaticArrays
 using Base.Iterators
 using SplitApplyCombine
 
-import ..MathTools: rotation, inverse_rotation, midpair_map
+import ..MathTools: rotation, inverse_rotation, midpair_map, Point2D, Point3D
 
 import ..NonDimensional: pressure_coefficient
 
