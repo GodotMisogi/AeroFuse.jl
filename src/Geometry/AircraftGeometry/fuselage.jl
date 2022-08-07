@@ -40,3 +40,42 @@ function cosine_interpolation(fuse :: Fuselage, n)
 
     return [ x_circ y_u ]
 end
+
+struct NewFuselage{T <: Real, N <: AbstractAffineMap, F <: Function} <: AbstractAffineMap
+    radius :: T
+    ell_a  :: T
+    ell_b  :: T
+    x_nose :: T
+    x_end  :: T
+    x_blend1 :: T
+    x_blend2 :: T
+    affine :: N
+    droop_LE :: F
+    droop_TE :: F
+    power_coeffs :: Vector{T} 
+end
+
+hyperellipse(ξ, R_fuse, a) = R_fuse * (1 - ξ^a)^(1/a) 
+
+function shape(fuse :: NewFuselage)
+    # Linear spacing
+    x1s = 0:0.01:1
+
+    # Radii
+    R_LE = hyperellipse.(x1s, fuse.radius, ell_a)
+
+    # Longitudinal
+    R_yp_LE = R_LE
+    R_ym_LE = -R_yp_LE
+
+    R_yp_TE = hyperellipse.(x1s, fuse.radius, ell_a)
+    R_ym_TE = -R_yp_TE
+
+    # Centers
+    c_LE = fuse.droop_LE.(reverse(x1s))
+    c_TE = fuse.droop_TE.(x1s)
+
+    
+    
+
+end
