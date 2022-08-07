@@ -6,10 +6,10 @@ using AeroMDAO
 
 ##
 panel = Panel3D(
-	Point3D( 1.0, -1.0,  0.0), #4
-	Point3D(-1.0, -1.0,  0.0), #3
-	Point3D(-1.0,  1.0,  0.0), #2
-	Point3D( 1.0,  1.0,  0.0), #1
+    Point3D( 1.0, -1.0,  0.0), #4
+    Point3D(-1.0, -1.0,  0.0), #3
+    Point3D(-1.0,  1.0,  0.0), #2
+    Point3D( 1.0,  1.0,  0.0), #1
 )
 
 point = Point3D(0,0, 0)

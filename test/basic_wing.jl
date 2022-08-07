@@ -40,13 +40,15 @@ npanf = npancd * npansp
 
 ##
 @views function panel_velocity(panels :: AbstractMatrix{<:AbstractPanel3D}, φs :: AbstractMatrix{<:Real})
-	Δrx = distance.(panels[1:end-1,:], panels[2:end,:])
-	Δφx = φs[1:end-1,:] .- φs[2:end,:]
-	# vels = map((Δφx, Δrx, θ) -> Δφ / Δr + ifelse(sources, dot(u, θ), 0.), Δφs, Δrs, θs)
-	vxs = Δφx ./ Δrx
+    Δrx = distance.(panels[1:end-1,:], panels[2:end,:])
+    Δφx = φs[1:end-1,:] .- φs[2:end,:]
+    # vels = map((Δφx, Δrx, θ) -> Δφ / Δr + ifelse(sources, dot(u, θ), 0.), Δφs, Δrs, θs)
+    vxs = Δφx ./ Δrx
 
-	Δry = @. collocation_point(panels[:,1:end-1]) - collocation_point(panels[:,2:end])
-	Δφx = φs[:,1:end-1] .- φs[:,2:end]
+    Δry = @. collocation_point(panels[:,1:end-1]) - collocation_point(panels[:,2:end])
+    Δφy = φs[:,1:end-1] .- φs[:,2:end]
+
+    vxs = Δφx ./ Δrx
 end
 
 

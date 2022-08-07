@@ -13,13 +13,13 @@ Create the vector describing Morino's Kutta condition given Panel2Ds.
 kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 2)' -1 ]
 
 function kutta_condition(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes :: AbstractVector{<:WakePanel3D})
-	npanf, npanw = length(panels), length(wakes)
-	return hcat(
-		Matrix(1.0I, npanw, npanw),
-		zeros(npanw, npanf-2*npanw),
-		-Matrix(1.0I, npanw, npanw),
-		-Matrix(1.0I, npanw, npanw)
-	)
+    npanf, npanw = length(panels), length(wakes)
+    return hcat(
+        Matrix(1.0I, npanw, npanw),
+        zeros(npanw, npanf-2*npanw),
+        -Matrix(1.0I, npanw, npanw),
+        -Matrix(1.0I, npanw, npanw)
+    )
 end
 
 """
@@ -69,11 +69,11 @@ function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<
 end
 
 function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
-	panelview = @view permutedims(panels)[:]
-	return vcat(
-		[dot(V∞, pt) for pt in collocation_point.(panelview)], 
-		zeros(length(wakes))
-	)
+    panelview = @view permutedims(panels)[:]
+    return vcat(
+        [dot(V∞, pt) for pt in collocation_point.(panelview)], 
+        zeros(length(wakes))
+    )
 end
 
 """
@@ -131,24 +131,24 @@ function solve_linear(panels :: AbstractArray{<:AbstractPanel2D}, u, wakes)
 end
 
 function solve_linear(panels :: AbstractMatrix{<:AbstractPanel3D}, U, fs, wakes)
-	V∞ = U * velocity(fs)
+    V∞ = U * velocity(fs)
 
-	AIC = influence_matrix(panels, wakes)
-	boco = boundary_vector(panels, wakes, V∞)
+    AIC = influence_matrix(panels, wakes)
+    boco = boundary_vector(panels, wakes, V∞)
 
-	return AIC \ boco, AIC, boco
+    return AIC \ boco, AIC, boco
 end
 
 function influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
-	panelview = @view permutedims(panels)[:]
+    panelview = @view permutedims(panels)[:]
 
-	# Foil panel interaction
-	AIC_ff = doublet_matrix(panelview, panelview)
+    # Foil panel interaction
+    AIC_ff = doublet_matrix(panelview, panelview)
 
-	# Wake panel interaction
-	AIC_wf = doublet_matrix(panelview, wakes)
+    # Wake panel interaction
+    AIC_wf = doublet_matrix(panelview, wakes)
 
-	# Kutta condition
-	[		AIC_ff 		AIC_wf		;
-	  kutta_condition(panels, wakes)]
+    # Kutta condition
+    [       AIC_ff      AIC_wf      ;
+      kutta_condition(panels, wakes)]
 end

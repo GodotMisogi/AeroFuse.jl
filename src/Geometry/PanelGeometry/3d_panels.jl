@@ -33,11 +33,11 @@ struct WakePanel3D{T <: Real} <: AbstractPanel3D
 end
 
 # function Panel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
-# 	Panel3D{T}(p1, p2, p3, p4)
+#   Panel3D{T}(p1, p2, p3, p4)
 # end
 
 # function WakePanel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
-# 	WakePanel3D{T}(p1, p2, p3, p4)
+#   WakePanel3D{T}(p1, p2, p3, p4)
 # end
 
 
@@ -109,7 +109,7 @@ Compute the area of a planar quadrilateral 3D panel.
 function panel_area(panel :: AbstractPanel3D)
     coord = panel_coordinates(panel)
 
-	d_ij(i :: Int64, j :: Int64, local_coordinates) = norm(local_coordinates[j] - local_coordinates[i])
+    d_ij(i :: Int64, j :: Int64, local_coordinates) = norm(local_coordinates[j] - local_coordinates[i])
     d12 = d_ij(1, 2, coord)
     d23 = d_ij(2, 3, coord)
     d34 = d_ij(3, 4, coord)
@@ -189,23 +189,23 @@ Transform point and panel from GCS into panel LCS.
 # end
 
 function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
-	T = get_transformation(panel)
-	return T(panel), T(point)
+    T = get_transformation(panel)
+    return T(panel), T(point)
 end
 
 
 """
-	get_transformation(panel :: AbstractPanel3D) -> T :: AffineMap
+    get_transformation(panel :: AbstractPanel3D) -> T :: AffineMap
 
 Calculate required transformation from GCS to panel LCS.
 """
 function get_transformation(panel :: AbstractPanel3D)
     o = midpoint(panel)
-	n = panel_normal(panel)
-	m = normalize((p3(panel) + p4(panel)) / 2 - o)
-	l = normalize(m × n)
+    n = panel_normal(panel)
+    m = normalize((p3(panel) + p4(panel)) / 2 - o)
+    l = normalize(m × n)
 
-	return LinearMap([l m n]') ∘ Translation(-o)
+    return LinearMap([l m n]') ∘ Translation(-o)
 end
 
 
@@ -216,10 +216,10 @@ Calculate required transformation from GCS to panel LCS.
 """
 function wake_panel(panels :: AbstractArray{<: AbstractPanel3D}, bound, α, β)
     pt1 = 0.5 * ( p1(first(panels)) + p2(last(panels)) )
-	pt4 = 0.5 * ( p4(first(panels)) + p3(last(panels)) )
-	dx, dy, dz = velocity(Freestream(α, β, zeros(3))) * bound
-	pt2 = pt1 + Point3D(dx, dy, dz)
-	pt3 = pt4 + Point3D(dx, dy, dz)
+    pt4 = 0.5 * ( p4(first(panels)) + p3(last(panels)) )
+    dx, dy, dz = velocity(Freestream(α, β, zeros(3))) * bound
+    pt2 = pt1 + Point3D(dx, dy, dz)
+    pt3 = pt4 + Point3D(dx, dy, dz)
 
-	return WakePanel3D(pt1, pt2, pt3, pt4)
+    return WakePanel3D(pt1, pt2, pt3, pt4)
 end
