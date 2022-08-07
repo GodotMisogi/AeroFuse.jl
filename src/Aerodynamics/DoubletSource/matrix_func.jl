@@ -10,7 +10,17 @@ doublet_matrix(panels_1, panels_2) = [ doublet_influence(panel_j, panel_i) for p
 
 Create the vector describing Morino's Kutta condition given Panel2Ds.
 """
-kutta_condition(panels) = [ 1 zeros(length(panels) - 2)' -1 ]
+kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 2)' -1 ]
+
+function kutta_condition(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes :: AbstractVector{<:WakePanel3D})
+	npanf, npanw = length(panels), length(wakes)
+	return hcat(
+		Matrix(1.0I, npanw, npanw),
+		zeros(npanw, npanf-2*npanw),
+		-Matrix(1.0I, npanw, npanw),
+		-Matrix(1.0I, npanw, npanw)
+	)
+end
 
 """
     wake_vector(woke_panel :: AbstractPanel2D, panels)
@@ -56,6 +66,14 @@ boundary_vector(panels, u, r_te) = [ dot.(collocation_point.(panels), Ref(u)); d
 function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<: AbstractPanel2D}, u)
     source_panels = [ panels; wakes ]
     [ - source_matrix(panels, source_panels) * source_strengths(source_panels, u); 0 ]
+end
+
+function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
+	panelview = @view permutedims(panels)[:]
+	return vcat(
+		[dot(V∞, pt) for pt in collocation_point.(panelview)], 
+		zeros(length(wakes))
+	)
 end
 
 """
@@ -112,20 +130,25 @@ function solve_linear(panels :: AbstractArray{<:AbstractPanel2D}, u, wakes)
     AIC \ boco, AIC, boco
 end
 
-function solve_linear(panels :: AbstractArray{<:AbstractPanel3D}, U, fs, wakes)
-	# Foil panel interaction
-	AIC_ff = doublet_matrix(panels, panels)
-
-	# Wake panel interaction
-	AIC_wf = doublet_matrix(panels, wakes)
-
-	# Kutta condition
-	AIC_ff[:,1:npanw] 			+= AIC_wf
-	AIC_ff[:,end-npanw+1:end] 	-= AIC_wf
-
-	# Boundary condition (no sources yet)
+function solve_linear(panels :: AbstractMatrix{<:AbstractPanel3D}, U, fs, wakes)
 	V∞ = U * velocity(fs)
-	boco = [ dot(V∞, pt) for pt in collocation_point.(panels) ]
+
+	AIC = influence_matrix(panels, wakes)
+	boco = boundary_vector(panels, wakes, V∞)
 
 	return AIC \ boco, AIC, boco
+end
+
+function influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
+	panelview = @view permutedims(panels)[:]
+
+	# Foil panel interaction
+	AIC_ff = doublet_matrix(panelview, panelview)
+
+	# Wake panel interaction
+	AIC_wf = doublet_matrix(panelview, wakes)
+
+	# Kutta condition
+	[		AIC_ff 		AIC_wf		;
+	  kutta_condition(panels, wakes)]
 end

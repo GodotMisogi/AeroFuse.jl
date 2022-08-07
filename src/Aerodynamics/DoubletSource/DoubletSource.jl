@@ -89,7 +89,7 @@ struct DoubletSourceSystem{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVecto
     freestream         :: P
 end
 
-struct DoubletSourceSystem3D{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVector{T}, O <: AbstractMatrix{<: AbstractPanel3D}, R <: AbstractMatrix{WakePanel3D}, P <: Freestream{T}}
+struct DoubletSourceSystem3D{T <: Real, M <: AbstractMatrix{T}, N <: AbstractArray{T}, O <: AbstractMatrix{<: AbstractPanel3D}, R <: AbstractArray{<: WakePanel3D}, P <: Freestream}
     influence_matrix   :: M
     boundary_condition :: N
     singularities      :: N
@@ -149,17 +149,10 @@ function solve_system(panels :: AbstractArray{<:AbstractPanel2D}, uni :: Uniform
     DoubletSourceSystem(AIC, boco, φs, panels, wake_pan, uni)
 end
 
-function solve_system(surf_pans :: AbstractArray{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
-	wake_pans = wake_panel.(eachcol(surf_pans), wake_length, alpha, beta)
-
-	## Aerodynamic Influence Coefficient matrix
-	npancd, npansp = size(surf_pans)
-	# npanf = npancd * npansp
-	# npanw = npansp
-
+function solve_system(surf_pans :: AbstractMatrix{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
+	wake_pans = wake_panel.(eachcol(surf_pans), wake_length, fs.alpha, fs.beta)
 	φs, AIC, boco = solve_linear(surf_pans, U, fs, wake_pans)
-
-	DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
+	return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
 end
 
 

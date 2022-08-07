@@ -50,21 +50,6 @@ h_k(k :: Int64, local_coordinates, local_point) = (local_point.x - local_coordin
 
 
 """
-    const_quad_source_u(i, j, x, y, xi, yi, dij, ri)
-
-Helper function: term u for quadrilateral_source_velocity().
-"""
-const_quad_source_u(i, j, yi, dij, ri) = (yi[j] -yi[i]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
-
-
-"""
-    const_quad_source_v(i, j, x, y, xi, yi, dij, ri)
-
-Helper function: term v for quadrilateral_source_velocity().
-"""
-const_quad_source_v(i, j, xi, dij, ri) = (xi[i] -xi[j]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
-
-"""
 
 """
 function check_panel_status(panel :: AbstractPanel3D, point :: Point3D, transformation_error = 1e-7)
@@ -90,12 +75,17 @@ function quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local
     #     [x3 y3 0]
     #     [x4 y4 0]
     # ]
+
+	const_quad_source_u(i, j, yi, dij, ri) = (yi[j] -yi[i]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
+	const_quad_source_v(i, j, xi, dij, ri) = (xi[i] -xi[j]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
+
     coord = panel_coordinates(local_panel)
 
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
     local_panel, local_point = check_panel_status(local_panel, local_point)
     z = local_point.z
 
+	xi = xs(local_panel)
     yi = ys(local_panel)
     ri  = @SVector [r_k(i, coord, local_point)  for i=1:4]
     ei  = @SVector [e_k(i, coord, local_point)  for i=1:4]
@@ -104,15 +94,15 @@ function quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local
     mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
 
     # Results from textbook differs from a minus sign
-    u = -σ / 4π * sum(
+    u = σ / 4π * sum(
         [const_quad_source_u(i, i%4+1, yi, dij, ri) for i=1:4]
     )
 
-    v = -σ / 4π * sum(
-        [const_quad_source_v(i, i%4+1, yi, dij, ri) for i=1:4]
+    v = σ / 4π * sum(
+        [const_quad_source_v(i, i%4+1, xi, dij, ri) for i=1:4]
     )
 
-    w = -σ / 4π * sum(
+    w = σ / 4π * sum(
         [const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4]
     )
 
@@ -138,20 +128,8 @@ function quadrilateral_source_velocity_farfield(σ, local_panel :: AbstractPanel
     return SVector(u, v, w)
 end
 
-
-"""
-    const_quad_source_phi_term1(i, j, x, y, xi, yi, dij, ri)
-
-Helper function: term 1 for quadrilateral_source_potential().
-"""
 const_quad_source_phi_term1(i::Int64, j::Int64, x, y, xi, yi, dij, ri) = ( (x - xi[i]) * (yi[j] - yi[i]) - (y - yi[i]) * (xi[j] - xi[i]) ) / dij[i] * log( (ri[i] + ri[j] + dij[i]) / (ri[i] + ri[j] - dij[i]) )
-
-"""
-    const_quad_source_phi_term2(i, j, z, mij, ei, hi, ri)
-Helper function: term 2 for quadrilateral_source_potential().
-"""
 const_quad_source_phi_term2(i::Int64, j::Int64, z, mij, ei, hi, ri) = atan( (mij[i] * ei[i] - hi[i]) / (z * ri[i]) ) - atan( (mij[i] * ei[j] - hi[j]) / (z * ri[j]) )
-
 
 """
     quadrilateral_source_potential(σ, local_panel :: AbstractPanel, local_point)
@@ -175,7 +153,7 @@ function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, loca
     dij = @SVector [d_ij(i, i%4+1, coord)       for i=1:4]
     mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
 
-    return σ / 4π * (
+    return -σ / 4π * (
         sum(
             [const_quad_source_phi_term1(i, i%4+1, x, y, xi, yi, dij, ri) for i=1:4]
         ) -
@@ -225,7 +203,7 @@ function quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, loca
     rs = norm.(rvs)
     ds = @SVector [d_ij(i, i%4+1, coord) for i=1:4]
     
-    return -μ / 4π * sum(
+    return μ / 4π * sum(
         [ ( rvs[i] × rvs[i%4+1] * (rs[i] + rs[i%4+1]) ) / ( (rs[i] * rs[i%4+1]) * (rs[i] * rs[i%4+1] + rvs[i] ⋅ rvs[i%4+1]) + 0.005 * ds[i] ) for i=1:4 ]
     )
 
@@ -269,7 +247,7 @@ function quadrilateral_doublet_potential(μ, local_panel :: AbstractPanel3D, loc
     hi  = @SVector [h_k(i, coord, local_point)  for i=1:4]
     mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
     
-    return -μ / 4π * sum(
+    return μ / 4π * sum(
         [const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4]
     )
 end

@@ -158,63 +158,54 @@ local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - 
 
 Transform point and panel from GCS into panel LCS.
 """
+# function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
+#     # Translate p1 to xy plane
+#     tr1 = Translation(0., 0., -panel.p1.z)
+#     local_panel = tr1(panel)
+#     local_point = tr1(point)
+
+#     # Find normal of panel
+#     n = panel_normal(panel)
+
+#     # Find rotation axis
+#     d = n × SVector(0.,0.,1.)
+
+#     # No rotation if already aligned
+#     if norm(d) <= 1e-7
+#         return local_panel, local_point
+#     end
+
+#     # Find rotation angle
+#     θ = acos(n.z / norm(n))
+#     tr2 = recenter(LinearMap(AngleAxis(θ, d.x, d.y, d.z)), local_panel.p1)
+
+#     local_panel = tr2(local_panel)
+#     local_point = tr2(local_point)
+
+#     # tr = tr1 ∘ tr2
+#     # invtr = inv(tr)
+
+#     return local_panel, local_point
+# end
+
 function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
-    # Translate p1 to xy plane
-    tr1 = Translation(0., 0., -panel.p1.z)
-    local_panel = tr1(panel)
-    local_point = tr1(point)
-
-    # Find normal of panel
-    n = panel_normal(panel)
-
-    # Find rotation axis
-    d = n × SVector(0.,0.,1.)
-
-    # No rotation if already aligned
-    if norm(d) <= 1e-7
-        return local_panel, local_point
-    end
-
-    # Find rotation angle
-    θ = acos(n.z / norm(n))
-    tr2 = recenter(LinearMap(AngleAxis(θ, d.x, d.y, d.z)), local_panel.p1)
-
-    local_panel = tr2(local_panel)
-    local_point = tr2(local_point)
-
-    # tr = tr1 ∘ tr2
-    # invtr = inv(tr)
-
-    return local_panel, local_point
+	T = get_transformation(panel)
+	return T(panel), T(point)
 end
 
 
 """
-	get_transformation(panel :: AbstractPanel3D) -> tr :: AffineMap
+	get_transformation(panel :: AbstractPanel3D) -> T :: AffineMap
 
 Calculate required transformation from GCS to panel LCS.
 """
 function get_transformation(panel :: AbstractPanel3D)
-    # Translate p1 to xy plane
-	p1 = panel.p1
-    tr1 = Translation(0., 0., -p1.z)
+    o = midpoint(panel)
+	n = panel_normal(panel)
+	m = normalize((p3(panel) + p4(panel)) / 2 - o)
+	l = normalize(m × n)
 
-    # Find normal of panel
-    n = panel_normal(panel)
-
-    # Find rotation axis
-    d = panel_normal(panel) × SVector(0.,0.,1.)
-
-    # No rotation if already aligned
-    if norm(d) <= 1e-7
-        return local_panel, local_point
-    end
-
-    # Find rotation angle
-    θ = acos(n.z / norm(n))
-    tr2 = recenter(LinearMap(AngleAxis(θ, d.x, d.y, d.z)), tr1(p1))
-
-    return tr1 ∘ tr2
+	return LinearMap([l m n]') ∘ Translation(-o)
 end
 
 
