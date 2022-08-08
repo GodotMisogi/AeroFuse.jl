@@ -104,10 +104,15 @@ ord2diff(xs) = @views @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2]
 adj3(xs) = @views zip(xs[1:end-2,:], xs[2:end-1,:], xs[3:end,:])
 
 # Central differencing schema for pairs except at endpoints
-midpair_map(f :: H, xs) where {H} = 
-    @views  [        f.(xs[1,:], xs[2,:])'        ;
-               f.(xs[1:end-2,:], xs[3:end,:]) / 2 ;
-                 f.(xs[end-1,:], xs[end,:])'      ]
+function midpair_map(f :: H, xs; dims :: Int64) where {H}
+    if dims == 1
+        @views  [f.(xs[1,:], xs[2,:])';     f.(xs[1:end-2,:], xs[3:end,:]) / 2;     f.(xs[end-1,:], xs[end,:])' ]
+    elseif dims == 2
+        @views  [f.(xs[:,1], xs[:,2])       f.(xs[:,1:end-2], xs[:,3:end]) / 2      f.(xs[:,end-1], xs[:,end])  ]
+    else
+        ArgumentError("Array with order > 2 is currently not supported!")
+    end
+end
 
 # stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
 # parts(xs) = let adj = stencil(xs, 1); adj[1,:], adj[end,:] end
