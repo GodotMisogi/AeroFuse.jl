@@ -32,16 +32,10 @@ struct WakePanel3D{T <: Real} <: AbstractPanel3D
     p4 :: Point3D{T}
 end
 
-# function Panel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
-#   Panel3D{T}(p1, p2, p3, p4)
-# end
-
-# function WakePanel3D(p1 :: Point3D{T}, p2 :: Point3D{T}, p3 :: Point3D{T}, p4 :: Point3D{T}) where T <: Real
-#   WakePanel3D{T}(p1, p2, p3, p4)
-# end
-
 
 Panel3D(p1, p2, p3, p4) = let T = promote_type(eltype(p1), eltype(p2), eltype(p3), eltype(p4)); Panel3D{T}(p1, p2, p3, p4) end
+
+WakePanel3D(p1, p2, p3, p4) = let T = promote_type(eltype(p1), eltype(p2), eltype(p3), eltype(p4)); WakePanel3D{T}(p1, p2, p3, p4) end
 
 Panel3D((p1, p2, p3, p4)) = Panel3D(p1, p2, p3, p4)
 
@@ -51,7 +45,7 @@ collocation_point(panel :: AbstractPanel3D, a = 0.5) = (p1(panel) + p2(panel) + 
 +(p :: AbstractPanel3D, v) = Panel3D(p.p1 + v, p.p2 + v, p.p3 + v, p.p4 + v)
 -(p :: AbstractPanel3D, v) = Panel3D(p.p1 - v, p.p2 - v, p.p3 - v, p.p4 - v)
 ×(p :: AbstractPanel3D, v) = Panel3D(p.p1 × v, p.p2 × v, p.p3 × v, p.p4 × v)
-(trans::AffineMap)(p::AbstractPanel3D) = Panel3D(trans(p.p1), trans(p.p2), trans(p.p3), trans(p.p4))
+(T :: AffineMap)(p :: AbstractPanel3D) = typeof(p)(T(p.p1), T(p.p2), T(p.p3), T(p.p4))
 
 Base.length(:: Panel3D) = 1
 
@@ -68,8 +62,7 @@ average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)
 
 Compute the coordinates of a `Panel3D`.
 """
-panel_coordinates(panel :: Panel3D) = [ p1(panel), p2(panel), p3(panel), p4(panel) ]
-coordinates(panel :: Panel3D) = combinedimsview(panel_coordinates(panel), (1))
+panel_coordinates(panel :: AbstractPanel3D) = [ p1(panel), p2(panel), p3(panel), p4(panel) ]
 
 """
     make_panels(xyzs)
@@ -110,7 +103,7 @@ normal_vector(panel :: AbstractPanel3D) = let p31 = panel.p3 - panel.p1, p42 = p
 
 Transform the normal vector ``n̂₀`` of a `Panel3D` about the hinge axis ``ĥₗ`` by the control gain ``gₗ``.
 
-The transformation is the following: ``n̂ₗ = gₗ ĥₗ × n̂₀`` (Flight Vehicle Aerodynamics, Drela, Eq. 6.36).
+The transformation is the following: ``n̂ₗ = gₗ ĥₗ × n̂₀`` (Flight Vehicle Aerodynamics, M. Drela, Eq. 6.36).
 """
 transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, normal_vector(panel))
 
@@ -156,23 +149,23 @@ Reflect a Panel3D with respect to the ``x``-``z`` plane of its reference coordin
 """
 reflect_xz(panel :: Panel3D) = Panel3D((reflect_xz ∘ p1)(panel), (reflect_xz ∘ p2)(panel), (reflect_xz ∘ p3)(panel), (reflect_xz ∘ p4)(panel))
 
-# Compute local axis coordinates
+# Determine axis system of panel
 function local_coordinate_system(stream, normie) 
     s_hat = normalize(stream)
     n_hat = normalize(normie)
     c_hat = s_hat × n_hat
 
-    reduce(hcat, @SMatrix [ c_hat; s_hat; n_hat ])
+    return [ c_hat s_hat n_hat ]
 end
 
 # Compute local axis coordinates
-local_coordinate_system(panel :: Panel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, panel_normal(panel))
+local_coordinate_system(panel :: AbstractPanel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, normal_vector(panel))
 
-"""
-    transform_panel(panel :: AbstractPanel3D, point :: Point3D) -> panel :: AbstractPanel3D, point :: Point3D
+# """
+#     transform_panel(panel :: AbstractPanel3D, point :: Point3D) -> panel :: AbstractPanel3D, point :: Point3D
 
-Transform point and panel from GCS into panel LCS.
-"""
+# Transform point and panel from GCS into panel LCS.
+# """
 # function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
 #     # Translate p1 to xy plane
 #     tr1 = Translation(0., 0., -panel.p1.z)
@@ -205,7 +198,7 @@ Transform point and panel from GCS into panel LCS.
 
 function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
     T = get_transformation(panel)
-    return T(panel), T(point)
+    return T(panel), T(point) 
 end
 
 
@@ -214,27 +207,29 @@ end
 
 Calculate required transformation from GCS to panel LCS.
 """
-function get_transformation(panel :: AbstractPanel3D)
-    o = midpoint(panel)
-    n = normalize(normal_vector(panel))
-    m = normalize((p3(panel) + p4(panel)) / 2 - o)
-    l = normalize(m × n)
+# function get_transformation(panel :: AbstractPanel3D)
+#     o = midpoint(panel)
+#     n = normalize(normal_vector(panel))
+#     m = normalize((p3(panel) + p4(panel)) / 2 - o)
+#     l = normalize(m × n)
 
-    return LinearMap([l m n]') ∘ Translation(-o)
-end
+#     return LinearMap([l m n]') ∘ Translation(-o)
+# end
+
+get_transformation(p) = AffineMap(local_coordinate_system(p)', zeros(3))
 
 
 """
-wake_panel(panels :: AbstractPanel3D, bound, α)
+    wake_panel(panels :: AbstractPanel3D, bound, α)
 
 Calculate required transformation from GCS to panel LCS.
 """
-function wake_panel(panels :: AbstractArray{<: AbstractPanel3D}, bound, α, β)
+function wake_panel(panels :: DenseArray{<: AbstractPanel3D}, bound, U)
     pt1 = 0.5 * ( p1(first(panels)) + p2(last(panels)) )
     pt4 = 0.5 * ( p4(first(panels)) + p3(last(panels)) )
-    dx, dy, dz = velocity(Freestream(α, β, zeros(3))) * bound
-    pt2 = pt1 + Point3D(dx, dy, dz)
-    pt3 = pt4 + Point3D(dx, dy, dz)
+    dr  = U * bound
+    pt2 = pt1 + Point3D(dr...)
+    pt3 = pt4 + Point3D(dr...)
 
     return WakePanel3D(pt1, pt2, pt3, pt4)
 end

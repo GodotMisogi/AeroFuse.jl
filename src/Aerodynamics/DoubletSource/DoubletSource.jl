@@ -80,7 +80,7 @@ surface_velocity(dφ, dr, u, α) = dφ / dr + dot(u, α)
 
 include("matrix_func.jl")
 
-struct DoubletSourceSystem{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVector{T}, O <: AbstractVector{<: AbstractPanel2D}, R <: WakePanel2D, P <: Uniform2D}
+struct DoubletSourceSystem{T <: Real, M <: DenseArray{T}, N <: AbstractVector{T}, O <: AbstractVector{<: AbstractPanel2D}, R <: WakePanel2D, P <: Uniform2D}
     influence_matrix   :: M
     boundary_condition :: N
     singularities      :: N
@@ -89,14 +89,13 @@ struct DoubletSourceSystem{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVecto
     freestream         :: P
 end
 
-struct DoubletSourceSystem3D{T <: Real, M <: AbstractMatrix{T}, N <: AbstractArray{T}, O <: AbstractMatrix{<: AbstractPanel3D}, R <: AbstractArray{<: WakePanel3D}, P <: Freestream}
+struct DoubletSourceSystem3D{T <: Real, M <: DenseArray{T}, N <: AbstractArray{T}, O <: DenseArray{<: AbstractPanel3D}, R <: AbstractArray{<: WakePanel3D}, P <: Freestream}
     influence_matrix   :: M
     boundary_condition :: N
     singularities      :: N
     surface_panels     :: O
     wake_panels        :: R
     freestream         :: P
-	Umag			   :: T
 end
 
 function Base.show(io :: IO, sys :: DoubletSourceSystem)
@@ -149,10 +148,10 @@ function solve_system(panels :: AbstractArray{<:AbstractPanel2D}, uni :: Uniform
     DoubletSourceSystem(AIC, boco, φs, panels, wake_pan, uni)
 end
 
-function solve_system(surf_pans :: AbstractMatrix{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
-	wake_pans = wake_panel.(eachcol(surf_pans), wake_length, fs.alpha, fs.beta)
-	φs, AIC, boco = solve_linear(surf_pans, U, fs, wake_pans)
-	return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
+function solve_system(surf_pans :: DenseArray{<:AbstractPanel3D}, fs :: Freestream, wake_length)
+    wake_pans = [ wake_panel(surf_pans.wing[:,i], wake_length, velocity(fs)) for i in axes(surf_pans.wing, 2) ]
+    φs, AIC, boco = solve_linear(surf_pans, fs, wake_pans)
+    return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs)
 end
 
 

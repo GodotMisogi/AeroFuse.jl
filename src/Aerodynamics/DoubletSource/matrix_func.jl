@@ -12,14 +12,9 @@ Create the vector describing Morino's Kutta condition given Panel2Ds.
 """
 kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 2)' -1 ]
 
-function kutta_condition(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes :: AbstractVector{<:WakePanel3D})
-	npanf, npanw = length(panels), length(wakes)
-	return hcat(
-		Matrix(1.0I, npanw, npanw),
-		zeros(npanw, npanf-2*npanw),
-		-Matrix(1.0I, npanw, npanw),
-		-Matrix(1.0I, npanw, npanw)
-	)
+function kutta_condition(panels :: DenseArray{<:AbstractPanel3D}, wakes :: AbstractVector{<:WakePanel3D})
+    Nf, Nw = length(panels), length(wakes)
+    [ I(Nw) zeros(Nw, Nf-2*Nw) -I(Nw) I(Nw) ]
 end
 
 """
@@ -65,15 +60,14 @@ boundary_vector(panels, u, r_te) = [ dot.(collocation_point.(panels), Ref(u)); d
 
 function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<: AbstractPanel2D}, u)
     source_panels = [ panels; wakes ]
-    [ - source_matrix(panels, source_panels) * source_strengths(source_panels, u); 0 ]
+    [ -source_matrix(panels, source_panels) * source_strengths(source_panels, u); 0 ]
 end
 
-function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
-	panelview = @view permutedims(panels)[:]
-	return vcat(
-		[dot(V∞, pt) for pt in collocation_point.(panelview)], 
-		zeros(length(wakes))
-	)
+function boundary_vector(panels :: DenseArray{<: AbstractPanel3D}, wakes, V∞)
+    return [
+        -dot.(Ref(V∞), collocation_point.(panels))
+        zeros(length(wakes))
+    ]
 end
 
 """
@@ -87,7 +81,7 @@ function solve_linear(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     woke_vector = wake_vector(woke_panel, panels)
     woke_matrix = [ -woke_vector zeros(length(panels), length(panels) -2) woke_vector ]
 
-    # AI
+    # AIC
     AIC     = doublet_matrix(panels, panels) + woke_matrix
     boco    = dot.(collocation_point.(panels), Ref(u)) - woke_vector * dot(u, r_te)
 
@@ -108,9 +102,16 @@ function surface_velocities(φs, Δrs, θs, u, sources :: Bool)
     # Δφs   = -midpair_map(-, φs[1:end-1])
 
     Δφs  = @views φs[1:end-1] - φs[2:end]
-    vels = map((Δφ, Δr, θ) -> Δφ / Δr + ifelse(sources, dot(u, θ), 0.), Δφs, Δrs, θs)
+    vels = map(zip(Δφs, Δrs, θs)) do (Δφ, Δr, θ)
+        if sources
+            Δu = dot(u, θ)
+        else 
+            Δu = 0.
+        end
+        Δφ / Δr + Δu
+    end
 
-    vels
+    return vels
 end
 
 ## WAKE VERSIONS
@@ -130,25 +131,25 @@ function solve_linear(panels :: AbstractArray{<:AbstractPanel2D}, u, wakes)
     AIC \ boco, AIC, boco
 end
 
-function solve_linear(panels :: AbstractMatrix{<:AbstractPanel3D}, U, fs, wakes)
-	V∞ = U * velocity(fs)
+function solve_linear(panels :: DenseArray{<:AbstractPanel3D}, fs, wakes)
+    V∞ = velocity(fs)
 
-	AIC = influence_matrix(panels, wakes)
-	boco = boundary_vector(panels, wakes, V∞)
+    AIC = influence_matrix(panels, wakes)
+    boco = boundary_vector(panels, wakes, V∞)
 
-	return AIC \ boco, AIC, boco
+    return AIC \ boco, AIC, boco
 end
 
-function influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
-	panelview = @view permutedims(panels)[:]
+function influence_matrix(panels :: DenseArray{<:AbstractPanel3D}, wakes)
+    panelview = @view permutedims(panels)[:]
 
-	# Foil panel interaction
-	AIC_ff = doublet_matrix(panelview, panelview)
+    # Foil-Foil interactions
+    AIC_ff = permutedims(doublet_matrix(panels, panels))
 
-	# Wake panel interaction
-	AIC_wf = doublet_matrix(panelview, wakes)
+    # Wake-Foil interactions
+    AIC_wf = doublet_matrix(panelview, wakes)
 
-	# Kutta condition
-	[		AIC_ff 		AIC_wf		;
-	  kutta_condition(panels, wakes)]
+    # Kutta condition
+    [   AIC_ff     AIC_wf  ;
+      kutta_condition(panels, wakes)]
 end
