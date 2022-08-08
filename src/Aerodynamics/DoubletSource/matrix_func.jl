@@ -1,44 +1,41 @@
 """
     doublet_matrix(panels_1, panels_2)
 
-Create the matrix of doublet potential influence coefficients between pairs of panels_1 and panels_2.
+Create the matrix of doublet potential influence coefficients between pairs of `panels₁` and `panels₂`.
 """
 doublet_matrix(panels_1, panels_2) = [ doublet_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
 
 """
+    doublet_matrix(panels_1, panels_2)
+
+Create the matrix of source potential influence coefficients between pairs of `panels₁` and `panels₂`.
+"""
+source_matrix(panels_1, panels_2) = [ source_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
+
+"""
     kutta_condition(panels)
 
-Create the vector describing Morino's Kutta condition given Panel2Ds.
+Create the vector describing Morino's Kutta condition given `Panel2Ds`.
 """
 kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 2)' -1 ]
 
-function kutta_condition(panels :: DenseArray{<:AbstractPanel3D}, wakes :: AbstractVector{<:WakePanel3D})
-    Nf, Nw = length(panels), length(wakes)
-    [ I(Nw) zeros(Nw, Nf-2*Nw) -I(Nw) I(Nw) ]
-end
+kutta_condition(npanf, npanw) = [I(npanw) zeros(npanw, npanf-2*npanw) -I(npanw) -I(npanw)]
 
 """
     wake_vector(woke_panel :: AbstractPanel2D, panels)
 
-Create the vector of doublet potential influence coefficients from the wake on the panels given the wake panel and the array of Panel2Ds.
+Create the vector of doublet potential influence coefficients from the wake on the panels given the wake panel and the array of `Panel2Ds`.
 """
 wake_vector(woke_panel :: AbstractPanel2D, panels) = doublet_influence.(Ref(woke_panel), panels)
 
 """
     influence_matrix(panels, wake_panel :: AbstractPanel2D)
 
-Assemble the Aerodynamic Influence Coefficient matrix consisting of the doublet matrix, wake vector, Kutta condition given Panel2Ds and the wake panel.
+Assemble the Aerodynamic Influence Coefficient matrix consisting of the doublet matrix, wake vector, Kutta condition given `Panel2Ds` and the wake panel.
 """
 influence_matrix(panels, woke_panel :: AbstractPanel2D) =
     [ doublet_matrix(panels, panels)  wake_vector(woke_panel, panels) ;
         kutta_condition(panels)                      1.               ]
-
-"""
-    source_matrix(panels_1, panels_2)
-
-Create the matrix of source potential influence coefficients between pairs of `panels_1` and `panels_2`.
-"""
-source_matrix(panels_1, panels_2) = [ source_influence(panel_j, panel_i) for (panel_i, panel_j) in product(panels_1, panels_2) ]
 
 """
     source_strengths(panels, freestream)
@@ -63,11 +60,12 @@ function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<
     [ -source_matrix(panels, source_panels) * source_strengths(source_panels, u); 0 ]
 end
 
-function boundary_vector(panels :: DenseArray{<: AbstractPanel3D}, wakes, V∞)
-    return [
-        -dot.(Ref(V∞), collocation_point.(panels))
-        zeros(length(wakes))
-    ]
+function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
+    panelview = @view permutedims(panels)[:]
+    B = source_matrix(panelview, panelview)
+    σ = dot.(Ref(V∞), panel_normal.(panelview))
+
+    return -vcat(B * σ, zeros(length(wakes)))
 end
 
 """

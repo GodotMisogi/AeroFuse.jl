@@ -164,6 +164,28 @@ function surface_velocities(prob :: DoubletSourceSystem)
     @views surface_velocities(prob.singularities[1:end-1], Δrs, αs, velocity(prob.freestream), false)
 end
 
+@views function surface_velocities(prob :: DoubletSourceSystem3D)
+    panels = prob.surface_panels
+    npancd, npansp = size(panels)
+    npanf = npancd * npansp
+    φs = permutedims(reshape(prob.singularities[1:npanf], npansp, npancd))
+
+    Δrx = midpair_map(distance, panels; dims=1)
+    Δφx = midpair_map(-, φs; dims=1)
+    vxs = -Δφx ./ Δrx
+
+    Δry = midpair_map(-, collocation_point.(panels); dims=2)
+    Δryx, Δryy = getindex.(Δry, 1), getindex.(Δry, 2)
+    Δφy = midpair_map(-, φs; dims=2)
+    vys = @. -(Δφy - Δryx * vxs) / Δryy
+
+    V∞ = prob.Umag * velocity(prob.freestream)
+    vxs .+= V∞[1]
+    vys .+= V∞[2]
+
+    return vxs, vys
+end
+
 function surface_coefficients(prob :: DoubletSourceSystem)
     # Panel properties
     ps   = prob.surface_panels
@@ -180,6 +202,25 @@ function surface_coefficients(prob :: DoubletSourceSystem)
     cms  = @. -cls * xs * cos(prob.freestream.angle)
 
     cls, cms, cps
+end
+
+function surface_coefficients(prob :: DoubletSourceSystem3D)
+    # Panel properties
+    ps   = prob.surface_panels
+    θs   = panel_normal.(ps)
+    As   = panel_area.(ps)
+    
+    # xs   = @views combinedimsview(panel_points(ps)[2:end-1])[1,:]
+
+    # Inviscid edge velocities
+    us, vs = surface_velocities(prob)
+
+    # Aerodynamic coefficients
+    cps  = pressure_coefficient.(prob.Umag, map((x,y)->norm([x,y]), us, vs))
+    cls  = cps .* As .* dot.(θs, Ref([0.,0.,1.]))
+    # cms  = @. -cls * xs * cos(prob.freestream.angle)
+
+    cls, cps
 end
 
 lift_coefficient(prob :: DoubletSourceSystem) = 2 * last(prob.singularities) / prob.freestream.magnitude

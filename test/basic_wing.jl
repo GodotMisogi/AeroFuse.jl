@@ -70,13 +70,17 @@ function surface_velocities(panels :: AbstractMatrix{<:AbstractPanel3D}, φs :: 
 end
 
 vels = surface_velocities(surf_pans.wing, φs, σs)
+vxs, vys = surface_velocities(system)
+@time cls, cps = surface_coefficients(system);
+println("Σᵢ Clᵢ: $(sum(cls))")
 
 ## Plotting
 using Plots
-
 plt_surfs = plot_panels(surf_pans)
 
-plt = Plots.plot(aspect_ratio = 1, zlim = (-0.2, 1.0))
+plt = Plots.plot(aspect_ratio = 1, zlim = (-2.0, 3.0))
 
 [ Plots.plot!(pan, color = :grey) for pan in plt_surfs ] 
 # Plots.scatter!(Tuple.(surf_pts)[:], markersize = 0.1)
+
+##

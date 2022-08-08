@@ -87,15 +87,15 @@ function quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local
 
     # Results from textbook differs from a minus sign
     u = σ / 4π * sum(
-        const_quad_source_u(i, i%4+1, yi, dij, ri) for i = 1:4
+        const_quad_source_u(i, i%4+1, yi, dij, ri) for i=1:4
     )
 
     v = σ / 4π * sum(
-        const_quad_source_v(i, i%4+1, xi, dij, ri) for i = 1:4
+        const_quad_source_v(i, i%4+1, xi, dij, ri) for i=1:4
     )
 
     w = σ / 4π * sum(
-        const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i = 1:4
+        const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4
     )
 
     return SVector(u, v, w)
@@ -149,7 +149,7 @@ function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, loca
 
     return -σ / 4π * (
         sum(const_quad_source_phi_term1(i, i%4+1, x, y, xi, yi, dij, ri) -
-        abs(z) * const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4)
+            abs(z) * const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4)
     )
 end
 
@@ -193,7 +193,7 @@ function quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, loca
     rs = norm.(rvs)
     ds = @SVector [d_ij(i, i%4+1, coord) for i=1:4]
     
-    return μ / 4π * sum(
+    return -μ / 4π * sum(
         ( rvs[i] × rvs[i%4+1] * (rs[i] + rs[i%4+1]) ) / ( (rs[i] * rs[i%4+1]) * (rs[i] * rs[i%4+1] + rvs[i] ⋅ rvs[i%4+1]) + 0.005 * ds[i] ) for i=1:4
     )
 
@@ -237,5 +237,7 @@ function quadrilateral_doublet_potential(μ, local_panel :: AbstractPanel3D, loc
     hi  = @SVector [h_k(i, coord, local_point)  for i=1:4]
     mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
     
-    return μ / 4π * sum(const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4)
+    return -μ / 4π * sum(
+        const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4
+    )
 end
