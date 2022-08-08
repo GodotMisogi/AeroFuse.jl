@@ -1,49 +1,41 @@
 """
     doublet_matrix(panels_1, panels_2)
 
-Create the matrix of doublet potential influence coefficients between pairs of panels_1 and panels_2.
+Create the matrix of doublet potential influence coefficients between pairs of `panels₁` and `panels₂`.
 """
 doublet_matrix(panels_1, panels_2) = [ doublet_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
 
 """
+    doublet_matrix(panels_1, panels_2)
+
+Create the matrix of source potential influence coefficients between pairs of `panels₁` and `panels₂`.
+"""
+source_matrix(panels_1, panels_2) = [ source_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
+
+"""
     kutta_condition(panels)
 
-Create the vector describing Morino's Kutta condition given Panel2Ds.
+Create the vector describing Morino's Kutta condition given `Panel2Ds`.
 """
 kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 2)' -1 ]
 
-function kutta_condition(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes :: AbstractVector{<:WakePanel3D})
-    npanf, npanw = length(panels), length(wakes)
-    return hcat(
-        Matrix(1.0I, npanw, npanw),
-        zeros(npanw, npanf-2*npanw),
-        -Matrix(1.0I, npanw, npanw),
-        -Matrix(1.0I, npanw, npanw)
-    )
-end
+kutta_condition(npanf, npanw) = [I(npanw) zeros(npanw, npanf-2*npanw) -I(npanw) -I(npanw)]
 
 """
     wake_vector(woke_panel :: AbstractPanel2D, panels)
 
-Create the vector of doublet potential influence coefficients from the wake on the panels given the wake panel and the array of Panel2Ds.
+Create the vector of doublet potential influence coefficients from the wake on the panels given the wake panel and the array of `Panel2Ds`.
 """
 wake_vector(woke_panel :: AbstractPanel2D, panels) = doublet_influence.(Ref(woke_panel), panels)
 
 """
     influence_matrix(panels, wake_panel :: AbstractPanel2D)
 
-Assemble the Aerodynamic Influence Coefficient matrix consisting of the doublet matrix, wake vector, Kutta condition given Panel2Ds and the wake panel.
+Assemble the Aerodynamic Influence Coefficient matrix consisting of the doublet matrix, wake vector, Kutta condition given `Panel2Ds` and the wake panel.
 """
 influence_matrix(panels, woke_panel :: AbstractPanel2D) =
     [ doublet_matrix(panels, panels)  wake_vector(woke_panel, panels) ;
         kutta_condition(panels)                      1.               ]
-
-"""
-    source_matrix(panels_1, panels_2)
-
-Create the matrix of source potential influence coefficients between pairs of `panels_1` and `panels_2`.
-"""
-source_matrix(panels_1, panels_2) = [ source_influence(panel_j, panel_i) for (panel_i, panel_j) in product(panels_1, panels_2) ]
 
 """
     source_strengths(panels, freestream)
@@ -70,10 +62,10 @@ end
 
 function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
     panelview = @view permutedims(panels)[:]
-    return vcat(
-        [dot(V∞, pt) for pt in collocation_point.(panelview)], 
-        zeros(length(wakes))
-    )
+    B = source_matrix(panelview, panelview)
+    σ = dot.(Ref(V∞), panel_normal.(panelview))
+
+    return -vcat(B * σ, zeros(length(wakes)))
 end
 
 """
@@ -140,15 +132,24 @@ function solve_linear(panels :: AbstractMatrix{<:AbstractPanel3D}, U, fs, wakes)
 end
 
 function influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
+    # Reshape panel into column vector
     panelview = @view permutedims(panels)[:]
 
-    # Foil panel interaction
-    AIC_ff = doublet_matrix(panelview, panelview)
+    npanf, npanw = length(panels), length(wakes)
 
-    # Wake panel interaction
-    AIC_wf = doublet_matrix(panelview, wakes)
+    AIC = zeros(npanf+npanw, npanf+npanw)
+    AIC_ff = @view AIC[1:npanf,     1:npanf     ]
+    AIC_wf = @view AIC[1:npanf,     npanf+1:end ]
+    AIC_kc = @view AIC[npanf+1:end,     :       ]
 
-    # Kutta condition
-    [       AIC_ff      AIC_wf      ;
-      kutta_condition(panels, wakes)]
+    # Foil-Foil interaction
+    AIC_ff .= doublet_matrix(panelview, panelview)
+
+    # Wake-Foil interaction
+    AIC_wf .= doublet_matrix(panelview, wakes)
+
+    # Kutta Condition
+    AIC_kc .= kutta_condition(npanf, npanw)
+
+    return AIC
 end

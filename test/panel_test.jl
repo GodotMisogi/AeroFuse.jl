@@ -12,15 +12,22 @@ panel = Panel3D(
     Point3D( 1.0,  1.0,  0.0), #1
 )
 
-point = Point3D(0,0, 0)
+panelrhs = Panel3D(
+    Point3D( 1.0,  1.0,  0.0), #1
+    Point3D(-1.0,  1.0,  0.0), #2
+    Point3D(-1.0, -1.0,  0.0), #3
+    Point3D( 1.0, -1.0,  0.0), #4
+)
+
+point = Point3D(0., 0., 10.)
 
 ϵ = 1.0e-5
 pertx = Point3D(ϵ, 0., 0.)
 perty = Point3D(0., ϵ, 0.)
 pertz = Point3D(0., 0., ϵ)
 
-(quadrilateral_source_potential(1, panel, point + pertx) - quadrilateral_source_potential(1, panel, point)) / ϵ
-(quadrilateral_source_potential(1, panel, point + perty) - quadrilateral_source_potential(1, panel, point)) / ϵ
+(quadrilateral_doublet_potential(1, panel, point + pertx) - quadrilateral_doublet_potential(1, panel, point)) / ϵ
+(quadrilateral_doublet_potential(1, panel, point + perty) - quadrilateral_doublet_potential(1, panel, point)) / ϵ
 (quadrilateral_source_potential(1, panel, point + pertz) - quadrilateral_source_potential(1, panel, point)) / ϵ
 
 quadrilateral_source_velocity(1, panel, point)

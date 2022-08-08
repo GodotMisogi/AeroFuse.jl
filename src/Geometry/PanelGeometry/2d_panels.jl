@@ -3,14 +3,13 @@
 #==========================================================================================#
 
 abstract type AbstractPanel2D <: AbstractPanel end
-abstract type AbstractWakePanel2D <: AbstractWakePanel end
 
 struct Panel2D{T <: Real} <: AbstractPanel2D
     p1 :: SVector{2,T}
     p2 :: SVector{2,T}
 end
 
-struct WakePanel2D{T <: Real} <: AbstractWakePanel2D
+struct WakePanel2D{T <: Real} <: AbstractPanel2D
     p1 :: SVector{2,T}
     p2 :: SVector{2,T}
 end

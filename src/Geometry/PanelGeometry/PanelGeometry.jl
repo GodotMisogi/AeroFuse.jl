@@ -19,7 +19,6 @@ import ..MathTools: affine_2D, rotation, inverse_rotation, structtolist, sine_sp
 #==========================================================================================#
 
 abstract type AbstractPanel end
-abstract type AbstractWakePanel <: AbstractPanel end
 
 include("2d_panels.jl")
 include("3d_panels.jl")
