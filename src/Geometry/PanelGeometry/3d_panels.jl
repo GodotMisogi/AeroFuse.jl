@@ -216,8 +216,8 @@ Calculate required transformation from GCS to panel LCS.
 function get_transformation(panel :: AbstractPanel3D)
     o = midpoint(panel)
     n = panel_normal(panel)
-    m = normalize((p3(panel) + p4(panel)) / 2 - o)
-    l = normalize(m × n)
+    l = normalize(p1(panel) - p2(panel))
+    m = normalize(n × l)
 
     return LinearMap([l m n]') ∘ Translation(-o)
 end
@@ -235,5 +235,5 @@ function wake_panel(panels :: AbstractArray{<: AbstractPanel3D}, bound, α, β)
     pt2 = pt1 + Point3D(dx, dy, dz)
     pt3 = pt4 + Point3D(dx, dy, dz)
 
-    return WakePanel3D(pt1, pt2, pt3, pt4)
+    return WakePanel3D(pt2, pt1, pt4, pt3)
 end
