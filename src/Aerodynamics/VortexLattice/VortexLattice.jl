@@ -12,7 +12,7 @@ using LabelledArrays
 #==========================================================================================#
 
 # Math tools
-import ..MathTools: weighted_vector, structtolist
+import ..MathTools: weighted_vector, structtolist, Point3D
 
 # Panel geometry
 import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, panel_normal, p1, p2, p3, p4, average_chord, average_width
@@ -21,7 +21,7 @@ import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, panel_
 import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
 
 # Some tools
-import ..Laplace: AbstractFreestream, Freestream, cartesian_to_freestream, freestream_to_cartesian
+import ..Laplace: AbstractFreestream, Freestream, cartesian_to_freestream, freestream_to_cartesian, body_frame_velocity
 
 import ..AeroMDAO: velocity, solve_system, solve_linear, surface_velocities, surface_coefficients
 

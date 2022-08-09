@@ -16,6 +16,8 @@ import ..NonDimensional: pressure_coefficient
 
 import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, get_transformation, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector, AbstractPanel3D, Panel3D, WakePanel3D, panel_coordinates, midpoint, xs, ys, zs, panel_area
 
+import ..AircraftGeometry: Wing
+
 import ..AeroMDAO: solve_system, surface_velocities, surface_coefficients
 
 include("singularities3D.jl")
@@ -228,11 +230,12 @@ function surface_coefficients(prob :: DoubletSourceSystem)
     cls, cms, cps
 end
 
-function surface_coefficients(prob :: DoubletSourceSystem3D)
+function surface_coefficients(prob :: DoubletSourceSystem3D, wing :: Wing)
     # Panel properties
     ps = prob.surface_panels
     ns = panel_normal.(ps)
     As = panel_area.(ps)
+    A = sum(wing.left.spans .+ wing.left.spans)
     
     # xs   = @views combinedimsview(panel_points(ps)[2:end-1])[1,:]
 
@@ -241,7 +244,7 @@ function surface_coefficients(prob :: DoubletSourceSystem3D)
 
     # Aerodynamic coefficients
     cps  = pressure_coefficient.(prob.Umag, map((x,y)->norm([x,y]), us, vs))
-    cls  = cps .* As .* ns .⋅ Ref([0.,0.,1.])
+    cls  = -cps .* As .* ns .⋅ Ref([0.,0.,1.]) / A
     # cms  = @. -cls * xs * cos(prob.freestream.angle)
 
     cls, cps

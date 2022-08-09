@@ -24,7 +24,7 @@ surf_pans = make_panels(surf_pts)
 # surf_pans_view = @view permutedims(surf_pans)[:]
 
 # Freestream velocity
-α = 5.0
+α = 2.5
 β = 0.0
 Umag = 15.
 fs = Freestream( α, β, zeros(3))
@@ -33,33 +33,10 @@ V∞ = Umag * velocity(fs)
 ##
 prob = solve_system(surf_pans, Umag, fs, 100)
 
-##
-i = 1
-j = 1
-ps = prob.surface_panels
-npancd, npansp = size(ps)
-npanf = npancd * npansp
-φs = permutedims(reshape(prob.singularities[1:npanf], npansp, npancd))
-# l = normalize(p1(ps[i,j]) - p2(ps[i,j]))
-# n = panel_normal(ps[i,j])
-tr = get_transformation(ps[i,j])
-nb1 = tr(collocation_point(ps[i+1,j]))
-nb2 = tr(collocation_point(ps[i,j+1]))
-
-A = Point3D(0., 0., φs[i,j])
-B = Point3D(nb1[1], nb1[2], φs[i+1,j])
-C = Point3D(nb2[1], nb2[2], φs[i,j+1])
-
-N = (B - A) × (C - A)
-
-N[3]/N[1], N[3]/N[2]
-
-
-make_tuple(a, b) = (a, b)
 
 ##
-vxs, vys = surface_velocities(system)
-@time cls, cps = surface_coefficients(system);
+vxs, vys = surface_velocities(prob)
+@time cls, cps = surface_coefficients(prob, wing);
 println("Σᵢ Clᵢ: $(sum(cls))")
 
 ## Plotting
