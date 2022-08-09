@@ -136,8 +136,8 @@ function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, loca
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
     check_panel_status(local_panel, local_point)
 
-    xi = xs(local_panel)
-    yi = ys(local_panel)
+    xi = [local_panel.p1.x; local_panel.p2.x; local_panel.p3.x; local_panel.p4.x ]
+    yi = [local_panel.p1.y; local_panel.p2.y; local_panel.p3.y; local_panel.p4.y ]
 
     x, y, z = local_point.x, local_point.y, local_point.z
 

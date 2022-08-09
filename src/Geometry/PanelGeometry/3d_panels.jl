@@ -114,26 +114,6 @@ Compute the area of a planar quadrilateral 3D panel.
 """
 panel_area(panel :: Panel3D) = 1/2 * norm(normal_vector(panel)) # (norm ∘ cross)(average_chord(panel), average_width(panel))
 
-function panel_area_exact(panel :: AbstractPanel3D)
-    coord = panel_coordinates(panel)
-
-    d_ij(i :: Int64, j :: Int64, local_coordinates) = norm(local_coordinates[j] - local_coordinates[i])
-    d12 = d_ij(1, 2, coord)
-    d23 = d_ij(2, 3, coord)
-    d34 = d_ij(3, 4, coord)
-    d41 = d_ij(4, 1, coord)
-    d13 = d_ij(1, 3, coord)
-
-    s1 = 0.5 * (d12 + d23 + d13)
-    s2 = 0.5 * (d34 + d41 + d13)
-
-    A1 = sqrt(s1 * (s1 - d12) * (s1 - d23) * (s1 - d13))
-    A2 = sqrt(s2 * (s2 - d34) * (s2 - d41) * (s2 - d13))
-
-    return A1 + A2
-end
-
-
 """
     wetted_area(panels :: Array{Panel3D})
 
@@ -161,61 +141,16 @@ end
 # Compute local axis coordinates
 local_coordinate_system(panel :: AbstractPanel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, normal_vector(panel))
 
-# """
-#     transform_panel(panel :: AbstractPanel3D, point :: Point3D) -> panel :: AbstractPanel3D, point :: Point3D
-
-# Transform point and panel from GCS into panel LCS.
-# """
-# function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
-#     # Translate p1 to xy plane
-#     tr1 = Translation(0., 0., -panel.p1.z)
-#     local_panel = tr1(panel)
-#     local_point = tr1(point)
-
-#     # Find normal of panel
-#     n = panel_normal(panel)
-
-#     # Find rotation axis
-#     d = n × SVector(0.,0.,1.)
-
-#     # No rotation if already aligned
-#     if norm(d) <= 1e-7
-#         return local_panel, local_point
-#     end
-
-#     # Find rotation angle
-#     θ = acos(n.z / norm(n))
-#     tr2 = recenter(LinearMap(AngleAxis(θ, d.x, d.y, d.z)), local_panel.p1)
-
-#     local_panel = tr2(local_panel)
-#     local_point = tr2(local_point)
-
-#     # tr = tr1 ∘ tr2
-#     # invtr = inv(tr)
-
-#     return local_panel, local_point
-# end
-
 function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
     T = get_transformation(panel)
     return T(panel), T(point) 
 end
 
-
 """
-    get_transformation(panel :: AbstractPanel3D) -> T :: AffineMap
+    get_transformation(panel :: AbstractPanel3D)
 
-Calculate required transformation from GCS to panel LCS.
+Generate an `AffineMap` to transform a point from global coordinates to an `AbstractPanel3D`'s local coordinate system.
 """
-# function get_transformation(panel :: AbstractPanel3D)
-#     o = midpoint(panel)
-#     n = normalize(normal_vector(panel))
-#     m = normalize((p3(panel) + p4(panel)) / 2 - o)
-#     l = normalize(m × n)
-
-#     return LinearMap([l m n]') ∘ Translation(-o)
-# end
-
 get_transformation(p) = AffineMap(local_coordinate_system(p)', zeros(3))
 
 
@@ -232,4 +167,23 @@ function wake_panel(panels :: DenseArray{<: AbstractPanel3D}, bound, U)
     pt3 = pt4 + Point3D(dr...)
 
     return WakePanel3D(pt1, pt2, pt3, pt4)
+end
+
+function panel_area_exact(panel :: AbstractPanel3D)
+    coord = panel_coordinates(panel)
+
+    d_ij(i :: Int64, j :: Int64, local_coordinates) = norm(local_coordinates[j] - local_coordinates[i])
+    d12 = d_ij(1, 2, coord)
+    d23 = d_ij(2, 3, coord)
+    d34 = d_ij(3, 4, coord)
+    d41 = d_ij(4, 1, coord)
+    d13 = d_ij(1, 3, coord)
+
+    s1 = 0.5 * (d12 + d23 + d13)
+    s2 = 0.5 * (d34 + d41 + d13)
+
+    A1 = sqrt(s1 * (s1 - d12) * (s1 - d23) * (s1 - d13))
+    A2 = sqrt(s2 * (s2 - d34) * (s2 - d41) * (s2 - d13))
+
+    return A1 + A2
 end

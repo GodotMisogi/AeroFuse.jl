@@ -10,7 +10,7 @@ wing = WingSection(
     dihedral  = 0.0, # Dihedral angle (deg)
     sweep     = 10.0, # Sweep angle (deg)
     w_sweep   = 0.25, # Sweep location normalized to chords ∈ [0,1]
-    taper     = 0.4, # Taper ratio
+    taper     = 1.0, # Taper ratio
     root_foil = naca4(0,0,1,2), # Root airfoil
     tip_foil  = naca4(0,0,1,2), # Tip airfoil
     position  = [0.0, 0, 0.0], # Location (m)
@@ -20,11 +20,11 @@ wing = WingSection(
 )
 
 # Meshing
-wing_mesh = WingMesh(wing, [10], 10)
+wing_mesh = WingMesh(wing, [10], 20)
 
 surf_pts  = surface_coordinates(wing_mesh)
 surf_pans = ComponentArray(wing = make_panels(surf_pts))
-
+wake_pans = [ wake_panel(surf_pans.wing[:,i], 10., velocity(fs)) for i in axes(surf_pans.wing, 2) ]
 # surf_pans_view = @view permutedims(surf_pans)[:]
 
 # Freestream velocity
@@ -37,12 +37,15 @@ V∞ = Umag * velocity(fs)
 σs = -dot.(Ref(V∞), AeroMDAO.PanelGeometry.collocation_point.(surf_pans.wing))
 
 ##
-system = solve_system(surf_pans, fs, 1.0e5);
+@time system = solve_system(surf_pans, fs, 1.0e5);
 
 ##
 Nc, Ns = size(surf_pans.wing)
 Nf = Nc * Ns
-φs = permutedims(reshape(system.singularities[1:Nf], Ns,  Nc))
+φs = permutedims(reshape(system.singularities[1:Nf], Ns, Nc))
+# φs[:,1:end÷2] = φs[end:-1:1,1:end÷2]
+
+φs
 
 ##
 function surface_velocities(panels :: AbstractMatrix{<:AbstractPanel3D}, φs :: AbstractMatrix{<:Real}, σs, fs)
@@ -69,18 +72,32 @@ function surface_velocities(panels :: AbstractMatrix{<:AbstractPanel3D}, φs :: 
 
 end
 
-vels = surface_velocities(surf_pans.wing, φs, σs)
-vxs, vys = surface_velocities(system)
+vels = surface_velocities(surf_pans.wing, φs, σs, fs)
+
+##
+vxs, vys = AeroMDAO.DoubletSource.surface_velocities(system)
 @time cls, cps = surface_coefficients(system);
 println("Σᵢ Clᵢ: $(sum(cls))")
 
 ## Plotting
 using Plots
-plt_surfs = plot_panels(surf_pans)
 
-plt = Plots.plot(aspect_ratio = 1, zlim = (-2.0, 3.0))
+plotlyjs()
 
-[ Plots.plot!(pan, color = :grey) for pan in plt_surfs ] 
+plt = Plots.plot(aspect_ratio = 1, zlim = (-0.5, 0.5) .* span(wing_mesh))
+
+map(surf_pans) do pan
+    xyz = combinedimsview(panel_coordinates(pan), (1))
+    Plots.plot!(xyz[:,1], xyz[:,2], xyz[:,3], color = :grey, label = "")
+end
+map(wake_pans) do pan
+    xyz = combinedimsview(panel_coordinates(pan), (1))
+    Plots.plot!(xyz[:,1], xyz[:,2], xyz[:,3], color = :blue, label = "")
+end
 # Plots.scatter!(Tuple.(surf_pts)[:], markersize = 0.1)
+
+plot!()
+
+# savefig(plt)
 
 ##

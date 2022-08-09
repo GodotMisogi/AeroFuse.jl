@@ -19,7 +19,7 @@ Create the vector describing Morino's Kutta condition given `Panel2Ds`.
 """
 kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 2)' -1 ]
 
-kutta_condition(npanf, npanw) = [I(npanw) zeros(npanw, npanf-2*npanw) -I(npanw) -I(npanw)]
+kutta_condition(Nf, Nw) = Matrix([ I(Nw) zeros(Nw, Nf-2*Nw) -I(Nw) -I(Nw) ])
 
 """
     wake_vector(woke_panel :: AbstractPanel2D, panels)
@@ -60,12 +60,12 @@ function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<
     [ -source_matrix(panels, source_panels) * source_strengths(source_panels, u); 0 ]
 end
 
-function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
+function boundary_vector(panels :: AbstractArray{<: AbstractPanel3D}, wakes, V∞)
     panelview = @view permutedims(panels)[:]
     B = source_matrix(panelview, panelview)
-    σ = dot.(Ref(V∞), panel_normal.(panelview))
+    σ = source_strengths(panelview, V∞)
 
-    return -vcat(B * σ, zeros(length(wakes)))
+    return [ -B * σ; zeros(length(wakes)) ]
 end
 
 """
@@ -142,12 +142,35 @@ function influence_matrix(panels :: DenseArray{<:AbstractPanel3D}, wakes)
     panelview = @view permutedims(panels)[:]
 
     # Foil-Foil interactions
-    AIC_ff = permutedims(doublet_matrix(panels, panels))
+    AIC_ff = doublet_matrix(panelview, panelview)
 
     # Wake-Foil interactions
     AIC_wf = doublet_matrix(panelview, wakes)
 
     # Kutta condition
     [   AIC_ff     AIC_wf  ;
-      kutta_condition(panels, wakes)]
+      kutta_condition(length(panels), length(wakes)) ]
 end
+
+# function influence_matrix!(AIC, sw_panels, wakes)
+
+#     # Foil-foil interaction
+#     # for ind in CartesianIndices(sw_panels)
+#     #     # i is spanwise index
+#     #     i, j = ind.I
+#     #     AIC[i,j] = doublet_influence(sw_panels[i], sw_panels[j])
+#     # end
+
+#     Ns, Nc = size(sw_panelss)
+
+#     # Wake-foil interaction
+#     for i in axes(sw_panels, 1)
+#         for j in axes(sw_panels, 2)
+#             AIC[i,j] = doublet_influence(sw_panels[i], sw_panels[j])
+#         end
+#         for j in eachindex(wakes)
+#             AIC[i,Nc + j] = doublet_influence(sw_panels[i], wakes[j])
+#         end
+#     end
+
+# end
