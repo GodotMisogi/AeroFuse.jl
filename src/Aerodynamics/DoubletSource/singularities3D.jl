@@ -56,10 +56,9 @@ function check_panel_status(panel :: AbstractPanel3D, point :: Point3D, transfor
 	if prod(abs.(zs(panel)) .<= transformation_error) != true
 		@warn "Panel is not in local coordinate system! Check AIC matrix assembly!"
 		@info "Transform to local coordinate system now."
-		return transform_panel(panel, point)
-	else
-		return panel, point
-	end
+		panel, point = transform_panel(panel, point)
+    end
+    return panel, point
 end
 
 """
@@ -137,10 +136,10 @@ const_quad_source_phi_term2(i::Int64, j::Int64, z, mij, ei, hi, ri) = atan( (mij
 Compute the flow potential in local panel (x̂,ŷ,ẑ) direction of a constant source.
 """
 function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, local_point:: Point3D)
-    coord = panel_coordinates(local_panel)
-
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
     local_panel, local_point = check_panel_status(local_panel, local_point)
+    
+    coord = panel_coordinates(local_panel)
 
     xi = xs(local_panel)
     yi = ys(local_panel)
@@ -158,31 +157,6 @@ function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, loca
             abs(z) * const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4)
     )
 end
-
-
-# """
-#     const_quad_doublet_den(i, j, ri, xi, yi, x, y, z)
-
-# Helper function: denominator for quadrilateral_doublet().
-# """
-# const_quad_doublet_den(i, j, ri, xi, yi, x, y, z) = ri[i] * ri[j] * ( ri[i] * ri[j] - ( (x - xi[i]) * (x - xi[j]) + (y - yi[i]) * (y - yi[j]) + z^2 ) )
-
-
-# """
-#     const_quad_doublet_num_u(i, j, ri, yi, z)
-
-# Helper function: numerator of û for quadrilateral_doublet().
-# """
-# const_quad_doublet_num(i, j, ri, yi, z) = z * (yi[i] - yi[j]) * (ri[i] + ri[j])
-
-
-# """
-#     const_quad_doublet_num_u(i, j, ri, yi, z)
-
-# Helper function: numerator of ŵ for quadrilateral_doublet().
-# """
-# const_quad_doublet_num_w(i, j, ri, xi, yi, x, y) = (ri[i] + ri[j]) * ((x - xi[j]) * (y - yi[i]) - (x - xi[i]) * (y - yi[j]))
-
 
 """
     quadrilateral_doublet_velocity(σ, local_panel :: AbstractPanel, local_point)
@@ -231,10 +205,10 @@ end
 Compute the flow potential in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel.
 """
 function quadrilateral_doublet_potential(μ, local_panel :: AbstractPanel3D, local_point:: Point3D)
-    coord = panel_coordinates(local_panel)
-
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
     local_panel, local_point = check_panel_status(local_panel, local_point)
+    
+    coord = panel_coordinates(local_panel)
 
     z = local_point.z
 
