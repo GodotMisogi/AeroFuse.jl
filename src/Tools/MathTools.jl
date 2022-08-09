@@ -106,9 +106,9 @@ adj3(xs) = @views zip(xs[1:end-2,:], xs[2:end-1,:], xs[3:end,:])
 # Central differencing schema for pairs except at endpoints
 function midpair_map(f :: H, xs; dims :: Int64) where {H}
     if dims == 1
-        @views  [f.(xs[1,:], xs[2,:])';     f.(xs[1:end-2,:], xs[3:end,:]) / 2;     f.(xs[end-1,:], xs[end,:])' ]
+        @views  [permutedims(f.(xs[1,:], xs[2,:]));     f.(xs[1:end-2,:], xs[3:end,:]);     permutedims(f.(xs[end-1,:], xs[end,:])) ]
     elseif dims == 2
-        @views  [f.(xs[:,1], xs[:,2])       f.(xs[:,1:end-2], xs[:,3:end]) / 2      f.(xs[:,end-1], xs[:,end])  ]
+        @views  [f.(xs[:,1], xs[:,2])       f.(xs[:,1:end-2], xs[:,3:end])      f.(xs[:,end-1], xs[:,end])  ]
     else
         ArgumentError("Array with order > 2 is currently not supported!")
     end

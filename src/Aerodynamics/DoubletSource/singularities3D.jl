@@ -53,7 +53,7 @@ h_k(k :: Int64, local_coordinates, local_point) = (local_point.x - local_coordin
 
 """
 function check_panel_status(panel :: AbstractPanel3D, point :: Point3D, transformation_error = 1e-7)
-	if prod(zs(panel) .>= transformation_error)
+	if prod(abs.(zs(panel)) .<= transformation_error) != true
 		@warn "Panel is not in local coordinate system! Check AIC matrix assembly!"
 		@info "Transform to local coordinate system now."
 		return transform_panel(panel, point)
@@ -78,12 +78,12 @@ function quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local
 
 	const_quad_source_u(i, j, yi, dij, ri) = (yi[j] -yi[i]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
 	const_quad_source_v(i, j, xi, dij, ri) = (xi[i] -xi[j]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
-
-    coord = panel_coordinates(local_panel)
-
+    
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
     local_panel, local_point = check_panel_status(local_panel, local_point)
+
     z = local_point.z
+    coord = panel_coordinates(local_panel)
 
 	xi = xs(local_panel)
     yi = ys(local_panel)
@@ -116,7 +116,7 @@ end
 Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant source at FARFIELD.
 """
 function quadrilateral_source_velocity_farfield(σ, local_panel :: AbstractPanel3D, local_point :: Point3D)
-    check_panel_status(local_panel, local_point)
+    local_panel, local_point = check_panel_status(local_panel, local_point)
 
     A = panel_area(local_panel)
     centroid = midpoint(local_panel) # It is better to use centroid
@@ -140,7 +140,7 @@ function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, loca
     coord = panel_coordinates(local_panel)
 
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
-    check_panel_status(local_panel, local_point)
+    local_panel, local_point = check_panel_status(local_panel, local_point)
 
     xi = xs(local_panel)
     yi = ys(local_panel)
@@ -191,7 +191,7 @@ Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction 
 """
 function quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, local_point :: Point3D)
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
-    check_panel_status(local_panel, local_point)
+    local_panel, local_point = check_panel_status(local_panel, local_point)
 
     coord = panel_coordinates(local_panel)
 
@@ -211,7 +211,7 @@ end
 Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel at FARFIELD.
 """
 function quadrilateral_doublet_velocity_farfield(μ, local_panel :: AbstractPanel3D, local_point:: Point3D)
-    check_panel_status(local_panel, local_point)
+    local_panel, local_point = check_panel_status(local_panel, local_point)
 
     A = panel_area(local_panel)
     centroid = midpoint(local_panel) # It is better to use centroid
@@ -234,7 +234,7 @@ function quadrilateral_doublet_potential(μ, local_panel :: AbstractPanel3D, loc
     coord = panel_coordinates(local_panel)
 
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
-    check_panel_status(local_panel, local_point)
+    local_panel, local_point = check_panel_status(local_panel, local_point)
 
     z = local_point.z
 
