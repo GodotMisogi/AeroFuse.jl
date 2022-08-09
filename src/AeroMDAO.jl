@@ -82,8 +82,6 @@ import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, Abs
 
 export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, transform, normal_vector, midpoint, panel_location, tangent_vector, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels, local_coordinate_system, trailing_edge_info
 
-export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, WakePanel3D, p1, p2, p3, p4, xs, ys, zs, midpoint, panel_location, panel_tangent, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels, local_coordinate_system, panel_coordinates, collocation_point
-
 ## Aircraft geometry
 #==========================================================================================#
 

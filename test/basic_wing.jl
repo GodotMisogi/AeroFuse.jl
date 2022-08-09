@@ -28,7 +28,7 @@ wake_pans = [ wake_panel(surf_pans.wing[:,i], 10., velocity(fs)) for i in axes(s
 # surf_pans_view = @view permutedims(surf_pans)[:]
 
 # Freestream velocity
-α = 0.0
+α = 5
 β = 0.0
 Umag = 1.
 fs = Freestream( α, β, zeros(3))
