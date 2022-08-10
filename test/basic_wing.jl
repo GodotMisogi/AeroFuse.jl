@@ -23,24 +23,29 @@ wing = WingSection(
 wing_mesh = WingMesh(wing, [10], 20)
 
 surf_pts  = surface_coordinates(wing_mesh)
-surf_pans = ComponentArray(wing = make_panels(surf_pts))
-wake_pans = [ wake_panel(surf_pans.wing[:,i], 10., velocity(fs)) for i in axes(surf_pans.wing, 2) ]
+surf_pans = 
+    # ComponentArray(
+        # wing = 
+        make_panels(surf_pts)
+    # )
 # surf_pans_view = @view permutedims(surf_pans)[:]
 
 # Freestream velocity
-α = 5
+α = 5.0
 β = 0.0
 Umag = 1.
 fs = Freestream( α, β, zeros(3))
 V∞ = Umag * velocity(fs)
 
-σs = -dot.(Ref(V∞), AeroMDAO.PanelGeometry.collocation_point.(surf_pans.wing))
+wake_pans = [ wake_panel(surf_pans[:,i], 10., velocity(fs)) for i in axes(surf_pans, 2) ]
+
+σs = -dot.(Ref(V∞), AeroMDAO.PanelGeometry.collocation_point.(surf_pans))
 
 ##
 @time system = solve_system(surf_pans, fs, 1.0e5);
 
 ##
-Nc, Ns = size(surf_pans.wing)
+Nc, Ns = size(surf_pans)
 Nf = Nc * Ns
 φs = permutedims(reshape(system.singularities[1:Nf], Ns, Nc))
 # φs[:,1:end÷2] = φs[end:-1:1,1:end÷2]
@@ -48,7 +53,7 @@ Nf = Nc * Ns
 φs
 
 ##
-function surface_velocities(panels :: AbstractMatrix{<:AbstractPanel3D}, φs :: AbstractMatrix{<:Real}, σs, fs)
+function surface_velocities(panels, φs, σs, fs)
     Q = velocity(fs)
     map(CartesianIndices(panels[1:end-1,1:end-1])) do ind
         i, j = ind.I
@@ -60,23 +65,13 @@ function surface_velocities(panels :: AbstractMatrix{<:AbstractPanel3D}, φs :: 
 
         Q + SVector(dφ_ds, dφ_dl, dφ_dn)
     end
-    # Δrx = @views distance.(panels[1:end-1,:], panels[2:end,:])
-    # Δφx = @views φs[1:end-1,:] .- φs[2:end,:]
-
-    # vxs = Δφx ./ Δrx
-
-    # Δry = @views @. distance(panels[:,1:end-1]) - collocation_point(panels[:,2:end])
-    # Δφx = @views φs[:,1:end-1] .- φs[:,2:end]
-
-
-
 end
 
-vels = surface_velocities(surf_pans.wing, φs, σs, fs)
+vels = surface_velocities(surf_pans, φs, σs, fs)
 
 ##
-vxs, vys = AeroMDAO.DoubletSource.surface_velocities(system)
-@time cls, cps = surface_coefficients(system);
+vs = AeroMDAO.DoubletSource.surface_velocities(system)
+@time cls, cps = surface_coefficients(system, projected_area(wing_mesh));
 println("Σᵢ Clᵢ: $(sum(cls))")
 
 ## Plotting

@@ -68,16 +68,8 @@ end
     Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant source.
 """
 function quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local_point :: Point3D)
-    # A panel of type `Panel3D` has 4 points of type `SVector{3, Any}` whose coordinates are in the format of
-    # [
-    #     [x1 y1 0]
-    #     [x2 y2 0]
-    #     [x3 y3 0]
-    #     [x4 y4 0]
-    # ]
-
-	const_quad_source_u(i, j, yi, dij, ri) = (yi[j] -yi[i]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
-	const_quad_source_v(i, j, xi, dij, ri) = (xi[i] -xi[j]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
+    const_quad_source_u(i, j, yi, dij, ri) = (yi[j] -yi[i]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
+    const_quad_source_v(i, j, xi, dij, ri) = (xi[i] -xi[j]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
     
     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
     local_panel, local_point = check_panel_status(local_panel, local_point)
@@ -94,19 +86,15 @@ function quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local
     mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
 
     # Results from textbook differs from a minus sign
-    u = σ / 4π * sum(
-        const_quad_source_u(i, i%4+1, yi, dij, ri) for i=1:4
-    )
+    vel = σ / 4π * sum(1:4) do i 
+        SVector(
+            const_quad_source_u(i, i%4+1, yi, dij, ri),
+            const_quad_source_v(i, i%4+1, xi, dij, ri),
+            const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri)
+        )
+    end
 
-    v = σ / 4π * sum(
-        const_quad_source_v(i, i%4+1, xi, dij, ri) for i=1:4
-    )
-
-    w = σ / 4π * sum(
-        const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4
-    )
-
-    return SVector(u, v, w)
+    return vel
 end
 
 
@@ -155,9 +143,10 @@ function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, loca
     dij = @SVector [d_ij(i, i%4+1, coord)       for i = 1:4]
     mij = @SVector [m_ij(i, i%4+1, coord)       for i = 1:4]
 
-    return -σ / 4π * (
-        sum(const_quad_source_phi_term1(i, i%4+1, x, y, xi, yi, dij, ri) -
-            abs(z) * const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4)
+    return -σ / 4π * (sum(
+        const_quad_source_phi_term1(i, i%4+1, x, y, xi, yi, dij, ri) -
+        abs(z) * const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) 
+        for i=1:4)
     )
 end
 

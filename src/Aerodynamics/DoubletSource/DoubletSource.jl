@@ -14,7 +14,7 @@ import ..Laplace: Uniform2D, magnitude, angle, velocity, Freestream
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, AbstractPanel3D, Panel2D, WakePanel2D, Panel3D, WakePanel3D, panel_coordinates, transform_panel, affine_2D, panel_area, panel_length, panel_angle, tangent_vector, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector, collocation_point
+import ..PanelGeometry: AbstractPanel2D, AbstractPanel3D, Panel2D, WakePanel2D, Panel3D, WakePanel3D, panel_coordinates, transform_panel, affine_2D, panel_area, panel_length, panel_angle, tangent_vector, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector, collocation_point, get_transformation
 
 import ..AeroMDAO: solve_system, surface_velocities, surface_coefficients
 
@@ -156,7 +156,7 @@ function solve_system(panels :: AbstractArray{<:AbstractPanel2D}, uni :: Uniform
 end
  
 function solve_system(surf_pans :: DenseArray{<:AbstractPanel3D}, fs :: Freestream, wake_length)
-    wake_pans = [ wake_panel(surf_pans.wing[:,i], wake_length, velocity(fs)) for i in axes(surf_pans.wing, 2) ]
+    wake_pans = [ wake_panel(surf_pans[:,i], wake_length, velocity(fs)) for i in axes(surf_pans, 2) ]
     φs, AIC, boco = solve_linear(surf_pans, fs, wake_pans)
     return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs)
 end
@@ -185,8 +185,8 @@ end
     φxpair = midpair_map(make_tuple, φs; dims=1)
     φypair = midpair_map(make_tuple, φs; dims=2)
 
-    vxs, vys = zeros(npancd, npansp), zeros(npancd, npansp)  
-    V∞ = prob.Umag * velocity(prob.freestream)
+    vs = zeros(npancd, npansp, 3)
+    V∞ = velocity(prob.freestream)
 
     for i=1:npancd
         for j=1:npansp
@@ -201,12 +201,13 @@ end
             vyt = (φnby1 - φnby2) / norm(nby1.y - nby2.y, nby1.x - nby2.x)
             vy = -(vyt - vx * (nby1.x - nby2.x)) / (nby1.y - nby2.y)
 
-            vxs[i,j] = vx + tr(V∞).x
-            vys[i,j] = vy + tr(V∞).y
+            vs[i,j,1] = vx + tr(V∞).x
+            vs[i,j,2] = vy + tr(V∞).y
+            vs[i,j,3] = dot(V∞, normal_vector(ps[i,j]))
         end
     end
 
-    return vxs, vys
+    return vs
 end
 
 function surface_coefficients(prob :: DoubletSourceSystem)
@@ -227,12 +228,11 @@ function surface_coefficients(prob :: DoubletSourceSystem)
     cls, cms, cps
 end
 
-function surface_coefficients(prob :: DoubletSourceSystem3D, wing :: Wing)
+function surface_coefficients(prob :: DoubletSourceSystem3D, A)
     # Panel properties
     ps = prob.surface_panels
-    ns = panel_normal.(ps)
+    ns = normal_vector.(ps)
     As = panel_area.(ps)
-    A = sum(wing.left.spans .+ wing.left.spans)
     
     # xs   = @views combinedimsview(panel_points(ps)[2:end-1])[1,:]
 
@@ -240,7 +240,7 @@ function surface_coefficients(prob :: DoubletSourceSystem3D, wing :: Wing)
     us, vs = surface_velocities(prob)
 
     # Aerodynamic coefficients
-    cps  = pressure_coefficient.(prob.Umag, map((x,y)->norm([x,y]), us, vs))
+    cps  = pressure_coefficient.(1., map((x,y)->norm([x,y]), us, vs))
     cls  = -cps .* As .* ns .⋅ Ref([0.,0.,1.]) / A
     # cms  = @. -cls * xs * cos(prob.freestream.angle)
 

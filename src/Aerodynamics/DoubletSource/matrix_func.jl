@@ -161,7 +161,7 @@ end
 #     #     AIC[i,j] = doublet_influence(sw_panels[i], sw_panels[j])
 #     # end
 
-#     Ns, Nc = size(sw_panelss)
+#     Ns, Nc = size(sw_panels)
 
 #     # Wake-foil interaction
 #     for i in axes(sw_panels, 1)
