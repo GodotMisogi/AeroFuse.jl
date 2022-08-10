@@ -208,23 +208,23 @@ end
 
 Compute the flow potential in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel.
 """
-# function quadrilateral_doublet_potential(μ, panel :: AbstractPanel3D, point:: Point3D)
-#     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
-#     panel, point = check_panel_status(panel, point)
+function quadrilateral_doublet_potential(μ, panel :: AbstractPanel3D, point:: Point3D)
+    # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
+    panel, point = check_panel_status(panel, point)
     
-#     coord = panel_coordinates(panel)
+    coord = panel_coordinates(panel)
 
-#     z = point.z
+    z = point.z
 
-#     ri  = @SVector [r_k(i, coord, point)  for i=1:4]
-#     ei  = @SVector [e_k(i, coord, point)  for i=1:4]
-#     hi  = @SVector [h_k(i, coord, point)  for i=1:4]
-#     mij = @SVector [m_ij(i, i%4+1, coord) for i=1:4]
+    ri  = @SVector [r_k(i, coord, point)  for i=1:4]
+    ei  = @SVector [e_k(i, coord, point)  for i=1:4]
+    hi  = @SVector [h_k(i, coord, point)  for i=1:4]
+    mij = @SVector [m_ij(i, i%4+1, coord) for i=1:4]
     
-#     return -μ / 4π * sum(
-#         const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4
-#     )
-# end
+    return -μ / 4π * sum(
+        const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4
+    )
+end
 
 function quadrilateral_doublet_potential(panel :: AbstractPanel3D, point:: Point3D)    
     coord = panel_coordinates(panel)
@@ -245,11 +245,12 @@ function quadrilateral_doublet_potential(panel :: AbstractPanel3D, point:: Point
         bl = bv ⋅ l;    bm = bv ⋅ m
         dl = dv ⋅ l;    dm = dv ⋅ m
 
-        A = dl * (am^2 + gn^2) - al * am * dm
-        B = dl * (bm^2 + gn^2) - bl * bm * dm
+        AI = n ⋅ (dv × av)
+        PA = gn^2 * dl + AI * am
+        PB = gn^2 * dl + AI * bm
 
-        NUM = dm * gn * (bs * A - as * B)
-        DEN = A * B + gn^2 * as * bs * dm^2
+        NUM = dm * gn * (bs * PA - as * PB)
+        DEN = PA * PB + gn^2 * as * bs * dm^2   
 
         atan(NUM/DEN)
     end
