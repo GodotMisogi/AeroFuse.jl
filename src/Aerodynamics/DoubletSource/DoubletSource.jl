@@ -42,7 +42,7 @@ end
 
 function doublet_influence(panel_j :: AbstractPanel3D, panel_i :: AbstractPanel3D)
     panel, point = transform_panel(panel_j, panel_i)
-    ifelse(panel_i == panel_j, 0.5, quadrilateral_doublet_potential(1., panel, point))
+    ifelse(panel_i == panel_j, 0.5, quadrilateral_doublet_potential(panel, point))
 end
 
 function source_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D)

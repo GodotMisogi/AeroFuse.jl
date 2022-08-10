@@ -24,7 +24,7 @@ surf_pans = make_panels(surf_pts)
 # surf_pans_view = @view permutedims(surf_pans)[:]
 
 # Freestream velocity
-α = 5
+α = 0
 β = 0.0
 Umag = 15.
 fs = Freestream( α, β, zeros(3))
@@ -32,6 +32,18 @@ V∞ = Umag * velocity(fs)
 
 ##
 prob = solve_system(surf_pans, Umag, fs, 1)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ##
