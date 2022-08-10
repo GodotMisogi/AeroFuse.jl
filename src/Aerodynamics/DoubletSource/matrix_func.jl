@@ -60,14 +60,6 @@ function boundary_vector(panels :: Vector{<: AbstractPanel2D}, wakes :: Vector{<
     [ - source_matrix(panels, source_panels) * source_strengths(source_panels, u); 0 ]
 end
 
-function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
-    panelview = @view permutedims(panels)[:]
-    B = source_matrix(panelview, panelview)
-    σ = dot.(Ref(V∞), panel_normal.(panelview))
-
-    return -vcat(B * σ, zeros(length(wakes)))
-end
-
 """
     solve_linear(panels, u, sources, bound)
 
@@ -151,5 +143,48 @@ function influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
     # Kutta Condition
     AIC_kc .= kutta_condition(npanf, npanw)
 
+    AIC[ abs.(AIC) .<= 1e-15] .= 0.0
+
     return AIC
 end
+
+function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
+    panelview = @view permutedims(panels)[:]
+    B = source_matrix(panelview, panelview)
+    σ = dot.(Ref(V∞), panel_normal.(panelview))
+
+    return -vcat(B * σ, zeros(length(wakes)))
+end
+
+# ==========================
+#   Needs to be optimised
+# ==========================
+# function influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
+#     # Reshape panel into column vector
+#     panelview = @view permutedims(panels)[:]
+#     allpans = [panelview; wakes]
+
+#     npanf, npanw = length(panels), length(wakes)
+
+#     AIC = zeros(npanf+npanw, npanf+npanw)
+#     AIC_wf = @view AIC[1:npanf, :]
+#     AIC_ku = @view AIC[npanf+1:end, :]
+
+#     for k=1:npanf+npanw
+#         panelK = allpans[k]
+#         tr = get_transformation(panelK)
+#         for i=1:npanf
+#             panelI = allpans[i]
+#             panel, point = tr(panelK), tr(collocation_point(panelI))
+#             AIC_wf[i,k] = ifelse(panelK == panelI, 0.5, quadrilateral_doublet_potential(1, panel, point))
+#         end
+#     end
+
+#     for i=1:npanw
+#         AIC_ku[i, i] = 1
+#         AIC_ku[i, i+npanf-npanw] = -1
+#         AIC_ku[i, i+npanf] = -1
+#     end
+
+#     return AIC
+# end

@@ -1,3 +1,6 @@
+# =============================
+#       Helper Functions
+# =============================
 """
     d_ij(i :: Int64, j :: Int64, local_coordinates)
 
@@ -50,7 +53,8 @@ h_k(k :: Int64, local_coordinates, local_point) = (local_point.x - local_coordin
 
 
 """
-
+    check_panel_status(panel :: AbstractPanel3D, point :: Point3D, transformation_error = 1e-7)
+Check whether panel is in local coordinates. If not, generate a warning and transform it.
 """
 function check_panel_status(panel :: AbstractPanel3D, point :: Point3D, transformation_error = 1e-7)
 	if prod(abs.(zs(panel)) .<= transformation_error) != true
@@ -204,20 +208,70 @@ end
 
 Compute the flow potential in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel.
 """
-function quadrilateral_doublet_potential(μ, local_panel :: AbstractPanel3D, local_point:: Point3D)
-    # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
-    local_panel, local_point = check_panel_status(local_panel, local_point)
+# function quadrilateral_doublet_potential(μ, panel :: AbstractPanel3D, point:: Point3D)
+#     # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
+#     panel, point = check_panel_status(panel, point)
     
-    coord = panel_coordinates(local_panel)
+#     coord = panel_coordinates(panel)
 
-    z = local_point.z
+#     z = point.z
 
-    ri  = @SVector [r_k(i, coord, local_point)  for i=1:4]
-    ei  = @SVector [e_k(i, coord, local_point)  for i=1:4]
-    hi  = @SVector [h_k(i, coord, local_point)  for i=1:4]
-    mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
+#     ri  = @SVector [r_k(i, coord, point)  for i=1:4]
+#     ei  = @SVector [e_k(i, coord, point)  for i=1:4]
+#     hi  = @SVector [h_k(i, coord, point)  for i=1:4]
+#     mij = @SVector [m_ij(i, i%4+1, coord) for i=1:4]
     
-    return -μ / 4π * sum(
-        const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4
-    )
+#     return -μ / 4π * sum(
+#         const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4
+#     )
+# end
+
+function quadrilateral_doublet_potential(panel :: AbstractPanel3D, point:: Point3D)    
+    coord = panel_coordinates(panel)
+
+    l = normalize(p1(panel) - p2(panel))
+    n = panel_normal(panel)
+    m = normalize(n × l)
+
+    g = point - midpoint(panel)
+    gs = norm(g)
+    gn = g ⋅ n
+
+    return 1.0 / 4π * sum(1:4) do i
+        av = point - coord[i]     ;   as = norm(av)
+        bv = point - coord[i%4+1] ;   bs = norm(bv)
+        dv = coord[i%4+1] - coord[i]    ;   ds = norm(dv)
+        al = av ⋅ l;    am = av ⋅ m
+        bl = bv ⋅ l;    bm = bv ⋅ m
+        dl = dv ⋅ l;    dm = dv ⋅ m
+
+        A = dl * (am^2 + gn^2) - al * am * dm
+        B = dl * (bm^2 + gn^2) - bl * bm * dm
+
+        NUM = dm * gn * (bs * A - as * B)
+        DEN = A * B + gn^2 * as * bs * dm^2
+
+        atan(NUM/DEN)
+    end
+end
+
+function quadrilateral_doublet_velocity(panel :: AbstractPanel3D, point :: Point3D)
+    function qdve(r,rs,re)
+        r1 = rs - r    
+        r2 = re - r
+        r0 = r1 - r2
+    
+        c = r1 × r2
+        c2 = c ⋅ c
+        
+        q = c / c2 * dot(r0, normalize(r1)-normalize(r2)) / 4π
+        
+        q[isnan.(q)] .= 0
+        return q
+    end
+
+    qdve(point, p4(panel), p3(panel)) +
+    qdve(point, p3(panel), p2(panel)) +
+    qdve(point, p2(panel), p1(panel)) +
+    qdve(point, p1(panel), p4(panel))
 end

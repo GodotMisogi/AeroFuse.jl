@@ -14,7 +14,7 @@ import ..Laplace: Uniform2D, magnitude, angle, velocity, Freestream
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, transform_panel, get_transformation, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector, AbstractPanel3D, Panel3D, WakePanel3D, panel_coordinates, midpoint, xs, ys, zs, panel_area
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, p3, p4, transform_panel, get_transformation, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector, AbstractPanel3D, Panel3D, WakePanel3D, panel_coordinates, midpoint, xs, ys, zs, panel_area
 
 import ..AircraftGeometry: Wing
 
@@ -44,7 +44,7 @@ end
 
 function doublet_influence(panel_j :: AbstractPanel3D, panel_i :: AbstractPanel3D)
     panel, point = transform_panel(panel_j, panel_i)
-    ifelse(panel_i == panel_j, 0.5, quadrilateral_doublet_potential(1., panel, point))
+    ifelse(panel_i == panel_j, 0.5, quadrilateral_doublet_potential(panel, point))
 end
 
 function source_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D)
