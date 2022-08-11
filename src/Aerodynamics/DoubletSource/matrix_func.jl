@@ -19,8 +19,6 @@ Create the vector describing Morino's Kutta condition given `Panel2Ds`.
 """
 kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 2)' -1 ]
 
-kutta_condition(npanf, npanw) = [I(npanw) zeros(npanw, npanf-2*npanw) -I(npanw) I(npanw)]
-
 """
     wake_vector(woke_panel :: AbstractPanel2D, panels)
 
@@ -114,6 +112,12 @@ function solve_linear(panels :: AbstractArray{<:AbstractPanel2D}, u, wakes)
     AIC \ boco, AIC, boco
 end
 
+# ==========================
+#      3D Wake Version
+# ==========================
+
+kutta_condition(npanf, npanw) = [I(npanw) zeros(npanw, npanf-2*npanw) -I(npanw) -I(npanw)]
+
 function solve_linear(panels :: AbstractMatrix{<:AbstractPanel3D}, U, fs, wakes)
     V∞ = U * velocity(fs)
 
@@ -151,7 +155,7 @@ function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V�
     B = source_matrix(panelview, panelview)
     σ = dot.(Ref(V∞), panel_normal.(panelview))
 
-    return -vcat(B * σ, zeros(length(wakes)))
+    return -[B * σ, zeros(length(wakes))]
 end
 
 # ==========================
@@ -189,20 +193,45 @@ end
 
 doublet_velocity_matrix(panels_1, panels_2) = [ quadrilateral_doublet_velocity(panel_j, collocation_point(panel_i)) for panel_i in panels_1, panel_j in panels_2 ]
 
-function velocity_influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
-    # Reshape panel into column vector
-    ps = @view permutedims(panels)[:]
-    allps = [ps; wakes]
-
-    npanf, npanw = length(panels), length(wakes)
-
-    return [doublet_velocity_matrix(ps, allps) .⋅ panel_normal.(ps) ;
-                        kutta_condition(npanf, npanw)               ]
+function kutta_condition!(AIC_ku, npanf, npanw)
+    AIC_ku[ : ,     2       : npanw+1] .=  I(npanw)
+    AIC_ku[ : , npanf-npanw : npanf-1] .= -I(npanw)
+    AIC_ku[ : , end-npanw+1 : end    ] .= -I(npanw)
 end
 
-function velocity_boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
-    ps = @view permutedims(panels)[:]
-    return  [-dot.(Ref(V∞), panel_normal.(ps)); zeros(length(wakes))]
+@views function velocity_influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
+    # Reshape panel into column vector
+    ps = permutedims(panels)[:]
+    allps = [ps; wakes]
+    npanf, npanw = length(panels), length(wakes)
+
+    # # ------------ Resulted AIC is singular ------------
+    # AIC = zeros(npanf+npanw, npanf+npanw)
+    # AIC_wf = AIC[1:npanf, :]
+    # AIC_ku = AIC[npanf+1:end, :]
+
+    # AIC_wf .= doublet_velocity_matrix(ps, allps) .⋅ panel_normal.(ps)
+    # kutta_condition!(AIC_ku, npanf, npanw)
+    # # ------------ Resulted AIC is singular ------------
+
+    AIC = zeros(npanf+npanw+1, npanf+npanw)
+    AIC[1:npanf,:] .= doublet_velocity_matrix(ps, allps) .⋅ panel_normal.(ps)
+    kutta_condition!(AIC[npanf+1:end-1,:], npanf, npanw)
+    AIC[end,1:npanf] .= 1
+
+    return AIC
+end
+
+@views function velocity_boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
+    ps = permutedims(panels)[:]
+    # # ------------------------ Resulted BV is singular ------------------------
+    # [-dot.(Ref(V∞), panel_normal.(ps)); zeros(length(wakes))]
+    # # ------------------------ Resulted BV is singular ------------------------
+    npanf, npanw = length(panels), length(wakes)
+    bv = zeros(npanw + npanf + 1)
+    bv[1:npanf] .= -dot.(Ref(V∞), panel_normal.(ps))
+    bv[npanf+1:end] .= 0
+    return  bv
 end
 
 function solve_linear_neumann(panels :: AbstractMatrix{<:AbstractPanel3D}, U, fs, wakes)
@@ -210,5 +239,6 @@ function solve_linear_neumann(panels :: AbstractMatrix{<:AbstractPanel3D}, U, fs
 
     AIC = velocity_influence_matrix(panels, wakes)
     boco = velocity_boundary_vector(panels, wakes, V∞)
-    return AIC \ boco, AIC, boco
+    φ = (AIC' * AIC) \ (AIC' * boco)    # solve least square problem by (A' * A) \ (A' * B)
+    return φ, AIC, boco
 end

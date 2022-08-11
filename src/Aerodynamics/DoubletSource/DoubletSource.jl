@@ -159,13 +159,13 @@ function solve_system(panels :: AbstractArray{<:AbstractPanel2D}, uni :: Uniform
 end
 
 function solve_system(surf_pans :: AbstractMatrix{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
-	wake_pans = wake_panel.(eachcol(surf_pans), wake_length, fs.alpha, fs.beta)
+	wake_pans = wake_panel.(eachcol(surf_pans[:,2:end-1]), wake_length, fs.alpha, fs.beta)
 	φs, AIC, boco = solve_linear(surf_pans, U, fs, wake_pans)
 	return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
 end
 
 function solve_system_neumann(surf_pans :: AbstractMatrix{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
-	wake_pans = wake_panel.(eachcol(surf_pans), wake_length, fs.alpha, fs.beta)
+	wake_pans = wake_panel.(eachcol(surf_pans[:,2:end-1]), wake_length, fs.alpha, fs.beta)
 	φs, AIC, boco = solve_linear_neumann(surf_pans, U, fs, wake_pans)
 	return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
 end
@@ -198,7 +198,7 @@ function surface_coefficients(prob :: DoubletSourceSystem)
     cls, cms, cps
 end
 
-function surface_velocities(prob :: DoubletSourceSystem3D)
+@views function surface_velocities(prob :: DoubletSourceSystem3D)
     # make_tuple(a, b) = (a, b)
 
     # ps = prob.surface_panels
@@ -234,11 +234,35 @@ function surface_velocities(prob :: DoubletSourceSystem3D)
     # end
 
     # return vxs, vys
-    ps = @view permutedims(prob.surface_panels)[:]
+
+    ps = permutedims(prob.surface_panels)[:]
     allps = [ps; prob.wake_panels]
+
+    # Due to influence
     dvm = doublet_velocity_matrix(ps, allps)
     vs = dvm * prob.singularities .+ Ref(prob.Umag * velocity(prob.freestream))
-    return permutedims(reshape(vs, size(prob.surface_panels,2), size(prob.surface_panels,1)))
+    npancd, npansp = size(prob.surface_panels)
+    npanf = npancd * npansp
+    vs = permutedims(reshape(vs, npansp, npancd))
+
+    # Due to principal value
+    φs = permutedims(reshape(prob.singularities[1:npanf], npansp, npancd))
+    rs = collocation_point.(prob.surface_panels)
+    ns = panel_normal.(prob.surface_panels)
+
+    rso = [permutedims(rs[1,:]); rs[1:end-2,:]; permutedims(rs[end-1,:])]
+    rno = [permutedims(rs[2,:]); rs[3:end,:]  ; permutedims(rs[end,:])  ]
+    rea = [rs[:,1]               rs[:,1:end-2]  rs[:,end-1] ]
+    rwe = [rs[:,2]               rs[:,3:end]    rs[:,end]   ]
+
+    φso = [permutedims(φs[1,:]); φs[1:end-2,:]; permutedims(φs[end-1,:])]
+    φno = [permutedims(φs[2,:]); φs[3:end,:]  ; permutedims(φs[end,:])  ]
+    φea = [φs[:,1]               φs[:,1:end-2]  φs[:,end-1] ]
+    φwe = [φs[:,2]               φs[:,3:end]    φs[:,end]   ]
+
+    vs -= ((rwe .- rno) .* (φwe + φno) + (rso .- rwe) .* (φso + φwe) + (rea .- rso) .* (φea + φso) + (rno .- rea) .* (φno + φea)) .× ns ./ norm((rno-rso) .× (rwe-rea)) / 2
+
+    return vs
 end
 
 function surface_coefficients(prob :: DoubletSourceSystem3D, wing :: Wing)

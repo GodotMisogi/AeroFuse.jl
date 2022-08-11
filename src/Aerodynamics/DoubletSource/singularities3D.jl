@@ -162,26 +162,19 @@ function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, loca
     )
 end
 
-"""
-    quadrilateral_doublet_velocity(σ, local_panel :: AbstractPanel, local_point)
 
-Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel.
-"""
-function quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, local_point :: Point3D)
-    # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
-    local_panel, local_point = check_panel_status(local_panel, local_point)
+# function quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, local_point :: Point3D)
+#     coord = panel_coordinates(local_panel)
 
-    coord = panel_coordinates(local_panel)
-
-    rvs = @SVector [local_point - coord[i] for i=1:4]
-    rs = norm.(rvs)
-    ds = @SVector [d_ij(i, i%4+1, coord) for i=1:4]
+#     rvs = @SVector [local_point - coord[i] for i=1:4]
+#     rs = norm.(rvs)
+#     ds = @SVector [d_ij(i, i%4+1, coord) for i=1:4]
     
-    return -μ / 4π * sum(
-        ( rvs[i] × rvs[i%4+1] * (rs[i] + rs[i%4+1]) ) / ( (rs[i] * rs[i%4+1]) * (rs[i] * rs[i%4+1] + rvs[i] ⋅ rvs[i%4+1]) + 0.005 * ds[i] ) for i=1:4
-    )
+#     return -μ / 4π * sum(
+#         ( rvs[i] × rvs[i%4+1] * (rs[i] + rs[i%4+1]) ) / ( (rs[i] * rs[i%4+1]) * (rs[i] * rs[i%4+1] + rvs[i] ⋅ rvs[i%4+1]) + 0.005 * ds[i] ) for i=1:4
+#     )
 
-end
+# end
 
 """
     quadrilateral_doublet_velocity_farfield(σ, local_panel :: AbstractPanel, local_point)
@@ -256,6 +249,11 @@ function quadrilateral_doublet_potential(panel :: AbstractPanel3D, point:: Point
     end
 end
 
+"""
+    quadrilateral_doublet_velocity(σ, local_panel :: AbstractPanel, local_point)
+
+Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel.
+"""
 function quadrilateral_doublet_velocity(panel :: AbstractPanel3D, point :: Point3D)
     function qdve(r,rs,re)
         r1 = rs - r    
@@ -267,7 +265,11 @@ function quadrilateral_doublet_velocity(panel :: AbstractPanel3D, point :: Point
         
         q = c / c2 * dot(r0, normalize(r1)-normalize(r2)) / 4π
         
-        q[isnan.(q)] .= 0
+        if prod(.!(isnan.(q))) == false        
+            q = [q...]
+            q[isnan.(q)] .= 0
+            Point3D(q)
+        end
         return q
     end
 
