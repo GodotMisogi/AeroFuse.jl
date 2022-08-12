@@ -260,7 +260,10 @@ end
     φea = [φs[:,1]               φs[:,1:end-2]  φs[:,end-1] ]
     φwe = [φs[:,2]               φs[:,3:end]    φs[:,end]   ]
 
-    vs -= ((rwe .- rno) .* (φwe + φno) + (rso .- rwe) .* (φso + φwe) + (rea .- rso) .* (φea + φso) + (rno .- rea) .* (φno + φea)) .× ns ./ norm((rno-rso) .× (rwe-rea)) / 2
+    ∇Γ = -((rwe .- rno) .* (φwe + φno) + (rso .- rwe) .* (φso + φwe) + (rea .- rso) .* (φea + φso) + (rno .- rea) .* (φno + φea)) .× ns ./ norm.((rno-rso) .× (rwe-rea))
+    ∇Γ[1,:] ./= 2
+    ∇Γ[end,:] ./= 2
+    vs -= ∇Γ/2
 
     return vs
 end
@@ -268,21 +271,24 @@ end
 function surface_coefficients(prob :: DoubletSourceSystem3D, wing :: Wing)
     # Panel properties
     ps = prob.surface_panels
+    # rs = midpoint(ps)
     ns = panel_normal.(ps)
-    As = panel_area.(ps)
+    As = panel_area.(ps) .* ns
     A = projected_area(wing)
-    
-    # xs   = @views combinedimsview(panel_points(ps)[2:end-1])[1,:]
 
     # Inviscid edge velocities
     vs = surface_velocities(prob)
 
     # Aerodynamic coefficients
-    cps  = pressure_coefficient.(prob.Umag, vs)
-    cls  = -cps .* As .* (ns .⋅ Ref([0.,0.,1.])) / A
-    # cms  = @. -cls * xs * cos(prob.freestream.angle)
+    CP = pressure_coefficient.(prob.Umag, vs)
+    CF  = -sum(CP .* As) / A
+    # Cm  = -sum(CP .* (rq .× As)) / A / cbar
 
-    cls, cps
+    cos, _, sin = velocity(prob.freestream)
+    CL = CF[3] * cos - CF[1] * sin
+    CD = CF[3] * sin + CF[1] * cos
+
+    CL, CD, CP
 end
 
 lift_coefficient(prob :: DoubletSourceSystem) = 2 * last(prob.singularities) / prob.freestream.magnitude

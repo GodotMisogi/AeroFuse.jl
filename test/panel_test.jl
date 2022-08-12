@@ -65,30 +65,5 @@ plot(xlabel="x", ylabel="y", zlim=(-2,3))
 )]
 plot!(aspect_ratio=:equal, legend=:false)
 
-##
-x = LinRange(-1,1,1001)
-y = (x -> quadrilateral_doublet_potential(1, lpv3, Point3D(.02,-.12,0+x))).(x)
-plot(x,y)
 
-##
-av = point - coord[i];
-as = norm(av);
-bv = point - coord[i%4+1];
-bs = norm(bv);
-dv = coord[i%4+1] - coord[i];
-ds = norm(dv);
-al = av ⋅ l;
-am = av ⋅ m;
-bl = bv ⋅ l;
-bm = bv ⋅ m;
-dl = dv ⋅ l;
-dm = dv ⋅ m;
-
-A = dl * (am^2 + gn^2) - al * am * dm
-B = dl * (bm^2 + gn^2) - bl * bm * dm
-
-NUM = A * B + gn^2 * as * bs * dm^2
-DEN = dm * gn * (bs * A - as * B)
-
-atan(NUM/DEN)
 

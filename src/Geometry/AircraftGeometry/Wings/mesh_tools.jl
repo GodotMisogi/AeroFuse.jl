@@ -15,7 +15,7 @@ spacing(n, distribution :: AbstractSpacing = Cosine(), flip = false) = spacing(n
 Base.reverse(q :: AbstractSpacing) = q
 Base.Broadcast.broadcastable(q::AbstractSpacing) = Ref(q)
 
-function chop_sections(set1, set2, n :: Integer, distribution = Cosine(); flip = false)
+function chop_sections(set1, set2, n :: Integer, distribution; flip = false)
     space = spacing(n, distribution, flip)
     @views [ weighted_vector.(set1, set2, μ) for μ ∈ space ][1:end-1]
 end
