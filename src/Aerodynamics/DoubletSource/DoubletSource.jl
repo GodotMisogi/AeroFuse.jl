@@ -6,6 +6,7 @@ module DoubletSource
 using LinearAlgebra
 import Base.Iterators: product
 using StaticArrays
+using CoordinateTransformations
 import SplitApplyCombine: combinedimsview
 
 import ..MathTools: rotation, inverse_rotation, midpair_map, Point3D
@@ -14,11 +15,11 @@ import ..Laplace: Uniform2D, magnitude, angle, velocity, Freestream
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, AbstractPanel3D, Panel2D, WakePanel2D, Panel3D, WakePanel3D, panel_coordinates, transform_panel, affine_2D, panel_area, panel_length, panel_angle, tangent_vector, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector, collocation_point, get_transformation
+import ..PanelGeometry: AbstractPanel2D, AbstractPanel3D, Panel2D, WakePanel2D, Panel3D, WakePanel3D, panel_coordinates, transform_panel, affine_2D, panel_area, panel_length, panel_angle, tangent_vector, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector, collocation_point, get_transformation, midpoint
 
 import ..AeroMDAO: solve_system, surface_velocities, surface_coefficients
 
-include("singularities3D.jl")
+include("singularities.jl")
 
 ## Doublet-source Dirichlet boundary condition
 #===========================================================================#
