@@ -1,5 +1,6 @@
 using AeroMDAO
 using Test
+using StaticArrays
 
 @testset "NACA-4 Doublet-Source 2D Panel Method" begin
     # Define airfoil
