@@ -1,7 +1,7 @@
 using AeroMDAO
 using Test
 
-@testset "NACA-4 Doublet-Source Panel Method" begin
+@testset "NACA-4 Doublet-Source 2D Panel Method" begin
     # Define airfoil
     airfoil = (naca4)((0,0,1,2))
 
@@ -24,7 +24,7 @@ using Test
     @test sum(cls_2) ≈ 0.6007449 atol = 1e-6
 end
 
-@testset "Airfoil Processing and Doublet-Source Panel Method" begin
+@testset "Airfoil Processing and Doublet-Source 2D Panel Method" begin
     # Import and read airfoil coordinates
     coo_foil = naca4((2,4,1,2))
 
@@ -91,6 +91,22 @@ end
     @test AR       ≈ 7.20342634                    atol = 1e-6
     @test λ        ≈ 0.20000000                    atol = 1e-6
     @test wing_mac ≈ [0.4209310, 1.3343524, 0.0] atol = 1e-6
+end
+
+@testset "Geometry - 3D Panel" begin
+    panel = Panel3D(
+        [1.0, -1., 0.0], 
+        [0.0, -1., -0.5], 
+        [0.0, 0.0, -0.5], 
+        [1.0, 0.0, 0.0]
+    )
+    
+    mp = midpoint(panel)
+    ε = 1.
+    p = SVector(mp.x + ε, mp.y + ε, mp.z + ε)
+    T = get_transformation(panel)
+
+    @test inv(T)(T(mp) + T(p)) ≈ p atol = 1e-6
 end
 
 @testset "Vortex Lattice Method (Incompressible) - NACA 0012 Tapered Wing" begin

@@ -45,7 +45,9 @@ collocation_point(panel :: AbstractPanel3D, a = 0.5) = (p1(panel) + p2(panel) + 
 +(p :: AbstractPanel3D, v) = Panel3D(p.p1 + v, p.p2 + v, p.p3 + v, p.p4 + v)
 -(p :: AbstractPanel3D, v) = Panel3D(p.p1 - v, p.p2 - v, p.p3 - v, p.p4 - v)
 ×(p :: AbstractPanel3D, v) = Panel3D(p.p1 × v, p.p2 × v, p.p3 × v, p.p4 × v)
+
 (T :: AffineMap)(p :: AbstractPanel3D) = typeof(p)(T(p.p1), T(p.p2), T(p.p3), T(p.p4))
+(T :: LinearMap)(p :: AbstractPanel3D) = typeof(p)(T(p.p1), T(p.p2), T(p.p3), T(p.p4))
 
 Base.length(:: Panel3D) = 1
 
@@ -81,8 +83,6 @@ function transform(panel :: Panel3D, rotation, translation)
     Panel3D(T(panel.p1), T(panel.p2), T(panel.p3), T(panel.p4))
 end
 
-(trans :: AffineMap)(p :: Panel3D) = Panel3D(trans(p.p1), trans(p.p2), trans(p.p3), trans(p.p4))
-
 """
     midpoint(panel :: AbstractPanel3D)
 
@@ -90,11 +90,10 @@ Compute the midpoint of an `AbstractPanel3D`.
 """
 midpoint(panel :: AbstractPanel3D) = (p1(panel) + p2(panel) + p3(panel) + p4(panel)) / 4
 
-
 """
     normal_vector(panel :: Panel3D)
 
-Compute the unit normal vector of an `AbstractPanel3D` normalisation.
+Compute the normal vector of an `AbstractPanel3D`.
 """
 normal_vector(panel :: AbstractPanel3D) = let p31 = panel.p3 - panel.p1, p42 = panel.p4 - panel.p2; cross(p31, p42) end
 
@@ -112,7 +111,7 @@ transform_normal(panel :: Panel3D, h_l, g_l) = g_l * cross(h_l, normal_vector(pa
 
 Compute the area of a planar quadrilateral 3D panel.
 """
-panel_area(panel :: Panel3D) = 1/2 * norm(normal_vector(panel)) # (norm ∘ cross)(average_chord(panel), average_width(panel))
+panel_area(panel :: Panel3D) = 1/2 * norm(normal_vector(panel))
 
 """
     wetted_area(panels :: Array{Panel3D})
@@ -129,17 +128,17 @@ Reflect a Panel3D with respect to the ``x``-``z`` plane of its reference coordin
 """
 reflect_xz(panel :: Panel3D) = Panel3D((reflect_xz ∘ p1)(panel), (reflect_xz ∘ p2)(panel), (reflect_xz ∘ p3)(panel), (reflect_xz ∘ p4)(panel))
 
-# Determine axis system of panel
+# Determine panel's local axis system
 function local_coordinate_system(stream, normie) 
     s_hat = normalize(stream)
     n_hat = normalize(normie)
-    c_hat = s_hat × n_hat
+    l_hat = n_hat × s_hat
 
-    return [ c_hat s_hat n_hat ]
+    return [ s_hat l_hat n_hat ]
 end
 
 # Compute local axis coordinates
-local_coordinate_system(panel :: AbstractPanel3D) = local_coordinate_system((panel.p4 - panel.p1 + panel.p3 - panel.p2) / 2, normal_vector(panel))
+local_coordinate_system(panel :: AbstractPanel3D) = local_coordinate_system((panel.p2 + panel.p3) / 2 - midpoint(panel), normal_vector(panel))
 
 function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
     T = get_transformation(panel)
@@ -151,7 +150,7 @@ end
 
 Generate an `AffineMap` to transform a point from global coordinates to an `AbstractPanel3D`'s local coordinate system.
 """
-get_transformation(p) = AffineMap(local_coordinate_system(p)', zeros(3))
+get_transformation(p, P = I(3)) = let T = P * local_coordinate_system(p)'; AffineMap(T, -T * midpoint(p)) end
 
 
 """

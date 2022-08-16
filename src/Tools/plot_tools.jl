@@ -1,5 +1,7 @@
-plot_panel(panel :: AbstractPanel3D) = combinedimsview(panel_coordinates(panel), (1))
-
+function plot_panel(panel :: AbstractPanel3D)
+    p = panel_coordinates(panel)
+    combinedimsview([ p; [p[1]]], (1))
+end
 """
     plot_panels(panels :: Array{Panel3D})
 
