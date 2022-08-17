@@ -8,10 +8,10 @@ dzs     = (0., 0.)
 # airfoil = kulfan_CST(alpha_u, alpha_l, dzs, (0., 0.), 60);      # Kulfan CST airfoil
 airfoil = naca4((0,0,1,2), 100; sharp_trailing_edge = true) # NACA 4-digit airfoil
 uniform = Uniform2D(angle = 5)
-prob  = @time solve_case(
-                     airfoil, uniform;
-                     num_panels = 80
-                    );
+@time prob = solve_case(
+    airfoil, uniform;
+    num_panels = 80
+);
 
 ##
 panels    = prob.surface_panels

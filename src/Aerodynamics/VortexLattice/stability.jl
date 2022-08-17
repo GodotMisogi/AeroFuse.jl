@@ -36,7 +36,7 @@ function freestream_derivatives!(y, x, aircraft, fs, ref, axes = Wind())
     fs = @views setproperties(fs, 
         alpha = rad2deg(x[2]), 
         beta = rad2deg(x[3]), 
-        omega = x[4:end] ./ rate_coefficient(1, ref.speed, ref.span, ref.chord)
+        omega = x[4:end] .* rate_coefficient(1, ref.speed, ref.span, ref.chord)
     )
 
     # Solve system

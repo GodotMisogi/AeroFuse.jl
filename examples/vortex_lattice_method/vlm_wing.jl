@@ -77,7 +77,7 @@ end;
 x_tr        = fill(0.98, 2) # Transition locations over sections
 CDv_plate   = profile_drag_coefficient(wing_mesh, x_tr, ref)
 
-## Local-dissipation drag estimation (WRONG???)
+## Local-dissipation drag estimation
 cam_panels  = camber_panels(wing_mesh)
 edge_speeds = surface_velocities(system).wing
 CDv_diss    = profile_drag_coefficient(wing_mesh, x_tr, edge_speeds, ref)

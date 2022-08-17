@@ -92,7 +92,7 @@ ref = References(
 );
 
 ## Compute dynamics
-ax_sys = Wind() # Geometry, Stability(), Body()
+ax_sys = Wind() # Axis systems: Geometry(), Stability(), Body()
 @time CFs, CMs = surface_coefficients(system; axes = ax_sys)
 # Fs, Ms   = surface_dynamics(system; axes = ax)
 # Fs       = surface_forces(system; axes = ax)
@@ -108,7 +108,7 @@ ffs = farfield_coefficients(system)
 @time dvs = freestream_derivatives(system; 
     axes = ax_sys,
     print = true,
-    # print_components = true,
+    print_components = true,
     # farfield = false
 );
 
@@ -121,8 +121,7 @@ CDv_vtail = profile_drag_coefficient(vtail, [0.6, 0.6], system.reference)
 
 CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 
-## Local dissipation form factor friction estimation (WRONG???)
-
+## Local dissipation form factor friction estimation
 import LinearAlgebra: norm
 
 edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
@@ -141,8 +140,10 @@ CDv = CDv_diss
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
 CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 
-nf_v = (CD = CDi_nf + CDv, CDv = CDv, nf...)
-ff_v = (CD = CDi_ff + CDv, CDv = CDv, ff...)
+nf_v = [ CDi_nf + CDv; CDv; nf ]
+ff_v = [ CDi_ff + CDv; CDv; ff ]
+
+print_coefficients(nf_v, ff_v)
 
 ## Spanwise forces/lifting line loads
 wing_ll  = spanwise_loading(wing_mesh, CFs.wing,  S)
