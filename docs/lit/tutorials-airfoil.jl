@@ -7,7 +7,7 @@
 # > 3. Perform an aerodynamic analysis at a given angle of attack.
 # > 4. Plot its aerodynamic properties.
 # For this, we will need to import some packages which will be convenient for plotting.
-using AeroMDAO      # Main package
+using AeroFuse      # Main package
 using Plots         # Plotting library
 gr(dpi = 300)       # Plotting backend
 using LaTeXStrings  # For LaTeX printing in plots
@@ -87,7 +87,7 @@ cl, sum(cls)
 
 # ### Visualization
 # 
-# Let's see what the pressure and lift distribution curves look like over the airfoil. AeroMDAO provides more helper functions for post-processing data. For example, you can make your fancy plots by segregating the values depending on the locations of the panels by defining the following function.
+# Let's see what the pressure and lift distribution curves look like over the airfoil. AeroFuse provides more helper functions for post-processing data. For example, you can make your fancy plots by segregating the values depending on the locations of the panels by defining the following function.
 cp_upper, cp_lower = get_surface_values(panels, cps)
 
 # Now let's plot the results!

@@ -24,7 +24,7 @@ import ..AircraftGeometry: WingMesh
 # VLM Aerodynamics
 import ..VortexLattice: velocity, induced_velocity, induced_trailing_velocity, Horseshoe, horseshoe_normal, bound_leg_center, influence_coefficient, influence_matrix, boundary_condition, geometry_to_wind_axes, bound_leg_vector, kutta_joukowsky, surface_forces
 
-import ..AeroMDAO: solve_linear, solve_nonlinear, solve_nonlinear!
+import ..AeroFuse: solve_linear, solve_nonlinear, solve_nonlinear!
 
 struct AerostructWing{S,T}
     aerodynamics :: WingMesh{S}

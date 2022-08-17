@@ -1,5 +1,5 @@
 # # How-to Guide
-using AeroMDAO # hide
+using AeroFuse # hide
 using Plots # hide
 gr(dpi = 300) # hide
 using LaTeXStrings # hide
@@ -67,7 +67,7 @@ cls, cms, cps = surface_coefficients(system);
 u_es   = surface_velocities(system)
 cl     = lift_coefficient(system)
 
-# AeroMDAO provides more helper functions for the panel geometry.
+# AeroFuse provides more helper functions for the panel geometry.
 panels   = system.surface_panels
 pts      = collocation_point.(panels) # Collocation points
 tangents = tangent_vector.(panels)     # Tangents
@@ -77,7 +77,7 @@ locs     = panel_location.(panels);   # Upper or lower surface
 # ## Wing Geometry
 # How to work with wing geometry.
 # 
-# To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
+# To define one side of a wing, AeroFuse provides a `HalfWing` constructor.
 airfoil    = naca4((2,4,1,2))
 wing_right = HalfWing(foils     = [ airfoil for i in 1:3 ],
                       chords    = [0.4, 0.2, 0.1],

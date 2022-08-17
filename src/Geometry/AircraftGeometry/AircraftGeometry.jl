@@ -21,7 +21,7 @@ import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacin
 # Panel geometry
 import ..PanelGeometry: Panel2D, Panel3D, panel_area, normal_vector, transform, make_panels, wetted_area
 
-import ..AeroMDAO: properties
+import ..AeroFuse: properties
 
 ## Types
 #==========================================================================================#

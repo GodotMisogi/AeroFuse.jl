@@ -79,7 +79,7 @@ make_panels(xyzs) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], 
 Perform an affine transformation on the coordinates of a `Panel3D` given a rotation matrix and translation vector.
 """
 function transform(panel :: Panel3D, rotation, translation) 
-    T = Translation(translation) ∘ LinearMap(rotation)
+    T = LinearMap(rotation) ∘ Translation(translation)
     Panel3D(T(panel.p1), T(panel.p2), T(panel.p3), T(panel.p4))
 end
 
@@ -148,9 +148,9 @@ end
 """
     get_transformation(panel :: AbstractPanel3D)
 
-Generate an `AffineMap` to transform a point from global coordinates to an `AbstractPanel3D`'s local coordinate system.
+Generate the mapping to transform a point from global coordinates to an `AbstractPanel3D`'s local coordinate system.
 """
-get_transformation(p, P = I(3)) = let T = P * local_coordinate_system(p)'; AffineMap(T, -T * midpoint(p)) end
+get_transformation(p, P = I(3)) = LinearMap(P * local_coordinate_system(p)') ∘ Translation(-midpoint(p))
 
 
 """

@@ -2,7 +2,7 @@
 using Pkg
 Pkg.activate(".")
 using Revise
-using AeroMDAO
+using AeroFuse
 
 ##
 panel = Panel3D(

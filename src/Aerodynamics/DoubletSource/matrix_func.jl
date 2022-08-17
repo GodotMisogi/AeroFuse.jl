@@ -3,7 +3,35 @@
 
 Create the matrix of doublet potential influence coefficients between pairs of `panels₁` and `panels₂`.
 """
-doublet_matrix(panels_1, panels_2) = [ doublet_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
+function doublet_matrix(panels_1, panels_2) 
+    # Axis permutation
+    P = @SMatrix [ 0  1  0 ;
+                   1  0  0 ;
+                   0  0 -1 ]
+    
+    # Pre-allocated loop
+    # A = zeros(eltype(panels_1[1].p1), length(panels_1), length(panels_2))
+    # doublet_matrix!(A, panels_1, panels_2, P)
+    # A
+
+    # Mapping
+    map(product(panels_1, panels_2)) do (panel_j, panel_i)
+        T = get_transformation(panel_j, P)
+        quadrilateral_doublet_potential(1., T(panel_j), T(collocation_point(panel_i)))
+    end
+
+    # Comprehension
+    # [ doublet_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
+end
+
+# function doublet_matrix!(A, panels_1, panels_2, P)
+#     for (j, p_j) in pairs(panels_2)
+#         T = get_transformation(p_j, P)
+#         for (i, p_i) in pairs(panels_1)
+#             A[j,i] = quadrilateral_doublet_potential(1., T(p_j), T(collocation_point(p_i)))
+#         end
+#     end
+# end
 
 """
     doublet_matrix(panels_1, panels_2)

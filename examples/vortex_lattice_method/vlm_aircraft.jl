@@ -1,5 +1,5 @@
 ## Wing analysis case
-using AeroMDAO
+using AeroFuse
 
 ## Surfaces
 

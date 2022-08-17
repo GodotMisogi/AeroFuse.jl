@@ -9,7 +9,7 @@
 # > 5. Plot the spanwise loading distribution for the wing.
 
 # For this, we will need to import some packages which will be convenient for plotting.
-using AeroMDAO      # Main package
+using AeroFuse      # Main package
 using Plots         # Plotting library
 gr(dpi = 300)       # Plotting backend
 using LaTeXStrings  # For LaTeX printing in plots

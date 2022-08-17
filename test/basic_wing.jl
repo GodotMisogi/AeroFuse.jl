@@ -1,5 +1,5 @@
 ##
-using AeroMDAO
+using AeroFuse
 using LinearAlgebra
 using StaticArrays
 
@@ -39,7 +39,7 @@ V∞ = Umag * velocity(fs)
 
 wake_pans = [ wake_panel(surf_pans[:,i], 10., velocity(fs)) for i in axes(surf_pans, 2) ]
 
-σs = -dot.(Ref(V∞), AeroMDAO.PanelGeometry.collocation_point.(surf_pans))
+σs = -dot.(Ref(V∞), AeroFuse.PanelGeometry.collocation_point.(surf_pans))
 
 ##
 @time system = solve_system(surf_pans, fs, 1.0e5);
@@ -70,7 +70,7 @@ end
 vels = surface_velocities(surf_pans, φs, σs, fs)
 
 ##
-vs = AeroMDAO.DoubletSource.surface_velocities(system)
+vs = AeroFuse.DoubletSource.surface_velocities(system)
 @time cls, cps = surface_coefficients(system, projected_area(wing_mesh));
 println("Σᵢ Clᵢ: $(sum(cls))")
 

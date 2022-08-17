@@ -16,7 +16,7 @@ A **half-wing** is defined in terms of a nested trapezoid. A single trapezoid is
 
 ## Aerodynamics
 
-The aerodynamic analyses in AeroMDAO mainly utilize potential flow theory and solve problems using a _boundary element method_. This essentially is the following Laplace equation problem with the following Robin (?) boundary conditions:
+The aerodynamic analyses in AeroFuse mainly utilize potential flow theory and solve problems using a _boundary element method_. This essentially is the following Laplace equation problem with the following Robin (?) boundary conditions:
 
 ```math
 \nabla^2 \phi = 0, \quad \mathbf V \equiv \nabla \phi \cdot \hat{\mathbf n} = 0, \quad \lim_{\mathbf r \to \infty} \phi(\mathbf r) \to 0
@@ -54,9 +54,9 @@ Vortex filaments are placed on the surface, and boundary conditions are imposed 
 The vortices can be set up in various configurations consisting of bound or semi-infinite filaments, commonly in the form of _horseshoes_ or _vortex rings_.
 
 1. _Horseshoe elements:_
-   These are defined by a finite _bound leg_ and two semi-infinite _trailing legs_. AeroMDAO encodes this information in the `Horseshoe` type.
+   These are defined by a finite _bound leg_ and two semi-infinite _trailing legs_. AeroFuse encodes this information in the `Horseshoe` type.
 2. _Vortex rings:_
-   These are defined by four _bound legs_. AeroMDAO encodes this information in the `VortexRing` type.
+   These are defined by four _bound legs_. AeroFuse encodes this information in the `VortexRing` type.
 
 A quasi-steady freestream condition with velocity $\mathbf U$ and rotation $\boldsymbol\Omega$ (in the body's frame) defines an external flow. The induced velocity at a point is given by:
 
@@ -104,7 +104,7 @@ Hence the solution of the resultant incompressible system in transformed coordin
 
 ## Structures
 
-The structural analyses in AeroMDAO utilize _linear finite-element methods_.
+The structural analyses in AeroFuse utilize _linear finite-element methods_.
 
 Particularly, a $2$-dimensional beam element model has been implemented following the standard formulation using cubic Hermite shape functions based on **Euler-Bernoulli beam theory**. These are embedded into a $3$-dimensional local coordinate system in the vortex lattice method without loss of generality.
 

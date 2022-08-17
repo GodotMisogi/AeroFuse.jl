@@ -1,5 +1,5 @@
 ##
-using AeroMDAO
+using AeroFuse
 using CoordinateTransformations
 using Plots
 plotlyjs()
@@ -17,7 +17,7 @@ P  = [ 0  1  0 ;
        1  0  0 ;
        0  0 -1 ]
 
-T  = AeroMDAO.PanelGeometry.get_transformation(panel, P)
+T  = AeroFuse.PanelGeometry.get_transformation(panel, P)
 mv = T.linear[1,:]
 lv = T.linear[2,:]
 nv = T.linear[3,:]

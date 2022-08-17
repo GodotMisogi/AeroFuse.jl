@@ -1,14 +1,14 @@
-# AeroMDAO
+# AeroFuse
 
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://godotmisogi.github.io/AeroMDAO.jl/stable/)
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://godotmisogi.github.io/AeroMDAO.jl/dev/)
-[![CI](https://github.com/GodotMisogi/AeroMDAO.jl/workflows/CI/badge.svg?branch=main)](https://github.com/GodotMisogi/AeroMDAO.jl/actions?query=workflow%3ACI+branch%3Amain)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://godotmisogi.github.io/AeroFuse.jl/stable/)
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://godotmisogi.github.io/AeroFuse.jl/dev/)
+[![CI](https://github.com/GodotMisogi/AeroFuse.jl/workflows/CI/badge.svg?branch=main)](https://github.com/GodotMisogi/AeroFuse.jl/actions?query=workflow%3ACI+branch%3Amain)
 
 <p align="center">
-<img width="60%", src="https://raw.githubusercontent.com/GodotMisogi/AeroMDAO.jl/main/docs/src/assets/logo.svg">
+<img width="60%", src="https://raw.githubusercontent.com/GodotMisogi/AeroFuse.jl/main/docs/src/assets/logo.svg">
 </p>
 
-AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
+AeroFuse is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
 
 **Authors**: Arjit Seth, Stephane Redonnet, and Rhea P. Liem
 
@@ -46,20 +46,20 @@ An additional aim is to write code compatible with automatic differentiation lib
 ## Installation
 
 ```julia
-julia> using Pkg; Pkg.add("AeroMDAO")
-julia> Pkg.test("AeroMDAO")
-julia> using AeroMDAO
+julia> using Pkg; Pkg.add("AeroFuse")
+julia> Pkg.test("AeroFuse")
+julia> using AeroFuse
 ```
 
 ## Citation
 
-If you use AeroMDAO in your research, please cite the following until any relevant material is actually published:
+If you use AeroFuse in your research, please cite the following until any relevant material is actually published:
 
 ```bibtex
-@software{aeromdao,
+@software{AeroFuse,
   author  = {Arjit Seth, Stephane Redonnet, Rhea P. Liem},
-  title   = {AeroMDAO},
-  url     = {https://github.com/GodotMisogi/AeroMDAO},
+  title   = {AeroFuse},
+  url     = {https://github.com/GodotMisogi/AeroFuse},
   version = {0.3.10},
   date    = {2022-4-21},
 }

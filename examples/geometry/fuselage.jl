@@ -1,4 +1,4 @@
-using AeroMDAO
+using AeroFuse
 
 ## Fuselage definition
 rads = range(0, 1, length = 10)

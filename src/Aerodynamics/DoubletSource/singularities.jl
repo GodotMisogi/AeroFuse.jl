@@ -64,17 +64,9 @@ function quadrilateral_doublet_potential(μ, panel :: AbstractPanel3D, point)
 
         return μ / 4π * inf
     end
-
 end
 
-function quadrilateral_source_potential(σ, panel :: AbstractPanel3D, point)
-    # Axis permutation
-    # P = [ 0  1  0 ;
-    #       1  0  0 ;
-    #       0  0 -1 ]
-    # Local coordinate system transformation
-    T = get_transformation(panel, P)
-    panel, p = T(panel), T(point)
+function quadrilateral_source_potential(σ, panel :: AbstractPanel3D, p)
     pans = panel_coordinates(panel)
 
     x, y, z = p

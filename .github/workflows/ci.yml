@@ -62,8 +62,8 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: doctest
-            using AeroMDAO
-            doctest(AeroMDAO)'
+            using AeroFuse
+            doctest(AeroFuse)'
       - run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

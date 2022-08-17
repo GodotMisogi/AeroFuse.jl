@@ -2,7 +2,7 @@
 using LinearAlgebra
 using Base.Iterators
 using Seaborn
-using AeroMDAO
+using AeroFuse
 
 ## Airfoil
 airfoil = naca4(((0,0,1,2), 81; sharp_trailing_edge = true))

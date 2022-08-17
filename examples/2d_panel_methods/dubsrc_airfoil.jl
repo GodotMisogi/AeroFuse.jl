@@ -1,5 +1,5 @@
 ## Example script for constant-strength doublet-source panel method
-using AeroMDAO
+using AeroFuse
 
 ##
 alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]

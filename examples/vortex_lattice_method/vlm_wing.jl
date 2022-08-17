@@ -1,5 +1,5 @@
 ## Wing analysis case
-using AeroMDAO
+using AeroFuse
 
 ## Wing section setup
 wing = Wing(

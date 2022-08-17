@@ -8,7 +8,7 @@ using LinearAlgebra
 
 import ..MathTools: Point2D, Point3D, magnitude, angle
 
-import ..AeroMDAO: velocity
+import ..AeroFuse: velocity
 
 abstract type AbstractLaplace end
 

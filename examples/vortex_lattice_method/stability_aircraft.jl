@@ -1,5 +1,5 @@
 ## Aircraft stability analysis example
-using AeroMDAO
+using AeroFuse
 
 ## Lifting surfaces
 

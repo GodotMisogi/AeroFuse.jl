@@ -1,4 +1,4 @@
-using AeroMDAO
+using AeroFuse
 using Test
 using StaticArrays
 
