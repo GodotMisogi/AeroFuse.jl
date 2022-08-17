@@ -1,8 +1,10 @@
 """
-    doublet_matrix(panels_1, panels_2)
+doublet_matrix(panels_1, panels_2)
 
 Create the matrix of doublet potential influence coefficients between pairs of `panels₁` and `panels₂`.
 """
+doublet_matrix(panels_1 :: AbstractArray{T}, panels_2 :: AbstractArray{T}) where T <: AbstractPanel2D = [ doublet_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
+
 function doublet_matrix(panels_1, panels_2) 
     # Axis permutation
     P = @SMatrix [ 0  1  0 ;
