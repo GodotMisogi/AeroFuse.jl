@@ -16,7 +16,7 @@ const Derivs = @SLArray (9,7) (# Forces and moment values
 # ...and assemble into components
 label_derivatives(data, names, Derivs = Derivs) = @views NamedTuple(names[i] => Derivs(data[:,i,:]) for i in Base.axes(data, 2))
 
-# Convert speed and rates into non-dimensional  coefficients
+# Convert speed and rates into non-dimensional coefficients
 scale_freestream(fs :: Freestream, refs :: References) = 
     [ 
         mach_number(refs); # Mach number
@@ -36,7 +36,7 @@ function freestream_derivatives!(y, x, aircraft, fs, ref, axes = Wind())
     fs = @views setproperties(fs, 
         alpha = rad2deg(x[2]), 
         beta = rad2deg(x[3]), 
-        omega = x[4:end] .* rate_coefficient(1, ref.speed, ref.span, ref.chord)
+        omega = x[4:end] ./ rate_coefficient(1, ref.speed, ref.span, ref.chord)
     )
 
     # Solve system

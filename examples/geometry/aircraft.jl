@@ -12,7 +12,6 @@ wing = Wing(
     dihedrals = [5.],
     sweeps    = [5.],
     symmetry  = true,
-    # flip      = true
 );
 
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
@@ -59,7 +58,6 @@ fuse = Fuselage(l_fuselage, lens, rads, [-3.0, 0., 0.])
 
 ## Plotting
 using Plots
-plotlyjs()
 
 plot(
     aspect_ratio = 1,

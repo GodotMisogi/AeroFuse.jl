@@ -14,4 +14,7 @@ rads = [0.05, 0.15, 0.25, 0.4, 0.8, 1., 1., 1., 1., 0.85, 0.3, 0.01] * w_fuselag
 
 fuse = Fuselage(l_fuselage, lens, rads, [0., 0., 0.])
 
+## Plotting
+using Plots
+
 plot(fuse, aspect_ratio = 1, zlim = (-10,10))
