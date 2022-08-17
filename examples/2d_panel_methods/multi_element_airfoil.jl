@@ -1,5 +1,5 @@
 ## Multi-element airfoil using constant-strength doublet-source panel method
-using AeroMDAO
+using AeroFuse
 using CoordinateTransformations, Rotations
 
 ## Geometry variables

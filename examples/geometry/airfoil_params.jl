@@ -1,5 +1,5 @@
 ##
-using AeroMDAO
+using AeroFuse
 
 ## Test function
 function doublet_source_case(foil, uniform)

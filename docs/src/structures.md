@@ -3,5 +3,5 @@
 ## Beams API
 
 ```@autodocs
-Modules = [AeroMDAO.Beams]
+Modules = [AeroFuse.Beams]
 ```

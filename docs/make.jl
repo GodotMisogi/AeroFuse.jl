@@ -1,4 +1,4 @@
-using AeroMDAO
+using AeroFuse
 using Documenter
 
 ## Generate theme
@@ -28,10 +28,10 @@ end
 
 ## Generate documentation
 makedocs(
-    # modules = [AeroMDAO, AeroMDAO.VortexLattice],
-    sitename = "AeroMDAO",
+    # modules = [AeroFuse, AeroFuse.VortexLattice],
+    sitename = "AeroFuse",
     authors  = "Arjit Seth, Stephane Redonnet, and Rhea P. Liem",
-    # repo = "https://github.com/GodotMisogi/AeroMDAO.jl",
+    # repo = "https://github.com/GodotMisogi/AeroFuse.jl",
     pages = [
                 "Home"          => "index.md"
                 "Tutorials"     =>  [
@@ -60,7 +60,7 @@ makedocs(
 
 ## Deployment
 deploydocs(
-    repo = "github.com/GodotMisogi/AeroMDAO.jl.git",
+    repo = "github.com/GodotMisogi/AeroFuse.jl.git",
     # devbranch = "develop",
     # versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
 )

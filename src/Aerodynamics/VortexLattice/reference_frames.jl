@@ -29,20 +29,7 @@ flip_xz(vector) = SVector(-vector[1], vector[2], -vector[3])
 ## Axis transformations
 #==========================================================================================#
 
-abstract type AbstractAxisSystem end
-
-struct Geometry <: AbstractAxisSystem end
-struct Body      <: AbstractAxisSystem end
-struct Stability <: AbstractAxisSystem end
-struct Wind      <: AbstractAxisSystem end
-
-Base.show(io :: IO, :: Geometry)  = print(io, "Geometry")
-Base.show(io :: IO, :: Body)      = print(io, "Body")
-Base.show(io :: IO, :: Stability) = print(io, "Stability")
-Base.show(io :: IO, :: Wind)      = print(io, "Wind")
-
-
-geometry_to_body_axes(coords) = flip_xz(coords)
+geometry_to_body_axes(coords) = -coords
 
 """
     geometry_to_stability_axes(coords, α)
@@ -60,7 +47,7 @@ stability_to_geometry_axes(coords, α :: T) where T <: Real = geometry_to_stabil
 
 """
     geometry_to_wind_axes(coords, α, β)
-    geometry_to_wind_axes(line :: Line, α, β)
+    geometry_to_wind_axes(horseshoe :: Horseshoe, α, β)
 
 Convert coordinates from geometry axes to wind axes for given angles of attack ``α`` and sideslip ``\\beta.``
 """
@@ -68,7 +55,7 @@ geometry_to_wind_axes(coords, α, β) = let T = promote_type(eltype(α), eltype(
 
 function geometry_to_wind_axes(horseshoe :: Horseshoe, α, β) 
     T = promote_type(eltype(α), eltype(β))
-    transform(horseshoe, LinearMap(RotZY{T}(β, α)))
+    return transform(horseshoe, LinearMap(RotZY{T}(β, α)))
 end
 
 geometry_to_wind_axes(coords, fs :: Freestream) = geometry_to_wind_axes(coords, fs.alpha, fs.beta)
@@ -76,14 +63,19 @@ geometry_to_wind_axes(horseshoe :: Horseshoe, fs :: Freestream) = geometry_to_wi
 
 """
     wind_to_geometry_axes(coords, α, β)
+    wind_to_geometry_axes(horseshoe :: Horseshoe, α, β) 
 
 Convert coordinates from wind axes to geometry axes for given angles of attack ``α`` and sideslip \\beta.``
 """
-wind_to_geometry_axes(coords, α, β) = let T = promote_type(eltype(α), eltype(β)); RotYZ{T}(-α, -β) * coords end
+## Check order
+function wind_to_geometry_axes(coords, α, β) 
+    T = promote_type(eltype(α), eltype(β))
+    return RotYZ{T}(-α, -β) * coords
+end
 
 function wind_to_geometry_axes(horseshoe :: Horseshoe, α, β) 
     T = promote_type(eltype(α), eltype(β))
-    transform(horseshoe, LinearMap(RotZY{T}(-α, -β)))
+    return transform(horseshoe, LinearMap(RotYZ{T}(-α, -β)))
 end
 
 

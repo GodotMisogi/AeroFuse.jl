@@ -1,40 +1,49 @@
 ## Wing analysis case
-using AeroMDAO
+using AeroFuse
 
 ## Surfaces
 
 # Wing
-wing = Wing(foils     = fill(naca4(2,4,1,2), 2),
-            chords    = [1.0, 0.6],
-            twists    = [2.0, 0.0],
-            spans     = [8.0],
-            dihedrals = [5.],
-            sweeps    = [5.]);
+wing = Wing(
+    foils     = fill(naca4(2,4,1,2), 2),
+    chords    = [1.0, 0.6],
+    twists    = [2.0, 0.0],
+    spans     = [4.0],
+    dihedrals = [5.],
+    sweeps    = [5.],
+    symmetry  = true,
+    # flip      = true
+);
 
 x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 S, b, c = projected_area(wing), span(wing), mean_aerodynamic_chord(wing);
 
 # Horizontal tail
-htail = Wing(foils     = fill(naca4(0,0,1,2), 2),
-             chords    = [0.7, 0.42],
-             twists    = [0.0, 0.0],
-             spans     = [2.5],
-             dihedrals = [0.],
-             sweeps    = [6.39],
-             position  = [4., 0, -0.1],
-             angle     = -2.,
-             axis      = [0., 1., 0.])
+htail = Wing(
+    foils     = fill(naca4(0,0,1,2), 2),
+    chords    = [0.7, 0.42],
+    twists    = [0.0, 0.0],
+    spans     = [1.25],
+    dihedrals = [0.],
+    sweeps    = [6.39],
+    position  = [4., 0, -0.1],
+    angle     = -2.,
+    axis      = [0., 1., 0.],
+    symmetry  = true
+)
 
 # Vertical tail
-vtail = HalfWing(foils     = fill(naca4(0,0,0,9), 2),
-                 chords    = [0.7, 0.42],
-                 twists    = [0.0, 0.0],
-                 spans     = [1.0],
-                 dihedrals = [0.],
-                 sweeps    = [7.97],
-                 position  = [4., 0, 0],
-                 angle     = 90.,
-                 axis      = [1., 0., 0.])
+vtail = Wing(
+    foils     = fill(naca4(0,0,0,9), 2),
+    chords    = [0.7, 0.42],
+    twists    = [0.0, 0.0],
+    spans     = [1.0],
+    dihedrals = [0.],
+    sweeps    = [7.97],
+    position  = [4., 0, 0],
+    angle     = 90.,
+    axis      = [1., 0., 0.]
+)
 
 # Print info
 print_info(wing, "Wing")
@@ -42,52 +51,66 @@ print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
 ## WingMesh type
-wing_mesh  = WingMesh(wing, [12], 6, 
-                      span_spacing = Cosine()
-                     )
-htail_mesh = WingMesh(htail, [12], 6, 
-                      span_spacing = Cosine()
-                     )
-vtail_mesh = WingMesh(vtail, [12], 6, 
-                      span_spacing = Cosine()
-                     )
+wing_mesh  = WingMesh(wing, [24], 6,
+    # span_spacing = Cosine()
+)
+htail_mesh = WingMesh(htail, [24], 6, 
+    # span_spacing = Cosine()
+)
+vtail_mesh = WingMesh(vtail, [24], 6, 
+    span_spacing = Cosine()
+)
 
-aircraft =  (
-                wing  = make_horseshoes(wing_mesh),
-                htail = make_horseshoes(htail_mesh),
-                vtail = make_horseshoes(vtail_mesh)
-            );
+aircraft =  ComponentVector(
+    wing  = make_horseshoes(wing_mesh),
+    htail = make_horseshoes(htail_mesh),
+    vtail = make_horseshoes(vtail_mesh)
+);
 
 ## Case
-fs  = Freestream(alpha = 0.0, 
-                 beta  = 0.0, 
-                 omega = [0., 0., 0.]);
+fs  = Freestream(
+    alpha = 4.0, 
+    beta  = 0.0, 
+    omega = [0., 0., 0.]
+);
 
-ref = References(speed     = 1.0, 
-                 density   = 1.225,
-                 viscosity = 1.5e-5,
-                 area      = projected_area(wing),
-                 span      = span(wing),
-                 chord     = mean_aerodynamic_chord(wing),
-                 location  = mean_aerodynamic_center(wing))
+ref = References(
+    speed     = 150., 
+    density   = 1.225,
+    viscosity = 1.5e-5,
+    area      = projected_area(wing),
+    span      = span(wing),
+    chord     = mean_aerodynamic_chord(wing),
+    location  = mean_aerodynamic_center(wing)
+)
 
 ##
-@time begin 
-    system = solve_case(aircraft, fs, ref;
-                        # print            = true, # Prints the results for only the aircraft
-                        # print_components = true, # Prints the results for all components
-                       );
+@time system = solve_case(
+    aircraft, fs, ref;
+    # print            = true, # Prints the results for only the aircraft
+    # print_components = true, # Prints the results for all components
+);
 
-    # Compute dynamics
-    ax       = Geometry() # Geometry, Stability(), Body()
-    CFs, CMs = surface_coefficients(system; axes = ax)
-    Fs, Ms   = surface_dynamics(system; axes = ax)
-    # Fs       = surface_forces(system; axes = ax)
-    # vels     = surface_velocities(system)
+## Compute dynamics
+ax_sys = Wind() # Geometry, Stability(), Body()
+@time CFs, CMs = surface_coefficients(system; axes = ax_sys)
+# Fs, Ms   = surface_dynamics(system; axes = ax)
+# Fs       = surface_forces(system; axes = ax)
+# vels     = surface_velocities(system)
 
-    nfs = nearfield_coefficients(system)
-    ffs = farfield_coefficients(system)
-end;
+nf  = nearfield(system)
+ff  = farfield(system)
+
+nfs = nearfield_coefficients(system)
+ffs = farfield_coefficients(system)
+    
+## Force/moment coefficients and derivatives
+@time dvs = freestream_derivatives(system; 
+    axes = ax_sys,
+    print = true,
+    # print_components = true,
+    # farfield = false
+);
 
 ## Viscous drag prediction
 
@@ -99,19 +122,20 @@ CDv_vtail = profile_drag_coefficient(vtail, [0.6, 0.6], system.reference)
 CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 
 ## Local dissipation form factor friction estimation (WRONG???)
+
 import LinearAlgebra: norm
 
 edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
 
 # Drag coefficients
-CDvd_wing  = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  ref)
-CDvd_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, ref)
-CDvd_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, ref)
+CDvd_wing  = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  system.reference)
+CDvd_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, system.reference)
+CDvd_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, system.reference)
 
-CDv_diss   = CDvd_wing + CDvd_htail + CDvd_vtail
+CDv_diss = CDvd_wing + CDvd_htail + CDvd_vtail
 
 ## Viscous drag coefficient
-CDv = CDv_plate
+CDv = CDv_diss
 
 ## Total force coefficients with empirical viscous drag prediction
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
@@ -121,9 +145,9 @@ nf_v = (CD = CDi_nf + CDv, CDv = CDv, nf...)
 ff_v = (CD = CDi_ff + CDv, CDv = CDv, ff...)
 
 ## Spanwise forces/lifting line loads
-wing_ll  = spanwise_loading(chord_panels(wing_mesh),  CFs.wing,  S)
-htail_ll = spanwise_loading(chord_panels(htail_mesh), CFs.htail, S)
-vtail_ll = spanwise_loading(chord_panels(vtail_mesh), CFs.vtail, S);
+wing_ll  = spanwise_loading(wing_mesh, CFs.wing,  S)
+htail_ll = spanwise_loading(htail_mesh, CFs.htail, S)
+vtail_ll = spanwise_loading(vtail_mesh, CFs.vtail, S);
 
 ## Plotting
 using CairoMakie
@@ -139,10 +163,10 @@ const LS = LaTeXString
 
 ## Streamlines
 # Spanwise distribution
-span_points = 30
+span_points = 20
 init        = chop_leading_edge(wing, span_points)
-dx, dy, dz  = 0, 0, 1e-1
-seed        = init # [ init .+ Ref([dx, dy,  dz])
+dx, dy, dz  = 0, 0, 1e-3
+seed        = init .+ Ref([dx, dy, dz])
                    #   init .+ Ref([dx, dy, -dz]) ];
 
 distance = 5
@@ -220,7 +244,7 @@ lines!(scene, plot_planform(vtail))
 # l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(vtail_mesh)) ]
 
 # Streamlines
-[ lines!(scene, stream[:], color = :green) for stream in eachcol(streams) ]
+[ lines!(scene, Point3f.(stream[:]), color = :green) for stream in eachcol(streams) ]
 
 fig1.scene
 
@@ -228,7 +252,7 @@ fig1.scene
 # save("plots/VortexLattice.pdf", fig1, px_per_unit = 1.5)
 
 ## Animation settings
-pts = [ Node(Point3f0[stream]) for stream in streams[1,:] ]
+pts = [ Point3f[stream] for stream in streams[1,:] ]
 
 [ lines!(scene, pts[i], color = :green, axis = (; type = Axis3)) for i in eachindex(pts) ]
 
@@ -263,54 +287,54 @@ pyplot()
 
 ## Speed sweep
 Vs = 1.0:10:300
-res_Vs = permutedims(combinedimsview(
+res_Vs = combinedimsview(
     map(Vs) do V
         ref1 = @set ref.speed = V
         sys = solve_case(aircraft, fs, ref1)
-        [ V; farfield(sys)...; nearfield(sys)... ]
-    end
-))
+        [ mach_number(ref1); farfield(sys)...; nearfield(sys)... ]
+    end, (1)
+)
 
 ## 
 Plots.plot(
     res_Vs[:,1], res_Vs[:,2:end],
     layout = (3,3), size = (900, 800),
-    xlabel = "V",
+    xlabel = "M",
     labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
 )
 
 ##
 f2 = Figure()
-ax1 = Axis(f2[1,1], xlabel = L"V", ylabel = L"C_{D_{ff}}")
+ax1 = Axis(f2[1,1], xlabel = L"M", ylabel = L"C_{D_{ff}}")
 lines!(res_Vs[:,1], res_Vs[:,2]) # CD_ff
-ax2 = Axis(f2[1,2], xlabel = L"V", ylabel = L"C_{Y_{ff}}")
+ax2 = Axis(f2[1,2], xlabel = L"M", ylabel = L"C_{Y_{ff}}")
 lines!(res_Vs[:,1], res_Vs[:,3])
-ax3 = Axis(f2[1,3], xlabel = L"V", ylabel = L"CL_{ff}")
+ax3 = Axis(f2[1,3], xlabel = L"M", ylabel = L"CL_{ff}")
 lines!(res_Vs[:,1], res_Vs[:,4])
-ax4 = Axis(f2[2,1], xlabel = L"V", ylabel = L"C_D")
+ax4 = Axis(f2[2,1], xlabel = L"M", ylabel = L"C_D")
 lines!(res_Vs[:,1], res_Vs[:,5])
-ax5 = Axis(f2[2,2], xlabel = L"V", ylabel = L"C_Y")
+ax5 = Axis(f2[2,2], xlabel = L"M", ylabel = L"C_Y")
 lines!(res_Vs[:,1], res_Vs[:,6])
-ax6 = Axis(f2[2,3], xlabel = L"V", ylabel = L"C_L")
+ax6 = Axis(f2[2,3], xlabel = L"M", ylabel = L"C_L")
 lines!(res_Vs[:,1], res_Vs[:,7])
-ax7 = Axis(f2[3,1], xlabel = L"V", ylabel = L"C_\ell")
+ax7 = Axis(f2[3,1], xlabel = L"M", ylabel = L"C_\ell")
 lines!(res_Vs[:,1], res_Vs[:,8])
-ax8 = Axis(f2[3,2], xlabel = L"V", ylabel = L"C_m")
+ax8 = Axis(f2[3,2], xlabel = L"M", ylabel = L"C_m")
 lines!(res_Vs[:,1], res_Vs[:,9])
-ax9 = Axis(f2[3,3], xlabel = L"V", ylabel = L"C_n")
+ax9 = Axis(f2[3,3], xlabel = L"M", ylabel = L"C_n")
 lines!(res_Vs[:,1], res_Vs[:,10])
 
 f2
 
 ## Alpha sweep
 αs = -5:0.5:5
-res_αs = permutedims(combinedimsview(
+res_αs = combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, ref)
         [ α; farfield(sys)...; nearfield(sys)... ]
-    end
-))
+    end, (1)
+)
 
 Plots.plot(
     res_αs[:,1], res_αs[:,2:end],
@@ -319,13 +343,36 @@ Plots.plot(
     labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
 )
 
+## Makie
+f3 = Figure()
+ax1 = Axis(f3[1,1], xlabel = L"α", ylabel = L"C_{D_{ff}}")
+lines!(res_αs[:,1], res_αs[:,2]) # CD_ff
+ax2 = Axis(f3[1,2], xlabel = L"M", ylabel = L"C_{Y_{ff}}")
+lines!(res_αs[:,1], res_αs[:,3])
+ax3 = Axis(f3[1,3], xlabel = L"M", ylabel = L"CL_{ff}")
+lines!(res_αs[:,1], res_αs[:,4])
+ax4 = Axis(f3[2,1], xlabel = L"M", ylabel = L"C_D")
+lines!(res_αs[:,1], res_αs[:,5])
+ax5 = Axis(f3[2,2], xlabel = L"M", ylabel = L"C_Y")
+lines!(res_αs[:,1], res_αs[:,6])
+ax6 = Axis(f3[2,3], xlabel = L"M", ylabel = L"C_L")
+lines!(res_αs[:,1], res_αs[:,7])
+ax7 = Axis(f3[3,1], xlabel = L"M", ylabel = L"C_\ell")
+lines!(res_αs[:,1], res_αs[:,8])
+ax8 = Axis(f3[3,2], xlabel = L"M", ylabel = L"C_m")
+lines!(res_αs[:,1], res_αs[:,9])
+ax9 = Axis(f3[3,3], xlabel = L"M", ylabel = L"C_n")
+lines!(res_αs[:,1], res_αs[:,10])
+
+f3
+
 ## (Speed, alpha) sweep
 res = combinedimsview(
     map(product(Vs, αs)) do (V, α)
         ref1 = @set ref.speed = V
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, ref1)
-        [ V; α; farfield(sys)...; nearfield(sys)... ]
+        [ mach_number(ref1); α; farfield(sys)...; nearfield(sys)... ]
     end
 )
 

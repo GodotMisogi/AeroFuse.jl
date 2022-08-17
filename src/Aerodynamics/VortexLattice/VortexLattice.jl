@@ -8,12 +8,15 @@ using SplitApplyCombine
 using TimerOutputs
 using LabelledArrays
 using Setfield
+using PrettyTables
+using ForwardDiff: jacobian!
+using DiffResults: JacobianResult, jacobian, value
 
 ## Package imports
 #==========================================================================================#
 
 # Math tools
-import ..MathTools: weighted_vector, structtolist
+import ..MathTools: weighted_vector, structtolist, Point3D
 
 # Panel geometry
 import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, normal_vector, transform, p1, p2, p3, p4, average_chord, average_width
@@ -22,9 +25,9 @@ import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, normal
 import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
 
 # Some tools
-import ..Laplace: cartesian_to_freestream, freestream_to_cartesian
+import ..Laplace: AbstractFreestream, Freestream
 
-import ..AeroMDAO: velocity, solve_system, solve_linear, solve_nonlinear, solve_nonlinear!, surface_velocities, surface_coefficients, collocation_point
+import ..AeroFuse: velocity, solve_system, solve_linear, solve_nonlinear, solve_nonlinear!, surface_velocities, surface_coefficients
 
 ## Vortex types and methods
 #==========================================================================================#
@@ -36,9 +39,31 @@ include("vortex_rings.jl")
 ## Reference frames
 #==========================================================================================#
 
+## Axis transformations
+abstract type AbstractAxisSystem end
+
+struct Geometry <: AbstractAxisSystem end
+struct Body      <: AbstractAxisSystem end
+struct Stability <: AbstractAxisSystem end
+struct Wind      <: AbstractAxisSystem end
+
+Base.show(io :: IO, :: Geometry)  = print(io, "Geometry")
+Base.show(io :: IO, :: Body)      = print(io, "Body")
+Base.show(io :: IO, :: Stability) = print(io, "Stability")
+Base.show(io :: IO, :: Wind)      = print(io, "Wind")
+
 include("freestream.jl")
 
+"""
+    velocity(freestream :: Freestream, ::Body)
+
+Compute the velocity of Freestream in the body reference frame.
+"""
+velocity(fs :: Freestream, ::Body) = -velocity(fs)
+
 include("reference_frames.jl")
+
+
 
 # Prandl-Glauert transformation
 include("prandtl_glauert.jl")
@@ -74,8 +99,13 @@ include("farfield.jl")
 # System setups
 #==========================================================================================#
 
+# System
 include("system.jl")
 
+# Derivatives
+include("stability.jl")
+
+# CONVERT THIS TO VLM CONSTRUCTOR
 function solve_system(components, fs :: Freestream, refs :: References)
 
     # Mach number bound checks
@@ -86,8 +116,10 @@ function solve_system(components, fs :: Freestream, refs :: References)
     # Wind axis + Prandtl-Glauert transformation
     β_pg = √(1 - M^2)
     comp = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(components, fs), β_pg)
-    U    = geometry_to_wind_axes(body_frame_velocity(fs), fs)
-    Ω    = geometry_to_wind_axes(fs.omega, fs)
+
+    # Quasi-steady freestream velocity
+    U = geometry_to_wind_axes(velocity(fs, Body()), fs)
+    Ω = geometry_to_wind_axes(fs.omega, fs) / refs.speed
 
     # Solve system
     Γs, AIC, boco = solve_linear(comp, U, Ω)
@@ -97,6 +129,9 @@ end
 
 ## Post-processing
 #==========================================================================================#
+
+# Pretty-printing
+include("printing.jl")
 
 # Streamlines
 include("streamlines.jl")

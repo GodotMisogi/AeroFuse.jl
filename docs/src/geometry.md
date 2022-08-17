@@ -3,11 +3,11 @@
 ## Aircraft Geometry API
 
 ```@autodocs
-Modules = [AeroMDAO.AircraftGeometry]
+Modules = [AeroFuse.AircraftGeometry]
 ```
 
 ## Panel Geometry API
 
 ```@autodocs
-Modules = [AeroMDAO.PanelGeometry]
+Modules = [AeroFuse.PanelGeometry]
 ```

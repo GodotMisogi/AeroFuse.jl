@@ -1,12 +1,12 @@
 ## Aircraft stability analysis example
-using AeroMDAO
+using AeroFuse
 
 ## Lifting surfaces
 
 # Wing
 wing  = WingSection(span       = 8.0,
                     dihedral   = 5.0,
-                    sweep        =  15.0,
+                    sweep      = 15.0,
                     taper      = 0.4,
                     root_chord = 2.0,
                     root_twist = 0.0,
@@ -18,7 +18,7 @@ wing  = WingSection(span       = 8.0,
 # Horizontal tail
 htail = WingSection(span       = 2.0,
                     dihedral   = 0.0,
-                    sweep        =  15.0,
+                    sweep      = 15.0,
                     taper      = 0.6,
                     root_chord = 0.8,
                     root_twist = 0.0,
@@ -32,7 +32,7 @@ htail = WingSection(span       = 2.0,
 # Vertical tail
 vtail = HalfWingSection(span       = 0.8,
                         dihedral   = 0.0,
-                        sweep        =  8.0,
+                        sweep      = 8.0,
                         taper      = 0.6,
                         root_chord = 0.8,
                         root_twist = 0.0,

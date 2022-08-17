@@ -79,6 +79,8 @@ function interpolate(foil :: Foil, xs)
     @views Foil([ xs[end:-1:2]; xs ], [ y_u[end:-1:2]; y_l ], foil.name)
 end
 
+reflect(foil :: Foil) = setproperties(foil, y = -foil.y, name = "Inverted " * foil.name)
+
 affine(foil :: Foil; angle, vector) = translate(rotate(foil; angle = angle); vector = vector)
 
 """
@@ -160,7 +162,7 @@ function control_surface(foil :: Foil, δ, xc_hinge)
     coords   = coordinates(foil)
     @views coords[foil.x .>= xc_hinge,1] = rot_foil.x[foil.x .>= xc_hinge]
     @views coords[foil.x .>= xc_hinge,2] = rot_foil.y[foil.x .>= xc_hinge]
-    Foil(coords, foil.name)
+    Foil(coords, foil.name * " Deflected $(δ)° at $xc_hinge (x/c)")
 end
 
 """
@@ -170,6 +172,8 @@ Modify a `Foil` to mimic a control surface by specifying a deflection angle (in 
 """
 control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge)
 
+maximum_thickness_to_chord(foil :: Foil, n = 40) = maximum_thickness_to_chord(coordinates_to_camber_thickness(foil, n))
+
 ## Camber-thickness representation
 #==========================================================================================#
 
@@ -178,7 +182,7 @@ control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge
 
 Convert 2-dimensional coordinates to its camber-thickness representation after cosine interpolation with ``2n`` points.
 """
-function coordinates_to_camber_thickness(foil, n = 40)
+function coordinates_to_camber_thickness(foil :: Foil, n = 40)
     # Cosine interpolation and splitting
     upper, lower = split_surface(cosine_interpolation(foil, n))
 

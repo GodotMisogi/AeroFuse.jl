@@ -1,6 +1,6 @@
-# AeroMDAO -- Aircraft Design Platform
+# AeroFuse -- Aircraft Design Platform
 
-AeroMDAO is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
+AeroFuse is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
 
 **Authors**: Arjit Seth, Stephane Redonnet, and Rhea P. Liem
 
@@ -38,20 +38,20 @@ An additional aim is to write code compatible with automatic differentiation lib
 ## Installation
 
 ```julia
-julia> using Pkg; Pkg.add("AeroMDAO")
-julia> Pkg.test("AeroMDAO")
-julia> using AeroMDAO
+julia> using Pkg; Pkg.add("AeroFuse")
+julia> Pkg.test("AeroFuse")
+julia> using AeroFuse
 ```
 
 ## Citation
 
-If you use AeroMDAO in your research, please cite the following until any relevant material is actually published:
+If you use AeroFuse in your research, please cite the following until any relevant material is actually published:
 
 ```bibtex
-@software{aeromdao,
+@software{AeroFuse,
   author  = {Arjit Seth, Rhea P. Liem, Stephane Redonnet},
-  title   = {AeroMDAO},
-  url     = {https://github.com/GodotMisogi/AeroMDAO},
+  title   = {AeroFuse},
+  url     = {https://github.com/GodotMisogi/AeroFuse},
   version = {0.3.10},
   date    = {2021-04-21},
 }

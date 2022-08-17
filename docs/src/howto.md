@@ -5,7 +5,7 @@ EditURL = "<unknown>/docs/lit/howto.jl"
 # How-to Guide
 
 ````@example howto
-using AeroMDAO # hide
+using AeroFuse # hide
 using Plots # hide
 gr(dpi = 300) # hide
 using LaTeXStrings # hide
@@ -66,6 +66,12 @@ You can also do the inverse transformation.
 coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
 ````
 
+You can also reflect the $y$-coordinates about the $x$-axis, called inversion.
+
+````@example howto
+inv_foil = reflect(my_foil)
+````
+
 ### Control Surfaces
 
 You can (somewhat) mimic the behaviour of a control surface by specifying a deflection angle $\delta$ (in degrees, clockwise-positive convention) with the specification of the hinge location's $x$-coordinate normalized in $[0,1]$ to the chord length.
@@ -96,7 +102,7 @@ u_es   = surface_velocities(system)
 cl     = lift_coefficient(system)
 ````
 
-AeroMDAO provides more helper functions for the panel geometry.
+AeroFuse provides more helper functions for the panel geometry.
 
 ````@example howto
 panels   = system.surface_panels
@@ -110,7 +116,7 @@ nothing #hide
 ## Wing Geometry
 How to work with wing geometry.
 
-To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
+To define one side of a wing, AeroFuse provides a `HalfWing` constructor.
 
 ````@example howto
 airfoil    = naca4((2,4,1,2))

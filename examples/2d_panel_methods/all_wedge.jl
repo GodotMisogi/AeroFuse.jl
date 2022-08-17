@@ -2,7 +2,7 @@
 using LinearAlgebra
 using Base.Iterators
 using Seaborn
-using AeroMDAO
+using AeroFuse
 
 ## Tests
 wedge_pts    = @. Point2D([0.5, 0.0, -0.5, 0.0, 0.5],

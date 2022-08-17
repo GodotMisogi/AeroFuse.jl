@@ -15,7 +15,7 @@ Here we will show you how to perform an aerodynamic analysis of a conventional a
 For this, we will need to import some packages which will be convenient for plotting.
 
 ````@example tutorials-aircraft
-using AeroMDAO      # Main package
+using AeroFuse      # Main package
 using Plots         # Plotting library
 gr(dpi = 300)       # Plotting backend
 using LaTeXStrings  # For LaTeX printing in plots
