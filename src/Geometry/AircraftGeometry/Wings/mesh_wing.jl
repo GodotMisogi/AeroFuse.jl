@@ -59,7 +59,7 @@ function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord
     leading_xyz  = @views coordinates(wing)[1,:]
 
     # Scale airfoil coordinates
-    scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_interpolation)(wing.foils, chord_num)
+    scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_interpolation)(reflect.(wing.foils), chord_num)
 
     # Discretize spanwise sections
     coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
@@ -139,6 +139,8 @@ end
 Define a container to generate meshes and panels for a given `AbstractWing` with a specified distribution of number of spanwise panels, and a number of chordwise panels.
 
 Optionally a combination of `AbstractSpacing` types (`Sine(), Cosine(), Uniform()`) can be provided to the **named argument** `span_spacing`, either as a singleton or as a vector with length equal to the number of spanwise sections. By default, the combination is `[Sine(), Cosine(), ..., Cosine()]`.
+
+For surface coordinates, the wing mesh will have (n_chord - 1) * 2 chordwise panels from TE-LE-TE and (n_span * 2) spanwise panels.
 """
 function WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surface)) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}}
     check_definition(surface, n_span)
@@ -178,21 +180,21 @@ end
 
 Generate the chord coordinates of a `WingMesh` with default spanwise ``n_s`` and chordwise ``n_c`` panel distributions from the mesh.
 """
-chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = chord_coordinates(wing.surface, n_span, n_chord)
+chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = chord_coordinates(wing.surface, n_span, n_chord; span_spacing = wing.span_spacing)
 
 """
     camber_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)
 
 Generate the camber coordinates of a `WingMesh` with default spanwise ``n_s`` and chordwise ``n_c`` panel distributions from the mesh.
 """
-camber_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = camber_coordinates(wing.surface, n_span, n_chord)
+camber_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = camber_coordinates(wing.surface, n_span, n_chord; span_spacing = wing.span_spacing)
 
 """
     surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)
 
 Generate the surface coordinates of a `WingMesh` with default spanwise ``n_s`` and chordwise ``n_c`` panel distributions from the mesh.
 """
-surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = surface_coordinates(wing.surface, n_span, n_chord)
+surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord) = surface_coordinates(wing.surface, n_span, n_chord, span_spacing = wing.span_spacing)
 
 """
     surface_panels(

@@ -1,7 +1,7 @@
 ## Example script for linear-strength vortex panel method
 using LinearAlgebra
 using Base.Iterators
-using AeroMDAO
+using AeroFuse
 
 ## Airfoil
 alpha_u = [0.2, 0.3, 0.2, 0.15, 0.2]

@@ -1,0 +1,215 @@
+"""
+    d_ij(i :: Integer, j :: Integer, local_coordinates)
+
+Compute the distance from i-th to j-th point of the panel.
+"""
+d_ij(i :: Integer, j :: Integer, local_coordinates) = norm(local_coordinates[j] - local_coordinates[i])
+
+
+"""
+    m_ij(i :: Integer, j :: Integer, local_coordinates)
+
+Compute the slope of the line segment consisting i-th and j-th point of the panel.
+"""
+function m_ij(i :: Integer, j :: Integer, local_coordinates)
+    x, y = local_coordinates[j] - local_coordinates[i]
+    return y / x
+end
+
+
+"""
+    r_k(k :: Integer, local_coordinates, local_point)
+
+Compute the distance from i-th point of the panel to the arbitary point.
+"""
+r_k(k :: Integer, local_coordinates, local_point) = norm(local_point - local_coordinates[k])
+
+
+"""
+    r_k(k :: Integer, local_panel :: AbstractPanel3D, local_point)
+
+Compute the distance from i-th point of the panel to the arbitary point.
+"""
+r_k(k :: Integer, local_panel :: AbstractPanel3D, local_point) = r_k(k, panel_coordinates(local_panel), local_point)
+
+
+"""
+    k :: Integer, local_coordinates, local_point
+
+Compute (x - xk)^2 + z^2.
+"""
+e_k(k :: Integer, local_coordinates, local_point) = norm([local_point.x - local_coordinates[k].x, local_point.z])
+
+
+"""
+    h_k(k :: Integer, local_coordinates, local_point)
+
+Compute (x - xk) * (y - yk).
+"""
+h_k(k :: Integer, local_coordinates, local_point) = (local_point.x - local_coordinates[k].x) * (local_point.y - local_coordinates[k].y)
+
+
+"""
+
+"""
+function check_panel_status(panel :: AbstractPanel3D, point :: Point3D, transformation_error = 1e-7)
+    if prod([panel.p1.z; panel.p2.z; panel.p3.z; panel.p4.z] .>= transformation_error)
+        @warn "Panel is not in local coordinate system! Check AIC matrix assembly!"
+        @info "Transform to local coordinate system now."
+        return transform_panel(panel, point)
+    else
+        return panel, point
+    end
+end
+
+"""
+    quadrilateral_source_velocity(σ, local_panel :: AbstractPanel, local_point)
+
+    Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant source.
+"""
+function quadrilateral_source_velocity(σ, local_panel :: AbstractPanel3D, local_point :: Point3D)
+    const_quad_source_u(i, j, yi, dij, ri) = (yi[j] -yi[i]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
+    const_quad_source_v(i, j, xi, dij, ri) = (xi[i] -xi[j]) / dij[i] * log( (ri[i] + ri[j] - dij[i]) / (ri[i] + ri[j] + dij[i]) )
+    
+    # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
+    local_panel, local_point = check_panel_status(local_panel, local_point)
+
+    z = local_point.z
+    coord = panel_coordinates(local_panel)
+
+    xi = xs(local_panel)
+    yi = ys(local_panel)
+    ri  = @SVector [r_k(i, coord, local_point)  for i=1:4]
+    ei  = @SVector [e_k(i, coord, local_point)  for i=1:4]
+    hi  = @SVector [h_k(i, coord, local_point)  for i=1:4]
+    dij = @SVector [d_ij(i, i%4+1, coord)       for i=1:4]
+    mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
+
+    # Results from textbook differs from a minus sign
+    vel = σ / 4π * sum(1:4) do i 
+        SVector(
+            const_quad_source_u(i, i%4+1, yi, dij, ri),
+            const_quad_source_v(i, i%4+1, xi, dij, ri),
+            const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri)
+        )
+    end
+
+    return vel
+end
+
+
+"""
+    quadrilateral_source_velocity_farfield(σ, local_panel :: AbstractPanel, local_point)
+
+Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant source at FARFIELD.
+"""
+function quadrilateral_source_velocity_farfield(σ, local_panel :: AbstractPanel3D, local_point :: Point3D)
+    local_panel, local_point = check_panel_status(local_panel, local_point)
+
+    A = panel_area(local_panel)
+    centroid = midpoint(local_panel) # It is better to use centroid
+    r3 = norm(local_point - centroid)^3
+    kernel = σ * A / (4π * r3)
+
+    u = kernel * (local_point.x - centroid.x)
+    v = kernel * (local_point.y - centroid.y)
+    w = kernel * (local_point.z - centroid.z)
+
+    return SVector(u, v, w)
+end
+
+const_quad_source_phi_term1(i :: Integer, j :: Integer, x, y, xi, yi, dij, ri) = ( (x - xi[i]) * (yi[j] - yi[i]) - (y - yi[i]) * (xi[j] - xi[i]) ) / dij[i] * log( (ri[i] + ri[j] + dij[i]) / (ri[i] + ri[j] - dij[i]) )
+const_quad_source_phi_term2(i :: Integer, j :: Integer, z, mij, ei, hi, ri) = atan( (mij[i] * ei[i] - hi[i]) / (z * ri[i]) ) - atan( (mij[i] * ei[j] - hi[j]) / (z * ri[j]) )
+
+"""
+    quadrilateral_source_potential(σ, local_panel :: AbstractPanel, local_point)
+
+Compute the flow potential in local panel (x̂,ŷ,ẑ) direction of a constant source.
+"""
+function quadrilateral_source_potential(σ, local_panel :: AbstractPanel3D, local_point:: Point3D)
+    # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
+    local_panel, local_point = check_panel_status(local_panel, local_point)
+    
+    coord = panel_coordinates(local_panel)
+
+    xi = [local_panel.p1.x; local_panel.p2.x; local_panel.p3.x; local_panel.p4.x ]
+    yi = [local_panel.p1.y; local_panel.p2.y; local_panel.p3.y; local_panel.p4.y ]
+
+    x, y, z = local_point.x, local_point.y, local_point.z
+
+    ri  = @SVector [r_k(i, coord, local_point)  for i = 1:4]
+    ei  = @SVector [e_k(i, coord, local_point)  for i = 1:4]
+    hi  = @SVector [h_k(i, coord, local_point)  for i = 1:4]
+    dij = @SVector [d_ij(i, i%4+1, coord)       for i = 1:4]
+    mij = @SVector [m_ij(i, i%4+1, coord)       for i = 1:4]
+
+    return -σ / 4π * (sum(
+        const_quad_source_phi_term1(i, i%4+1, x, y, xi, yi, dij, ri) -
+        abs(z) * const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) 
+        for i=1:4)
+    )
+end
+
+"""
+    quadrilateral_doublet_velocity(σ, local_panel :: AbstractPanel, local_point)
+
+Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel.
+"""
+function quadrilateral_doublet_velocity(μ, local_panel :: AbstractPanel3D, local_point :: Point3D)
+    # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
+    local_panel, local_point = check_panel_status(local_panel, local_point)
+
+    coord = panel_coordinates(local_panel)
+
+    rvs = @SVector [local_point - coord[i] for i=1:4]
+    rs = norm.(rvs)
+    ds = @SVector [d_ij(i, i%4+1, coord) for i=1:4]
+    
+    return -μ / 4π * sum(
+        ( rvs[i] × rvs[i%4+1] * (rs[i] + rs[i%4+1]) ) / ( (rs[i] * rs[i%4+1]) * (rs[i] * rs[i%4+1] + rvs[i] ⋅ rvs[i%4+1]) + 0.005 * ds[i] ) for i=1:4
+    )
+
+end
+
+"""
+    quadrilateral_doublet_velocity_farfield(σ, local_panel :: AbstractPanel, local_point)
+
+Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel at FARFIELD.
+"""
+function quadrilateral_doublet_velocity_farfield(μ, local_panel :: AbstractPanel3D, local_point:: Point3D)
+    local_panel, local_point = check_panel_status(local_panel, local_point)
+
+    A = panel_area(local_panel)
+    centroid = midpoint(local_panel) # It is better to use centroid
+    x, y, z = local_point.x, local_point.y, local_point.z
+    x0, y0 = centroid.x, centroid.y
+    u = ( 3μ * A * (x - x0) * z ) / ( 4π * norm(local_point - centroid)^5 )
+    v = ( 3μ * A * (y - y0) * z ) / ( 4π * norm(local_point - centroid)^5 )
+    w = ( -μ * A * ( (x - x0)^2 + (y - y0)^2 - 2 * z^2 ) ) / ( 4π * norm(local_point - centroid)^5 )
+
+    return SVector(u, v, w)
+end
+
+
+"""
+    quadrilateral_doublet_potential(σ, local_panel :: AbstractPanel, local_point)
+
+Compute the flow potential in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel.
+"""
+function quadrilateral_doublet_potential(μ, local_panel :: AbstractPanel3D, local_point:: Point3D)
+    # Check whether the panel is expressed in local coordinates. All z-coordinates must be zeros.
+    local_panel, local_point = check_panel_status(local_panel, local_point)
+    
+    coord = panel_coordinates(local_panel)
+
+    z = local_point.z
+
+    ri  = @SVector [r_k(i, coord, local_point)  for i=1:4]
+    ei  = @SVector [e_k(i, coord, local_point)  for i=1:4]
+    hi  = @SVector [h_k(i, coord, local_point)  for i=1:4]
+    mij = @SVector [m_ij(i, i%4+1, coord)       for i=1:4]
+    
+    return -μ / 4π * sum(
+        const_quad_source_phi_term2(i, i%4+1, z, mij, ei, hi, ri) for i=1:4
+    )
+end

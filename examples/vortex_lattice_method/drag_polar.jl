@@ -1,5 +1,5 @@
 ## Drag polar analysis case
-using AeroMDAO
+using AeroFuse
 using DataFrames
 using Plots
 

@@ -10,6 +10,8 @@ struct Point2D{T <: Real} <: FieldVector{2, T}
     y :: T
 end
 
+StaticArrays.similar_type(::Type{<:Point2D}, ::Type{T}, s::Size{(2,)}) where {T} = Point2D{T}
+
 x(p :: Point2D) = p.x
 y(p :: Point2D) = p.y
 
@@ -18,6 +20,8 @@ struct Point3D{T <: Real} <: FieldVector{3, T}
     y :: T
     z :: T
 end
+
+StaticArrays.similar_type(::Type{<:Point3D}, ::Type{T}, s::Size{(3,)}) where {T} = Point3D{T}
 
 x(p :: Point3D) = p.x
 y(p :: Point3D) = p.y
@@ -104,10 +108,15 @@ ord2diff(xs) = @views @. xs[3:end] - 2 * xs[2:end-1] + xs[1:end-2]
 adj3(xs) = @views zip(xs[1:end-2,:], xs[2:end-1,:], xs[3:end,:])
 
 # Central differencing schema for pairs except at endpoints
-midpair_map(f :: H, xs) where {H} = 
-    @views  [        f.(xs[1,:], xs[2,:])'        ;
-               f.(xs[1:end-2,:], xs[3:end,:]) / 2 ;
-                 f.(xs[end-1,:], xs[end,:])'      ]
+function midpair_map(f :: H, xs; dims :: Int64) where {H}
+    if dims == 1
+        @views  [permutedims(f.(xs[1,:], xs[2,:]));     f.(xs[1:end-2,:], xs[3:end,:]);     permutedims(f.(xs[end-1,:], xs[end,:])) ]
+    elseif dims == 2
+        @views  [f.(xs[:,1], xs[:,2])       f.(xs[:,1:end-2], xs[:,3:end])      f.(xs[:,end-1], xs[:,end])  ]
+    else
+        ArgumentError("Array with order > 2 is currently not supported!")
+    end
+end
 
 # stencil(xs, n) = [ xs[n+1:end] xs[1:length(xs) - n] ]
 # parts(xs) = let adj = stencil(xs, 1); adj[1,:], adj[end,:] end

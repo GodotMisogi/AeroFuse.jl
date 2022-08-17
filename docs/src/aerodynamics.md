@@ -3,11 +3,11 @@
 ## Doublet-Source Panel API
 
 ```@autodocs
-Modules = [AeroMDAO.DoubletSource]
+Modules = [AeroFuse.DoubletSource]
 ```
 
 ## Vortex Lattice API
 
 ```@autodocs
-Modules = [AeroMDAO.VortexLattice]
+Modules = [AeroFuse.VortexLattice]
 ```

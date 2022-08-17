@@ -82,6 +82,7 @@ end
 
 function wake_panel(panels, bound, α)
     _, firsty        = (p1 ∘ first)(panels)
+    firstx, firsty   = (p1 ∘ first)(panels)
     lastx, lasty     = (p2 ∘ last)(panels)
     y_mid            = (firsty + lasty) / 2
     y_bound, x_bound = bound .* sincos(α)

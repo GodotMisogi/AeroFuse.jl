@@ -70,12 +70,12 @@ end
 linear_source_neumann_matrix(panels_1, panels_2) = two_point_neumann_matrix(linear_source_velocity_a, linear_source_velocity_b, panels_1, panels_2)
 linear_vortex_neumann_matrix(panels_1, panels_2) = two_point_neumann_matrix(linear_vortex_velocity_a, linear_vortex_velocity_b, panels_1, panels_2)
 
-kutta_condition(panels_1, panels_2) = [ 1 zeros(length(panels_1) - 1)' 1 zeros(length(panels_2) - length(panels_1))' ]
+kutta_condition(panels_1 :: AbstractVector{<:AbstractPanel2D}, panels_2 :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels_1) - 1)' 1 zeros(length(panels_2) - length(panels_1))' ]
 source_influence_matrix(panels_1, panels_2) = linear_source_matrix(panels_1, panels_2)
 vortex_influence_matrix(panels_1, panels_2) = linear_vortex_matrix(panels_1, panels_2)
 
 # Diagonal cases
-kutta_condition(panels) = [ 1 zeros(length(panels) - 1)' 1 ]
+kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 1)' 1 ]
 source_influence_matrix(panels) = [ linear_source_matrix(panels, panels); kutta_condition(panels) ]
 vortex_influence_matrix(panels) = [ linear_vortex_matrix(panels, panels); kutta_condition(panels) ]
 

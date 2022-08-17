@@ -16,7 +16,7 @@ using DiffResults: JacobianResult, jacobian, value
 #==========================================================================================#
 
 # Math tools
-import ..MathTools: weighted_vector, structtolist
+import ..MathTools: weighted_vector, structtolist, Point3D
 
 # Panel geometry
 import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, normal_vector, transform, p1, p2, p3, p4, average_chord, average_width
@@ -27,7 +27,7 @@ import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coeff
 # Some tools
 import ..Laplace: AbstractFreestream, Freestream
 
-import ..AeroMDAO: velocity, solve_system, solve_linear, solve_nonlinear, solve_nonlinear!, surface_velocities, surface_coefficients
+import ..AeroFuse: velocity, solve_system, solve_linear, solve_nonlinear, solve_nonlinear!, surface_velocities, surface_coefficients
 
 ## Vortex types and methods
 #==========================================================================================#

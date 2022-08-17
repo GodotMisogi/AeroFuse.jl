@@ -5,7 +5,7 @@ EditURL = "<unknown>/docs/lit/howto.jl"
 # How-to Guide
 
 ````@example howto
-using AeroMDAO # hide
+using AeroFuse # hide
 using Plots # hide
 gr(dpi = 300) # hide
 using LaTeXStrings # hide
@@ -102,7 +102,7 @@ u_es   = surface_velocities(system)
 cl     = lift_coefficient(system)
 ````
 
-AeroMDAO provides more helper functions for the panel geometry.
+AeroFuse provides more helper functions for the panel geometry.
 
 ````@example howto
 panels   = system.surface_panels
@@ -116,7 +116,7 @@ nothing #hide
 ## Wing Geometry
 How to work with wing geometry.
 
-To define one side of a wing, AeroMDAO provides a `HalfWing` constructor.
+To define one side of a wing, AeroFuse provides a `HalfWing` constructor.
 
 ````@example howto
 airfoil    = naca4((2,4,1,2))

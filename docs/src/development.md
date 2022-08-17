@@ -3,5 +3,5 @@
 ## Aerostructural API
 
 ```@autodocs
-Modules = [AeroMDAO.Aerostructural]
+Modules = [AeroFuse.Aerostructural]
 ```
