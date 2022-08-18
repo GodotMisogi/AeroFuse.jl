@@ -1,8 +1,9 @@
 using AeroFuse
 using Documenter
+using DocumenterTools: Themes
+using Literate
 
 ## Generate theme
-using DocumenterTools: Themes
 for w in ("light",)
     header = read(joinpath(@__DIR__, "theme/style.scss"), String)
     theme = read(joinpath(@__DIR__, "theme/$(w)defs.scss"), String)
@@ -13,8 +14,6 @@ Themes.compile(joinpath(@__DIR__, "theme/light.scss"), joinpath(@__DIR__, "src/a
 Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
 
 ## Generate Markdown files using Literate.jl
-using Literate
-
 src = joinpath(@__DIR__, "src")
 lit = joinpath(@__DIR__, "lit")
 

@@ -35,7 +35,7 @@ htail = WingSection(
     symmetry   = true
 );
 
-## Vertical tail
+# Vertical tail
 vtail = WingSection(
     area       = 0.512 / 2,
     aspect     = 1.25,

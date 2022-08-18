@@ -9,9 +9,13 @@ wing = Wing(
     dihedrals = [5., 5.],                   # Dihedral angles (deg)
     sweeps    = [20.,20.],                  # Sweep angles (deg)
     w_sweep   = 0.25,                       # Normalized sweep location to chord ∈ [0,1]
-    symmetry  = true,                       # Symmetry in x-z plane
+    # symmetry  = true,                       # Symmetry in x-z plane
     # flip      = true                      # Reflection about x-z plane
 )
+
+using Setfield
+
+wing = @set wing.symmetry = true
 
 ## Plotting
 using Plots

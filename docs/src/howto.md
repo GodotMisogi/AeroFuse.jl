@@ -66,12 +66,6 @@ You can also do the inverse transformation.
 coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthick[:,3])
 ````
 
-You can also reflect the $y$-coordinates about the $x$-axis, called inversion.
-
-````@example howto
-inv_foil = reflect(my_foil)
-````
-
 ### Control Surfaces
 
 You can (somewhat) mimic the behaviour of a control surface by specifying a deflection angle $\delta$ (in degrees, clockwise-positive convention) with the specification of the hinge location's $x$-coordinate normalized in $[0,1]$ to the chord length.
@@ -116,24 +110,23 @@ nothing #hide
 ## Wing Geometry
 How to work with wing geometry.
 
-To define one side of a wing, AeroFuse provides a `HalfWing` constructor.
+To define a wing, AeroFuse provides a `Wing` constructor.
 
 ````@example howto
 airfoil    = naca4((2,4,1,2))
-wing_right = HalfWing(foils     = [ airfoil for i in 1:3 ],
-                      chords    = [0.4, 0.2, 0.1],
-                      twists    = [0., 2., 5.],
-                      spans     = [1.0, 0.1],
-                      dihedrals = [0., 60.],
-                      sweeps    = [0., 30.],
-                      w_sweep   = 0.25)
+wing = Wing(
+    foils     = [ airfoil for i in 1:3 ],
+    chords    = [0.4, 0.2, 0.1],
+    twists    = [0., 2., 5.],
+    spans     = [1.0, 0.1],
+    dihedrals = [0., 60.],
+    sweeps    = [0., 30.],
+    w_sweep   = 0.25,
+    symmetry  = true,
+)
 ````
 
-The `Wing` constructor takes left and right `HalfWing`s to define a full wing. For example, the following generates a symmetric wing.
-
-````@example howto
-wing = Wing(wing_right, wing_right)
-````
+The `symmetry` Boolean argument determines whether the geometry should be reflected in the ``x``-``z`` plane.
 
 The following "getter" functions provide quantities of interest such as chord lengths, spans, twist, dihedral, and sweep angles.
 
@@ -145,6 +138,21 @@ twists(wing)
 dihedrals(wing)
 sweeps(wing)
 ```
+
+You can evaluate commonly defined properties such as the aspect ratio, projected area, etc. with the following functions.
+
+```@repl howto
+aspect_ratio(wing)
+projected_area(wing)
+span(wing)
+taper_ratio(wing)
+```
+
+You can plot the wing with `Plots.jl` quite simply.
+
+````@example howto
+plot(wing, zlim = (-0.5, 0.5) .* span(wing), aspect_ratio = 1, label = "Wing")
+````
 
 There is also a convenient function for pretty-printing information, in which the first argument takes the `Wing` type and the second takes a name (as a `String` or `Symbol`).
 
@@ -160,13 +168,7 @@ print_info(wing, "Wing")
 using Setfield
 
 # Set only chords with other properties remaining identical.
-wing_left = @set wing_right.chords = [0.4, 0.1, 0.05]
-````
-
-To create an asymmetric wing, feed the left and right halves to `Wing` in the particular order.
-
-````@example howto
-wing = Wing(wing_left, wing_right);
+wing = @set wing.chords = [0.4, 0.1, 0.05]
 
 print_info(wing, "My Wing")
 ````
@@ -180,46 +182,62 @@ First we define the lifting surfaces. These can be a combination of `Wing` or `H
 !!! warning "Alert"
     Support for fuselages and control surfaces will be added soon.
 
+Wing
+
 ````@example howto
-# Wing
-wing  = WingSection(span       = 8.0,
-                    dihedral   = 5.0,
-                    sweep      = 15.0,
-                    taper      = 0.4,
-                    root_chord = 2.0,
-                    root_twist = 0.0,
-                    tip_twist  = -2.0,
-                    root_foil  = naca4(2,4,1,2),
-                    tip_foil   = naca4(2,4,1,2),
-                    position   = [0., 0., 0.])
+wing  = WingSection(
+    area       = 6.4,
+    aspect     = 10.,
+    dihedral   = 5.0,
+    sweep      = 15.0,
+    taper      = 0.4,
+    root_twist = 0.0,
+    tip_twist  = -2.0,
+    root_foil  = naca4(2,4,1,2),
+    tip_foil   = naca4(2,4,0,9),
+    position   = [0., 0., 0.],
+    symmetry   = true
+)
+````
 
-# Horizontal tail
-htail = WingSection(span       = 2.0,
-                    dihedral   = 0.0,
-                    sweep      = 15.0,
-                    taper      = 0.6,
-                    root_chord = 0.8,
-                    root_twist = 0.0,
-                    tip_twist  = 0.0,
-                    root_foil  = naca4(0,0,1,2),
-                    tip_foil   = naca4(0,0,0,9),
-                    position   = [5., 0., -0.1],
-                    angle      = 0.,
-                    axis       = [0., 1., 0.]);
+Horizontal tail
 
-# Vertical tail
-vtail = HalfWingSection(span       = 0.8,
-                        dihedral   = 0.0,
-                        sweep      = 8.0,
-                        taper      = 0.6,
-                        root_chord = 0.8,
-                        root_twist = 0.0,
-                        tip_twist  = 0.,
-                        root_foil  = naca4(0,0,0,9),
-                        tip_foil   = naca4(0,0,0,9),
-                        position   = [5., 0., 0.],
-                        angle      = 90.,
-                        axis       = [1., 0., 0.])
+````@example howto
+htail = WingSection(
+    area       = 2.56 / 2,
+    aspect     = 6.25,
+    dihedral   = 0.0,
+    sweep      = 15.0,
+    taper      = 0.6,
+    root_twist = 0.0,
+    tip_twist  = 0.0,
+    root_foil  = naca4(0,0,1,2),
+    tip_foil   = naca4(0,0,0,9),
+    position   = [5., 0., -0.1],
+    angle      = 0.,
+    axis       = [0., 1., 0.],
+    symmetry   = true
+);
+nothing #hide
+````
+
+Vertical tail
+
+````@example howto
+vtail = WingSection(
+    area       = 0.512 / 2,
+    aspect     = 1.25,
+    dihedral   = 0.0,
+    sweep      = 8.0,
+    taper      = 0.6,
+    root_twist = 0.0,
+    tip_twist  = 0.0,
+    root_foil  = naca4(0,0,0,9),
+    tip_foil   = naca4(0,0,0,9),
+    position   = [5., 0., 0.],
+    angle      = 90.,
+    axis       = [1., 0., 0.]
+)
 ````
 
 ### Meshing
@@ -255,10 +273,10 @@ For multiple lifting surfaces, it is most convenient to define a single vector c
 
 ````@example howto
 aircraft = ComponentVector(
-                           wing  = wing_horsies,
-                           htail = make_horseshoes(htail_mesh),
-                           vtail = make_horseshoes(vtail_mesh)
-                          );
+    wing  = wing_horsies,
+    htail = make_horseshoes(htail_mesh),
+    vtail = make_horseshoes(vtail_mesh)
+);
 nothing #hide
 ````
 
@@ -266,9 +284,11 @@ To define boundary conditions, use the following `Freestream` type, which takes 
 
 ````@example howto
 # Define freestream conditions
-fs = Freestream(alpha = 1.0,
-                beta  = 0.0,
-                omega = [0.,0.,0.])
+fs = Freestream(
+    alpha = 1.0,
+    beta  = 0.0,
+    omega = [0.,0.,0.]
+)
 ````
 
 To define reference values, use the following `References` type.
@@ -276,14 +296,14 @@ To define reference values, use the following `References` type.
 ````@example howto
 # Define reference values
 refs = References(
-           speed     = 10.0,
-           density   = 1.225,
-           viscosity = 1.5e-5,
-           area      = projected_area(wing),
-           span      = span(wing),
-           chord     = mean_aerodynamic_chord(wing),
-           location  = mean_aerodynamic_center(wing)
-          )
+    speed     = 10.0,
+    density   = 1.225,
+    viscosity = 1.5e-5,
+    area      = projected_area(wing),
+    span      = span(wing),
+    chord     = mean_aerodynamic_chord(wing),
+    location  = mean_aerodynamic_center(wing)
+)
 ````
 
 The vortex lattice analysis can be executed with the horseshoes, freestream condition, and reference values defined.
@@ -291,10 +311,10 @@ The vortex lattice analysis can be executed with the horseshoes, freestream cond
 ````@example howto
 # Solve system
 system = solve_case(
-             aircraft, fs, refs;
-             print            = true, # Prints the results for only the aircraft
-             print_components = true, # Prints the results for all components
-            )
+    aircraft, fs, refs;
+    print            = true, # Prints the results for only the aircraft
+    print_components = true, # Prints the results for all components
+)
 ````
 
 If needed, you can access the relevant component influence matrix values and boundary conditions with the following attributes, e.g.
@@ -363,16 +383,14 @@ print_coefficients(nf, ff, :aircraft)
 ````
 
 ## Aerodynamic Stability Analyses
-The derivatives of the aerodynamic coefficients with respect to the freestream values is obtained by automatic differentiation enabled by [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl). To compute the values, simply replace `solve_case` with `solve_case_derivatives`. You can also optionally provide the axes for the reference frame of the coefficients.
+The derivatives of the aerodynamic coefficients with respect to the freestream values is obtained by automatic differentiation enabled by [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl). The following function evaluates the derivatives of the aerodynamic coefficients with respect to the freestream values. You can also optionally provide the axes for the reference frame of the coefficients.
 
 ````@example howto
-dv_data = solve_case_derivatives(
-             aircraft, fs, refs;
-             axes             = Wind(),
-             name             = :aircraft,
-             print            = true,    # Prints the results for only the aircraft
-             print_components = true,    # Prints the results for all components
-            );
+dv_data = freestream_derivatives(
+    system,
+    print            = true,    # Prints the results for only the aircraft
+    print_components = true,    # Prints the results for all components
+);
 nothing #hide
 ````
 
