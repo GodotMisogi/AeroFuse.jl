@@ -4,7 +4,7 @@ module DoubletSource
 #==========================================================================================#
 
 using LinearAlgebra
-using LoopVectorization
+using FLoops
 import Base.Iterators: product
 using StaticArrays
 import SplitApplyCombine: combinedimsview

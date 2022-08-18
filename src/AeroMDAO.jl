@@ -24,7 +24,7 @@ export ComponentVector, ComponentArray, valkeys
 using Setfield
 using LabelledArrays
 
-using LoopVectorization
+using FLoops
 
 ## Methods to be extended in submodules
 #==========================================================================================#

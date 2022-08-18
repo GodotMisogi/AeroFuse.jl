@@ -193,9 +193,9 @@ end
 
 function doublet_velocity_matrix(collpanels, inflpanels)
     VIM = zeros(Point3D{eltype(collpanels[1].p1)}, length(collpanels), length(inflpanels))
-    for i ∈ indices(collpanels)
+    @floop for i ∈ eachindex(collpanels)
         point_i = collocation_point(collpanels[i])
-        for j ∈ indices(inflpanels)
+        for j ∈ eachindex(inflpanels)
             panel_j = inflpanels[j]
             VIM[i,j] = quadrilateral_doublet_velocity(panel_j, point_i)
         end
