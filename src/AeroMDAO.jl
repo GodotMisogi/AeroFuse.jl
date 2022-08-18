@@ -24,6 +24,8 @@ export ComponentVector, ComponentArray, valkeys
 using Setfield
 using LabelledArrays
 
+using LoopVectorization
+
 ## Methods to be extended in submodules
 #==========================================================================================#
 function velocity end

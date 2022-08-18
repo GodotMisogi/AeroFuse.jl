@@ -4,6 +4,7 @@ module DoubletSource
 #==========================================================================================#
 
 using LinearAlgebra
+using LoopVectorization
 import Base.Iterators: product
 using StaticArrays
 import SplitApplyCombine: combinedimsview
@@ -91,8 +92,9 @@ struct DoubletSourceSystem{T <: Real, M <: AbstractMatrix{T}, N <: AbstractVecto
     freestream         :: P
 end
 
-struct DoubletSourceSystem3D{T <: Real, M <: AbstractMatrix{T}, N <: AbstractArray{T}, O <: AbstractMatrix{<: AbstractPanel3D}, R <: AbstractArray{<: WakePanel3D}, P <: Freestream}
+struct DoubletSourceSystem3D{T <: Real, M <: AbstractMatrix{T}, Q <: AbstractMatrix{<: Point3D}, N <: AbstractArray{T}, O <: AbstractMatrix{<: AbstractPanel3D}, R <: AbstractArray{<: WakePanel3D}, P <: Freestream}
     influence_matrix   :: M
+    velocity_influence_matrix :: Q
     boundary_condition :: N
     singularities      :: N
     surface_panels     :: O
@@ -158,16 +160,16 @@ function solve_system(panels :: AbstractArray{<:AbstractPanel2D}, uni :: Uniform
     DoubletSourceSystem(AIC, boco, φs, panels, wake_pan, uni)
 end
 
-function solve_system(surf_pans :: AbstractMatrix{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
-	wake_pans = wake_panel.(eachcol(surf_pans[:,2:end-1]), wake_length, fs.alpha, fs.beta)
-	φs, AIC, boco = solve_linear(surf_pans, U, fs, wake_pans)
-	return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
-end
+# function solve_system(surf_pans :: AbstractMatrix{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
+# 	wake_pans = wake_panel.(eachcol(surf_pans[:,2:end-1]), wake_length, fs.alpha, fs.beta)
+# 	φs, AIC, boco = solve_linear(surf_pans, U, fs, wake_pans)
+# 	return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
+# end
 
 function solve_system_neumann(surf_pans :: AbstractMatrix{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
 	wake_pans = wake_panel.(eachcol(surf_pans[:,2:end-1]), wake_length, fs.alpha, fs.beta)
-	φs, AIC, boco = solve_linear_neumann(surf_pans, U, fs, wake_pans)
-	return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
+	φs, AIC, boco, VIM = solve_linear_neumann(surf_pans, U, fs, wake_pans)
+	return DoubletSourceSystem3D(AIC, VIM, boco, φs, surf_pans, wake_pans, fs, U)
 end
 
 
@@ -199,48 +201,8 @@ function surface_coefficients(prob :: DoubletSourceSystem)
 end
 
 @views function surface_velocities(prob :: DoubletSourceSystem3D)
-    # make_tuple(a, b) = (a, b)
-
-    # ps = prob.surface_panels
-    # npancd, npansp = size(ps)
-    # npanf = npancd * npansp
-
-    # φs = permutedims(reshape(prob.singularities[1:npanf], npansp, npancd))
-    # clpts = collocation_point.(ps)
-    # xpair = midpair_map(make_tuple, clpts; dims=1)
-    # ypair = midpair_map(make_tuple, clpts; dims=2)
-    # φxpair = midpair_map(make_tuple, φs; dims=1)
-    # φypair = midpair_map(make_tuple, φs; dims=2)
-
-    # vxs, vys = zeros(npancd, npansp), zeros(npancd, npansp)  
-    # V∞ = prob.Umag * velocity(prob.freestream)
-
-    # for i=1:npancd
-    #     for j=1:npansp
-    #         tr = get_transformation(ps[i,j])
-    #         nbx1, nbx2 = tr.(xpair[i,j])
-    #         nby1, nby2 = tr.(ypair[i,j])
-    #         φnbx1, φnbx2 = φxpair[i,j]
-    #         φnby1, φnby2 = φypair[i,j]
-
-    #         vx = -(φnbx1 - φnbx2) / (nbx1.x - nbx2.x)
-
-    #         vyt = (φnby1 - φnby2) / norm(nby1.y - nby2.y, nby1.x - nby2.x)
-    #         vy = -(vyt - vx * (nby1.x - nby2.x)) / (nby1.y - nby2.y)
-
-    #         vxs[i,j] = vx + tr(V∞).x
-    #         vys[i,j] = vy + tr(V∞).y
-    #     end
-    # end
-
-    # return vxs, vys
-
-    ps = permutedims(prob.surface_panels)[:]
-    allps = [ps; prob.wake_panels]
-
     # Due to influence
-    dvm = doublet_velocity_matrix(ps, allps)
-    vs = dvm * prob.singularities .+ Ref(prob.Umag * velocity(prob.freestream))
+    vs = prob.velocity_influence_matrix * prob.singularities .+ Ref(prob.Umag * velocity(prob.freestream))
     npancd, npansp = size(prob.surface_panels)
     npanf = npancd * npansp
     vs = permutedims(reshape(vs, npansp, npancd))

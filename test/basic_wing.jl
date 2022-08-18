@@ -4,8 +4,6 @@ Pkg.activate(".")
 using Revise
 using AeroMDAO
 using LinearAlgebra
-using StaticArrays
-using CSV, DataFrames
 
 ## Geometry
 wing = WingSection(root_foil  = naca4(0,0,1,2),
@@ -25,28 +23,20 @@ right_edge = (surf_pts[:,end] + reverse(surf_pts[:,end])) / 2
 surf_pts = [left_edge surf_pts right_edge]
 surf_pans = make_panels(surf_pts)
 
-# ##
-# rx = CSV.File("/Users/james/Downloads/3DWingCodes/rx.csv", header=0) |> DataFrame |> Matrix
-# ry = CSV.File("/Users/james/Downloads/3DWingCodes/ry.csv", header=0) |> DataFrame |> Matrix
-# rz = CSV.File("/Users/james/Downloads/3DWingCodes/rz.csv", header=0) |> DataFrame |> Matrix
-# surf_pts = SVector{3}.(rx, ry, rz)
-# surf_pans = make_panels(surf_pts)
-
 # Freestream velocity
 α = 8.0; β = 0.0; Umag = 15.
 fs = Freestream( α, β, zeros(3))
-V∞ = Umag * velocity(fs)
 
 ##
 @time prob = solve_system_neumann(surf_pans, Umag, fs, 50)
-φs = permutedims(
-    reshape(
-        prob.singularities[1:length(prob.surface_panels)], 
-        size(prob.surface_panels,2), size(prob.surface_panels,1))
-)
+# φs = permutedims(
+#     reshape(
+#         prob.singularities[1:length(prob.surface_panels)], 
+#         size(prob.surface_panels,2), size(prob.surface_panels,1))
+# );
 
 ##
-vs = surface_velocities(prob)
+@time vs = surface_velocities(prob);
 @time CL, CD = surface_coefficients(prob, wing);
 println("Σᵢ CLᵢ: $CL")
 println("Σᵢ CDᵢ: $CD")
