@@ -35,7 +35,7 @@ end
     # Due to principal value
     φs = permutedims(reshape(prob.singularities[1:npanf], npansp, npancd))
     rs = collocation_point.(prob.surface_panels)
-    ns = panel_normal.(prob.surface_panels)
+    ns = normal_vector.(prob.surface_panels)
 
     rso = [permutedims(rs[1,:]); rs[1:end-2,:]; permutedims(rs[end-1,:])]
     rno = [permutedims(rs[2,:]); rs[3:end,:]  ; permutedims(rs[end,:])  ]
@@ -59,7 +59,7 @@ function surface_coefficients(prob :: DoubletSourceSystem3D, wing :: Wing)
     # Panel properties
     ps = prob.surface_panels
     # rs = midpoint(ps)
-    ns = panel_normal.(ps)
+    ns = normal_vector.(ps)
     As = panel_area.(ps) .* ns
     A = projected_area(wing)
 
@@ -68,7 +68,7 @@ function surface_coefficients(prob :: DoubletSourceSystem3D, wing :: Wing)
 
     # Aerodynamic coefficients
     CP = pressure_coefficient.(prob.Umag, vs)
-    CF  = -sum(CP .* As) / A
+    CF = -sum(CP .* As) / A
     # Cm  = -sum(CP .* (rq .× As)) / A / cbar
 
     cos, _, sin = velocity(prob.freestream)

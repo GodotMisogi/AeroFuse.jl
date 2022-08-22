@@ -12,12 +12,14 @@ using Rotations
 using LinearAlgebra
 using SplitApplyCombine
 using Interpolations
+using Setfield
+using MacroTools
 
 # Math tools
 import ..MathTools: uniform_spacing, linear_spacing, sine_spacing, cosine_spacing, cosine_interp, splitat, adj3, slope, columns, forward_sum, forward_division, forward_difference, weighted_vector, vectarray, extend_yz
 
 # Panel geometry
-import ..PanelGeometry: Panel2D, Panel3D, panel_area, panel_normal, make_panels
+import ..PanelGeometry: Panel2D, Panel3D, panel_area, normal_vector, transform, make_panels, wetted_area
 
 import ..AeroMDAO: properties
 
@@ -48,7 +50,7 @@ mean_geometric_chord(span, area) = area / span
 taper_ratio(root_chord, tip_chord) = tip_chord / root_chord
 area(span, chord) = span * chord
 mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
-y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / 3(1 + λ)
+y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / (3(1 + λ))
 quarter_chord(chord) = 0.25 * chord
 
 include("Wings/halfwing.jl")
@@ -56,34 +58,7 @@ include("Wings/wing.jl")
 include("Wings/mesh_tools.jl")
 include("Wings/mesh_wing.jl")
 include("Wings/controls.jl")
-
-"""
-    span(wing :: AbstractWing)
-
-Compute the planform span of an `AbstractWing`.
-"""
-span(wing :: AbstractWing) = span(wing)
-
-"""
-    projected_area(wing :: AbstractWing)
-
-Compute the projected area of an `AbstractWing`` by summing the trapezoidal areas.
-"""
-projected_area(wing :: AbstractWing) = projected_area(wing)
-
-"""
-    mean_aerodynamic_chord(wing :: AbstractWing)
-
-Compute the mean aerodynamic chord of an `AbstractWing`.
-"""
-mean_aerodynamic_chord(wing :: AbstractWing) = mean_aerodynamic_chord(wing)
-
-"""
-    mean_aerodynamic_chord(wing :: AbstractWing)
-
-Compute the coordinates of the mean aerodynamic center of an `AbstractWing`.
-"""
-mean_aerodynamic_center(wing :: AbstractWing) = mean_aerodynamic_center(wing)
+include("Wings/sections.jl")
 
 """
     aspect_ratio(wing :: AbstractWing)
@@ -91,13 +66,6 @@ mean_aerodynamic_center(wing :: AbstractWing) = mean_aerodynamic_center(wing)
 Compute the aspect ratio of an `AbstractWing`.
 """
 aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
-
-"""
-    taper_ratio(wing :: AbstractWing)
-
-Compute the taper ratio of an `AbstractWing`, defined as the tip chord length divided by the root chord length.
-"""
-taper_ratio(wing :: AbstractWing) = taper_ratio(wing)
 
 """
     properties(wing :: AbstractWing)

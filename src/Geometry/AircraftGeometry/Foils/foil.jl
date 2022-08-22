@@ -28,7 +28,7 @@ Foil(coords :: Vector{<: FieldVector{2,<: Real}}, name = "") = Foil(getindex.(co
 Foil((name, coords)) = Foil(coords, name)
 
 function Foil(coords :: AbstractMatrix{<: Real}, name = "") 
-    @assert size(coords)[2] == 2 "The array must have only two columns for coordinates!"
+    @assert size(coords, 2) == 2 "The array must have only two columns for coordinates!"
 
     @views Foil(coords[:,1], coords[:,2], name)
 end
@@ -70,6 +70,17 @@ function rotate(foil :: Foil; angle, center = zeros(2))
     @views Foil(rotate[:,1] .+ center[1], rotate[:,2] .+ center[2], foil.name) # Inverse translate
 end
 
+function interpolate(foil :: Foil, xs)
+    upper, lower = split_surface(foil)
+
+    y_u = @views LinearInterpolation(upper[:,1], upper[:,2]).(xs)
+    y_l = @views LinearInterpolation(lower[:,1], lower[:,2]).(xs)
+
+    @views Foil([ xs[end:-1:2]; xs ], [ y_u[end:-1:2]; y_l ], foil.name)
+end
+
+reflect(foil :: Foil) = setproperties(foil, y = -foil.y, name = "Inverted " * foil.name)
+
 affine(foil :: Foil; angle, vector) = translate(rotate(foil; angle = angle); vector = vector)
 
 """
@@ -103,17 +114,15 @@ Split the `Foil` coordinates into upper and lower surfaces.
 split_surface(foil :: Foil) = upper_surface(foil), lower_surface(foil)
 
 """
-    cosine_spacing(foil :: Foil, num :: Integer)
+    cosine_interpolation(foil :: Foil, n :: Integer = 40)
 
-Interpolate a `Foil` profile's coordinates by projecting the x-coordinates of a circle onto the geometry with ``2n`` points.
+Interpolate a `Foil` profile's coordinates to a cosine by projecting the x-coordinates of a circle onto the geometry with ``2n`` points.
 """
-function cosine_spacing(foil :: Foil, n :: Integer = 40)
-    upper, lower = split_surface(foil)
+function cosine_interpolation(foil :: Foil, n :: Integer = 40)
+    x_min, x_max = extrema(foil.x)
+    x_circ = cosine_spacing((x_min + x_max) / 2, x_max - x_min, n)
 
-    upper_cos = cosine_interp(upper, n)
-    lower_cos = cosine_interp(lower, n)
-
-    @views Foil([ upper_cos[end:-1:2,:]; lower_cos ], foil.name)
+    interpolate(foil, x_circ)
 end
 
 function camber_line(foil :: Foil, n = 60)
@@ -137,7 +146,7 @@ function make_panels(foil :: Foil)
     @views Panel2D.(vecs[2:end,:], vecs[1:end-1,:])[end:-1:1]
 end
 
-make_panels(foil :: Foil, n :: Integer) = make_panels(cosine_spacing(foil, n ÷ 2))
+make_panels(foil :: Foil, n :: Integer) = make_panels(cosine_interpolation(foil, n ÷ 2))
 
 function camber(foil :: Foil, x_by_c)
     upper, lower = split_surface(foil)
@@ -147,14 +156,13 @@ function camber(foil :: Foil, x_by_c)
     (y_u + y_l) / 2
 end
 
-
 function control_surface(foil :: Foil, δ, xc_hinge)
     y_hinge  = camber(foil, xc_hinge)
     rot_foil = rotate(foil; angle = -δ, center = [xc_hinge, y_hinge])
     coords   = coordinates(foil)
     @views coords[foil.x .>= xc_hinge,1] = rot_foil.x[foil.x .>= xc_hinge]
     @views coords[foil.x .>= xc_hinge,2] = rot_foil.y[foil.x .>= xc_hinge]
-    Foil(coords, foil.name)
+    Foil(coords, foil.name * " Deflected $(δ)° at $xc_hinge (x/c)")
 end
 
 """
@@ -164,6 +172,8 @@ Modify a `Foil` to mimic a control surface by specifying a deflection angle (in 
 """
 control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge)
 
+maximum_thickness_to_chord(foil :: Foil, n = 40) = maximum_thickness_to_chord(coordinates_to_camber_thickness(foil, n))
+
 ## Camber-thickness representation
 #==========================================================================================#
 
@@ -172,9 +182,9 @@ control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge
 
 Convert 2-dimensional coordinates to its camber-thickness representation after cosine interpolation with ``2n`` points.
 """
-function coordinates_to_camber_thickness(foil, n = 40)
+function coordinates_to_camber_thickness(foil :: Foil, n = 40)
     # Cosine interpolation and splitting
-    upper, lower = split_surface(cosine_spacing(foil, n))
+    upper, lower = split_surface(cosine_interpolation(foil, n))
 
     camber       = @views (upper[:,2] + lower[:,2]) / 2
     thickness    = @views  upper[:,2] - lower[:,2]
@@ -217,16 +227,15 @@ end
 """
     read_foil(path :: String; header = true; name = "")
 
-Generate a `Foil` from a file consisting of 2D coordinates with named arguments to skip the header or assign a name.
+Generate a `Foil` from a file consisting of 2D coordinates with named arguments to skip the header (first line of the file) or assign a name.
 
 By default, the header is assumed to exist and should contain the airfoil name, which is assigned to the name of the `Foil`.
 """
-function read_foil(path :: String; header = true, name = "") 
-    if header
-        coords, name = readdlm(path, header = header)
-        return Foil(coords, name[1])
-    else
-        coords = readdlm(path)
+function read_foil(path :: String; name = "") 
+    coords, foil_name = readdlm(path, header = true)
+    if name != ""
         return Foil(coords, name)
+    else
+        return Foil(coords, strip(join(foil_name, " ")))
     end
 end

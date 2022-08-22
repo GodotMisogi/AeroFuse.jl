@@ -11,7 +11,7 @@ import ..MathTools: rotation, inverse_rotation, midpair_map, Point2D, Point3D
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, xs, ys, zs, transform_panel, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector, panel_velocity
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, xs, ys, zs, transform_panel, affine_2D, panel_length, panel_angle, tangent_vector, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector, panel_velocity
 
 ## Singularities
 #==========================================================================================#

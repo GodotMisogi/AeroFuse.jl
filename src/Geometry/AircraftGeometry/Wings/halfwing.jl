@@ -1,5 +1,5 @@
 """
-    HalfWing(foils :: Vector{Foil}, 
+    Wing(foils :: Vector{Foil}, 
              chords, 
              twists, 
              spans, 
@@ -9,36 +9,43 @@
              angle    = 0.
              axis     = [0.,1.,0.])
 
-Definition for a `HalfWing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees.
+Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees.
 """
-struct HalfWing{S <: AbstractVector{<: Real}, F <: AbstractVector{<: AbstractFoil}, N <: AbstractAffineMap} <: AbstractWing
-    foils      :: F
-    chords     :: S
-    twists     :: S
-    spans      :: S
-    dihedrals  :: S
-    sweeps     :: S
+struct Wing{T <: Real, N <: AbstractAffineMap} <: AbstractWing
+    foils      :: Vector{<: AbstractFoil}
+    chords     :: Vector{T}
+    twists     :: Vector{T}
+    spans      :: Vector{T}
+    dihedrals  :: Vector{T}
+    sweeps     :: Vector{T}
     affine     :: N
+    symmetry   :: Bool
+    flip       :: Bool
 end
 
-function HalfWing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep = 0., position = zeros(3), angle = 0., axis = [0.,1.,0.], affine = AffineMap(AngleAxis(deg2rad(angle), axis...), position))
+function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep = 0., symmetry = false, flip = false)
     # Error handling
     check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 
     # Convert sweep angles to leading-edge
     sweeps = @. sweep_angle(
-                    chords[2:end] / chords[1:end-1], # Section tapers
-                    aspect_ratio(spans, chords[2:end], chords[1:end-1]), # Section aspect ratios
-                    deg2rad(sweeps), # Sweep angles at desired normalized location
-                    -w_sweep # Normalized sweep angle location ∈ [0,1]
-                )
+        chords[2:end] / chords[1:end-1], # Section tapers
+        aspect_ratio(spans, chords[2:end], chords[1:end-1]), # Section aspect ratios
+        sweeps, # Sweep angles at desired normalized location
+        -w_sweep # Normalized sweep angle location ∈ [0,1]
+    )
 
     # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
-    # foils = cosine_spacing.(foils, 60)
+    # foils = cosine_interpolation.(foils, 60)
 
-    # Convert angles to radians, adjust twists to leading edge, and generate HalfWing
-    HalfWing(foils, chords, -deg2rad.(twists), spans, deg2rad.(dihedrals), sweeps, affine)
+    T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps), typeof(w_sweep))
+    N = typeof(affine)
+    # S = promote_type(typeof(symmetry), typeof(flip))
+
+    # Convert angles to radians, adjust twists to leading edge, and generate Wing
+    Wing{T,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip)
 end
+
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     # Check if number of sections match up with number of edges (NEEDS WORK)
@@ -50,7 +57,7 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 end
 
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
-function HalfWing(;
+function Wing(;
         chords, 
         twists    = zero(chords),
         spans     = ones(length(chords) - 1) / (length(chords) - 1),
@@ -60,223 +67,162 @@ function HalfWing(;
         w_sweep   = 0.0,
         position  = zeros(3),
         angle     = 0.,
-        axis      = SVector(1., 0., 0.)
+        axis      = [0., 1., 0.],
+        affine    = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
+        symmetry  = false,
+        flip      = false
     )
 
-    HalfWing(foils, chords, twists, spans, dihedrals, sweeps, w_sweep, position, angle, axis)
-end
-
-"""
-    HalfWingSection(; span, dihedral, sweep, taper, root_chord,
-                      root_twist, tip_twist, root_foil, tip_foil,
-                      position, angle, axis)
-
-Define a `HalfWing` consisting of a single trapezoidal section.
-
-# Arguments
-- `span       :: Real         = 1.`: Span length 
-- `dihedral   :: Real         = 1.`: Dihedral angle (degrees)
-- `sweep      :: Real         = 0.`: Leading-edge sweep angle (degrees)
-- `taper      :: Real         = 1.`: Taper ratio of tip to root chord
-- `root_chord :: Real         = 1.`: Root chord length
-- `root_twist :: Real         = 0.`: Twist angle at root (degrees)
-- `tip_twist  :: Real         = 0.`: Twist angle at tip (degrees)
-- `root_foil  :: Foil         = naca4((0,0,1,2))`: Foil coordinates at root
-- `tip_foil   :: Foil         = root_foil`: Foil coordinates at tip
-- `position   :: Vector{Real} = zeros(3)`: Position
-- `angle      :: Real         = 0.`: Angle of rotation (degrees)
-- `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
-"""
-HalfWingSection(;
-        span        = 1.,
-        dihedral    = 0.,
-        sweep       = 0.,
-        w_sweep     = 0.,
-        taper       = 1.,
-        root_chord  = 1.,
-        root_twist  = 0.,
-        tip_twist   = 0.,
-        root_foil   = naca4((0,0,1,2)),
-        tip_foil    = root_foil,
-        position    = zeros(3),
-        angle       = 0.,
-        axis        = SVector(0., 1., 0.)
-    ) = HalfWing(
-            foils     = [root_foil, tip_foil],
-            chords    = [root_chord, taper * root_chord],
-            twists    = [root_twist, tip_twist],
-            spans     = [span],
-            dihedrals = [dihedral],
-            sweeps    = [sweep],
-            w_sweep   = w_sweep,
-            position  = position,
-            angle     = angle,
-            axis      = axis
-        )
-
-function HalfWingSection(S, AR, λ, Λ, δ, τ_r, τ_t, w = 0.25)
-    b    = S^2 / AR
-    c_r  = 2 * S / (b * (1 + λ))
-
-    HalfWingSection(span = AR, dihedral = δ, sweep = Λ, w_sweep = w, taper = λ, root_chord = c_r, root_twist = τ_r, tip_twist = τ_t)
+    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep, symmetry, flip)
 end
 
 # Getters
-foils(wing     :: HalfWing) = wing.foils
-chords(wing    :: HalfWing) = wing.chords
-twists(wing    :: HalfWing) = wing.twists
-spans(wing     :: HalfWing) = wing.spans
-dihedrals(wing :: HalfWing) = wing.dihedrals
+foils(wing     :: Wing) = wing.foils
+chords(wing    :: Wing) = wing.chords
+twists(wing    :: Wing) = wing.twists
+spans(wing     :: Wing) = wing.spans
+dihedrals(wing :: Wing) = wing.dihedrals
 
 """
     sweeps(wing :: AbstractWing, w = 0.)
 
 Obtain the sweep angles (in radians) at the corresponding normalized chord length ratio ``w ∈ [0,1]``.
 """
-sweeps(wing :: HalfWing, w = 0.) =
-    @views @. sweep_angle(
-                    wing.chords[2:end] / wing.chords[1:end-1], # Section tapers
-                    aspect_ratio(wing.spans, wing.chords[2:end], wing.chords[1:end-1]), # Section aspect ratios
-                    wing.sweeps, # Section leading-edge sweep angles
-                    w # Normalized sweep angle location ∈ [0,1]
-                )
+sweeps(wing :: Wing, w = 0.) = @views @. sweep_angle(
+    wing.chords[2:end] / wing.chords[1:end-1], # Section tapers
+    aspect_ratio(wing.spans, wing.chords[2:end], wing.chords[1:end-1]), # Section aspect ratios
+    wing.sweeps, # Section leading-edge sweep angles
+    w # Normalized sweep angle location ∈ [0,1]
+)
 
 aspect_ratio(b, c1, c2) = 2b / (c1 + c2)
-sweep_angle(λ, AR, Λ_LE, w) = Λ_LE - atan(2w * (1 - λ), AR * (1 + λ))
+sweep_angle(λ, AR, Λ_LE, w) = Λ_LE - atand(2w * (1 - λ), AR * (1 + λ))
 
-# Affine transformation
-Base.position(wing :: HalfWing) = wing.affine.transformation
-orientation(wing :: HalfWing) = wing.affine.linear
-affine_transformation(wing :: HalfWing) = wing.affine
+# Affine transformations
+Base.position(wing :: Wing) = wing.affine.translation
+orientation(wing :: Wing) = wing.affine.linear
+affine_transformation(wing :: Wing) = wing.affine
 
+(f :: AffineMap)(wing :: Wing) = @set wing.affine = f ∘ wing.affine
 
-span(wing :: HalfWing) = sum(wing.spans)
-
-taper_ratio(wing :: HalfWing) = last(wing.chords) / first(wing.chords)
-
-"""
-    projected_area(wing :: AbstractWing)
-
-Compute the projected (or planform) area of an `AbstractWing` on the ``x``-``y`` plane.
-"""
-projected_area
-
-function projected_area(wing :: HalfWing)
-    mean_chords = forward_sum(wing.chords) / 2 # Mean chord lengths of sections.
-    mean_twists = forward_sum(wing.twists) / 2 # Mean twist angles of sections
-    sum(@. wing.spans * mean_chords * cos(mean_twists))
+function span(wing :: Wing)
+    b = sum(wing.spans)
+    ifelse(wing.symmetry, 2b, b)
 end
 
-section_macs(wing :: HalfWing) = @views mean_aerodynamic_chord.(wing.chords[1:end-1], forward_division(wing.chords))
+taper_ratio(wing :: Wing) = last(wing.chords) / first(wing.chords)
 
-section_projected_areas(wing :: HalfWing) = wing.spans .* forward_sum(wing.chords) / 2
+section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) / 2)
 
-"""
-    mean_aerodynamic_chord(wing :: AbstractWing)
+function section_projected_areas(wing :: Wing)
+    spans = ifelse(wing.symmetry, 2 * wing.spans, wing.spans)
+    @views section_projected_area.(spans, wing.chords[1:end-1], wing.chords[2:end], wing.twists[1:end-1], wing.twists[2:end])
+end
 
-Compute the mean aerodynamic chord of an `AbstractWing`.
-"""
-mean_aerodynamic_chord
+projected_area(wing :: Wing) = sum(section_projected_areas(wing))
 
-function mean_aerodynamic_chord(wing :: HalfWing)
+section_macs(wing :: Wing) = @views @. mean_aerodynamic_chord(wing.chords[1:end-1], wing.chords[2:end] / wing.chords[1:end-1])
+
+function mean_aerodynamic_chord(wing :: Wing)
     areas = section_projected_areas(wing)
-    macs  = section_macs(wing)
+    macs = section_macs(wing)
     sum(macs .* areas) / sum(areas)
 end
 
-"""
-    mean_aerodynamic_center(wing :: AbstractWing)
-
-Compute the mean aerodynamic center of an `AbstractWing`.
-"""
-mean_aerodynamic_center
-
-function mean_aerodynamic_center(wing :: HalfWing, factor = 0.25)
+function mean_aerodynamic_center(wing :: Wing, factor = 0.25; symmetry = wing.symmetry, flip = wing.flip)
     # Compute mean aerodynamic chords and projected areas
-    macs        = section_macs(wing)
-    areas       = section_projected_areas(wing)
+    macs = section_macs(wing)
+    areas = section_projected_areas(wing)
 
-    # Computing leading edge coordinates
-    wing_LE     = leading_edge(wing)
-    x_LEs       = getindex.(wing_LE, 1)
-    y_LEs       = getindex.(wing_LE, 2)
+    # Get leading edge coordinates
+    wing_LE = combinedimsview(leading_edge(wing), (1))
+    x_LEs   = @views wing_LE[:,1]
+    y_LEs   = @views wing_LE[:,2]
 
-    # Compute x-y locations of MACs
-    x_mac_LEs   = @views @. y_mac(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
-    y_macs      = @views @. y_mac(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
+    # Compute x-y locations of section MACs
+    x_mac_LEs = @views @. y_mac(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
+    y_macs = @views @. y_mac(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
 
-    mac_coords  = @. SVector(x_mac_LEs + factor * macs, y_macs, 0.)
+    # Calculate section MAC coords
+    mac_coords = @. SVector(x_mac_LEs + factor * macs, y_macs, 0.)
 
-    affine_transformation(wing)(sum(mac_coords .* areas) / sum(areas))
+    # Calculate weighted MAC by section areas
+    mac = sum(mac_coords .* areas) / sum(areas)
+
+    # Symmetry/flipping adjustments
+    if symmetry
+        mac = SVector(mac[1], 0., mac[3])
+    elseif flip
+        mac = SVector(mac[1], -mac[2], mac[3])
+    end
+
+    # Do affine transformation
+    return affine_transformation(wing)(mac)
 end
 
-camber_thickness(wing :: HalfWing, num :: Integer) = camber_thickness.(wing.foils, num)
+camber_thickness(wing :: Wing, num :: Integer) = camber_thickness.(wing.foils, num)
 
-maximum_thickness_to_chord(wing :: HalfWing, num :: Integer) = maximum_thickness_to_chord.(camber_thickness(wing, num))
+maximum_thickness_to_chord(wing :: Wing, num :: Integer) = maximum_thickness_to_chord.(camber_thickness(wing, num))
 
-function max_thickness_to_chord_ratio_sweeps(wing :: HalfWing, num)
+function max_thickness_to_chord_ratio_sweeps(wing :: Wing, num)
     # Compute (t/c)_max locations and values
     xs_max_tbyc = maximum_thickness_to_chord(wing, num)
-    max_tbyc    = getindex.(xs_max_tbyc, 2)
-    xs_temp     = getindex.(xs_max_tbyc, 1)
+    max_tbyc = getindex.(xs_max_tbyc, 2)
+    xs_temp = getindex.(xs_max_tbyc, 1)
     
     # Get leading edge
-    le          = leading_edge(wing)
+    le = leading_edge(wing)
 
-    # Determine x-coordinates in Cartesian frame
-    xs          = @. getindex(le, 1) + wing.chords * getindex(xs_temp, 1)
+    # Determine x-coordinates in geometry frame
+    xs = @. getindex(le, 1) + wing.chords * getindex(xs_temp, 1)
 
     # Compute sectional x-coordinates
-    ds          = forward_difference(xs)
+    ds = xs[2:end] - xs[1:end-1]
     
     # Compute leading-edge sweep angles accounting for dihedral
-    widths      = @. wing.spans / cos(wing.dihedrals)
-    sweeps      = @. atan(ds, widths)
+    widths = @. wing.spans / cosd(wing.dihedrals)
+    sweeps = @. atand(ds, widths)
 
     # Averaging for sections
-    xs          = forward_sum(xs_temp) / 2
-    tbycs       = forward_sum(max_tbyc) / 2
+    xs = (xs[1:end-1] + xs[2:end]) / 2
+    tbycs = (max_tbyc[1:end-1] + max_tbyc[2:end]) / 2
 
     xs, tbycs, sweeps
 end
 
 """
-    leading_edge(wing :: HalfWing, flip = false)
+    wing_bounds(wing :: Wing, flip = false)
 
-Compute the leading edge coordinates of a `HalfWing`, with an option to flip the signs of the ``y``-coordinates.
+Compute the leading and trailing edge coordinates of a `Wing`, with an option to flip the signs of the ``y``-coordinates.
 """
-function leading_edge(wing :: HalfWing, flip = false)
+function wing_bounds(wing :: Wing)
+    # Compute y-z points
     spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
+    cum_spans = [ 0; cumsum(spans) ]
+    sweeped_spans = [ 0; cumsum(@. spans * tand(sweeps)) ]
+    dihedraled_spans = [ 0; cumsum(@. spans * tand(dihedrals)) ]
 
-    sweeped_spans    = [ 0; cumsum(@. spans * tan(sweeps)) ]
-    dihedraled_spans = [ 0; cumsum(@. spans * tan(dihedrals)) ]
-    cum_spans        = [ 0; cumsum(spans) ]
-
-    leading          = SVector.(sweeped_spans, ifelse(flip, -cum_spans, cum_spans), dihedraled_spans)
-
-    ifelse(flip, leading[end:-1:1], leading)
-end
-
-"""
-    wing_bounds(wing :: HalfWing, flip = false)
-
-Compute the leading and trailing edge coordinates of a `HalfWing`, with an option to flip the signs of the ``y``-coordinates.
-"""
-function wing_bounds(wing :: HalfWing, flip = false)
+    # Compute x points
     chords          = wing.chords
-    twisted_chords  = @. chords * sin(wing.twists)
+    twisted_chords  = @. chords * sind(wing.twists)
 
-    leading         = leading_edge(wing, flip)
-    trailing        = SVector.(chords, (zeros ∘ length)(chords), twisted_chords)
+    # Leading edge
+    le = [ sweeped_spans cum_spans dihedraled_spans ]
 
-    shifted_trailing = ifelse(flip, trailing[end:-1:1], trailing) .+ leading
+    # Trailing edge perturbation
+    te = [ chords (zeros ∘ length)(chords) twisted_chords ]
 
-    leading, shifted_trailing
+    # Get actual bounds by sum-cumming, hehe I wanna die
+    # Indexing: [section,xyz,le/te]
+    bounds = cumsum([ le ;;; te ], dims = 3)
+
+    return splitdimsview(bounds, (3,1))
 end
 
 """
-    trailing_edge(wing :: HalfWing, flip = false)
+    trailing_edge(wing :: Wing, flip = false)
 
-Compute the trailing edge coordinates of a `HalfWing`, with an option to flip the signs of the ``y``-coordinates.
+Compute the trailing edge coordinates of a `Wing`, with an option to flip the signs of the ``y``-coordinates.
 """
-trailing_edge(wing :: HalfWing, flip = false) = wing_bounds(wing, flip)[2]
+leading_edge(wing :: Wing) = @views wing_bounds(wing)[1,:]
+trailing_edge(wing :: Wing) = @views wing_bounds(wing)[2,:]

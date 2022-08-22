@@ -17,7 +17,7 @@ import ..Laplace: Uniform2D, magnitude, angle, velocity, Freestream
 
 import ..NonDimensional: pressure_coefficient
 
-import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, p3, p4, transform_panel, get_transformation, affine_2D, panel_length, panel_angle, panel_tangent, panel_normal, distance, wake_panel, wake_panels, panel_points, panel_vector, AbstractPanel3D, Panel3D, WakePanel3D, panel_coordinates, midpoint, xs, ys, zs, panel_area
+import ..PanelGeometry: AbstractPanel2D, Panel2D, WakePanel2D, collocation_point, p1, p2, p3, p4, transform_panel, get_transformation, affine_2D, panel_length, panel_angle, tangent_vector, normal_vector, distance, wake_panel, wake_panels, panel_points, panel_vector, AbstractPanel3D, Panel3D, WakePanel3D, panel_coordinates, midpoint, xs, ys, zs, panel_area
 
 import ..AircraftGeometry: Wing, projected_area
 
@@ -168,8 +168,10 @@ end
 # 	return DoubletSourceSystem3D(AIC, boco, φs, surf_pans, wake_pans, fs, U)
 # end
 
-function solve_system_neumann(surf_pans :: AbstractMatrix{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
-	wake_pans = wake_panel.(eachcol(surf_pans[:,2:end-1]), wake_length, fs.alpha, fs.beta)
+function solve_system_neumann(surf_pans :: DenseArray{<:AbstractPanel3D}, U, fs :: Freestream, wake_length)
+    # fake index table for trailing edge
+    te = axes(surf_pans, 2)[2:end-1]
+	wake_pans = [ wake_panel(surf_pans[:,i], wake_length, velocity(fs)) for i in te ]
 	φs, AIC, boco, VIM = solve_linear_neumann(surf_pans, U, fs, wake_pans)
 	return DoubletSourceSystem3D(AIC, VIM, boco, φs, surf_pans, wake_pans, fs, U)
 end

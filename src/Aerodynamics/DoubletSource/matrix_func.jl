@@ -226,7 +226,7 @@ end
 
     AIC = zeros(npanf+npanw+1, npanf+npanw)
     VIM = doublet_velocity_matrix(ps, allps)
-    AIC[1:npanf,:] .= VIM .⋅ panel_normal.(ps)
+    AIC[1:npanf,:] .= VIM .⋅ normal_vector.(ps)
     kutta_condition!(AIC[npanf+1:end-1,:], npanf, npanw)
     AIC[end,1:npanf] .= 1
 
@@ -240,9 +240,9 @@ end
     # # ------------------------ Resulted BV is singular ------------------------
     npanf, npanw = length(panels), length(wakes)
     bv = zeros(npanw + npanf + 1)
-    bv[1:npanf] .= -dot.(Ref(V∞), panel_normal.(ps))
+    bv[1:npanf] .= -dot.(Ref(V∞), normal_vector.(ps))
     bv[npanf+1:end] .= 0
-    return  bv
+    return bv
 end
 
 function solve_linear_neumann(panels :: AbstractMatrix{<:AbstractPanel3D}, U, fs, wakes)
