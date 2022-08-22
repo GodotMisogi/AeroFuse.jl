@@ -51,12 +51,12 @@ abstract type AbstractVortexArray end
 
 Define a horseshoe vortex based on a bound leg, a collocation point, a normal vector, and a "chord length".
 """
-struct Horseshoe{T <: Real} <: AbstractVortexArray
+struct Horseshoe{T <: Real, P <: Real} <: AbstractVortexArray
     r1                :: Point3D{T}
     r2                :: Point3D{T}
     collocation_point :: Point3D{T}
     normal            :: Point3D{T}
-    core              :: T
+    core              :: P
 end
 
 Base.length(::Horseshoe) = 1

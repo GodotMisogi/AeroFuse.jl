@@ -25,6 +25,8 @@ using Setfield
 using LabelledArrays
 
 using FLoops
+using GLMakie
+using Makie.GeometryBasics
 
 ## Methods to be extended in submodules
 #==========================================================================================#
@@ -104,9 +106,9 @@ export make_horseshoes, make_vortex_rings
 ## Doublet-source panel method
 
 include("Aerodynamics/DoubletSource/DoubletSource.jl")
-import .DoubletSource: doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, solve_system_neumann, surface_velocities, lift_coefficient, quadrilateral_source_velocity, quadrilateral_source_velocity_farfield, quadrilateral_source_potential, quadrilateral_doublet_velocity, quadrilateral_doublet_velocity_farfield, quadrilateral_doublet_potential
+import .DoubletSource: doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, solve_system_neumann, surface_velocities, plot_scalar_field, offbody_velocity, lift_coefficient, quadrilateral_source_velocity, quadrilateral_source_velocity_farfield, quadrilateral_source_potential, quadrilateral_doublet_velocity, quadrilateral_doublet_velocity_farfield, quadrilateral_doublet_potential
 
-export doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, solve_system_neumann, surface_velocities, lift_coefficient, quadrilateral_source_velocity, quadrilateral_source_velocity_farfield, quadrilateral_source_potential, quadrilateral_doublet_velocity, quadrilateral_doublet_velocity_farfield, quadrilateral_doublet_potential
+export doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, solve_system_neumann, surface_velocities, plot_scalar_field, offbody_velocity, lift_coefficient, quadrilateral_source_velocity, quadrilateral_source_velocity_farfield, quadrilateral_source_potential, quadrilateral_doublet_velocity, quadrilateral_doublet_velocity_farfield, quadrilateral_doublet_potential
 
 ## Linear-strength source and vorticity panel method
 
