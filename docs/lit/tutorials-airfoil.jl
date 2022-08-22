@@ -34,26 +34,16 @@ x_upper, y_upper = @views upper[:,1], upper[:,2]
 x_lower, y_lower = @views lower[:,1], lower[:,2];
 
 # ### Plotting
-# Let's plot everything! 
 
-## Plot object
-af_plot = plot(aspect_ratio = 1, xlabel=L"(x/c)", ylabel = L"y")
-
-## Upper surface
-plot!(upper[:,1], upper[:,2], label = "$(airfoil.name) Upper",
-      ls = :solid, lw = 2, c = :cornflowerblue)
-
-## Lower surface
-plot!(lower[:,1], lower[:,2], label = "$(airfoil.name) Lower",
-      ls = :solid, lw = 2, c = :orange)
-
-## Camber
-plot!(xcamthick[:,1], xcamthick[:,2], label = "$(airfoil.name) Camber",
-      ls = :dash, lw = 2, c = :burlywood3)
-
-## Thickness
-plot!(xcamthick[:,1], xcamthick[:,3], label = "$(airfoil.name) Thickness",
-      ls = :dash, lw = 2, c = :grey)
+# You can plot the airfoil by calling `plot` from `Plots.jl` and passing the `Foil` object as the first argument. Optionally, you can enable flags to plot the camber and thickness distributions.
+plot(
+    airfoil, 
+    camber = true,
+    thickness = true,
+    aspect_ratio = 1, 
+    xlabel=L"(x/c)", 
+    ylabel = L"y"
+)
 
 # ## Your First Doublet-Source Analysis
 # 

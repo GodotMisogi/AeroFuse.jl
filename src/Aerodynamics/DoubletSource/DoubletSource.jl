@@ -102,6 +102,8 @@ end
 function Base.show(io :: IO, sys :: DoubletSourceSystem)
     println(io, "DoubletSourceSystem —")
     println(io, length(sys.surface_panels), " ", eltype(sys.surface_panels), " Elements")
+    println(io, "Freestream —")
+    println(io, "    alpha: ", sys.freestream.angle)
 end
 
 function Base.show(io :: IO, sys :: DoubletSourceSystem3D)

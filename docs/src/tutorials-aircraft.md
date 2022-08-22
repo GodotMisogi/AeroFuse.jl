@@ -49,7 +49,8 @@ wing = Wing(
     dihedrals = [5.],        # Dihedral angles (degrees)
     sweeps    = [5.],        # Sweep angles (degrees)
     w_sweep   = 0.,          # Sweep angle location w.r.t. normalized chord lengths ∈ [0,1]
-    symmetry  = true
+    symmetry  = true,        # Whether wing is symmetric
+    # flip      = false     # Whether wing is reflected
 )
 ````
 
@@ -58,17 +59,19 @@ wing = Wing(
 
 ### Visualization
 
-Let's plot the geometry!
+You can plot the lifting surface by calling `plot` with `Plots.jl`.
 
 ````@example tutorials-aircraft
 plt = plot(
-    wing,
-    label = "Wing",
-    xaxis = "x", yaxis = "y", zaxis = "z",
+    xlabel = "x",
+    ylabel = "y",
+    zlabel = "z",
     aspect_ratio = 1,
-    camera = (30, 45),
+    camera = (30, 30),
     zlim = (-0.5, 0.5) .* span(wing),
 )
+
+plot!(plt, wing, label = "Wing")
 ````
 
 ## Your First Vortex Lattice Analysis
@@ -115,21 +118,15 @@ vtail = Wing(
 Let's visualize the geometry of the aircraft's configuration.
 
 ````@example tutorials-aircraft
-plot!(plt,
-    htail,
-    label = "Horizontal Tail"
-   )
-plot!(plt,
-   vtail,
-   label = "Vertical Tail"
-  )
+plot!(plt, htail, label = "Horizontal Tail")
+plot!(plt, vtail, label = "Vertical Tail")
 ````
 
 ### Meshing
 To perform the aerodynamic analysis, we will need to discretize our geometry into a _mesh_. The following `WingMesh` function constructs a mesh for you by providing a `HalfWing` or `Wing` type with specification of spanwise panels and chordwise panels. As the wing has only one spanwise section, we provide a vector with a single  integer entry for the spanwise panel distribution.
 
 ````@example tutorials-aircraft
-wing_mesh = WingMesh(wing, [12], 6) # (Wing, [Spanwise panels], Chordwise panels)
+wing_mesh = WingMesh(wing, [20], 12) # (Wing, [Spanwise panels], Chordwise panels)
 ````
 
 Let's see what this discretization looks like on the camber distribution of the wing.
@@ -142,8 +139,8 @@ plot!(plt, wing_mesh, label = "")
 Similarly we define the meshes for the other surfaces and plot them.
 
 ````@example tutorials-aircraft
-htail_mesh = WingMesh(htail, [6], 4)
-vtail_mesh = WingMesh(vtail, [4], 3)
+htail_mesh = WingMesh(htail, [8], 6)
+vtail_mesh = WingMesh(vtail, [6], 4)
 
 plot!(plt, htail_mesh, label = "")
 plot!(plt, vtail_mesh, label = "")
@@ -207,6 +204,8 @@ You can obtain the aerodynamic coefficients from this system. The nearfield aero
 nf = nearfield(system)
 ````
 
+The force coefficients are printed as $(C_X, C_Y, C_Z)$ for general axis systems; wind axes are used in the `nearfield` function.
+
 !!! tip
     Refer to the [how-to guide](howto.md) to see how to compute the aerodynamic coefficients of each component and perform stability analyses.
 
@@ -245,24 +244,30 @@ Let's also take a look at the variations of all the coefficients.
 
 ````@example tutorials-aircraft
 # Concatenate results into one array
-data = permutedims(reduce(hcat, [α; c...] for (α, c) in zip(αs, coeffs)))
+data = permutedims(
+    mapreduce(hcat, systems) do sys
+        [sys.freestream.alpha; nearfield(sys) ]
+    end
+)
 
 # Plot
-plot(data[:,1], round.(data[:,2:end], digits = 4),
-     layout = (3,2),
-     xlabel = L"\alpha",
-     ylabel = [L"C_{D_i}" L"C_Y" L"C_L" L"C_\ell" L"C_m" L"C_n" ],
-     labels = "",
-     size   = (800, 600)
-    )
+plot(
+    data[:,1],  # Angle of attack
+    round.(data[:,2:end], digits = 4), # Aerodynamic coefficients
+    layout = (3,2),
+    xlabel = L"\alpha",
+    ylabel = [L"C_{D_i}" L"C_Y" L"C_L" L"C_\ell" L"C_m" L"C_n" ],
+    labels = "",
+    size   = (800, 600)
+)
 ````
 
 > **Tip:** You can convert this into a DataFrame for convenient reference.
-> ```julia
-> using DataFrames, StatsPlots
-> data = DataFrame([ xs for xs in zip(αs, coeffs) ])
-> rename!(data, [:α, :CD, :CY, :CL, :Cl, :Cm, :Cn])
-> ```
+
+````@example tutorials-aircraft
+using DataFrames
+df = DataFrame(round.(data, digits = 6), [:α, :CX, :CY, :CZ, :Cl, :Cm, :Cn])
+````
 
 ### Spanwise Loading
 

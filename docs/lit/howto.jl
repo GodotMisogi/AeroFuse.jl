@@ -19,8 +19,8 @@ my_foil = read_foil(foilpath;
                    )
 
 #
-plot(my_foil.x, my_foil.y, 
-     xlabel = L"x", ylabel = L"y", aspect_ratio = 1, label = "$(my_foil.name)")
+plot(xlabel = L"x", ylabel = L"y", aspect_ratio = 1)
+plot!(my_foil)
 
 # ### Interpolate and Process Coordinates
 
@@ -50,7 +50,7 @@ coords = camber_thickness_to_coordinates(xcamthick[:,1], xcamthick[:,2], xcamthi
 # You can (somewhat) mimic the behaviour of a control surface by specifying a deflection angle $\delta$ (in degrees, clockwise-positive convention) with the specification of the hinge location's $x$-coordinate normalized in $[0,1]$ to the chord length.
 con_foil = control_surface(cos_foil; angle = 10., hinge = 0.75)
 
-plot!(con_foil.x, con_foil.y, label = "$(my_foil.name) Deflected")
+plot!(con_foil)
 
 # ## Doublet-Source Aerodynamic Analyses
 # The `solve_case` method runs the analysis given a `Foil` containing the airfoil coordinates, a `Uniform2D` defining the boundary conditions, and an optional named specification for the number of panels. It returns a system which can be used to obtain the aerodynamic quantities of interest and post-processing.
@@ -59,8 +59,11 @@ plot!(con_foil.x, con_foil.y, label = "$(my_foil.name) Deflected")
 uniform = Uniform2D(1.0, 4.0)
 
 ## Solve system
-system  = solve_case(my_foil, uniform;
-                     num_panels = 80)
+system  = solve_case(
+    my_foil, # Foil
+    uniform; # Freestream condition
+    num_panels = 80
+)
 
 # The following functions compute the quantities of interest, such as the inviscid edge velocities, lift coefficient, and the sectional lift, moment, and pressure coefficients.
 cls, cms, cps = surface_coefficients(system);
@@ -78,16 +81,18 @@ locs     = panel_location.(panels);   # Upper or lower surface
 # How to work with wing geometry.
 # 
 # To define a wing, AeroFuse provides a `Wing` constructor.
-airfoil    = naca4((2,4,1,2))
+airfoil = naca4((2,4,1,2))
 wing = Wing(
-    foils     = [ airfoil for i in 1:3 ],
-    chords    = [0.4, 0.2, 0.1],
-    twists    = [0., 2., 5.],
-    spans     = [1.0, 0.1],
-    dihedrals = [0., 60.],
-    sweeps    = [0., 30.],
-    w_sweep   = 0.25,
-    symmetry  = true,
+    foils     = [ airfoil for i in 1:3 ],   # Foils
+    chords    = [0.4, 0.2, 0.1],  # Chord lengths
+    twists    = [0., 2., 5.],     # Twist angles (degrees)
+    spans     = [1.0, 0.1],       # Section span lengths
+    dihedrals = [0., 60.],        # Dihedral angles (degrees)
+    sweeps    = [0., 30.],        # Sweep angles (degrees)
+    w_sweep   = 0.25,             # Sweep angle location w.r.t. 
+                                  ## normalized chord lengths ∈ [0,1]
+    symmetry  = true,             # Whether wing is symmetric
+    ## flip      = false           # Whether wing is reflected
 )
 
 # The `symmetry` Boolean argument determines whether the geometry should be reflected in the ``x``-``z`` plane.
@@ -134,24 +139,9 @@ print_info(wing, "My Wing")
 # How to run a generic aerodynamic analysis on a conventional aircraft configuration.
 #
 # ### Geometry 
-# First we define the lifting surfaces. These can be a combination of `Wing` or `HalfWing` types constructed using the various methods available.
+# First we define the lifting surfaces. These can be a combination of `Wing` types constructed using the various methods available.
 # !!! warning "Alert"
 #     Support for fuselages and control surfaces will be added soon.
-
-# Wing
-wing  = WingSection(
-    area       = 6.4,
-    aspect     = 10.,
-    dihedral   = 5.0,
-    sweep      = 15.0,
-    taper      = 0.4,
-    root_twist = 0.0,
-    tip_twist  = -2.0,
-    root_foil  = naca4(2,4,1,2),
-    tip_foil   = naca4(2,4,0,9),
-    position   = [0., 0., 0.],
-    symmetry   = true
-)
 
 # Horizontal tail
 htail = WingSection(
@@ -188,10 +178,10 @@ vtail = WingSection(
 
 # ### Meshing
 
-# The `WingMesh` type takes a `HalfWing` or `Wing` type with a vector of integers consisting of the spanwise panel distribution corresponding to the number of sections, and an integer for the chordwise distribution.
+# The `WingMesh` type takes a `Wing` type with a vector of integers consisting of the spanwise panel distribution corresponding to the number of sections, and an integer for the chordwise distribution.
 
 ## Wing meshes
-wing_mesh  = WingMesh(wing, [20], 10)
+wing_mesh = WingMesh(wing, [20,8], 10)
 
 # Optionally the type of spanwise spacing can be specified by the keyword `span_spacing` and providing types `Sine(), Cosine(), Uniform()` or a vector of the combination with length corresponding to the number of sections.
 
@@ -209,7 +199,7 @@ wing_horsies = make_horseshoes(wing_mesh)
 
 # For multiple lifting surfaces, it is most convenient to define a single vector consisting of all the components' horseshoes using [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl).
 aircraft = ComponentVector(
-    wing  = wing_horsies,
+    wing = wing_horsies,
     htail = make_horseshoes(htail_mesh),
     vtail = make_horseshoes(vtail_mesh)
 );
@@ -241,7 +231,7 @@ refs = References(
 ## Solve system
 system = solve_case(
     aircraft, fs, refs;
-    print            = true, # Prints the results for only the aircraft
+    print = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
 )
 
@@ -264,24 +254,25 @@ CFs, CMs = surface_coefficients(system; axes = ax)
 # You can access the corresponding values of the components' by the name provided in the `ComponentVector`.
 CFs.wing
 
-# Special functions are provided for directly retrieving the dimensionalized forces and moments.
-Fs, Ms   = surface_dynamics(system; axes = ax)
+# Functions are available for directly retrieving the dimensionalized forces and moments.
+Fs, Ms = surface_dynamics(system; axes = ax)
 
 # A Trefftz plane integration is performed to compute farfield forces.
 # 
 # !!! note
 #     The farfield forces are usually more accurate compared to nearfield forces, as the components do not interact as in the evaluation of the Biot-Savart integrals for the latter.
 # 
-# To obtain the nearfield and farfield coefficients of the components (in wind axes by definition):
+# To obtain the nearfield coefficients of the components (in wind axes by definition):
 nfs = nearfield_coefficients(system)
+
+# Similarly for the farfield coefficients of the components. 
 ffs = farfield_coefficients(system)
 
-# You can similarly access the components by name.
+# You can access the values corresponding to the components by the name used in the `ComponentArray` constrution.
 @show (nfs.wing, ffs.wing)
 
 # To obtain the total nearfield and farfield force coefficients:
-nf = nearfield(system) 
-ff = farfield(system)
+nf, ff = nearfield(system), farfield(system)
 
 # You can also print the relevant information as a pretty table, if necessary.
 print_coefficients(nfs.wing, ffs.wing, :wing)
@@ -291,8 +282,8 @@ print_coefficients(nf, ff, :aircraft)
 # The derivatives of the aerodynamic coefficients with respect to the freestream values is obtained by automatic differentiation enabled by [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl). The following function evaluates the derivatives of the aerodynamic coefficients with respect to the freestream values. You can also optionally provide the axes for the reference frame of the coefficients.
 dv_data = freestream_derivatives(
     system,
-    print            = true,    # Prints the results for only the aircraft
-    print_components = true,    # Prints the results for all components
+    print = true,  # Prints the results for only the aircraft
+    print_components = true,  # Prints the results for all components
 );
 
 # ## Euler-Bernoulli Beam Structural Analysis
@@ -306,11 +297,11 @@ n = 2  # Number of sections
 
 ## Stiffness matrix
 K = bending_stiffness_matrix(
-                             fill(E, 2), 
-                             fill(G, 2),
-                             fill(J, 2), 
-                             :z         # Direction of deflection
-                            )
+    fill(E, 2), 
+    fill(G, 2),
+    fill(J, 2), 
+    :z         # Direction of deflection
+)
 
 # Fixed, hinged beam subjected to force and moment at the center.
 

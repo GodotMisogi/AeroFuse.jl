@@ -32,29 +32,29 @@ makedocs(
     authors  = "Arjit Seth, Stephane Redonnet, and Rhea P. Liem",
     # repo = "https://github.com/GodotMisogi/AeroFuse.jl",
     pages = [
-                "Home"          => "index.md"
-                "Tutorials"     =>  [
-                                        "Airfoil Aerodynamic Analysis"  => "tutorials-airfoil.md",
-                                        "Aircraft Aerodynamic Analysis" => "tutorials-aircraft.md"
-                                    ]
-                "How-to Guide"  => "howto.md"
-                "Theory"        => "theory.md"
-                "Reference"     =>  [
-                                        "Geometry API"      => "geometry.md"
-                                        "Aerodynamics API"  => "aerodynamics.md"
-                                        "Structures API"    => "structures.md"
-                                        "In-Progress API"   => "development.md"
-                                    ]
-            ],
+        "Home"          => "index.md"
+        "Tutorials"     =>  [
+            "Airfoil Aerodynamic Analysis"  => "tutorials-airfoil.md",
+            "Aircraft Aerodynamic Analysis" => "tutorials-aircraft.md"
+        ]
+        "How-to Guide"  => "howto.md"
+        "Theory"        => "theory.md"
+        "Reference"     =>  [
+            "Geometry API"      => "geometry.md"
+            "Aerodynamics API"  => "aerodynamics.md"
+            "Structures API"    => "structures.md"
+            "In-Progress API"   => "development.md"
+        ]
+    ],
     format = Documenter.HTML(
-                            # /prettyurls = CI,
-                            assets = [
-                                "assets/logo.ico",
-                                asset("https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&display=swap", class=:css),
-                                ],
-                            analytics = "UA-89998292-1"
-                            # highlightjs = "theme/highlight.js",
-                            ),
+        # /prettyurls = CI,
+        assets = [
+            "assets/logo.ico",
+            asset("https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&display=swap", class=:css),
+        ],
+        analytics = "UA-89998292-1"
+        # highlightjs = "theme/highlight.js",
+    ),
 )
 
 ## Deployment

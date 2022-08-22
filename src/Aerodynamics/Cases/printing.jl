@@ -4,7 +4,7 @@
 """
     print_info(wing :: AbstractWing)
 
-Print the relevant geometric characteristics of a `HalfWing` or `Wing`.
+Print the relevant geometric characteristics of an `AbstractWing`.
 """
 function print_info(wing :: AbstractWing, head = "")
     labels = [ "Aspect Ratio", "Span (m)", "Area (m²)", "Mean Aerodynamic Chord (m)", "Mean Aerodynamic Center (m)" ]
