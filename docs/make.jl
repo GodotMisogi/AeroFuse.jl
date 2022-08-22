@@ -60,6 +60,6 @@ makedocs(
 ## Deployment
 deploydocs(
     repo = "github.com/GodotMisogi/AeroFuse.jl.git",
-    # devbranch = "develop",
-    # versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
+    devbranch = "develop",
+    versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
 )
