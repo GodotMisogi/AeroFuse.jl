@@ -13,7 +13,7 @@ Here we will show you how to perform an aerodynamic analysis of an airfoil.
 For this, we will need to import some packages which will be convenient for plotting.
 
 ````@example tutorials-airfoil
-using AeroMDAO      # Main package
+using AeroFuse      # Main package
 using Plots         # Plotting library
 gr(dpi = 300)       # Plotting backend
 using LaTeXStrings  # For LaTeX printing in plots
@@ -57,27 +57,18 @@ nothing #hide
 ````
 
 ### Plotting
-Let's plot everything!
+
+You can plot the airfoil by calling `plot` from `Plots.jl` and passing the `Foil` object as the first argument. Optionally, you can enable flags to plot the camber and thickness distributions.
 
 ````@example tutorials-airfoil
-# Plot object
-af_plot = plot(aspect_ratio = 1, xlabel=L"(x/c)", ylabel = L"y")
-
-# Upper surface
-plot!(upper[:,1], upper[:,2], label = "$(airfoil.name) Upper",
-      ls = :solid, lw = 2, c = :cornflowerblue)
-
-# Lower surface
-plot!(lower[:,1], lower[:,2], label = "$(airfoil.name) Lower",
-      ls = :solid, lw = 2, c = :orange)
-
-# Camber
-plot!(xcamthick[:,1], xcamthick[:,2], label = "$(airfoil.name) Camber",
-      ls = :dash, lw = 2, c = :burlywood3)
-
-# Thickness
-plot!(xcamthick[:,1], xcamthick[:,3], label = "$(airfoil.name) Thickness",
-      ls = :dash, lw = 2, c = :grey)
+plot(
+    airfoil,
+    camber = true,
+    thickness = true,
+    aspect_ratio = 1,
+    xlabel=L"(x/c)",
+    ylabel = L"y"
+)
 ````
 
 ## Your First Doublet-Source Analysis
@@ -131,7 +122,7 @@ cl, sum(cls)
 
 ### Visualization
 
-Let's see what the pressure and lift distribution curves look like over the airfoil. AeroMDAO provides more helper functions for post-processing data. For example, you can make your fancy plots by segregating the values depending on the locations of the panels by defining the following function.
+Let's see what the pressure and lift distribution curves look like over the airfoil. AeroFuse provides more helper functions for post-processing data. For example, you can make your fancy plots by segregating the values depending on the locations of the panels by defining the following function.
 
 ````@example tutorials-airfoil
 cp_upper, cp_lower = get_surface_values(panels, cps)

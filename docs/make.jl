@@ -1,8 +1,9 @@
-using AeroMDAO
+using AeroFuse
 using Documenter
+using DocumenterTools: Themes
+using Literate
 
 ## Generate theme
-using DocumenterTools: Themes
 for w in ("light",)
     header = read(joinpath(@__DIR__, "theme/style.scss"), String)
     theme = read(joinpath(@__DIR__, "theme/$(w)defs.scss"), String)
@@ -13,8 +14,6 @@ Themes.compile(joinpath(@__DIR__, "theme/light.scss"), joinpath(@__DIR__, "src/a
 Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
 
 ## Generate Markdown files using Literate.jl
-using Literate
-
 src = joinpath(@__DIR__, "src")
 lit = joinpath(@__DIR__, "lit")
 
@@ -28,39 +27,39 @@ end
 
 ## Generate documentation
 makedocs(
-    # modules = [AeroMDAO, AeroMDAO.VortexLattice],
-    sitename = "AeroMDAO",
+    # modules = [AeroFuse, AeroFuse.VortexLattice],
+    sitename = "AeroFuse",
     authors  = "Arjit Seth, Stephane Redonnet, and Rhea P. Liem",
-    # repo = "https://github.com/GodotMisogi/AeroMDAO.jl",
+    # repo = "https://github.com/GodotMisogi/AeroFuse.jl",
     pages = [
-                "Home"          => "index.md"
-                "Tutorials"     =>  [
-                                        "Airfoil Aerodynamic Analysis"  => "tutorials-airfoil.md",
-                                        "Aircraft Aerodynamic Analysis" => "tutorials-aircraft.md"
-                                    ]
-                "How-to Guide"  => "howto.md"
-                "Theory"        => "theory.md"
-                "Reference"     =>  [
-                                        "Geometry API"      => "geometry.md"
-                                        "Aerodynamics API"  => "aerodynamics.md"
-                                        "Structures API"    => "structures.md"
-                                        "In-Progress API"   => "development.md"
-                                    ]
-            ],
+        "Home"          => "index.md"
+        "Tutorials"     =>  [
+            "Airfoil Aerodynamic Analysis"  => "tutorials-airfoil.md",
+            "Aircraft Aerodynamic Analysis" => "tutorials-aircraft.md"
+        ]
+        "How-to Guide"  => "howto.md"
+        "Theory"        => "theory.md"
+        "Reference"     =>  [
+            "Geometry API"      => "geometry.md"
+            "Aerodynamics API"  => "aerodynamics.md"
+            "Structures API"    => "structures.md"
+            "In-Progress API"   => "development.md"
+        ]
+    ],
     format = Documenter.HTML(
-                            # /prettyurls = CI,
-                            assets = [
-                                "assets/logo.ico",
-                                asset("https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&display=swap", class=:css),
-                                ],
-                            analytics = "UA-89998292-1"
-                            # highlightjs = "theme/highlight.js",
-                            ),
+        # /prettyurls = CI,
+        assets = [
+            "assets/logo.ico",
+            asset("https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&display=swap", class=:css),
+        ],
+        analytics = "UA-89998292-1"
+        # highlightjs = "theme/highlight.js",
+    ),
 )
 
 ## Deployment
 deploydocs(
-    repo = "github.com/GodotMisogi/AeroMDAO.jl.git",
-    # devbranch = "develop",
-    # versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
+    repo = "github.com/GodotMisogi/AeroFuse.jl.git",
+    devbranch = "develop",
+    versions = ["stable" => "v^", "v#.#", "dev" => "dev"],
 )

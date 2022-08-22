@@ -1,3 +1,3 @@
 ## Examples
 
-Some evaluations using AeroMDAO are provided here for instructional purposes.
+Some evaluations using AeroFuse are provided here for instructional purposes.

@@ -1,28 +1,20 @@
-using AeroMDAO
+## Fuselage example
+using AeroFuse
 
-## Fuselage definition
-rads = range(0, 1, length = 10)
-lens = 0.05:0.05:1.0
-fuse = Fuselage(lens[1:end-1], [ rads; reverse(rads) ] )
+# Fuselage parameters
+l_fuselage = 18.      # Length (m)
+h_fuselage = 1.5      # Height (m)
+w_fuselage = 1.8      # Width (m)
+S_fuselage = 90       # Surface area (m)²
+K_fuselage = 0.487    # Fuselage parameter
 
-## Property checks
-projected_area(fuse)
-length(fuse)
+# Chordwise locations and corresponding radii
+lens = [0.0, 0.005, 0.01, 0.03, 0.1, 0.2, 0.4, 0.6, 0.7, 0.8, 0.98, 1.0]
+rads = [0.05, 0.15, 0.25, 0.4, 0.8, 1., 1., 1., 1., 0.85, 0.3, 0.01] * w_fuselage / 2
 
-## Cosine interpolation
-lens_rads = cosine_interpolation(fuse, 40)
+fuse = Fuselage(l_fuselage, lens, rads, [0., 0., 0.])
 
-# Circles for plotting
-n_pts          = 20
-circle3D(r, n) = let arcs = 0:2π/n:2π; [ zeros(length(arcs)) r * cos.(arcs) r * sin.(arcs) ] end
-
-##
-xs = lens_rads[:,1]
-circs = [ reduce(hcat, eachrow(circ) .+ Ref([x; 0; 0]))' for (x, circ) in zip(xs, circle3D.(lens_rads[:,2], n_pts)) ]
-
-## 
+## Plotting
 using Plots
-pyplot()
-plt = plot()
-[ plot!(circ[:,1], circ[:,2], circ[:,3], color = :blue, label = :none) for circ in circs ] 
-plot!()
+
+plot(fuse, aspect_ratio = 1, zlim = (-10,10))

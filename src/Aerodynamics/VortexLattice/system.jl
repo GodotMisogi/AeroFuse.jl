@@ -49,6 +49,8 @@ function Base.show(io :: IO, refs :: References)
     end
 end
 
+dynamic_pressure(refs :: References) = 1/2 * refs.density * refs.speed^2
+
 kinematic_viscosity(refs :: References) = refs.viscosity / refs.density
 mach_number(refs :: References) = refs.speed / refs.sound_speed
 
@@ -76,7 +78,13 @@ The accessible fields are:
 - `freestream :: Freestream`: The freestream conditions.
 - `reference :: References`: The reference values.
 """
-struct VortexLatticeSystem{M,N,R,S,P <: AbstractFreestream, Q <: AbstractReferences} <: AbstractVortexLatticeSystem
+struct VortexLatticeSystem{
+    M <: DenseArray{<: AbstractVortex},
+    N <: DenseArray{<: Real},
+    R,
+    S,
+    P <: AbstractFreestream,
+    Q <: AbstractReferences} <: AbstractVortexLatticeSystem
     vortices          :: M
     circulations      :: N 
     influence_matrix  :: R
@@ -108,7 +116,7 @@ Compute the induced velocities for all components of the `VortexLatticeSystem` i
 """
 surface_velocities(system :: VortexLatticeSystem; axes = Geometry()) = surface_velocities(system, axes)
 
-surface_velocities(system :: VortexLatticeSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega)
+surface_velocities(system :: VortexLatticeSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * velocity(system.freestream, Body()), system.freestream.omega)
 
 surface_velocities(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
 
@@ -125,7 +133,7 @@ Compute the forces for all components of the `VortexLatticeSystem` in the refere
 """
 surface_forces(system; axes :: AbstractAxisSystem = Geometry()) = surface_forces(system, axes)
 
-surface_forces(system :: VortexLatticeSystem, ::Geometry) = surface_forces(system.vortices, system.circulations, system.reference.speed * body_frame_velocity(system.freestream), system.freestream.omega, system.reference.density)
+surface_forces(system :: VortexLatticeSystem, ::Geometry) = surface_forces(system.vortices, system.circulations, system.reference.speed * velocity(system.freestream, Body()), system.freestream.omega, system.reference.density)
 
 surface_forces(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_forces(system, Geometry()), system.freestream.alpha, system.freestream.beta)
 
@@ -152,12 +160,6 @@ surface_moments(system :: VortexLatticeSystem, ::Wind) =  surface_moments(system
 
 
 ## Dynamics
-"""
-    surface_dynamics(system :: VortexLatticeSystem; 
-                     axes   :: AbstractAxisSystem = Geometry())
-
-Compute the forces and moments for all components of the `VortexLatticeSystem` in the reference axis system.
-"""
 function surface_dynamics(system :: VortexLatticeSystem)
     # Compute nearfield forces and moments
     surf_forces  = surface_forces(system)
@@ -165,6 +167,14 @@ function surface_dynamics(system :: VortexLatticeSystem)
 
     surf_forces, surf_moments
 end
+
+"""
+    surface_dynamics(system :: VortexLatticeSystem; 
+                     axes   :: AbstractAxisSystem = Geometry())
+
+Compute the forces and moments for all components of the `VortexLatticeSystem` in the reference axis system.
+"""
+surface_dynamics(system; axes :: AbstractAxisSystem = Wind()) = surface_dynamics(system, axes)
 
 surface_dynamics(system :: VortexLatticeSystem, ::Geometry) = surface_dynamics(system)
 
@@ -208,8 +218,6 @@ function surface_dynamics(system :: VortexLatticeSystem, ::Wind)
     wind_forces, wind_moments
 end
 
-surface_dynamics(system; axes :: AbstractAxisSystem = Wind()) = surface_dynamics(system, axes)
-
 """
     surface_coefficients(system :: VortexLatticeSystem; 
                          axes   :: AbstractAxisSystem = Wind())
@@ -234,7 +242,8 @@ Compute the force and moment coefficients in **wind axes** for all components of
 """
 function nearfield_coefficients(system :: VortexLatticeSystem) 
     CFs, CMs = surface_coefficients(system; axes = Wind())
-    NamedTuple(key => [sum(CFs[key]); sum(CMs[key])] for key in keys(CFs))
+    COEFFS = @SLArray (6) (:CX,:CY,:CZ,:Cl,:Cm,:Cn)
+    @views NamedTuple(key => COEFFS(sum(CFs[key])..., sum(CMs[key])...) for key in keys(CFs))
 end
 
 """
@@ -243,9 +252,10 @@ end
 Compute the **total** force and moment coefficients in **wind axes** for all components of the `VortexLatticeSystem`.
 """
 function nearfield(system :: VortexLatticeSystem)
-    CDi, CY, CL, Cl, Cm, Cn = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
+    CX, CY, CZ, Cl, Cm, Cn = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
 
-    (CDi = CDi, CY = CY, CL = CL, Cl = Cl, Cm = Cm, Cn = Cn)
+    COEFFS = @SLArray (6) (:CX, :CY, :CZ, :Cl, :Cm, :Cn) 
+    COEFFS(CX, CY, CZ, Cl, Cm, Cn)
 end
 
 """
@@ -261,29 +271,39 @@ function farfield_forces(system :: VortexLatticeSystem)
     V  = system.reference.speed
     ρ  = system.reference.density
     
-    NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
+    @views NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
 end
 
 """
     farfield_coefficients(system :: VortexLatticeSystem)
 
-Compute the **total farfield** force coefficients in **wind axes** for all components of the `VortexLatticeSystem`.
+Compute the **total farfield** force coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by definition.
 """
-farfield_coefficients(system :: VortexLatticeSystem) = map(ff -> force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area), farfield_forces(system))
+farfield_coefficients(system :: VortexLatticeSystem) = let COEFFS = @SLArray (3) (:CDi,:CY,:CL); 
+    map(farfield_forces(system)) do ff
+        COEFFS(force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area))
+    end
+end
 
 """
-    farfield_coefficients(system :: VortexLatticeSystem)
+    farfield(system :: VortexLatticeSystem)
 
-Compute the **total farfield** force in **wind axes** for all components of the `VortexLatticeSystem`.
+Compute the **total farfield** force coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by definition.
 """
 function farfield(system :: VortexLatticeSystem)
-    ffs = farfield_coefficients(system)
-    # Massive hack
-    if length(ffs) == 1
-        coeffs = ffs[1]
-    else 
-        coeffs = vec(sum(reduce(hcat, ffs), dims = 2))
-    end
+    q = dynamic_pressure(system.reference.density, system.reference.speed)
+    coeffs = force_coefficient(sum(farfield_forces(system)), q, system.reference.area)
 
-    return (CDi_ff = coeffs[1], CY_ff = coeffs[2], CL_ff = coeffs[3])
+    COEFFS = @SLArray (3) (:CDi, :CYff, :CL) 
+    COEFFS(coeffs...)
+end
+
+function center_of_pressure(system :: VortexLatticeSystem)
+    x_AC = system.reference.location[1]
+    c_ref = system.reference.chord
+    nf = nearfield(system)
+
+    x_CP = x_AC - c_ref * nf.Cm / nf.CZ
+
+    return x_CP
 end

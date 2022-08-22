@@ -5,7 +5,7 @@ quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(1/4, 0, 1/4))
 
 three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
 
-collocation_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
+control_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
 bound_leg(p1, p2, p3, p4) = SVector(quarter_point(p1, p2), quarter_point(p4, p3))
 
 """
@@ -16,23 +16,24 @@ Compute the bound leg for a `Panel3D`, for horseshoes/vortex rings.
 bound_leg(panel :: Panel3D) = bound_leg(panel.p1, panel.p2, panel.p3, panel.p4)
 
 """
-    collocation_point(panel :: Panel3D)
+    control_point(panel :: Panel3D)
 
-Compute the collocation point of a `Panel3D` for horseshoes/vortex rings, which is the 3-quarter point on each side in the ``x``-``z`` plane.
+Compute the control point of a `Panel3D` for horseshoes/vortex rings, which is the 3-quarter point on each side in the ``x``-``z`` plane.
 """
-collocation_point(panel :: Panel3D) = collocation_point(panel.p1, panel.p2, panel.p3, panel.p4)
+control_point(panel :: Panel3D) = control_point(panel.p1, panel.p2, panel.p3, panel.p4)
 
+# Velocity kernels
 bound_leg_velocity(a, b, Γ)    = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
 trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × normalize(u) / (norm(r) - dot(r, u))
 
 trailing_legs_velocities(a, b, Γ, u) = trailing_leg_velocity(a, Γ, u) - trailing_leg_velocity(b, Γ, u)
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
 
-# Finite-core model
+# Finite-core velocity kernels
 function bound_leg_velocity(a, b, Γ, ε) 
     na, nb, σ = norm(a), norm(b), dot(a, b)
-    term_1    = (na^2 - σ) / √(na^2 + ε^2) + (nb^2 - σ) / √(nb^2 + ε^2)
-    term_2    = a × b / (na^2 * nb^2 - σ^2 + ε^2 * (na^2 + nb^2 - 2 * na * nb))
+    term_1 = (na^2 - σ) / √(na^2 + ε^2) + (nb^2 - σ) / √(nb^2 + ε^2)
+    term_2 = a × b / (na^2 * nb^2 - σ^2 + ε^2 * (na^2 + nb^2 - 2 * na * nb))
     
     Γ/4π * term_1 * term_2
 end
@@ -47,18 +48,18 @@ total_horseshoe_velocity(a, b, Γ, u, ε) = bound_leg_velocity(a, b, Γ, ε) + t
 abstract type AbstractVortex end
 
 """
-    Horseshoe(r1, r2, collocation_point, normal, chord)
+    Horseshoe(r1, r2, rc, normal, chord)
 
 Define a horseshoe vortex with a start and endpoints ``r₁, r₂`` for the bound leg, a collocation point ``r``, a normal vector ``̂n``, and a finite core size.
 
 The finite core setup is not implemented for now.
 """
 struct Horseshoe{T <: Real} <: AbstractVortex
-    r1                :: SVector{3,T}
-    r2                :: SVector{3,T}
-    collocation_point :: SVector{3,T}
-    normal            :: SVector{3,T}
-    core              :: T
+    r1 :: SVector{3,T}
+    r2 :: SVector{3,T}
+    rc :: SVector{3,T}
+    normal :: SVector{3,T}
+    core :: T
 end
 
 Base.length(::Horseshoe) = 1
@@ -66,9 +67,9 @@ Base.length(::Horseshoe) = 1
 r1(horseshoe :: Horseshoe) = horseshoe.r1
 r2(horseshoe :: Horseshoe) = horseshoe.r2
 
-function Horseshoe(r1, r2, r_c, n, c)
-    T = promote_type(eltype(r1), eltype(r2), eltype(r_c), eltype(n), eltype(c))
-    Horseshoe{T}(r1, r2, r_c, n, c)
+function Horseshoe(r1, r2, rc, n, c)
+    T = promote_type(eltype(r1), eltype(r2), eltype(rc), eltype(n), eltype(c))
+    Horseshoe{T}(r1, r2, rc, n, c)
 end
 
 """
@@ -76,8 +77,8 @@ end
 
 Getter for bound leg field of a `Horseshoe`.
 """
-bound_leg(horseshoe :: Horseshoe)        = horseshoe.bound_leg
-collocation_point(horseshoe :: Horseshoe)  = horseshoe.collocation_point
+bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
+control_point(horseshoe :: Horseshoe)  = horseshoe.rc
 horseshoe_normal(horseshoe :: Horseshoe) = horseshoe.normal
 
 r1(r, horseshoe :: Horseshoe) = r - horseshoe.r1
@@ -88,11 +89,10 @@ r2(r, horseshoe :: Horseshoe) = r - horseshoe.r2
 
 Generate a `Horseshoe` corresponding to a `Panel3D`, an associated normal vector, and a "drift velocity".
 """
-function Horseshoe(panel :: Panel3D, normal, drift = SVector(0., 0., 0.))
+function Horseshoe(panel :: Panel3D, normal, drift = SVector(0., 0., 0.); core_size = 0.)
     r1, r2 = bound_leg(panel)
-    r_c = collocation_point(panel) + drift
-    ε   = 0. # (norm ∘ average_chord)(panel))
-    Horseshoe(r1, r2, r_c, normal, ε)
+    rc = control_point(panel) + drift
+    Horseshoe(r1, r2, rc, normal, core_size)
 end
 
 """
@@ -100,14 +100,12 @@ end
 
 Generate a new `Horseshoe` with the points and normal vectors transformed by the linear map ``T``.
 """
-transform(horseshoe :: Horseshoe, T :: LinearMap) =
-    setproperties(
-              horseshoe,
-              r1                = T(horseshoe.r1),
-              r2                = T(horseshoe.r2),
-              collocation_point = T(horseshoe.collocation_point),
-              normal            = T(horseshoe.normal),
-             )
+transform(horseshoe :: Horseshoe, T :: LinearMap) = setproperties(horseshoe,
+    r1 = T(horseshoe.r1),
+    r2 = T(horseshoe.r2),
+    rc = T(horseshoe.rc),
+    normal = T(horseshoe.normal),
+)
 
 transform(horseshoe :: Horseshoe; rotation = I(3), translation = zeros(3)) = transform(horseshoe, Translation(translation) ∘ LinearMap(rotation))
 

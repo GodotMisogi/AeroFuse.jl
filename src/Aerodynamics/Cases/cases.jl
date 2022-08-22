@@ -2,10 +2,14 @@
 #==========================================================================================#
 
 """
-    solve_case(components :: Vector{Horseshoe}, fs :: Freestream, refs :: References;
-               name = :aircraft :: Symbol, 
-               print = false :: Boolean,
-               print_components = false :: Boolean)
+    solve_case(
+        components :: Vector{Horseshoe}, 
+        fs :: Freestream, 
+        refs :: References;
+        name = :aircraft :: Symbol, 
+        print = false :: Boolean,
+        print_components = false :: Boolean
+    )
 
 Perform a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `References` values.
 """

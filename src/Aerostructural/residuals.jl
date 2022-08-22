@@ -91,7 +91,7 @@ function solve_coupled_residual!(R, x, speed, β, ρ, Ω, chord_mesh, camber_mes
     @timeit "FEM Loads" fem_loads = fem_load_vector(bound_leg_center.(new_horsies), vlm_forces, fem_mesh)
 
     # Compute lift for load factor residual
-    D, Y, L = geometry_to_wind_axes(sum(vlm_forces), α, β)
+    _, _, L = geometry_to_wind_axes(sum(vlm_forces), α, β)
 
     # Compute residuals
     coupled_residuals!(R, new_horsies, Γ, U, Ω, speed, stiffness_matrix, δ, fem_loads, weight, load_factor, L * cos(α))

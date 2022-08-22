@@ -6,8 +6,8 @@
 
 Compute the influence coefficient of the first `Horseshoe` at the collocation point of the second `Horseshoe`.
 """
-influence_coefficient(horseshoe :: Horseshoe, horseshoe_j) = dot(velocity(collocation_point(horseshoe_j), horseshoe, 1.), horseshoe_normal(horseshoe_j))
-influence_coefficient(horseshoe :: Horseshoe, horseshoe_j, V_hat) = dot(velocity(collocation_point(horseshoe_j), horseshoe, 1., V_hat), horseshoe_normal(horseshoe_j))
+influence_coefficient(horseshoe :: Horseshoe, horseshoe_j) = dot(velocity(control_point(horseshoe_j), horseshoe, 1.), horseshoe_normal(horseshoe_j))
+influence_coefficient(horseshoe :: Horseshoe, horseshoe_j, V_hat) = dot(velocity(control_point(horseshoe_j), horseshoe, 1., V_hat), horseshoe_normal(horseshoe_j))
 
 """
     influence_matrix(horseshoes)
@@ -23,7 +23,7 @@ influence_matrix(horseshoes, V_hat) = [ influence_coefficient(horsie_j, horsie_i
 
 Assemble the boundary condition vector given an array of `Horseshoes`, the freestream velocity ``U``, and a quasi-steady rotation vector  ``Ω``.
 """
-boundary_condition(horseshoes, U, Ω) = map(hs -> dot(U + Ω × collocation_point(hs), horseshoe_normal(hs)), horseshoes)
+boundary_condition(horseshoes, U, Ω) = map(hs -> dot(U + Ω × control_point(hs), horseshoe_normal(hs)), horseshoes)
 
 # Matrix-free setup for nonlinear analyses
 #==========================================================================================#
@@ -65,6 +65,6 @@ function residual(r, n, hs, Γs, U, Ω)
    dot(induced_velocity(r, hs, Γs, U, Ω), n)
 end 
 
-solve_nonlinear(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(collocation_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
+solve_nonlinear(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(control_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
 
-solve_nonlinear!(R, horseshoes, Γs, U_hat, Ω_hat) = map!(hs -> residual(collocation_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)
+solve_nonlinear!(R, horseshoes, Γs, U_hat, Ω_hat) = map!(hs -> residual(control_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)

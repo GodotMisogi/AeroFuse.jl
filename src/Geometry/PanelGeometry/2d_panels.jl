@@ -33,27 +33,24 @@ function transform_panel_points(panel_1 :: AbstractPanel2D, panel_2 :: AbstractP
     xp1, yp1 = affine_2D(x1, y1, xs, ys, panel_angle(panel_1))
     xp2, yp2 = affine_2D(x2, y2, xs, ys, panel_angle(panel_1))
 
-    xp1, yp1, xp2, yp2
+    return xp1, yp1, xp2, yp2
 end
 
-function transform_panel(panel :: AbstractPanel2D, x, y)
-    xs, ys = panel.p1
-    affine_2D(x, y, xs, ys, panel_angle(panel))
-end
+transform_panel(panel :: AbstractPanel2D, x, y) = affine_2D(x, y, panel.p1..., panel_angle(panel))
 
 transform_panel(panel :: AbstractPanel2D, point :: SVector{2,<: Real}) = transform_panel(panel, point.x, point.y)
 
 function panel_angle(panel :: AbstractPanel2D)
     (x, y) = panel_vector(panel)
-    θ = atan(y, x)
+    return atan(y, x)
     # ifelse(θ < 0., θ + 2π, θ) # Branch cut
 end
 
 panel_normal(panel :: AbstractPanel2D) = let (x, y) = panel_vector(panel); normalize([-y; x]) end
 
-tangent_vector(panel :: AbstractPanel2D) = rotation(1., 0., -panel_angle(panel))
+tangent_vector(panel :: AbstractPanel2D) = panel.p2 - panel.p1 # rotation(1., 0., -panel_angle(panel))
 
-normal_vector(panel :: AbstractPanel2D) = inverse_rotation(0., 1., panel_angle(panel))
+normal_vector(panel :: AbstractPanel2D) = let t = tangent_vector(panel); [ t[2]; -t[1] ] end # inverse_rotation(0., 1., panel_angle(panel))
 
 panel_location(panel :: AbstractPanel2D) = let angle = panel_angle(panel); ifelse((π/2 <= angle <= π) || (-π <= angle <= -π/2), "lower", "upper") end
 
@@ -80,15 +77,16 @@ function trailing_edge_info(panels)
     tdp  = dot(p, t)
     dtdx = t1[1] * t2[2] - t2[1] * t1[2]
 
-    te_panel, h_TE, tcp, tdp, dtdx
+    return te_panel, h_TE, tcp, tdp, dtdx
 end
 
 function wake_panel(panels, bound, α)
     _, firsty        = (p1 ∘ first)(panels)
+    firstx, firsty   = (p1 ∘ first)(panels)
     lastx, lasty     = (p2 ∘ last)(panels)
     y_mid            = (firsty + lasty) / 2
     y_bound, x_bound = bound .* sincos(α)
-    WakePanel2D(SVector(lastx, y_mid), SVector(x_bound * lastx, y_bound * y_mid))
+    return WakePanel2D(SVector(lastx, y_mid), SVector(x_bound * lastx, y_bound * y_mid))
 end
 
 function wake_panels(panels, chord, length, num)
@@ -96,18 +94,18 @@ function wake_panels(panels, chord, length, num)
     _, lasty  = (p2 ∘ last)(panels)
     y_mid     = (firsty + lasty) / 2
     bounds    = sine_spacing(chord + length / 2, length, num)
-    @. WakePanel2D(SVector(bounds[1:end-1], y_mid), SVector(bounds[2:end], y_mid))
+    return @. WakePanel2D(SVector(bounds[1:end-1], y_mid), SVector(bounds[2:end], y_mid))
 end
 
 function panel_scalar(scalar_func, strength, panel :: AbstractPanel2D, x, y)
     # Transform point to local panel coordinates
     xp, yp = transform_panel(panel, SVector(x, y))
-    scalar_func(strength, xp, yp, 0., panel_length(panel))
+    return scalar_func(strength, xp, yp, 0., panel_length(panel))
 end
 
 function panel_scalar(scalar_func, strength, panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D, point = 0.5)
     x, y = collocation_point(panel_i, point)
-    panel_scalar(scalar_func, strength, panel_j, x, y)
+    return panel_scalar(scalar_func, strength, panel_j, x, y)
 end
 
 function panel_velocity(velocity_func, strength, panel :: AbstractPanel2D, x, y)
@@ -118,12 +116,14 @@ function panel_velocity(velocity_func, strength, panel :: AbstractPanel2D, x, y)
     u, w = velocity_func(strength, xp, yp, 0., panel_length(panel))
 
     # Transform velocity to original coordinates
-    inverse_rotation(u, w, panel_angle(panel))
+    return inverse_rotation(u, w, panel_angle(panel))
 end
 
 function panel_velocity(velocity_func, strength, panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D, point = 0.5)
     x, y = collocation_point(panel_i, point)
     u, w = panel_velocity(velocity_func, strength, panel_j, x, y)
+
+    return u, w
 end
 
 panel_velocity(f1, f2, str1, str2, panel :: AbstractPanel2D, x, y) = panel_velocity(f1, str1, panel, x, y) + panel_velocity(f2, str2, panel, x, y)
