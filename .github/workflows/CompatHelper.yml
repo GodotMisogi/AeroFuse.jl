@@ -26,7 +26,8 @@ jobs:
           import CompatHelper
           CompatHelper.main(
                             unsub_from_prs=true,
-                            cc_user=true
+                            cc_user=false,
+                            master_branch=develop,
                            )
         shell: julia --color=yes {0}
         env:

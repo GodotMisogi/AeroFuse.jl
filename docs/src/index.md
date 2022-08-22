@@ -52,7 +52,7 @@ If you use AeroFuse in your research, please cite the following until any releva
   author  = {Arjit Seth, Rhea P. Liem, Stephane Redonnet},
   title   = {AeroFuse},
   url     = {https://github.com/GodotMisogi/AeroFuse},
-  version = {0.3.10},
+  version = {0.4},
   date    = {2021-04-21},
 }
 ```
