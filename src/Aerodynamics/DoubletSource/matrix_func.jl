@@ -204,9 +204,9 @@ function doublet_velocity_matrix(collpanels, inflpanels)
 end
 
 function kutta_condition!(AIC_ku, npanf, npanw)
-    AIC_ku[ : ,     2       : npanw+1] .=  I(npanw)
-    AIC_ku[ : , npanf-npanw : npanf-1] .= -I(npanw)
-    AIC_ku[ : , end-npanw+1 : end    ] .= -I(npanw)
+    AIC_ku[ : ,     2       : npanw+1] .= -I(npanw)
+    AIC_ku[ : , npanf-npanw : npanf-1] .=  I(npanw)
+    AIC_ku[ : , end-npanw+1 : end    ] .=  I(npanw)
 end
 
 @views function velocity_influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)

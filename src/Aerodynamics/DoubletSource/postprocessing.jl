@@ -47,7 +47,7 @@ end
     φea = [φs[:,1]               φs[:,1:end-2]  φs[:,end-1] ]
     φwe = [φs[:,2]               φs[:,3:end]    φs[:,end]   ]
 
-    ∇Γ = -((rwe .- rno) .* (φwe + φno) + (rso .- rwe) .* (φso + φwe) + (rea .- rso) .* (φea + φso) + (rno .- rea) .* (φno + φea)) .× ns ./ norm.((rno-rso) .× (rwe-rea))
+    ∇Γ = ((rwe .- rno) .* (φwe + φno) + (rso .- rwe) .* (φso + φwe) + (rea .- rso) .* (φea + φso) + (rno .- rea) .* (φno + φea)) .× ns ./ norm.((rno-rso) .× (rwe-rea))
     ∇Γ[1,:] ./= 2
     ∇Γ[end,:] ./= 2
     vs -= ∇Γ/2

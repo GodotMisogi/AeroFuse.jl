@@ -255,10 +255,10 @@ end
 Compute the panel velocity (û,v̂,ŵ) in local panel (x̂,ŷ,ẑ) direction of a constant doublet panel.
 """
 function quadrilateral_doublet_velocity(panel :: AbstractPanel3D, point :: Point3D)
-    qdve(point, p4(panel), p3(panel)) +
-    qdve(point, p3(panel), p2(panel)) +
-    qdve(point, p2(panel), p1(panel)) +
-    qdve(point, p1(panel), p4(panel))
+    qdve(point, p1(panel), p2(panel)) +
+    qdve(point, p2(panel), p3(panel)) +
+    qdve(point, p3(panel), p4(panel)) +
+    qdve(point, p4(panel), p1(panel))
 end
 
 

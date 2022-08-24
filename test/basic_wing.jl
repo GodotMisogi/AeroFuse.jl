@@ -33,9 +33,15 @@ right_edge = (surf_pts[:,end] + reverse(surf_pts[:,end])) / 2
 surf_pts = [left_edge surf_pts right_edge]
 surf_pans = make_panels(surf_pts)
 
-# Freestream velocity
+# Freestream velocity«
 α = 6.0; β = 0.0; Umag = 15.
 fs = Freestream( α, β, zeros(3))
+
+##
+using JLD2
+surf_pts = load("/Users/james/Downloads/3DWingCodes/surf_pts.jld2", "surf_pts")
+surf_pts = surf_pts[end:-1:1,:]
+surf_pans = make_panels(surf_pts)
 
 ##
 @time prob = solve_system_neumann(surf_pans, Umag, fs, 5)
