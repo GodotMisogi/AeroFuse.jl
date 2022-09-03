@@ -116,7 +116,7 @@ end
 #      3D Wake Version
 # ==========================
 
-# kutta_condition(npanf, npanw) = [I(npanw) zeros(npanw, npanf-2*npanw) -I(npanw) -I(npanw)]
+# kutta_condition(Nf, Nw) = [I(Nw) zeros(Nw, Nf-2*Nw) -I(Nw) -I(Nw)]
 
 # function solve_linear(panels :: AbstractMatrix{<:AbstractPanel3D}, U, fs, wakes)
 #     V∞ = U * velocity(fs)
@@ -131,12 +131,12 @@ end
 #     # Reshape panel into column vector
 #     panelview = @view permutedims(panels)[:]
 
-#     npanf, npanw = length(panels), length(wakes)
+#     Nf, Nw = length(panels), length(wakes)
 
-#     AIC = zeros(npanf+npanw, npanf+npanw)
-#     AIC_ff = @view AIC[1:npanf,     1:npanf     ]
-#     AIC_wf = @view AIC[1:npanf,     npanf+1:end ]
-#     AIC_kc = @view AIC[npanf+1:end,     :       ]
+#     AIC = zeros(Nf+Nw, Nf+Nw)
+#     AIC_ff = @view AIC[1:Nf,     1:Nf     ]
+#     AIC_wf = @view AIC[1:Nf,     Nf+1:end ]
+#     AIC_kc = @view AIC[Nf+1:end,     :       ]
 
 #     # Foil-Foil interaction
 #     AIC_ff .= doublet_matrix(panelview, panelview)
@@ -145,7 +145,7 @@ end
 #     AIC_wf .= doublet_matrix(panelview, wakes)
 
 #     # Kutta Condition
-#     AIC_kc .= kutta_condition(npanf, npanw)
+#     AIC_kc .= kutta_condition(Nf, Nw)
 
 #     return AIC
 # end
@@ -166,26 +166,26 @@ end
 #     panelview = @view permutedims(panels)[:]
 #     allpans = [panelview; wakes]
 
-#     npanf, npanw = length(panels), length(wakes)
+#     Nf, Nw = length(panels), length(wakes)
 
-#     AIC = zeros(npanf+npanw, npanf+npanw)
-#     AIC_wf = @view AIC[1:npanf, :]
-#     AIC_ku = @view AIC[npanf+1:end, :]
+#     AIC = zeros(Nf+Nw, Nf+Nw)
+#     AIC_wf = @view AIC[1:Nf, :]
+#     AIC_ku = @view AIC[Nf+1:end, :]
 
-#     for k=1:npanf+npanw
+#     for k=1:Nf+Nw
 #         panelK = allpans[k]
 #         tr = get_transformation(panelK)
-#         for i=1:npanf
+#         for i=1:Nf
 #             panelI = allpans[i]
 #             panel, point = tr(panelK), tr(collocation_point(panelI))
 #             AIC_wf[i,k] = ifelse(panelK == panelI, 0.5, quadrilateral_doublet_potential(1, panel, point))
 #         end
 #     end
 
-#     for i=1:npanw
+#     for i=1:Nw
 #         AIC_ku[i, i] = 1
-#         AIC_ku[i, i+npanf-npanw] = -1
-#         AIC_ku[i, i+npanf] = -1
+#         AIC_ku[i, i+Nf-Nw] = -1
+#         AIC_ku[i, i+Nf] = -1
 #     end
 
 #     return AIC
@@ -203,32 +203,32 @@ function doublet_velocity_matrix(collpanels, inflpanels)
     return VIM
 end
 
-function kutta_condition!(AIC_ku, npanf, npanw)
-    AIC_ku[ : ,     2       : npanw+1] .= -I(npanw)
-    AIC_ku[ : , npanf-npanw : npanf-1] .=  I(npanw)
-    AIC_ku[ : , end-npanw+1 : end    ] .=  I(npanw)
+function kutta_condition!(AIC_ku, Nf, Nw)
+    AIC_ku[ : ,    2     : Nw+1 ] .= -I(Nw)
+    AIC_ku[ : ,  Nf-Nw   : Nf-1 ] .=  I(Nw)
+    AIC_ku[ : , end-Nw+1 :  end ] .=  I(Nw)
 end
 
 @views function velocity_influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
     # Reshape panel into column vector
     ps = permutedims(panels)[:]
     allps = [ps; wakes]
-    npanf, npanw = length(panels), length(wakes)
+    Nf, Nw = length(panels), length(wakes)
 
     # # ------------ Resulted AIC is singular ------------
-    # AIC = zeros(npanf+npanw, npanf+npanw)
-    # AIC_wf = AIC[1:npanf, :]
-    # AIC_ku = AIC[npanf+1:end, :]
+    # AIC = zeros(Nf+Nw, Nf+Nw)
+    # AIC_wf = AIC[1:Nf, :]
+    # AIC_ku = AIC[Nf+1:end, :]
 
     # AIC_wf .= doublet_velocity_matrix(ps, allps) .⋅ panel_normal.(ps)
-    # kutta_condition!(AIC_ku, npanf, npanw)
+    # kutta_condition!(AIC_ku, Nf, Nw)
     # # ------------ Resulted AIC is singular ------------
 
-    AIC = zeros(npanf+npanw+1, npanf+npanw)
+    AIC = zeros(Nf+Nw+1, Nf+Nw)
     VIM = doublet_velocity_matrix(ps, allps)
-    AIC[1:npanf,:] .= VIM .⋅ normal_vector.(ps)
-    kutta_condition!(AIC[npanf+1:end-1,:], npanf, npanw)
-    AIC[end,1:npanf] .= 1
+    AIC[1:Nf,:] .= VIM .⋅ normal_vector.(ps)
+    kutta_condition!(AIC[Nf+1:end-1,:], Nf, Nw)
+    AIC[end,1:Nf] .= 1
 
     return AIC, VIM
 end
@@ -238,10 +238,10 @@ end
     # # ------------------------ Resulted BV is singular ------------------------
     # [-dot.(Ref(V∞), panel_normal.(ps)); zeros(length(wakes))]
     # # ------------------------ Resulted BV is singular ------------------------
-    npanf, npanw = length(panels), length(wakes)
-    bv = zeros(npanw + npanf + 1)
-    bv[1:npanf] .= -dot.(Ref(V∞), normal_vector.(ps))
-    bv[npanf+1:end] .= 0
+    Nf, Nw = length(panels), length(wakes)
+    bv = zeros(Nw + Nf + 1)
+    bv[1:Nf] .= -dot.(Ref(V∞), normal_vector.(ps))
+    bv[Nf+1:end] .= 0
     return bv
 end
 

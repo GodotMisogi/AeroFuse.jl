@@ -33,7 +33,7 @@ right_edge = (surf_pts[:,end] + reverse(surf_pts[:,end])) / 2
 surf_pts = [left_edge surf_pts right_edge]
 surf_pans = make_panels(surf_pts)
 
-# Freestream velocity«
+# Freestream velocity
 α = 6.0; β = 0.0; Umag = 15.
 fs = Freestream( α, β, zeros(3))
 
