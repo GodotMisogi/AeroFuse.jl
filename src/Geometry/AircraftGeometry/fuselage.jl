@@ -15,7 +15,7 @@ end
 projected_area(fuse :: Fuselage) = forward_sum(fuse.radii) / 2 .* fuse.weights
 Base.length(fuse :: Fuselage) = fuse.length
 
-truncated_cone_curved_area(r, R, H) = (R + r) * √(H^2 + r^2) * π
+truncated_cone_curved_area(r, R, H) = (R + r) * √(H^2 + (R - r)^2) * π
 
 truncated_cone_volume(r, R, H) = H * π/3 * (R^2 + R * r + r^2) 
 
