@@ -89,8 +89,8 @@ CDv = CDv_diss
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
 CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 
-nf_v = (CD = CDi_nf + CDv, CDv = CDv, nf...)
-ff_v = (CD = CDi_ff + CDv, CDv = CDv, ff...)
+nf_v = [ CDi_nf + CDv; CDv; nf ]
+ff_v = [ CDi_ff + CDv; CDv; ff ]
 
 ## Plotting
 using Plots

@@ -8,9 +8,9 @@ wing = Wing(
     spans     = [5., 0.6],                  # Span lengths (m)
     dihedrals = [5., 5.],                   # Dihedral angles (deg)
     sweeps    = [20.,20.],                  # Sweep angles (deg)
-    w_sweep   = 0.25,                       # Normalized sweep location to chord ∈ [0,1]
+    w_sweep   = 0.25,                       # Chord length fraction of sweep location
     # symmetry  = true,                       # Symmetry in x-z plane
-    # flip      = true                      # Reflection about x-z plane
+    # flip      = true                        # Reflection about x-z plane
 )
 
 ## Create symmetric wing instead

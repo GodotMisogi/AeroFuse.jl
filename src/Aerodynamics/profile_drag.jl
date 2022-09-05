@@ -39,7 +39,8 @@ end
 
 function wetted_area_drag(wing :: AbstractWing, x_tr, V, ρ, a_ref, μ)
     # Chord processing
-    mean_chords = (forward_sum ∘ chords)(wing) / 2
+    cs = chords(wing)
+    mean_chords = @views (cs[1:end-1] + cs[2:end]) / 2
 
     # Wetted areas
     S_wets  = mean_chords .* spans(wing) ./ cos.(dihedrals(wing))
@@ -56,7 +57,8 @@ wetted_area_drag(wing :: WingMesh, x_tr, V, ρ, a_ref, μ) = wetted_area_drag(wi
 # Sato's local-friction and local-dissipation based on power balance method from Mark Drela, Flight Vehicle Aerodynamics, eq. 4.115.
 function local_dissipation_drag(wing :: AbstractWing, wetted_areas, ρ_es, u_es, x_tr, V, ρ, M, μ)
     # Chord processing
-    mean_chords = (forward_sum ∘ chords)(wing) / 2
+    cs = chords(wing)
+    mean_chords = @views (cs[1:end-1] + cs[2:end]) / 2
 
     # Compute weighted wetted areas based on inviscid edge velocity distribution.
     weighted_S_wets = sum(@. ρ_es * norm(u_es)^3 * wetted_areas; dims = 1) ./ (ρ * V^3)

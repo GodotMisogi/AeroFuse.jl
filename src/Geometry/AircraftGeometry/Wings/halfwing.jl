@@ -226,3 +226,16 @@ Compute the trailing edge coordinates of a `Wing`, with an option to flip the si
 """
 leading_edge(wing :: Wing) = @views wing_bounds(wing)[1,:]
 trailing_edge(wing :: Wing) = @views wing_bounds(wing)[2,:]
+
+
+function Base.show(io :: IO, wing :: AbstractWing)
+    sym = ifelse(wing.symmetry, "Symmetric ", "")
+    println(io, sym, supertype(typeof(wing)),  " with ", length(spans(wing)), " spanwise section(s).")
+    println(io, "Aspect Ratio: ", aspect_ratio(wing))
+    println(io, "Span (m): ", span(wing))
+    println(io, "Projected Area (m): ", projected_area(wing))
+    println(io, "Mean Aerodynamic Chord (m): ", mean_aerodynamic_chord(wing))
+    println(io, "Mean Aerodynamic Center (m): ", mean_aerodynamic_center(wing))
+
+    nothing
+end

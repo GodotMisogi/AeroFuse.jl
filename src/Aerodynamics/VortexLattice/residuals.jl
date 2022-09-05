@@ -25,6 +25,9 @@ Assemble the boundary condition vector given an array of `Horseshoes`, the frees
 """
 boundary_condition(horseshoes, U, Ω) = map(hs -> dot(U + Ω × control_point(hs), horseshoe_normal(hs)), horseshoes)
 
+# Added velocity for slipstream model
+boundary_condition(horseshoes, U, Ups, Ω) = map((hs, Up) -> dot(U + Ω × control_point(hs) + Up, horseshoe_normal(hs)), horseshoes, Ups)
+
 # Matrix-free setup for nonlinear analyses
 #==========================================================================================#
 

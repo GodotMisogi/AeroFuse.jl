@@ -70,20 +70,21 @@ end
 
 @testset "Geometry - Two-Section Trapezoidal Wing" begin
     # Define wing
-    wing_right = Wing(chords    = [1.0, 0.6, 0.2],
-                          twists    = [2.0, 0.0, -0.2],
-                          spans     = [5.0, 0.5],
-                          dihedrals = [5., 5.],
-                          sweeps    = [5., 5.],
-                        #   symmetry  = true
-                        );
+    wing_right = Wing(
+        chords    = [1.0, 0.6, 0.2],
+        twists    = [2.0, 0.0, -0.2],
+        spans     = [5.0, 0.5],
+        dihedrals = [5., 5.],
+        sweeps    = [5., 5.],
+    #   symmetry  = true
+    );
 
     # Get wing info
-    b        = span(wing_right)
-    S        = projected_area(wing_right)
-    c        = mean_aerodynamic_chord(wing_right)
-    AR       = aspect_ratio(wing_right)
-    λ        = taper_ratio(wing_right)
+    b = span(wing_right)
+    S = projected_area(wing_right)
+    c = mean_aerodynamic_chord(wing_right)
+    AR = aspect_ratio(wing_right)
+    λ = taper_ratio(wing_right)
     wing_mac = mean_aerodynamic_center(wing_right)
 
     @test b        ≈ 5.50000000                    atol = 1e-6
@@ -91,7 +92,7 @@ end
     @test c        ≈ 0.79841008                    atol = 1e-6
     @test AR       ≈ 7.20342634                    atol = 1e-6
     @test λ        ≈ 0.20000000                    atol = 1e-6
-    @test wing_mac ≈ [0.4209310, 1.3343524, 0.0] atol = 1e-6
+    @test wing_mac ≈ [0.4209310, 1.3343524, 0.0]   atol = 1e-6
 end
 
 @testset "Geometry - 3D Panel" begin
@@ -112,17 +113,18 @@ end
 
 @testset "Vortex Lattice Method (Incompressible) - NACA 0012 Tapered Wing" begin
     # Define wing
-    wing = Wing(foils     = [ naca4((0,0,1,2)) for i ∈ 1:2 ],
-                chords    = [0.18, 0.16],
-                twists    = [0., 0.],
-                spans     = [0.25,],
-                dihedrals = [5.],
-                sweeps    = [1.14],
-                symmetry  = true
-            )
+    wing = Wing(
+        foils     = [ naca4((0,0,1,2)) for i ∈ 1:2 ],
+        chords    = [0.18, 0.16],
+        twists    = [0., 0.],
+        spans     = [0.25,],
+        dihedrals = [5.],
+        sweeps    = [1.14],
+        symmetry  = true
+    )
 
     # Define freestream and reference values
-    fs   = Freestream(2.0, 2.0, [0.0, 0.0, 0.0])
+    fs = Freestream(2.0, 2.0, [0.0, 0.0, 0.0])
     refs = References(
         speed    = 1.0, 
         area     = projected_area(wing), 

@@ -19,17 +19,17 @@ x
 ```
 """
 struct Panel3D{T <: Real} <: AbstractPanel3D
-    p1 :: Point3D{T}
-    p2 :: Point3D{T}
-    p3 :: Point3D{T}
-    p4 :: Point3D{T}
+    p1 :: SVector{3,T}
+    p2 :: SVector{3,T}
+    p3 :: SVector{3,T}
+    p4 :: SVector{3,T}
 end
 
 struct WakePanel3D{T <: Real} <: AbstractPanel3D
-    p1 :: Point3D{T}
-    p2 :: Point3D{T}
-    p3 :: Point3D{T}
-    p4 :: Point3D{T}
+    p1 :: SVector{3,T}
+    p2 :: SVector{3,T}
+    p3 :: SVector{3,T}
+    p4 :: SVector{3,T}
 end
 
 
@@ -140,7 +140,7 @@ end
 # Compute local axis coordinates
 local_coordinate_system(panel :: AbstractPanel3D) = local_coordinate_system((panel.p2 + panel.p3) / 2 - midpoint(panel), normal_vector(panel))
 
-function transform_panel(panel :: AbstractPanel3D, point :: Point3D)
+function transform_panel(panel :: AbstractPanel3D, point :: SVector{3,<:Real})
     T = get_transformation(panel)
     return T(panel), T(point) 
 end
@@ -162,8 +162,8 @@ function wake_panel(panels :: DenseArray{<: AbstractPanel3D}, bound, U)
     pt1 = 0.5 * ( p1(first(panels)) + p2(last(panels)) )
     pt4 = 0.5 * ( p4(first(panels)) + p3(last(panels)) )
     dr  = U * bound
-    pt2 = pt1 + Point3D(dr...)
-    pt3 = pt4 + Point3D(dr...)
+    pt2 = pt1 + dr
+    pt3 = pt4 + dr
 
     return WakePanel3D(pt1, pt2, pt3, pt4)
 end
