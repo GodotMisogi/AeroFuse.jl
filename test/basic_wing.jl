@@ -10,12 +10,12 @@ Makie.inline!(false)
 
 ## Geometry
 wing = WingSection(
-    area      = 19.0, # Projected area
-    aspect    = 8.3, # Aspect ratio
-    dihedral  = 0.0, # Dihedral angle (deg)
+    area      = 6.4, # Projected area
+    aspect    = 5, # Aspect ratio
+    dihedral  = 5.0, # Dihedral angle (deg)
     sweep     = 0.0, # Sweep angle (deg)
     w_sweep   = 0.25, # Sweep location normalized to chords ∈ [0,1]
-    taper     = 1.0, # Taper ratio
+    taper     = 0.6, # Taper ratio
     root_foil = naca4(0,0,1,2), # Root airfoil
     tip_foil  = naca4(0,0,1,2), # Tip airfoil
     position  = [0.0, 0, 0.0], # Location (m)
@@ -39,12 +39,12 @@ fs = Freestream( α, β, zeros(3))
 
 ##
 using JLD2
-surf_pts = load("/Users/james/Downloads/3DWingCodes/surf_pts.jld2", "surf_pts")
+surf_pts = load("/Users/james/Downloads/PanelCodes/3DWingCodes/surf_pts.jld2", "surf_pts")
 surf_pts = surf_pts[end:-1:1,:]
 surf_pans = make_panels(surf_pts)
 
 ##
-@time prob = solve_system_neumann(surf_pans, Umag, fs, 5)
+@time prob = solve_system_neumann(surf_pans, Umag, fs, 50)
 @time vs = surface_velocities(prob);
 @time CL, CD, CP = surface_coefficients(prob, wing);
 println("Σᵢ CLᵢ: $CL")

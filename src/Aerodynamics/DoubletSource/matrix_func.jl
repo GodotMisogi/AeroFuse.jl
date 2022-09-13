@@ -206,7 +206,7 @@ end
 function kutta_condition!(AIC_ku, Nf, Nw)
     AIC_ku[ : ,    2     : Nw+1 ] .= -I(Nw)
     AIC_ku[ : ,  Nf-Nw   : Nf-1 ] .=  I(Nw)
-    AIC_ku[ : , end-Nw+1 :  end ] .=  I(Nw)
+    AIC_ku[ : , end-Nw+1 :  end ] .= -I(Nw)
 end
 
 @views function velocity_influence_matrix(panels :: AbstractMatrix{<:AbstractPanel3D}, wakes)
