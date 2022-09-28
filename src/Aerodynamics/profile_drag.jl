@@ -7,10 +7,10 @@ form_factor_wing(x_c, t_c, Λ_m, M) = (1 + 0.6t_c / x_c + 100t_c^4) * (1.34M^0.1
 function form_factor(wing :: Wing, M)
     # (x/c)_max, (t/c)_max, (t/c)_max sweep angles
     xcs, tcs, sweeps = max_thickness_to_chord_ratio_sweeps(wing, 60)
-    Kf  = form_factor_wing.(xcs, tcs, sweeps, M)
-end
+    Kf = form_factor_wing.(xcs, tcs, sweeps, M)
 
-# form_factor(wing :: Wing, M) = [ reverse(form_factor(wing.left, M)); form_factor(wing.right, M) ]
+    return Kf
+end
 
 # Schlichting averaged skin-friction coefficients
 cf_lam(Re_c, k_lam = 1.) = 1.328 / √(Re_c * k_lam)
@@ -22,11 +22,16 @@ function skin_friction_coefficients(mean_chords, x_tr, V, ρ, M, μ)
     Re_c = reynolds_number.(ρ, V, mean_chords, μ)
 
     # Reynolds numbers at transition locations
-    Re_xtr = reynolds_number.(ρ, V, mean_chords .* x_tr, μ)
+    Re_xtr = @. reynolds_number(ρ, V, mean_chords * x_tr, μ)
 
     # Skin-friction coefficients
     cfs = cf_schlichting.(Re_c, Re_xtr, M)
+
+    return cfs
 end
+
+# One-line version
+# skin_friction_coefficients(mean_chords, x_tr, V, ρ, M, μ) = @. cf_schlichting(reynolds_number(ρ, V, mean_chords, μ), reynolds_number(ρ, V, mean_chords * x_tr, μ), M) 
 
 function wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
     cfs = skin_friction_coefficients(mean_chords, x_tr, V, ρ, M, μ)
@@ -49,7 +54,7 @@ function wetted_area_drag(wing :: AbstractWing, x_tr, V, ρ, a_ref, μ)
     M       = V / a_ref
     K_fs    = form_factor(wing, M)
 
-    wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
+    return wetted_area_drag(mean_chords, S_wets, K_fs, x_tr, V, ρ, M, μ)
 end
 
 wetted_area_drag(wing :: WingMesh, x_tr, V, ρ, a_ref, μ) = wetted_area_drag(wing.surface, x_tr, V, ρ, a_ref, μ)
@@ -63,7 +68,7 @@ function local_dissipation_drag(wing :: AbstractWing, wetted_areas, ρ_es, u_es,
     # Compute weighted wetted areas based on inviscid edge velocity distribution.
     weighted_S_wets = sum(@. ρ_es * norm(u_es)^3 * wetted_areas; dims = 1) ./ (ρ * V^3)
 
-    wetted_area_drag(mean_chords, weighted_S_wets, 1., x_tr, V, ρ, M, μ)
+    return wetted_area_drag(mean_chords, weighted_S_wets, 1., x_tr, V, ρ, M, μ)
 end
 
 function local_dissipation_drag(wing :: WingMesh, ρ_es, u_es, x_tr, V, ρ, M, μ)
@@ -76,7 +81,7 @@ function local_dissipation_drag(wing :: WingMesh, ρ_es, u_es, x_tr, V, ρ, M, �
     # Calculate weighted wetted areas based on inviscid edge velocity distribution.
     weighted_S_wets = sum(@. ρ_es * u_es^3 * S_wets; dims = 1) ./ (ρ * V^3)
 
-    wetted_area_drag(mean_chords, weighted_S_wets, 1., x_tr, V, ρ, M, μ)
+    return wetted_area_drag(mean_chords, weighted_S_wets, 1., x_tr, V, ρ, M, μ)
 end
 
 abstract type AbstractProfileDrag end

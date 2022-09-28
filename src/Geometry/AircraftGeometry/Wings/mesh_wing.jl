@@ -243,7 +243,7 @@ wetted_area(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foi
 
 Determine the wetted area ratio ``S_{wet}/S`` of a `WingMesh` by calculating the ratio of the total area of the surface panels to the projected area of the `Wing`.
 
-Should be approximately above 2 for thin airfoils.
+Should be slightly above 2 for thin airfoils.
 """
 wetted_area_ratio(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foils(wing.surface)).x)) = wetted_area(wing, n_span, n_chord) / projected_area(wing.surface)
 

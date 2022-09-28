@@ -104,9 +104,6 @@ end
     wing_mac = mean_aerodynamic_center(wing, w)
 
     # set a default value for an attribute with `-->`
-    xlabel --> "x"
-    ylabel --> "y"
-    zlabel --> "z"
     # aspect_ratio --> true
     # zlim --> span(wing) .* (-0.5, 0.5)
 
@@ -120,13 +117,24 @@ end
     end
 end
 
+@recipe function mesh_plot(panels :: Matrix{<: Panel3D})
+    panels = plot_panels(panels)
+    label --> ""
+    for coords in panels
+        @series begin
+            seriestype := :path
+            primary := false
+            # linecolor := :lightgray
+            # fillcolor := :lightgray
+            coords[:,1], coords[:,2], coords[:,3]
+        end
+    end
+end
+
 @recipe function wing_mesh_plot(wing :: WingMesh, w = 0.25)
     wing_plan = plot_planform(wing.surface)
     wing_pans = plot_panels(camber_panels(wing))
     wing_mac = mean_aerodynamic_center(wing.surface, w)
-    xlabel --> "x"
-    ylabel --> "y"
-    zlabel --> "z"
     # aspect_ratio --> true
     # zlim --> span(wing.surface) .* (-0.5, 0.5)
 
@@ -196,7 +204,7 @@ end
 get_span_points(wing :: Wing, pts) = affine_transformation(wing).(chop_leading_edge(wing, pts))
 
 
-@recipe function streamline_plot(system :: VortexLatticeSystem, wing :: AbstractWing; dist = 5 * mean_aerodynamic_chord(wing), num = 100, span = 20)
+@recipe function streamline_plot(system :: VortexLatticeSystem, wing :: AbstractWing; dist = 5 * mean_aerodynamic_chord(wing), num = 100, span = 20, linecolor = :green)
     # ys          = LinRange(-span(wing) / 2, span(wing) / 2, span_points)
     # init        = SVector.(0., ys, -0.5) 
     init        = get_span_points(wing, span)
@@ -209,7 +217,7 @@ get_span_points(wing :: Wing, pts) = affine_transformation(wing).(chop_leading_e
         @series begin 
             seriestype := :line
             primary := false
-            linecolor := :green
+            linecolor := linecolor
             @views streams[:,1,i], streams[:,2,i], streams[:,3,i]
         end
     end

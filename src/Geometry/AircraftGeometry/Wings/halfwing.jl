@@ -11,7 +11,7 @@
 
 Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees.
 """
-struct Wing{T <: Real, N <: AbstractAffineMap} <: AbstractWing
+struct Wing{T <: Number, N <: AbstractAffineMap} <: AbstractWing
     foils      :: Vector{<: AbstractFoil}
     chords     :: Vector{T}
     twists     :: Vector{T}

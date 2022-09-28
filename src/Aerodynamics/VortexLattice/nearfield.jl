@@ -17,7 +17,7 @@ For a given array of vortex type `hs_comp` and their associated vortex strengths
 
 The second variant simply sets `hs_comp = horseshoes` and `Γ_comp = Γs`.
 """
-surface_forces(hs_comp, Γ_comp, horseshoes, Γs, U, Ω, ρ) = map((h, Γ) -> kutta_joukowsky(ρ, surface_velocity(h, horseshoes, Γs, U, Ω), bound_leg_vector(h), Γ), hs_comp, Γ_comp)
+surface_forces(hs_comp, Γ_comp, horseshoes, Γs, U, Ω, ρ) = @timeit "KJForce" map((h, Γ) -> kutta_joukowsky(ρ, surface_velocity(h, horseshoes, Γs, U, Ω), bound_leg_vector(h), Γ), hs_comp, Γ_comp)
 
 surface_forces(horseshoes, Γs, U, Ω, ρ) = surface_forces(horseshoes, Γs, horseshoes, Γs, U, Ω, ρ)
 

@@ -30,7 +30,7 @@ fem_load_vector(vlm_acs, vlm_forces, fem_mesh) = [ zeros(6); vec(compute_loads(v
 #==========================================================================================#
 
 # Build cross product as an antisymmetric bilinear form. 
-# (This is just a fancy way of saying antisymmetric matrix in 3 dimensions. The cross product, more generally, is actually the exterior product in higher dimensions.)
+# (This is just a needlessly fancy way of saying antisymmetric matrix in 3 dimensions. The cross product, more generally, is actually the exterior product in higher dimensions.)
 rotation_matrix(Ωx, Ωy, Ωz) = @SMatrix [  0  -Ωz  Ωy ;
                                           Ωz  0  -Ωx ;
                                          -Ωy  Ωx  0  ]
@@ -41,12 +41,16 @@ rotation_matrix(θs) = rotation_matrix.(θs[1,:], θs[2,:], θs[3,:])
 transfer_displacement(xyz, dx, rot, r) = xyz + dx + rot * (xyz - r)
 transfer_displacements(dxs, Ts, chord_mesh, fem_mesh) = combinedimsview(map(xyz -> transfer_displacement.(xyz, dxs, Ts, fem_mesh), eachrow(chord_mesh)), (1))
 
-mesh_translation(δs) = @views SVector.(δs[1,:], δs[2,:], δs[3,:])
-mesh_rotation(δs)    = @views rotation_matrix(δs[4:6,:])
+@views mesh_translation(δs) = SVector.(δs[1,:], δs[2,:], δs[3,:])
+@views mesh_rotation(δs)    = rotation_matrix(δs[4:6,:])
 
 # Make new horseshoes
 function new_horseshoes(dxs, Ts, chord_mesh, camber_mesh, fem_mesh)
-    new_chord_mesh = transfer_displacements(dxs, Ts, chord_mesh, fem_mesh)
-    new_camber_mesh = transfer_displacements(dxs, Ts, camber_mesh, fem_mesh)
-    Horseshoe.(make_panels(new_chord_mesh), normal_vector.(make_panels(new_camber_mesh)))
+    @timeit "Chord Transfer" new_chord_mesh = transfer_displacements(dxs, Ts, chord_mesh, fem_mesh)
+    @timeit "Camber Transfer" new_camber_mesh = transfer_displacements(dxs, Ts, camber_mesh, fem_mesh)
+    @timeit "Chord Panels" cho_panels = make_panels(new_chord_mesh)
+    @timeit "Normal Vectors" cam_panels = make_panels(new_camber_mesh)
+    @timeit "Make Horseshoes" hs = map((cho, cam) -> Horseshoe(cho, normal_vector(cam)), cho_panels, cam_panels)
+
+    return hs
 end

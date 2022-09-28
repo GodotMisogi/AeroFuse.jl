@@ -1,7 +1,7 @@
 name = "AeroFuse"
 uuid = "477c59f4-51f5-487f-bf1e-8db39645b227"
 authors = ["GodotMisogi <arjitseth@gmail.com>"]
-version = "0.4"
+version = "0.4.0"
 
 [deps]
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
@@ -31,8 +31,8 @@ CoordinateTransformations = "0.6"
 DiffResults = "1"
 ForwardDiff = "0.10"
 Interpolations = "0.14"
-MacroTools = "0.5"
 LabelledArrays = "1"
+MacroTools = "0.5"
 PrettyTables = "1"
 RecipesBase = "1"
 Rotations = "1"
