@@ -13,6 +13,9 @@ struct VortexRing{T <: Real} <: AbstractVortex
     core :: T
 end
 
+control_point(ring :: VortexRing) = ring.rc
+normal_vector(ring :: VortexRing) = ring.normal
+
 function vortex_lines(p1, p2, p3, p4)
     v1 = quarter_point(p1, p2)
     v4 = quarter_point(p4, p3)
@@ -43,4 +46,15 @@ Base.length(::VortexRing) = 1
 """
 Computes the induced velocities at a point ``r`` of a VortexRing with constant strength ``Γ``.
 """
-velocity(r, vortex_ring :: VortexRing, Γ) = sum_vortices(r, structtolist(vortex_ring), Γ)
+function velocity(r, ring :: VortexRing, Γ) 
+    v1 = bound_leg_velocity(r - ring.r1, r - ring.r2, Γ, ring.core)
+    v2 = bound_leg_velocity(r - ring.r2, r - ring.r3, Γ, ring.core)
+    v3 = bound_leg_velocity(r - ring.r3, r - ring.r4, Γ, ring.core)
+    v4 = bound_leg_velocity(r - ring.r4, r - ring.r1, Γ, ring.core)
+
+    return v1 + v2 + v3 + v4
+end
+
+# influence_matrix(rings) = [ influence_coefficient(ring_j, ring_i) for ring_j in rings, ring_i in rings ] 
+
+# boundary_condition(rings, U, Ω) =  map(hs -> dot(U + Ω × control_point(hs), ring_normal(hs)), rings)

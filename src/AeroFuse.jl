@@ -119,9 +119,20 @@ export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, a
 
 # export WingControlSurface
 
-make_horseshoes(wing :: WingMesh) = Horseshoe.(chord_panels(wing), normal_vector.(camber_panels(wing)))
+make_horseshoes(wing :: WingMesh) = map((cho,cam) -> Horseshoe(cho, normal_vector(cam)), chord_panels(wing), camber_panels(wing))
 
-make_vortex_rings(wing :: WingMesh) = VortexRing.(camber_panels(wing))
+function make_vortex_rings(wing :: WingMesh)
+    cams = camber_panels(wing) 
+
+    # Vortex rings on surface
+    rings = VortexRing.(cams)
+
+    # Trailing edge semi-infinite vortex lines
+    horsies = Horseshoe.(cams[end,:], normal_vector.(cams[end,:]))
+
+    # Assemble
+    [ rings; permutedims(horsies) ]
+end
 
 export make_horseshoes, make_vortex_rings
 
@@ -174,9 +185,9 @@ include("Aerodynamics/Cases/foil_cases.jl")
 #==========================================================================================#
 
 include("Structures/Beams.jl")
-import .Beams: Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
+import .Beams: Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress, weight
 
-export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
+export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress, weight
 
 ## Aerostructural analyses
 #==========================================================================================#

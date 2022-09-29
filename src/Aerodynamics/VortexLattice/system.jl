@@ -307,3 +307,5 @@ function center_of_pressure(system :: VortexLatticeSystem)
 
     return x_CP
 end
+
+residual!(R, system :: VortexLatticeSystem) = solve_nonlinear!(R, system.vortices, system.circulations, -velocity(system.freestream), system.freestream.omega)

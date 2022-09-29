@@ -79,7 +79,7 @@ Getter for bound leg field of a `Horseshoe`.
 """
 bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
 control_point(horseshoe :: Horseshoe)  = horseshoe.rc
-horseshoe_normal(horseshoe :: Horseshoe) = horseshoe.normal
+normal_vector(horseshoe :: Horseshoe) = horseshoe.normal
 
 r1(r, horseshoe :: Horseshoe) = r - horseshoe.r1
 r2(r, horseshoe :: Horseshoe) = r - horseshoe.r2
@@ -98,7 +98,7 @@ end
 """
     transform(horseshoe :: Horseshoe, T :: LinearMap)
 
-Generate a new `Horseshoe` with the points and normal vectors transformed by the linear map ``T``.
+Generate a new `Horseshoe` with the points and normal vectors transformed by the `LinearMap` ``T``.
 """
 transform(horseshoe :: Horseshoe, T :: LinearMap) = setproperties(horseshoe,
     r1 = T(horseshoe.r1),

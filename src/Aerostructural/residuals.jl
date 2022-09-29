@@ -24,7 +24,7 @@ function coupled_residuals!(R, all_horsies, Γs, U, Ω, speed, stiffness_matrix,
 end
 
 # Residual setup for multiple aerostructural surfaces and multiple aerodynamic surfaces
-function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}, chord_meshes, camber_meshes, fem_meshes, other_horsies, stiffness_matrix, weight, load_factor)
+@views function solve_coupled_residual!(R, x, speed, β, ρ, Ω, syms :: Vector{Symbol}, chord_meshes, camber_meshes, fem_meshes, other_horsies, stiffness_matrix, weight, load_factor)
     # Unpack aerodynamic and structural variables
     Γs = x.aerodynamics
     δs = x.structures
@@ -180,17 +180,15 @@ end
 ## Nonlinear block Gauss-Seidel
 #==========================================================================================#
 
-function aerostruct_gauss_seidel(x0, speed, β, ρ, Ω, chord_mesh, camber_mesh, fem_mesh, stiffness_matrix, weight, load_factor; max_iters = 50, tol = 1e-9)
+@views function aerostruct_gauss_seidel(x0, speed, β, ρ, Ω, chord_mesh, camber_mesh, fem_mesh, stiffness_matrix, weight, load_factor; max_iters = 50, tol = 1e-9)
     x = deepcopy(x0)
     ε = 1e5
     for i = 1:max_iters
         xp = deepcopy(x)
 
-        @show xp
-
-        Γ = @views x.aerodynamics
-        δ = @views x.structures
-        α = @views x.load_factor
+        Γ = x.aerodynamics
+        δ = x.structures
+        α = x.load_factor
 
         # Compute velocity with new angle of attack
         U = freestream_to_cartesian(-speed, α, β)
@@ -204,14 +202,14 @@ function aerostruct_gauss_seidel(x0, speed, β, ρ, Ω, chord_mesh, camber_mesh,
         new_horsies = new_horseshoes(dxs, Ts, chord_mesh, camber_mesh, fem_mesh)
 
         # Solve circulations
-        Γ = reshape(influence_matrix(vec(new_horsies), -U / speed) \ boundary_condition(quasi_steady_freestream(vec(new_horsies), U, Ω), horseshoe_normal.(vec(new_horsies))), size(new_horsies))
+        Γ = reshape(influence_matrix(new_horsies[:], -U / speed) \ boundary_condition(new_horsies[:], U, Ω), size(new_horsies))
 
         x.aerodynamics = Γ
 
-        @show x
+        # @info "aerodynamics" x.aerodynamics
 
         # Compute VLM forces
-        vlm_forces = surface_forces(Γ, new_horsies, U, Ω, ρ)
+        vlm_forces = surface_forces(new_horsies, Γ, U, Ω, ρ)
 
         # Compute FEM loads
         fem_loads = fem_load_vector(bound_leg_center.(new_horsies), vlm_forces, fem_mesh) 
@@ -221,20 +219,20 @@ function aerostruct_gauss_seidel(x0, speed, β, ρ, Ω, chord_mesh, camber_mesh,
 
         x.structures = δ
 
-        @show x
+        # @info "Structures" x.structures
 
         # Compute lift
-        D, Y, L = geometry_to_wind_axes(sum(vlm_forces), α, β)
+        # _, _, L = geometry_to_wind_axes(sum(vlm_forces), α, β)
 
         # Weight residual
-        α = acos(abs(weight * load_factor - L) / (weight * load_factor))
+        # α = acos(abs(weight * load_factor - L) / (1e9 * weight * load_factor))
 
-        x.load_factor = α
+        # x.load_factor = α
 
-        @show L
+        # @info "Lift" L
 
         ε    = LinearAlgebra.norm(x - xp)
-        @show (i, ε)
+        @info "Iteration, error" (i, ε)
 
         if ε <= tol return x end # Needs NAN checks and everything like NLsolve
 
