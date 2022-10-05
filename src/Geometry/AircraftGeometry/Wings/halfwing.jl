@@ -21,31 +21,51 @@ struct Wing{T <: Number, N <: AbstractAffineMap} <: AbstractWing
     affine     :: N
     symmetry   :: Bool
     flip       :: Bool
+
+    # Default constructor
+    function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep = 0., symmetry = false, flip = false)
+        # Error handling
+        check_wing(foils, chords, twists, spans, dihedrals, sweeps)
+
+        # Convert sweep angles to leading-edge
+        sweeps = @. sweep_angle(
+            chords[2:end] / chords[1:end-1], # Section tapers
+            aspect_ratio(spans, chords[2:end], chords[1:end-1]), # Section aspect ratios
+            sweeps, # Sweep angles at desired normalized location
+            -w_sweep # Normalized sweep angle location ∈ [0,1]
+        )
+
+        # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
+        # foils = cosine_interpolation.(foils, 60)
+
+        T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps), typeof(w_sweep))
+        N = typeof(affine)
+        # S = promote_type(typeof(symmetry), typeof(flip))
+
+        # Convert angles to radians, adjust twists to leading edge, and generate Wing
+        new{T,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip)
+    end
 end
 
-function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep = 0., symmetry = false, flip = false)
-    # Error handling
-    check_wing(foils, chords, twists, spans, dihedrals, sweeps)
+# Named arguments version for ease, with default NACA-4 0012 airfoil shape
+function Wing(;
+    chords, 
+    twists    = zero(chords),
+    spans     = ones(length(chords) - 1) / (length(chords) - 1),
+    dihedrals = zero(spans),
+    sweeps    = zero(spans),
+    foils     = fill(naca4(0,0,1,2), length(chords)),
+    w_sweep   = 0.0,
+    position  = zeros(3),
+    angle     = 0.,
+    axis      = [0., 1., 0.],
+    affine    = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
+    symmetry  = false,
+    flip      = false
+)
 
-    # Convert sweep angles to leading-edge
-    sweeps = @. sweep_angle(
-        chords[2:end] / chords[1:end-1], # Section tapers
-        aspect_ratio(spans, chords[2:end], chords[1:end-1]), # Section aspect ratios
-        sweeps, # Sweep angles at desired normalized location
-        -w_sweep # Normalized sweep angle location ∈ [0,1]
-    )
-
-    # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
-    # foils = cosine_interpolation.(foils, 60)
-
-    T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps), typeof(w_sweep))
-    N = typeof(affine)
-    # S = promote_type(typeof(symmetry), typeof(flip))
-
-    # Convert angles to radians, adjust twists to leading edge, and generate Wing
-    Wing{T,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip)
+    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep, symmetry, flip)
 end
-
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     # Check if number of sections match up with number of edges (NEEDS WORK)
@@ -56,25 +76,6 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     @assert any(x -> x >= -90. || x <= 90., dihedrals) || any(x -> x >= -90. || x <= 90., sweeps) "Dihedrals and sweep angles must not exceed ±90ᵒ."
 end
 
-# Named arguments version for ease, with default NACA-4 0012 airfoil shape
-function Wing(;
-        chords, 
-        twists    = zero(chords),
-        spans     = ones(length(chords) - 1) / (length(chords) - 1),
-        dihedrals = zero(spans),
-        sweeps    = zero(spans),
-        foils     = fill(naca4(0,0,1,2), length(chords)),
-        w_sweep   = 0.0,
-        position  = zeros(3),
-        angle     = 0.,
-        axis      = [0., 1., 0.],
-        affine    = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
-        symmetry  = false,
-        flip      = false
-    )
-
-    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep, symmetry, flip)
-end
 
 # Getters
 foils(wing     :: Wing) = wing.foils
