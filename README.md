@@ -41,7 +41,7 @@ An additional aim is to write code compatible with automatic differentiation lib
 - Generic, flexible and efficient flight dynamics integrator in 2 and 3 dimensions.
 - Fuselage geometry parametrization and aerodynamic implementation.
 
-![](https://godot-bloggy.xyz/post/diagrams/AerostructAircraft.svg)
+![](plots/AerostructWingTail.svg)
 
 ## Installation
 
