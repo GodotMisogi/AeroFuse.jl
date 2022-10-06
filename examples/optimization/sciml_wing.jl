@@ -1,16 +1,13 @@
-## Optimisation tests
 using AeroFuse
 using Roots
+using Setfield
 using LinearAlgebra
+using Optimization, OptimizationMOI, OptimizationOptimJL, ForwardDiff, ModelingToolkit
+using Optim
+using Ipopt
+using OptimizationNLopt
 
-## Using IPOPT with SNOW
-using SNOW # Helps set up optimization problems
-using Ipopt # The optimizer
-
-## Elliptic wing planform prediction test
-#==========================================================================================#
-
-includet("wing_definition.jl")
+include("wing_definition.jl")
 
 ## Initial guess
 n_vars = 30 # Number of spanwise stations
@@ -41,24 +38,50 @@ sys = make_case(α0, wing_init, refs)
 init = get_forces(sys, wing_init)
 print_coefficients(sys)
 
-## Objective and constraints
-function optimize_drag!(g, x, w = 0.25, ref = refs)
+# Common
+function get_res(x, w_sweep = 0.25, ref=  refs)
     α = x[1]
     c_w = @view x[2:end]
-    wing_mesh = make_wing(c_w, w)
-    system = make_case(α, wing_mesh, refs)
 
-    res = get_forces(system, wing_mesh)
+    # Setup
+    wing_mesh = make_wing(c_w, w_sweep)
+    system = make_case(α, wing_mesh, ref)
 
-    # Objective
-    f = res.CDi
+    return system, wing_mesh
+end
 
-    # Constraints
-    g[1] = res.CL # Lift coefficient
-    g[2] = projected_area(wing_mesh) # Area
-    g[3:end] = -diff(c_w) # Chord length differences along span
+# Objective
+function opt_drag(x, p) 
+    sys, mesh = get_res(x)
 
-    return f
+    # Evaluate aerodynamic coefficients
+    CDi, _, _, _, _, _ = nearfield(sys)
+
+    # Calculate local-dissipation/local-friction drag
+    CVs = norm.(surface_velocities(sys)).wing
+    CDv = profile_drag_coefficient(mesh, 0.98, CVs, sys.reference)
+
+    # @info "Variables:" x
+    # @info "Objective:" CDi
+    
+    CDi # + CDv
+end
+
+# Constraints
+function con_all(R, x, p)
+    c_w = @view x[2:end]
+    sys, mesh = get_res(x)
+
+    _, _, CL = farfield(sys)
+    
+    R[1] = CL # Lift coefficient
+    R[2] = projected_area(mesh) # Area
+    R[3:end] = -diff(c_w) # Chord length differences along span
+
+    # @info "Variables": x
+    # @info "Constraints:" R
+
+    return nothing
 end
 
 ## Initial setup and test
@@ -69,7 +92,8 @@ cons = ComponentVector( # Constraints
     chords = zeros(nc - 1)
 )
 
-CD = optimize_drag!(cons, x0)
+CD = opt_drag(x0, nothing)
+con_all(cons, x0, nothing)
 
 # Bounds
 lx = [ -Inf; zeros(nc) ]
@@ -79,18 +103,25 @@ ug = [ CL_tgt; Sw; Inf * ones(nc - 1) ]
 
 ng = length(x0) # Number of constraints
 
-# Sparsity
-# sp = SparsePattern(ForwardAD(), optimize_drag!, ng, lx, ux)
-opts = Options(
-    solver = IPOPT(),
-    derivatives = ForwardAD(),
-    # sparsity = sp
+## Problem construction
+optprob = OptimizationFunction(opt_drag, Optimization.AutoForwardDiff(), cons = con_all)
+prob = OptimizationProblem(optprob, x0, lcons = lg, ucons = ug, lb = lx, ub = ux)
+
+## Choose optimizer
+opt = OptimizationMOI.MOI.OptimizerWithAttributes(
+    # NLopt.Optimizer,
+    # "algorithm" => :LN_NELDERMEAD,
+    Ipopt.Optimizer, 
+    "hessian_approximation" => "limited-memory"
 )
 
-## Run optimization
-@time xopt, fopt, info = minimize(optimize_drag!, x0, ng, lx, ux, lg, ug, opts)
+# opt = IPNewton()
+
+## Solve
+@time sol = solve(prob, opt);
 
 ## Substitute
+xopt = sol.u
 wing_opt = make_wing(xopt[2:end])
 sys_opt = make_case(xopt[1], wing_opt, refs)
 opt = get_forces(sys_opt, wing_opt)
@@ -107,7 +138,6 @@ print_coefficients(sys_exact)
 
 ## Plotting
 #==========================================================================================#
-
 
 ## Plot spanwise loading
 ll_init = spanwise_loading(wing_init, surface_coefficients(sys)[1].wing, sys.reference.area)
@@ -131,7 +161,7 @@ plt_opt = plot(
     legend = :bottom,
     xlabel = L"x,~m",
     guidefontrotation = 90.0,
-    title = LaTeXString("Planform, \$ S = $(round(Sw; digits = 6)),~C_L = $(round(CL_tgt; digits = 6)) \$"),
+    title = LaTeXString("Planform, \$ S = $(round(Sw; digits = 4)),~C_L = $(round(CL_tgt; digits = 4)) \$"),
     grid = false,
     # aspect_ratio = 1,
     # zlim = (-0.5, 0.5) .* span(wing_init)
@@ -188,13 +218,13 @@ plot!(
     [ -cumsum(wing_init.surface.spans)[end:-1:1]; 0; cumsum(wing_init.surface.spans) ], 
     [ wing_init.surface.chords[end:-1:2]; wing_init.surface.chords ], 
     lc = :black,
-    label = LaTeXString("Initial Wing: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([init.CDi;init.CDv;init.CD]; digits = 6)) \$"),
+    label = LaTeXString("Initial Wing: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([init.CDi;init.CDv;init.CD]; digits = 4)) \$"),
 )
 plot!(
     [ -cumsum(wing_opt.surface.spans)[end:-1:1]; 0; cumsum(wing_opt.surface.spans) ], 
     [ wing_opt.surface.chords[end:-1:2]; wing_opt.surface.chords ],
     lc = :cornflowerblue, 
-    label = LaTeXString("Optimized Wing: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([opt.CDi;opt.CDv;opt.CD]; digits = 6)) \$"),
+    label = LaTeXString("Optimized Wing: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([opt.CDi;opt.CDv;init.CD]; digits = 4)) \$"),
 )
 plot!(
     [ -cumsum(wing_exact.surface.spans)[end:-1:1]; 0; cumsum(wing_exact.surface.spans) ], 
@@ -229,4 +259,4 @@ plt_wing = plot(
 )
 
 #
-savefig(plt_wing, "plots/SNOWWingOptimization.pdf")
+savefig(plt_wing, "plots/SciMLWingOptimization.pdf")
