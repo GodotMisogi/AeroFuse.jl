@@ -10,15 +10,6 @@ using Ipopt # The optimizer
 ## Elliptic wing planform prediction test
 #==========================================================================================#
 
-# Reference values
-const refs = References(
-    speed     = 10.,
-    area      = 0.25,
-    span      = 2.0,
-    chord     = 0.125,
-    location  = [0.03125, 0., 0.]
-)
-
 # Geometry
 function make_wing(xc, w = 0.25)
     # Planform geometry
@@ -55,7 +46,8 @@ end
 # Aerodynamic forces
 function get_forces(system, wing_mesh)
     # Evaluate aerodynamic coefficients
-    CDi, _, CL = farfield(system)
+    CDi, CY, CL, Cl, Cm, Cn = nearfield(system)
+    # CDi, _, _ = farfield(system)
 
     # Calculate equivalent flat-plate skin-friction drag
     # CDv = profile_drag_coefficient(wing_mesh, 1.0, system.reference)
@@ -67,8 +59,31 @@ function get_forces(system, wing_mesh)
     return (CDi = CDi, CDv = CDv, CD = CDi + CDv, CL = CL)
 end
 
+## Initial guess
+n_vars = 30 # Number of spanwise stations
+c = 0.125 # Fixed chord
+xs = LinRange(c, c, n_vars) # Constant distribution
+CL_tgt = 1.2 # Target lift coefficient
+
+wing_init = make_wing(xs)
+Sw = projected_area(wing_init) # Reference area
+
+refs = References(
+    speed     = 10.,
+    area      = Sw,
+    span      = span(wing_init),
+    chord     = mean_aerodynamic_chord(wing_init),
+    location  = [0.03125, 0., 0.]
+)
+
+# Find angle of attack which matches target CL
+α0 = find_zero(1.0, Roots.Secant()) do α
+    sys = make_case(α, wing_init, refs)
+    CL_tgt - get_forces(sys, wing_init).CL
+end
+
 ## Objective and constraints
-function optimize_drag!(g, x, w = 0.25)
+function optimize_drag!(g, x, w = 0.25, ref = refs)
     α = x[1]
     xc = @view x[2:end]
     wing_mesh = make_wing(xc, w)
@@ -85,20 +100,6 @@ function optimize_drag!(g, x, w = 0.25)
     g[3:end] = @views xc[1:end-1] - xc[2:end] # Chord length differences along span
 
     return f
-end
-
-## Initial guess
-n_vars = 60 # Number of spanwise stations
-c = 0.125 # Fixed chord
-xs = LinRange(c, c, n_vars) # Constant distribution
-CL_tgt = 1.2 # Target lift coefficient
-
-wing_init = make_wing(xs)
-
-# Find angle of attack which matches target CL
-α0 = find_zero(1.0, Roots.Secant()) do α
-    sys = make_case(α, wing_init, refs)
-    CL_tgt - get_forces(sys, wing_init).CL
 end
 
 ## Initial setup and test
@@ -132,7 +133,6 @@ print_coefficients(sys_opt)
 opt = get_forces(sys_opt, wing_opt)
 
 ## Comparison with initial
-Sw = projected_area(wing_init)
 sys = make_case(xopt[1], wing_init, refs)
 print_coefficients(sys)
 init = get_forces(sys, wing_init)
@@ -182,7 +182,7 @@ plot!(wing_init.surface,
     lc = :black, 
     mc = :black,
     lw = 0.8, 
-    # alpha = 0.5, 
+    alpha = 0.6, 
     label = "",
 )
 # plot!(sys, wing_init.surface, 
@@ -193,7 +193,7 @@ plot!(wing_init.surface,
 # )
 
 # Optimized planform
-plot!(wing_opt.surface, 
+plot!(wing_opt, 
     lc = :cornflowerblue, 
     mc = :cornflowerblue, 
     lw = 0.8, 
@@ -211,6 +211,7 @@ plot!(wing_opt.surface,
 plot!(wing_exact.surface, 
     lc = :green, 
     mc = :green, 
+    alpha = 0.6,
     lw = 0.8, 
     label = "",
 )
@@ -235,9 +236,12 @@ plot!(
     lc = :cornflowerblue, 
     label = LaTeXString("Optimized Wing: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([opt.CDi;opt.CDv;init.CD]; digits = 4)) \$"),
 )
-
-
-plot!(ys, xs, label = LaTeXString("Inviscid Optimum: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([exact.CDi;exact.CDv;exact.CD]; digits = 4)) \$"))
+plot!(
+    [ -cumsum(wing_exact.surface.spans)[end:-1:1]; 0; cumsum(wing_exact.surface.spans) ], 
+    [ wing_exact.surface.chords[end:-1:2]; wing_exact.surface.chords ],
+    lc = :green, 
+    label =LaTeXString("Inviscid Optimum: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([exact.CDi;exact.CDv;exact.CD]; digits = 4)) \$"),
+)
 
 plt_CL = plot(
     title = "Lift Distribution",
