@@ -193,9 +193,24 @@ export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_ine
 #==========================================================================================#
 
 include("Aerostructural/Aerostructural.jl")
-import .Aerostructural: AerostructWing, make_beam_mesh, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
+import .Aerostructural: AerostructWing, make_beam_mesh, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!
 
-export AerostructWing, make_beam_mesh, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
+export AerostructWing, make_beam_mesh, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!
+
+## Propulsion analyses
+#==========================================================================================#
+
+include("Propulsion/propulsion.jl")
+
+# Actuator disc
+import .Propulsion: ActuatorDisc, actuator_disc_induced_velocity
+
+export ActuatorDisc, actuator_disc_induced_velocity
+
+# Blade-element momentum theory
+import .Propulsion: induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream_contraction
+
+export induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream_contraction
 
 ## Post-processing
 #==========================================================================================#
