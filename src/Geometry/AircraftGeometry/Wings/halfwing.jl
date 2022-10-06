@@ -11,13 +11,13 @@
 
 Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees.
 """
-struct Wing{T <: Number, V <: AbstractVector{T}, N <: AbstractAffineMap} <: AbstractWing
+struct Wing{T <: Number, N <: AbstractAffineMap} <: AbstractWing
     foils      :: Vector{<: AbstractFoil}
-    chords     :: V
-    twists     :: V
-    spans      :: V
-    dihedrals  :: V
-    sweeps     :: V
+    chords     :: Vector{T}
+    twists     :: Vector{T}
+    spans      :: Vector{T}
+    dihedrals  :: Vector{T}
+    sweeps     :: Vector{T}
     affine     :: N
     symmetry   :: Bool
     flip       :: Bool
@@ -25,7 +25,7 @@ struct Wing{T <: Number, V <: AbstractVector{T}, N <: AbstractAffineMap} <: Abst
     # Default constructor
     function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep = 0., symmetry = false, flip = false)
         # Error handling
-        # check_wing(foils, chords, twists, spans, dihedrals, sweeps)
+        check_wing(foils, chords, twists, spans, dihedrals, sweeps)
 
         # Convert sweep angles to leading-edge
         sweeps = @. sweep_angle(
@@ -40,11 +40,10 @@ struct Wing{T <: Number, V <: AbstractVector{T}, N <: AbstractAffineMap} <: Abst
 
         T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps), typeof(w_sweep))
         N = typeof(affine)
-        V = promote_type(typeof(chords),  typeof(twists), typeof(spans), typeof(dihedrals), typeof(sweeps))
         # S = promote_type(typeof(symmetry), typeof(flip))
 
         # Convert angles to radians, adjust twists to leading edge, and generate Wing
-        new{T,V,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip)
+        new{T,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip)
     end
 end
 
