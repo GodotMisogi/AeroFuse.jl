@@ -3,22 +3,6 @@ module Propulsion
 using Roots
 using StaticArrays
 
-
-## Propulsion analyses
-#==========================================================================================#
-
-include("Propulsion/propulsion.jl")
-
-# Actuator disc
-import .Propulsion: ActuatorDisc, actuator_disc_induced_velocity
-
-export ActuatorDisc, actuator_disc_induced_velocity
-
-# Blade-element momentum theory
-import .Propulsion: induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream_contraction
-
-export induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream_contraction
-
 ## Propulsion models
 #==========================================================================================#
 
