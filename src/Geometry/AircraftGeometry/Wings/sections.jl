@@ -66,23 +66,26 @@ end
                   root_twist, tip_twist, root_foil, tip_foil,
                   position, angle, axis)
 
-Define a `Wing` consisting of two trapezoidal sections with reflection symmetry in the ``x``-``z`` plane.
+Define a `Wing` in the ``x``-``z`` plane, with optional Boolean arguments for symmetry and flipping in the plane.
 
 # Arguments
-- `span       :: Real         = 1.`: Span length 
-- `dihedral   :: Real         = 1.`: Dihedral angle (degrees)
-- `LE_sweep   :: Real         = 0.`: Leading-edge sweep angle (degrees)
-- `taper      :: Real         = 1.`: Taper ratio of tip to root chord
-- `root_chord :: Real         = 1.`: Root chord length
-- `root_twist :: Real         = 0.`: Twist angle at root (degrees)
-- `tip_twist  :: Real         = 0.`: Twist angle at tip (degrees)
-- `root_foil  :: Foil         = naca4((0,0,1,2))`: Foil coordinates at root
-- `tip_foil   :: Foil         = root_foil`: Foil coordinates at tip
-- `position   :: Vector{Real} = zeros(3)`: Position
-- `angle      :: Real         = 0.`: Angle of rotation (degrees)
-- `axis       :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
+- `span :: Real = 1.`: Span length 
+- `dihedral :: Real = 1.`: Dihedral angle (degrees)
+- `LE_sweep :: Real = 0.`: Leading-edge sweep angle (degrees)
+- `taper :: Real = 1.`: Taper ratio of tip to root chord
+- `root_chord :: Real = 1.`: Root chord length
+- `root_twist :: Real = 0.`: Twist angle at root (degrees)
+- `tip_twist :: Real = 0.`: Twist angle at tip (degrees)
+- `root_foil :: Foil = naca4((0,0,1,2))`: Foil coordinates at root
+- `tip_foil :: Foil = root_foil`: Foil coordinates at tip
+- `root_control :: NTuple{2} = (0., 0.75)`: (Angle, chord-length ratio) for adding a control surface at the root.
+- `tip_control :: NTuple{2} = root_control`: (Angle, chord-length ratio) for adding a control surface at the tip. Defaults to root control's settings.
+- `position :: Vector{Real} = zeros(3)`: Position
+- `angle :: Real = 0.`: Angle of rotation (degrees)
+- `axis :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
 function WingSection(;
+    
         area         = 1.,
         aspect       = 6.,
         dihedral     = 0.,
@@ -91,12 +94,12 @@ function WingSection(;
         taper        = 1.,
         root_twist   = 0.,
         tip_twist    = 0.,
-        root_control = (0., 0.75),
-        tip_control  = root_control,
         root_foil    = naca4((0,0,1,2)),
         tip_foil     = root_foil,
         position     = zeros(3),
         angle        = 0.,
+        root_control = (0., 0.75),
+        tip_control  = root_control,
         axis         = SVector(0., 1., 0.),
         affine       = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
         symmetry     = false,

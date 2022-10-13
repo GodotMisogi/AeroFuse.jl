@@ -1,13 +1,15 @@
 """
-    Wing(foils :: Vector{Foil}, 
-             chords, 
-             twists, 
-             spans, 
-             dihedrals, 
-             sweeps,
-             position = zeros(3),
-             angle    = 0.
-             axis     = [0.,1.,0.])
+    Wing(
+        foils :: Vector{Foil}, 
+        chords, 
+        twists, 
+        spans, 
+        dihedrals, 
+        sweeps,
+        position = zeros(3),
+        angle    = 0.
+        axis     = [0.,1.,0.]
+    )
 
 Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees.
 """
@@ -78,10 +80,10 @@ end
 
 
 # Getters
-foils(wing     :: Wing) = wing.foils
-chords(wing    :: Wing) = wing.chords
-twists(wing    :: Wing) = wing.twists
-spans(wing     :: Wing) = wing.spans
+foils(wing :: Wing) = wing.foils
+chords(wing :: Wing) = wing.chords
+twists(wing :: Wing) = wing.twists
+spans(wing :: Wing) = wing.spans
 dihedrals(wing :: Wing) = wing.dihedrals
 
 """
@@ -204,7 +206,7 @@ function wing_bounds(wing :: Wing)
     dihedraled_spans = [ 0; cumsum(@. spans * tand(dihedrals)) ]
 
     # Compute x points
-    chords          = wing.chords
+    chords = wing.chords
     twisted_chords  = @. chords * sind(wing.twists)
 
     # Leading edge

@@ -54,7 +54,6 @@ y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / (3(1 + λ))
 quarter_chord(chord) = 0.25 * chord
 
 include("Wings/halfwing.jl")
-include("Wings/wing.jl")
 include("Wings/mesh_tools.jl")
 include("Wings/mesh_wing.jl")
 include("Wings/controls.jl")
