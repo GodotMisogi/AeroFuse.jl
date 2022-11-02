@@ -84,19 +84,43 @@ struct VortexLatticeSystem{
     R,
     S,
     P <: AbstractFreestream,
-    Q <: AbstractReferences} <: AbstractVortexLatticeSystem
+    Q <: AbstractReferences,
+    T <: AbstractAxisSystem} <: AbstractVortexLatticeSystem
     vortices          :: M
     circulations      :: N 
     influence_matrix  :: R
     boundary_vector   :: S
     freestream        :: P
     reference         :: Q
+    axes :: T
+end
+
+function VortexLatticeSystem(components, fs :: Freestream, refs :: References, axes = Geometry())
+
+    # Mach number bound checks
+    M = mach_number(refs)
+    @assert M < 1.  "Only compressible subsonic flow conditions (M < 1) are valid!"
+    if M > 0.7 @warn "Results in transonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
+
+    # (Prandtl-Glauert ∘ Wind axis) transformation
+    β_pg = √(1 - M^2)
+    comp = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(components, fs), β_pg)
+
+    # Quasi-steady freestream velocity
+    U = geometry_to_wind_axes(velocity(fs, Body()), fs)
+    Ω = geometry_to_wind_axes(fs.omega, fs) / refs.speed
+
+    # Solve system
+    Γs, AIC, boco = solve_linear(comp, U, Ω)
+
+    return VortexLatticeSystem(components, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, axes)
 end
 
 # Made out of annoyance and boredom
 function Base.show(io :: IO, sys :: VortexLatticeSystem)     
     println(io, "VortexLatticeSystem -")
     println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements\n")
+    println(io, "    Axes: ", sys.axes)
     show(io, sys.freestream)
     println(io, "")
     show(io, sys.reference)
@@ -152,11 +176,11 @@ surface_moments(system; axes :: AbstractAxisSystem = Geometry()) = surface_momen
 
 surface_moments(system :: VortexLatticeSystem, ::Geometry) = surface_moments(system.vortices, surface_forces(system, Geometry()), system.reference.location)
 
-surface_moments(system :: VortexLatticeSystem, ::Body) = surface_moments(system.vortices, surface_forces(system, Body()), system.reference.location)
+surface_moments(system :: VortexLatticeSystem, ::Body) = surface_moments(system.vortices, surface_forces(system, Body()), geometry_to_body_axes(system.reference.location))
 
-surface_moments(system :: VortexLatticeSystem, ::Stability) = surface_moments(system.vortices, flip_xz.(surface_forces(system, Stability())), system.reference.location)
+surface_moments(system :: VortexLatticeSystem, ::Stability) = surface_moments(system.vortices, flip_xz.(surface_forces(system, Stability())), geometry_to_stability_axes(system.reference.location, system.freestream.alpha))
 
-surface_moments(system :: VortexLatticeSystem, ::Wind) =  surface_moments(system.vortices, flip_xz.(surface_forces(system, Wind())), system.reference.location)
+surface_moments(system :: VortexLatticeSystem, ::Wind) =  surface_moments(system.vortices, flip_xz.(surface_forces(system, Wind())), geometry_to_wind_axes(system.reference.location, system.freestream.alpha, system.freestream.beta))
 
 
 ## Dynamics

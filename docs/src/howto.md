@@ -297,7 +297,7 @@ The vortex lattice analysis can be executed with the horseshoes, freestream cond
 
 ````@example howto
 # Solve system
-system = solve_case(
+system = VortexLatticeSystem(
     aircraft, fs, refs;
     print = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
