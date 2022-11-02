@@ -137,7 +137,7 @@ end
     aircraft = ComponentArray(wing = make_horseshoes(WingMesh(wing, [20], 5, span_spacing = [Sine(1); Sine()])))
 
     # Evaluate stability case
-    system = solve_case(aircraft, fs, refs)
+    system = VortexLatticeSystem(aircraft, fs, refs)
     dv_data = freestream_derivatives(system)
 
     dcf = dv_data.wing
@@ -230,7 +230,7 @@ end
     )
 
     ## Stability case
-    system = solve_case(aircraft, fs, refs)
+    system = VortexLatticeSystem(aircraft, fs, refs)
     dv_data = freestream_derivatives(system)
 
     dcf = dv_data.aircraft
@@ -322,7 +322,7 @@ end
     )
 
     ## Stability case
-    system = solve_case(aircraft, fs, refs)
+    system = VortexLatticeSystem(aircraft, fs, refs)
     dv_data = freestream_derivatives(system)
 
     dcf = dv_data.aircraft
