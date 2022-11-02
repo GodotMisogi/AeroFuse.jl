@@ -36,7 +36,7 @@ function cosine_interpolation(fuse :: Fuselage, n)
     x_min, x_max = extrema(xs)
     x_circ = cosine_spacing((x_min + x_max) / 2, x_max - x_min, n)
 
-    y_u = LinearInterpolation(xs, ys).(x_circ)
+    y_u = linear_interpolation(xs, ys).(x_circ)
 
     return [ x_circ y_u ]
 end
