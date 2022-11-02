@@ -1,7 +1,7 @@
 ## Section definitions
 #==========================================================================================#
 
-# mutable struct WingSection{T <: Real, F <: AbstractFoil, A <: AbstractAffineMap}
+# mutable struct WingSection{T <: Real, F <: AbstractFoil, A <: AbstractAffineMap, W <: AbstractWing}
 #     S :: T
 #     AR :: T
 #     b  :: T
@@ -15,6 +15,7 @@
 #     foil_r :: F
 #     foil_t :: F
 #     affine :: A
+#     wing :: W
 # end
 
 # Span length from aspect ratio and area
@@ -23,7 +24,7 @@ span_length(b, AR) = √(b * AR)
 # Root chord
 root_chord(S, b, λ) = (2 * S) / (b * (1 + λ))
 
-function WingSection(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
+function Wing(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 
     # Control surface deflections at root and tip
     root_foil = control_surface(
@@ -54,12 +55,12 @@ function WingSection(span, dihedral, sweep, w_sweep, taper, root_chord, root_twi
     return section
 end
 
-function WingSection(S, taper, sweep, w_sweep, dihedral, root_twist, tip_twist, root_foil, tip_foil, affine, symmetry)
-    span = S^2 / AR
-    root_chord = 2 * S / (b * (1 + λ))
+# function WingSection(S, taper, sweep, w_sweep, dihedral, root_twist, tip_twist, root_foil, tip_foil, affine, symmetry)
+#     span = S^2 / AR
+#     root_chord = 2 * S / (b * (1 + λ))
 
-    WingSection(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist , root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
-end
+#     Wing(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
+# end
 
 """
     WingSection(; span, dihedral, sweep, taper, root_chord,
@@ -85,7 +86,6 @@ Define a `Wing` in the ``x``-``z`` plane, with optional Boolean arguments for sy
 - `axis :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 """
 function WingSection(;
-    
         area         = 1.,
         aspect       = 6.,
         dihedral     = 0.,
@@ -96,12 +96,12 @@ function WingSection(;
         tip_twist    = 0.,
         root_foil    = naca4((0,0,1,2)),
         tip_foil     = root_foil,
-        position     = zeros(3),
-        angle        = 0.,
         root_control = (0., 0.75),
         tip_control  = root_control,
+        position     = zeros(3),
+        angle        = 0.,
         axis         = SVector(0., 1., 0.),
-        affine       = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
+        affine       = AffineMap(AngleAxis(deg2rad(angle), axis...), position),
         symmetry     = false,
         flip         = false
     )
@@ -113,7 +113,7 @@ function WingSection(;
         b_w /= 2
     end
     
-    return WingSection(b_w, dihedral, sweep, w_sweep, taper, c_root_w, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
+    return Wing(b_w, dihedral, sweep, w_sweep, taper, c_root_w, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 end
 
 ## Standard stabilizers (non-exhaustive)
