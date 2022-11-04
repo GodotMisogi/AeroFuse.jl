@@ -145,9 +145,8 @@ Iyy_coeffs(E, I, L) = let k0 = 12, k1 =  6L, k2 = 2L^2; E * I / L^3 * k_coeffs(k
 Izz_coeffs(E, I, L) = let k0 = 12, k1 = -6L, k2 = 2L^2; E * I / L^3 * k_coeffs(k0, k1, k2) end
 
 ## Composite deflection stiffness matrix of adjacent beam elements
-function bending_stiffness_matrix(Es, Is, Ls, direction = :z)
+function bending_stiffness_matrix!(mat, Es, Is, Ls, direction)
     n = length(Es)
-    mat = @MMatrix zeros(2(n+1), 2(n+1))
     block_size = CartesianIndices((4,4))
 
     for (c_ind, E, I, L) in zip(CartesianIndex.(0:2:2(n-1), 0:2:2(n-1)), Es, Is, Ls)
@@ -155,14 +154,22 @@ function bending_stiffness_matrix(Es, Is, Ls, direction = :z)
         @. mat[c_ind + block_size] += coeffs
     end
 
+    nothing
+end
+
+function bending_stiffness_matrix(Es, Is, Ls, direction = :z)
+    n = length(Es)
+    mat = spzeros(2(n+1), 2(n+1))
+
+    bending_stiffness_matrix!(mat, Es, Is, Ls, direction)
+
     # Return sparse matrix representation
-    return sparse(mat)
+    return mat
 end
 
 ## Composite torsional stiffness matrix for adjacent beam elements
-function axial_stiffness_matrix(Es, Is, Ls)
+function axial_stiffness_matrix!(mat, Es, Is, Ls)
     n = length(Es)
-    mat = @MMatrix zeros(n+1, n+1)
     block_size = CartesianIndices((2,2))
 
     for (c_ind, E, I, L) in zip(CartesianIndex.(0:n-1, 0:n-1), Es, Is, Ls)
@@ -170,8 +177,14 @@ function axial_stiffness_matrix(Es, Is, Ls)
         @. mat[c_ind + block_size] += coeffs
     end
 
-    # Return sparse matrix representation
-    return sparse(mat)
+end
+
+function axial_stiffness_matrix(Es, Is, Ls)
+    n = length(Es)
+    mat = spzeros(n+1, n+1)
+    axial_stiffness_matrix!(mat, Es, Is, Ls)
+
+    return mat
 end
 
 """
