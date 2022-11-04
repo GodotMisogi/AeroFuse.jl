@@ -116,23 +116,23 @@ stream(:: Vortex2D, γ, x, y) = -γ / (4π) * log(x^2 + yp^2)
 
 # Uniform2D(str, r) = PointSingularity2D(Uniform2D(), str, r)
 
-struct Uniform2D{T <: Real} <: AbstractLaplace
+struct Uniform2D{T <: Real} <: AbstractSingularity2D
     magnitude :: T
     angle     :: T
     Uniform2D{T}(mag, ang) where T <: Real = new(mag, deg2rad(ang))
 end
 
 magnitude(uni :: Uniform2D) = uni.magnitude
-angle(uni :: Uniform2D)     = uni.angle
+angle(uni :: Uniform2D) = uni.angle
 
 Uniform2D(mag :: T, ang :: T) where T <: Real = Uniform2D{T}(mag, ang)
 Uniform2D(mag, ang) = Uniform2D(promote(mag, ang)...)
 Uniform2D(velocity) = Uniform2D((sqrt ∘ sum)(velocity.^2), atan(velocity[2], velocity[1]))
 Uniform2D(; angle)  = Uniform2D(1., angle)
 
-potential(uni :: Uniform2D, x, y) = uni.magnitude * (x * cos(uni.angle) + y * sin(uni.angle))
+potential(uni :: Uniform2D, x, y) = let (sa, ca) = sincos(uni.angle); uni.magnitude * (x * ca + y * sa) end
 velocity(uni :: Uniform2D) = let (sa, ca) = sincos(uni.angle); uni.magnitude * SVector(ca, sa) end
-stream(uni :: Uniform2D, x, y)    = uni.magnitude * (y * cos(uni.angle) - x * sin(uni.angle))
+stream(uni :: Uniform2D, x, y) = let (sa, ca) = sincos(uni.angle); uni.magnitude * (y * ca - x * sa) end
 
 ## 3D singularities
 #============================================#
@@ -141,7 +141,7 @@ stream(uni :: Uniform2D, x, y)    = uni.magnitude * (y * cos(uni.angle) - x * si
 abstract type AbstractSingularity3D <: AbstractSingularity end
 
 # Geometric type
-struct PointSingularity3D{T <: Number, N <: AbstractSingularity2D} <: AbstractLaplace
+struct PointSingularity3D{T <: Number, N <: AbstractSingularity3D} <: AbstractLaplace
     type     :: N
     strength :: T
     r        :: SVector{3,T}
@@ -168,7 +168,7 @@ Source3D(str, x, y, z) = PointSingularity3D(Source3D(), str, @SVector [x, y, z])
 Source3D(str, r) = PointSingularity3D(Source3D(), str, r)
 
 potential(:: Source3D, σ, r) = σ / (4π * norm(r))
-velocity(:: Source3D, σ, r) = jac(sfc(r)) * σ / 4π * (r) / norm(r)^3
+velocity(:: Source3D, σ, r) = σ / 4π * r / norm(r)^3
 
 # Doublet/dipole aligned along arbitrary axis
 struct Doublet3D{T <: Number} <: AbstractSingularity3D 
@@ -186,7 +186,7 @@ function velocity(src :: Doublet3D, μ, r)
     μ / (4π * rn^3) * @SVector [ 3z * x / rn^2, 3z * y / rn^2, 3 * (cφ^2 - 1) ]
 end
 
-potential(:: Doublet3D, μ, r) = -μ / 4π * dot(p, r) / norm(r)^3
+potential(dub :: Doublet3D, μ, r) = -μ / 4π * dot(dub.p, r) / norm(r)^3
 
 struct ConstantStrengthLineSingularity3D{T <: Number, K <: AbstractSingularity3D} <: AbstractSingularity
     type     :: K
@@ -194,6 +194,11 @@ struct ConstantStrengthLineSingularity3D{T <: Number, K <: AbstractSingularity3D
     r1       :: SVector{3,T}
     r2       :: SVector{3,T}
 end
+
+# Alias
+const CSLine3D = ConstantStrengthLineSingularity3D
+
+(l :: CSLine3D)(; type = l.type, strength = l.strength, r1 = l.r1, r2 = l.r2) = CSLine3D(type, strength, r1, r2)
 
 # function Base.show(io :: IO, src :: ConstantStrengthLine3D)
 #     println(io, "Constant strength 3D potential line")
@@ -205,51 +210,15 @@ function ConstantStrengthLineSingularity3D(type :: K, str, r1, r2, η) where K <
     CSLine{T,K}(type, str, r1, r2, η)
 end
 
-# Alias
-CSLine3D = ConstantStrengthLineSingularity3D
-
 # Dispatchers (streamfunction is not uniquely defined in 3D)
-potential(src :: CSLine3D, r) = potential(src.type, src.strength, r - src.r1, r - src.r2) 
-velocity(src :: CSLine3D, r) = velocity(src.type, src.strength, r - src.r1, r - src.r2) 
+potential(src :: CSLine3D, r) = potential(src.type, src.strength, r - src.r2) - potential(src.type, src.strength, r - src.r1)
+velocity(src :: CSLine3D, r) = velocity(src.type, src.strength, r - src.r2) - velocity(src.type, src.strength, r - src.r1)
 
 # Source line
 SourceLine3D(str, r1, r2) = CSLine3D(Source3D(), str, r1, r2)
 
-function velocity(:: Source3D, σ, r1, r2)
-    l = normalize(r1 - r2)
-    return (source_influence(r2, l) - source_influence(r1, l))
-end
-
-# Helper function
-function source_influence(r, l, ε = 0.)
-    L = dot(r, l)
-
-    ri = r - L * l
-
-    # Finite-core norms
-    ri_n = sqrt(norm(ri)^2 + ε^2)
-    rn = sqrt(norm(r)^2 + ε^2)
-
-    return (l - ri * (L / ri_n^2)) / rn
-end
-
 # Doublet line
-DoubletLine3D(str, r1, r2, p = SVector(1., 0., 0.)) = CSLine3D(Doublet3D(p), str, r1, r2)
-
-function velocity(dub :: Doublet3D, μ, r1, r2)
-    l = normalize(dub.r2 - dub.r1)
-    return μ / 4π * (doublet_influence(dub.p, r2, l) - doublet_influence(dub.p, r1, l))
-end
-
-# Helper function
-function doublet_influence(p, r, ε = 0.)
-    r_φ = dot(r, φ) # ???
-    r_p = dot(r, p)
-    rn = sqrt(norm(r)^2 + ε^2)
-    den = (rn^2 - r_φ^2 + ε^2) * rn
-
-    return ((r_φ * η + r_p * μ) * den - (den * r / rn^2 + 2 * (r - r_φ * η) * rn) * r_φ * r_p) / den^2
-end
+DoubletLine3D(str, r1, r2, p = @SVector [1., 0., 0.]) = CSLine3D(Doublet3D(p), str, r1, r2)
 
 
 ## Freestream
@@ -283,7 +252,7 @@ Freestream(α_deg, β_deg, Ω) = let T = promote_type(eltype(α_deg), eltype(β_
 
 Freestream(α_deg, β_deg, Ω_x, Ω_y, Ω_z) = Freestream(deg2rad(α_deg), deg2rad(β_deg), SVector(Ω_x, Ω_y, Ω_z))
 
-Freestream(U, Ω) = let (_, α, β) = cartesian_to_freestream(normalize(U)); Freestream{T}(α, β, Ω) end
+Freestream(U, Ω) = let (_, α, β) = cartesian_to_freestream(normalize(U)); Freestream(α, β, Ω) end
 
 Freestream(; alpha = 0., beta = 0., omega = zeros(3)) = Freestream(alpha, beta, omega)
 
@@ -293,6 +262,8 @@ function Base.show(io :: IO, fs :: Freestream)
         println(io, "    ", fname, " = ", getfield(fs, fname))
     end
 end
+
+potential(fs :: Freestream, r) = dot(velocity(fs), r)
 
 """
     velocity(freestream :: Freestream)

@@ -11,26 +11,23 @@ rads = [0.05, 0.15, 0.25, 0.4, 0.8, 1., 1., 1., 1., 0.85, 0.3, 0.01] * w_fuselag
 
 fuse = Fuselage(l_fuselage, lens, rads, [0., 0., 0.])
 
-## Plotting
-using Plots
-
-plot(fuse, aspect_ratio = 1, zlim = (-10,10))
-
 ## Aerodynamic model
 using StaticArrays
 using LinearAlgebra
 using Statistics
+using StructArrays
 
 ## Doublet lines
-coo = coordinates(fuse, 10)
+n = 11 # Number of points
+coo = coordinates(fuse, n)
 xs, ys = coo[:,1], coo[:,2]
-η = [0.,0.,1.]
 coords = SVector.(xs, 0., 0.)
-dblt_lines = SourceLine3D.(1.0, coords[1:end-1], coords[2:end])
+src_lines = SourceLine3D.(1.0, coords[1:end-1], coords[2:end])
+dblt_lines = DoubletLine3D.(1.0, coords[1:end-1], coords[2:end], Ref(@SVector [0., 0., 1.]))
 
 ## Velocity
 x = [1.,2.,3.]
-vel = velocity.(dblt_lines, Ref(x))
+vel = velocity.(src_lines, Ref(x))
 
 ## Panels
 fuse_pans = plot_surface(fuse, 10)
@@ -41,17 +38,87 @@ rs = SVector.((xs[1:end-1] + xs[2:end]) / 2, (ys[1:end-1] + ys[2:end]) / 2, 0.)
 ns = SVector.(-ts[:,2], ts[:,1], 0.)
 
 ## Freestream
-fs = Freestream(alpha = 1.0)i
+fs = Freestream(alpha = 1.0)
 Vinf = velocity(fs) * 5.
 
 ## Influence matrix
-AIC = [ dot(Vinf + source_velocity(dbl_j, r_i), n_i) for (n_i, r_i) in zip(ns, rs), dbl_j in dblt_lines ]
+AIC = [ 
+    # potential(fs, r_i) + potential(line_j, r_i) # Dirichlet
+    dot( # Neumann
+        Vinf + velocity(line_j, r_i),
+        n_i
+    ) 
+    for (n_i, r_i) in zip(ns, rs), line_j in src_lines 
+]
 
 ## Boundary condition
 boco = map(n -> -dot(Vinf, n), ns)
 
 ##
-φs = AIC \ boco
+σs = AIC \ boco
+
+using Setfield
+src_lines = StructArray(map((line, σ) -> line(strength = σ), src_lines, σs))
+
+
+
+## Streamlines
+seed = cfs.(Spherical(0.001, 0.0, θ) for θ in LinRange(0, 2π, 51)) .- Ref([-0., 0., 0.])
+tran = CoordinateTransformations.LinearMap(AngleAxis(π/2, 1, 0., -1))
+seed = tran.(seed)
+
+## Grid
+Nt = 50
+Np = length(seed)
+Δt = 0.1
+L  = length(fuse)
+
+# Streamlines
+Ps = zeros(Nt, Np, 3)
+
+# Initial condition point
+Ps[1,:,:] = combinedimsview(seed)'
+
+# Iterate over seed
+for (i, _) in enumerate(seed)
+    # Iterate over length-steps
+    for j in 1:Nt-1
+        # Compute new velocity
+        V = Vinf + sum(line -> velocity(line, Ps[j,i,:]), src_lines)
+
+        # Compute next point
+        Ps[j+1,i,:] = Ps[j,i,:] + V / norm(V) * L / Np
+    end
+end
+
+
+##
+ls = Point3f.(splitdimsview(Ps, (1,2)))
+
+
+## Visualization
+using WGLMakie
+WGLMakie.activate!()
+
+fig = Figure()
+scene = LScene(fig[1,1])
+
+[ lines!(stream, color = :green) for stream in eachcol(ls) ]
+
+lines!(Point3f.(rs))
+arrows!(Point3f.(rs), Vec3f.(ns), 
+    arrowsize = Vec3f(0.3, 0.3, 0.4),
+    fxaa = true,
+    normalize = true,
+    align = :center
+)
+
+fig
+## Plotting
+# using Plots
+
+# plot(fuse, aspect_ratio = 1, zlim = (-10,10))
+
 
 # pans = [ 
 #     let coo = fuse_pans[n:(n+1),:,(k+1):-1:k];
@@ -59,3 +126,4 @@ boco = map(n -> -dot(Vinf, n), ns)
 #     Panel3D(SVector.(coords[:,1], coords[:,2], coords[:,3])...) end;
 #     for n in axes(fuse_pans, 1)[1:end-1], k in axes(fuse_pans, 3)[1:end-1] 
 # ]
+
