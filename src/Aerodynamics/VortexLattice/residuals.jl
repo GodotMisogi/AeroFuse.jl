@@ -38,9 +38,11 @@ boundary_condition(horseshoes, U, Ups, Ω) = map((hs, Up) -> dot(U + Ω × contr
 @views function induced_velocity(r, horseshoes, Γs, U_hat) 
     @timeit "Sum AD" vel = sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
     
-    # vel = zero(r)
-    # @timeit "Sum AD" for i in eachindex(horseshoes)
-    #     @timeit "Velocity" vel += velocity(r, horseshoes[i], Γs[i], U_hat)
+    # vel = zeros(eltype(Γs), 3)
+    # vel1 = zeros(eltype(vel), 3)
+    # for i in eachindex(horseshoes)
+    #     velocity!(vel1, r, horseshoes[i], Γs[i], U_hat)
+    #     vel += vel1
     # end
 
     return vel
@@ -66,7 +68,16 @@ end
     vel
 end
 
-function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
+# @views function induced_trailing_velocity!(vel, vel1, r, horseshoes, Γs, U_hat)
+#     # for i in eachindex(horseshoes)
+#         velocity!(vel1, r, horseshoes[i], Γs[i], U_hat)
+#         vel += vel1
+#     end
+
+#     vel
+# end
+
+@views function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
     for i in eachindex(horseshoes)
         vel += trailing_velocity(r, horseshoes[i], Γs[i], U_hat)
     end
@@ -75,13 +86,18 @@ function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
 end
 
 function induced_velocity(r, hs, Γs, U, Ω) 
-    # vel = zeros(eltype(r), 3)
-    induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
+    # vel = zeros(eltype(Γs), 3)
+    # vel1 = zeros(eltype(vel), 3)
+    # induced_velocity!(vel, vel1, r, hs, Γs, -normalize(U)) - (U + Ω × r)
+    vel = zeros(eltype(Γs), 3)
+    induced_velocity!(vel, r, hs, Γs, -normalize(U)) - (U + Ω × r)
+    # induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 function induced_trailing_velocity(r, horseshoes, Γs, U, Ω) 
-    # vel = zeros(eltype(r), 3)
-    induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
+    vel = zeros(eltype(Γs), 3)
+    induced_trailing_velocity!(vel, r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
+    # induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 # Residual computations
