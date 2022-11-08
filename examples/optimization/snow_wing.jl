@@ -46,7 +46,7 @@ function optimize_drag!(g, x, w = 0.25, ref = refs)
     α = x[1]
     c_w = @view x[2:end]
     wing_mesh = make_wing(c_w, w)
-    system = make_case(α, wing_mesh, refs)
+    system = make_case(α, wing_mesh, ref)
 
     res = get_forces(system, wing_mesh)
 
