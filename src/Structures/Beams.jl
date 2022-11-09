@@ -5,6 +5,7 @@ module Beams
 
 using SparseArrays
 using StaticArrays
+using StructArrays
 using LinearAlgebra
 using SplitApplyCombine
 
@@ -53,9 +54,13 @@ density(mat :: Material)         = mat.density
 
 abstract type AbstractBeam end
 
-struct Beam{T <: AbstractBeam}
-    section :: Vector{T}
+struct Beam{T <: AbstractVector{<: AbstractBeam}}
+    section :: T
 end
+
+Base.show(io :: IO, beam :: Beam) = println(io, "Number of elements: ", Base.length(beam.section), " ", typeof(beam.section))
+
+Beam(sections :: Vector{T}) where T <: AbstractBeam = let secs = StructArray(sections); Beam{typeof(secs)}(secs) end
 
 """
     Tube(material :: Material, length, radius, thickness)
@@ -73,6 +78,15 @@ function Tube(material :: Material, length, radius, thickness)
     T = promote_type(eltype(length), eltype(radius), eltype(thickness))
     @assert length > 0. && radius > 0. && thickness > 0. "Length, outer radius and thickness must be positive."
     return Tube{T}(material, length, radius, thickness)
+end
+
+# Convenience constructor for linearly varying radii and thickness
+function Beam(material, n, r1, r2, t1, t2, symmetry = false)
+    Ls_beam = 0:1/(n-1):1 # Beam lengths, m
+    rs_beam = LinRange(r1, r2, n)  # Outer radii, m
+    ts_beam = LinRange(t1, t2, n)  # Thickness, m
+
+    return Beam(Tube.(Ref(material), Ls_beam, rs_beam, ts_beam))
 end
 
 Base.length(tube :: Tube) = tube.length

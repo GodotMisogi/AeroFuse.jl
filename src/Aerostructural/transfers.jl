@@ -2,24 +2,35 @@
 #==========================================================================================#
 
 # Sum adjacent values
-adjacent_adder(x1, x2) = @views [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
+@views adjacent_adder(x1, x2) = [ [ x1[1] ]; x1[2:end] .+ x2[1:end-1]; [ x2[end] ] ]
 
 # Compute moments for each section with local beam nodes as origins
 section_moment(vlm_ac, fem_pts, half_vlm_force) = @. (vlm_ac - fem_pts) × half_vlm_force
-section_moments(vlm_acs, fem_pts, half_vlm_forces) = sum(x -> section_moment(x[1], fem_pts, x[2]), zip(eachrow(vlm_acs), eachrow(half_vlm_forces)))
+@views section_moments(vlm_acs, fem_pts, half_vlm_forces) = sum(x -> section_moment(x[1], fem_pts, x[2]), zip(eachrow(vlm_acs), eachrow(half_vlm_forces)))
 
-function compute_loads(vlm_acs, vlm_forces, fem_mesh)
+function compute_loads!(loads, vlm_acs, vlm_forces, fem_mesh)
     # Forces
-    sec_forces   = vec(sum(vlm_forces, dims = 1)) / 2
-    beam_forces  = adjacent_adder(sec_forces / 2, sec_forces / 2)
+    sec_forces = vec(sum(vlm_forces, dims = 1)) / 2
+    beam_forces = adjacent_adder(sec_forces / 2, sec_forces / 2)
 
     # Moments
-    M_ins        = @views section_moments(vlm_acs, fem_mesh[1:end-1], vlm_forces / 2)
-    M_outs       = @views section_moments(vlm_acs, fem_mesh[2:end],   vlm_forces / 2)
+    M_ins = @views section_moments(vlm_acs, fem_mesh[1:end-1], vlm_forces / 2)
+    M_outs = @views section_moments(vlm_acs, fem_mesh[2:end],   vlm_forces / 2)
     beam_moments = adjacent_adder(M_ins, M_outs)
 
-    # Concatenate forces and moments into loads array
-    [ combinedimsview(beam_forces); combinedimsview(beam_moments) ]
+    # Insert forces and moments into loads array
+    loads[1:3,:] = combinedimsview(beam_forces)
+    loads[4:6,:] = combinedimsview(beam_moments)
+
+    nothing
+end
+
+function compute_loads(vlm_acs, vlm_forces, fem_mesh)
+    T = promote_type(eltype(vlm_acs[1]), eltype(vlm_forces[1]), eltype(fem_mesh[1]))
+    loads = MMatrix{6, length(fem_mesh), T}(undef)
+    compute_loads!(loads, vlm_acs, vlm_forces, fem_mesh)
+
+    return loads
 end
 
 # Generate load vector for FEM system
@@ -42,7 +53,7 @@ transfer_displacement(xyz, dx, rot, r) = xyz + dx + rot * (xyz - r)
 transfer_displacements(dxs, Ts, chord_mesh, fem_mesh) = combinedimsview(map(xyz -> transfer_displacement.(xyz, dxs, Ts, fem_mesh), eachrow(chord_mesh)), (1))
 
 @views mesh_translation(δs) = SVector.(δs[1,:], δs[2,:], δs[3,:])
-@views mesh_rotation(δs)    = rotation_matrix(δs[4:6,:])
+@views mesh_rotation(δs) = rotation_matrix(δs[4:6,:])
 
 # Make new horseshoes
 function new_horseshoes(dxs, Ts, chord_mesh, camber_mesh, fem_mesh)
@@ -54,3 +65,5 @@ function new_horseshoes(dxs, Ts, chord_mesh, camber_mesh, fem_mesh)
 
     return hs
 end
+
+new_horseshoes(Δs, chord_mesh, camber_mesh, fem_mesh) = new_horseshoes(mesh_translation(Δs), mesh_rotation(Δs), chord_mesh, camber_mesh, fem_mesh)
