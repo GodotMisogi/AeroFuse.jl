@@ -178,7 +178,7 @@ end
 
 function bending_stiffness_matrix(Es, Is, Ls, direction = :z)
     n = length(Es)
-    mat = spzeros(2(n+1), 2(n+1))
+    mat = @MMatrix zeros(2(n+1), 2(n+1))
 
     bending_stiffness_matrix!(mat, Es, Is, Ls, direction)
 
@@ -200,7 +200,7 @@ end
 
 function axial_stiffness_matrix(Es, Is, Ls)
     n = length(Es)
-    mat = spzeros(n+1, n+1)
+    mat = @MMatrix zeros(n+1, n+1)
     axial_stiffness_matrix!(mat, Es, Is, Ls)
 
     return mat

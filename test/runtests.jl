@@ -1,6 +1,7 @@
 using AeroFuse
 using Test
 using StaticArrays
+using ComponentArrays
 
 @testset "NACA-4 Doublet-Source 2D Panel Method" begin
     # Define airfoil
