@@ -61,7 +61,7 @@ end
 
 # In-place versions
 @views function induced_velocity!(vel, r, horseshoes, Γs, U_hat)
-    for i in eachindex(horseshoes)
+    @timeit "Summing" for i in eachindex(horseshoes)
         vel += velocity(r, horseshoes[i], Γs[i], U_hat)
     end
 
@@ -89,20 +89,20 @@ function induced_velocity(r, hs, Γs, U, Ω)
     # vel = zeros(eltype(Γs), 3)
     # vel1 = zeros(eltype(vel), 3)
     # induced_velocity!(vel, vel1, r, hs, Γs, -normalize(U)) - (U + Ω × r)
-    vel = zeros(eltype(Γs), 3)
-    induced_velocity!(vel, r, hs, Γs, -normalize(U)) - (U + Ω × r)
-    # induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
+    vel = zero(r)
+    @timeit "Induced Velocity" induced_velocity!(vel, r, hs, Γs, -normalize(U)) - (U + Ω × r)
+    # @timeit "Induced Velocity" induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 function induced_trailing_velocity(r, horseshoes, Γs, U, Ω) 
-    vel = zeros(eltype(Γs), 3)
+    vel = zero(r)
     induced_trailing_velocity!(vel, r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
     # induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 # Residual computations
-residual(r, n, hs, Γs, U, Ω) = @timeit "ADRes" dot(induced_velocity(r, hs, Γs, U, Ω), n)
+residual(r, n, hs, Γs, U, Ω) = @timeit "Residual" dot(induced_velocity(r, hs, Γs, U, Ω), n)
 
 solve_nonlinear(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(control_point(hs), normal_vector(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
 
-solve_nonlinear!(R, horseshoes, Γs, U_hat, Ω_hat) = map!(hs -> residual(control_point(hs), normal_vector(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)
+solve_nonlinear!(R, horseshoes, Γs, U_hat, Ω_hat) = @timeit "Mapping" map!(hs -> residual(control_point(hs), normal_vector(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)
