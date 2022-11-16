@@ -3,7 +3,6 @@ module VortexLattice
 using LinearAlgebra
 using StaticArrays
 using Rotations, CoordinateTransformations
-using ComponentArrays
 using SplitApplyCombine
 using TimerOutputs
 using LabelledArrays

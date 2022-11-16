@@ -81,10 +81,15 @@ function Tube(material :: Material, length, radius, thickness)
 end
 
 # Convenience constructor for linearly varying radii and thickness
-function Beam(material, n, r1, r2, t1, t2, symmetry = false)
-    Ls_beam = 0:1/(n-1):1 # Beam lengths, m
+function Beam(material, Ls_beam, r1, r2, t1, t2, symmetry = false)
+    n = ifelse(symmetry, length(Ls_beam) ÷ 2, length(Ls_beam))
     rs_beam = LinRange(r1, r2, n)  # Outer radii, m
     ts_beam = LinRange(t1, t2, n)  # Thickness, m
+
+    if symmetry
+        rs_beam = [ reverse(rs_beam); rs_beam ]
+        ts_beam = [ reverse(ts_beam); ts_beam ]
+    end
 
     return Beam(Tube.(Ref(material), Ls_beam, rs_beam, ts_beam))
 end

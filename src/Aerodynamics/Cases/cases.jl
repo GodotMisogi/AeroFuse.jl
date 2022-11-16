@@ -14,7 +14,7 @@
 Perform a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `References` values.
 """
 function solve_case(components :: DenseArray, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false)
-    system = solve_system(components, freestream, refs)
+    system = VortexLatticeSystem(components, freestream, refs)
 
     # Printing if needed
     if print_components
