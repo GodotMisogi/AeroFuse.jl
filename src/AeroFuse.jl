@@ -17,10 +17,6 @@ using StatsBase: weights
 using SplitApplyCombine: combinedimsview, combinedims, splitdimsview, splitdims
 export combinedimsview, combinedims, splitdimsview, splitdims
 
-using ComponentArrays
-
-export ComponentVector, ComponentArray, valkeys
-
 using Setfield
 using LabelledArrays
 
@@ -37,8 +33,6 @@ function solve_linear! end
 function solve_nonlinear! end
 
 function solve_system end
-
-function properties end
 
 function surface_velocities end
 
@@ -195,14 +189,6 @@ include("Structures/Beams.jl")
 import .Beams: Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress, weight
 
 export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress, weight
-
-## Aerostructural analyses
-#==========================================================================================#
-
-include("Aerostructural/Aerostructural.jl")
-import .Aerostructural: AerostructWing, make_beam_mesh, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!
-
-export AerostructWing, make_beam_mesh, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!
 
 ## Propulsion analyses
 #==========================================================================================#
