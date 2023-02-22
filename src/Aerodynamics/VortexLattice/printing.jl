@@ -13,7 +13,7 @@ function print_coefficients(nf_coeffs, ff_coeffs, name = "")
     head = [ name, "Nearfield", "", "Farfield" ]
     h1 = Highlighter( (data,i,j) -> (j == 1) || (j == 3), foreground = :cyan, bold = true)
 
-    pretty_table(data, head, alignment = [:c, :c, :c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
+    pretty_table(data, header = head, alignment = [:c, :c, :c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
 end
 
 """
