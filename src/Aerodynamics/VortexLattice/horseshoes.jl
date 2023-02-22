@@ -1,9 +1,15 @@
 ## Horseshoe methods
 #==========================================================================================#
 
-quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(1/4, 0, 1/4))
+function quarter_point(p1, p2) 
+    μ = SVector(1/4, 0, 1/4)
+    return @. (1 - μ) * p1 + μ * p2
+end 
 
-three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
+function three_quarter_point(p1, p2) 
+    μ = SVector(3/4, 0, 3/4)
+    return @. (1 - μ) * p1 + μ * p2
+end 
 
 control_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
 bound_leg(p1, p2, p3, p4) = SVector(quarter_point(p1, p2), quarter_point(p4, p3))

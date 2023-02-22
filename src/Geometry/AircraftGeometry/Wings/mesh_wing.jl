@@ -140,10 +140,7 @@ struct WingMesh{M <: AbstractWing, N <: Integer, P, Q} <: AbstractWing
     span_spacing  :: Q
 
     # Main constructor
-    function WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N, chord_spacing :: P, span_spacing :: Q) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}}
-        
-        return new{M,N,P,Q}(surface, n_span, n_chord, chord_spacing, span_spacing)
-    end
+    WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N, chord_spacing :: P, span_spacing :: Q) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}} = new{M,N,P,Q}(surface, n_span, n_chord, chord_spacing, span_spacing)
 end
 
 function check_definition(surf :: Wing, n_span) 

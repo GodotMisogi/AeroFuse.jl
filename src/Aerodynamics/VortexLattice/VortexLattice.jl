@@ -14,9 +14,6 @@ using DiffResults: JacobianResult, jacobian, value
 ## Package imports
 #==========================================================================================#
 
-# Math tools
-import ..MathTools: weighted_vector, structtolist, Point3D
-
 # Panel geometry
 import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, normal_vector, transform, p1, p2, p3, p4, average_chord, average_width
 
