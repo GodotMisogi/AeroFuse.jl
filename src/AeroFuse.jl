@@ -17,6 +17,12 @@ using StatsBase: weights
 using SplitApplyCombine: combinedimsview, combinedims, splitdimsview, splitdims
 export combinedimsview, combinedims, splitdimsview, splitdims
 
+using ComponentArrays
+export ComponentVector, ComponentArray
+
+using Accessors
+export @set
+
 using Setfield
 using LabelledArrays
 

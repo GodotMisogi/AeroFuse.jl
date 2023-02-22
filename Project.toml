@@ -4,6 +4,8 @@ authors = ["GodotMisogi <arjitseth@gmail.com>"]
 version = "0.4.0"
 
 [deps]
+Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
+ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
 CoordinateTransformations = "150eb455-5306-5404-9cee-2592286d6298"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 DiffResults = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
@@ -27,6 +29,8 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [compat]
+Accessors = "0.1"
+ComponentArrays = "0.13"
 CoordinateTransformations = "0.6"
 DiffResults = "1"
 ForwardDiff = "0.10"
@@ -35,7 +39,6 @@ LabelledArrays = "1"
 MacroTools = "0.5"
 RecipesBase = "1"
 Rotations = "1"
-Setfield = "1"
 SplitApplyCombine = "1"
 StaticArrays = "1"
 StatsBase = "0.33"
