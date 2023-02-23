@@ -1,13 +1,10 @@
 # Matrix setup
 #==========================================================================================#
 
-"""
-    influence_coefficient(horseshoe_1 :: Horseshoe, horseshoe_2 :: Horseshoe)
+influence_coefficient(vor_i :: AbstractVortex, vor_j :: AbstractVortex) = dot(velocity(control_point(vor_j), vor_i, 1.), normal_vector(vor_j))
 
-Compute the influence coefficient of the first `Horseshoe` at the collocation point of the second `Horseshoe`.
-"""
-influence_coefficient(horseshoe :: Horseshoe, horseshoe_j) = dot(velocity(control_point(horseshoe_j), horseshoe, 1.), horseshoe_normal(horseshoe_j))
-influence_coefficient(horseshoe :: Horseshoe, horseshoe_j, V_hat) = dot(velocity(control_point(horseshoe_j), horseshoe, 1., V_hat), horseshoe_normal(horseshoe_j))
+influence_coefficient(vor_i :: AbstractVortex, vor_j :: AbstractVortex, V_hat) = dot(velocity(control_point(vor_j), vor_i, 1., V_hat), normal_vector(vor_j))
+
 
 """
     influence_matrix(horseshoes)
@@ -18,53 +15,62 @@ Assemble the Aerodynamic Influence Coefficient (AIC) matrix given an array of `H
 influence_matrix(horseshoes) = [ influence_coefficient(horsie_j, horsie_i) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
 influence_matrix(horseshoes, V_hat) = [ influence_coefficient(horsie_j, horsie_i, V_hat) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
 
+function influence_matrix!(A, horseshoes)
+    for (i,j) in axes(A)
+        A[i,j] = influence_coefficient(horseshoes[j], horseshoes[i])
+    end
+    return A
+end
+
 """
     boundary_condition(horseshoes, U, Ω)
 
 Assemble the boundary condition vector given an array of `Horseshoes`, the freestream velocity ``U``, and a quasi-steady rotation vector  ``Ω``.
 """
-boundary_condition(horseshoes, U, Ω) = map(hs -> dot(U + Ω × control_point(hs), horseshoe_normal(hs)), horseshoes)
+boundary_condition(horseshoes, U, Ω) = map(hs -> dot(U + Ω × control_point(hs), normal_vector(hs)), horseshoes)
+
+# Added velocity for slipstream model
+boundary_condition(horseshoes, U, Ups, Ω) = map((hs, Up) -> dot(U + Ω × control_point(hs) + Up, normal_vector(hs)), horseshoes, Ups)
 
 # Matrix-free setup for nonlinear analyses
 #==========================================================================================#
 
-induced_velocity(r, horseshoes, Γs, U_hat) = @views sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+induced_velocity(r, horseshoes, Γs, U_hat) = sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
 
-# In-place version
-function induced_velocity!(vel, r, horseshoes, Γs, U_hat)
+induced_trailing_velocity(r, horseshoes, Γs, U_hat) = sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+
+# In-place versions
+@views function induced_velocity!(vel, r, horseshoes, Γs, U_hat)
     for i in eachindex(horseshoes)
-        vel += @views velocity(r, horseshoes[i], Γs[i], U_hat)
+        vel += velocity(r, horseshoes[i], Γs[i], U_hat)
     end
 
-    vel
+    return vel
 end
 
-induced_trailing_velocity(r, horseshoes, Γs, U_hat) = @views sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
-
-# In-place version
-function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
+@views function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
     for i in eachindex(horseshoes)
-        vel += @views trailing_velocity(r, horseshoes[i], Γs[i], U_hat)
+        vel += trailing_velocity(r, horseshoes[i], Γs[i], U_hat)
     end
 
-    vel
+    return vel
 end
 
-function induced_velocity(r, hs, Γs, U, Ω) 
-    # vel = zeros(eltype(r), 3)
-    induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
+function induced_velocity(r, hs, Γs, U, Ω)
+    vel = zero(r)
+    induced_velocity!(vel, r, hs, Γs, -normalize(U)) - (U + Ω × r)
+    # @timeit "Induced Velocity" induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 function induced_trailing_velocity(r, horseshoes, Γs, U, Ω) 
-    # vel = zeros(eltype(r), 3)
-    induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
+    vel = zero(r)
+    induced_trailing_velocity!(vel, r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
+    # induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 # Residual computations
-function residual(r, n, hs, Γs, U, Ω) 
-   dot(induced_velocity(r, hs, Γs, U, Ω), n)
-end 
+residual(r, n, hs, Γs, U, Ω) = dot(induced_velocity(r, hs, Γs, U, Ω), n)
 
-solve_nonlinear(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(control_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
+solve_nonlinear(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(control_point(hs), normal_vector(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
 
-solve_nonlinear!(R, horseshoes, Γs, U_hat, Ω_hat) = map!(hs -> residual(control_point(hs), horseshoe_normal(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)
+solve_nonlinear!(R, horseshoes, Γs, U_hat, Ω_hat) = map!(hs -> residual(control_point(hs), normal_vector(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)

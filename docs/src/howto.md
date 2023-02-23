@@ -166,11 +166,11 @@ print_info(wing, "Wing")
 ````
 
 !!! tip
-    You can use [Setfield.jl](https://github.com/jw3126/Setfield.jl) to conveniently copy and modify properties of an existing object.
+    You can use [Accessors.jl](https://github.com/JuliaObjects/Accessors) to conveniently copy and modify properties of an existing object.
 
 ````@example howto
-# Import Setfield
-using Setfield
+# Import Accessors
+using Accessors
 
 # Set only chords with other properties remaining identical.
 wing = @set wing.chords = [0.4, 0.1, 0.05]

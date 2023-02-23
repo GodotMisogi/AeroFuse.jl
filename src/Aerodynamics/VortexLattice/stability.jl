@@ -40,7 +40,7 @@ function freestream_derivatives!(y, x, aircraft, fs, ref, axes = Wind())
     )
 
     # Solve system
-    system = solve_system(aircraft, fs, ref)
+    system = VortexLatticeSystem(aircraft, fs, ref)
 
     # Evaluate nearfield coefficients
     CFs, CMs = surface_coefficients(system; axes = axes)

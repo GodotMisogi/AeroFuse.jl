@@ -119,16 +119,6 @@ panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer
 ## Meshing type for convenience
 #==========================================================================================#
 
-struct WingMesh{M <: AbstractWing, N <: Integer, P, Q, T} <: AbstractWing
-    surface       :: M
-    num_span      :: Vector{N}
-    num_chord     :: N
-    chord_spacing :: P
-    span_spacing  :: Q
-    chord_mesh    :: Matrix{T}
-    camber_mesh   :: Matrix{T}
-end
-
 """
     WingMesh(
         surface :: AbstractWing, 
@@ -142,7 +132,22 @@ Optionally a combination of `AbstractSpacing` types (`Sine(), Cosine(), Uniform(
 
 For surface coordinates, the wing mesh will have (n_chord - 1) * 2 chordwise panels from TE-LE-TE and (n_span * 2) spanwise panels.
 """
-function WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surface)) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}}
+struct WingMesh{M <: AbstractWing, N <: Integer, P, Q} <: AbstractWing
+    surface       :: M
+    num_span      :: Vector{N}
+    num_chord     :: N
+    chord_spacing :: P
+    span_spacing  :: Q
+
+    # Main constructor
+    WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N, chord_spacing :: P, span_spacing :: Q) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}} = new{M,N,P,Q}(surface, n_span, n_chord, chord_spacing, span_spacing)
+end
+
+function check_definition(surf :: Wing, n_span) 
+    @assert length(n_span) == length(surf.spans) "$(length(n_span)) ≂̸ $(length(surf.spans)), the spanwise number vector's length must be the same as the number of sections of the surface."
+end
+
+function WingMesh(surface, n_span, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) 
     check_definition(surface, n_span)
 
     if surface.symmetry
@@ -150,31 +155,15 @@ function WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N; chord
     elseif surface.flip
         n_span = reverse(n_span)
     end
-
-    # Chord mesh
-    chord_mesh = chord_coordinates(surface, n_span, n_chord; span_spacing = span_spacing)
-
-    # Camber mesh
-    camber_mesh = camber_coordinates(surface, n_span, n_chord; span_spacing = span_spacing)
-
-    # Type promotion for autodiff
-    T = promote_type(eltype(chord_mesh), eltype(camber_mesh))
     
-    return WingMesh{M,N,P,Q,T}(surface, n_span, n_chord, chord_spacing, span_spacing, chord_mesh, camber_mesh)
+    WingMesh(surface, n_span, n_chord, chord_spacing, span_spacing)
 end
+
+WingMesh(surface, n_span :: Integer, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) = WingMesh(surface, number_of_spanwise_panels(surface, n_span), n_chord, chord_spacing, span_spacing)
 
 # Forwarding functions for Wing type
-MacroTools.@forward WingMesh.surface chords, spans, twists, sweeps, mean_aerodynamic_chord, camber_thickness, leading_edge, trailing_edge, wing_bounds, mean_aerodynamic_center, projected_area, span, position, orientation, affine_transformation, maximum_thickness_to_chord
+MacroTools.@forward WingMesh.surface foils, chords, spans, twists, sweeps, dihedrals, mean_aerodynamic_chord, camber_thickness, leading_edge, trailing_edge, wing_bounds, mean_aerodynamic_center, projected_area, span, position, orientation, affine_transformation, maximum_thickness_to_chord
 
-WingMesh(surface, n_span :: Integer, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) = WingMesh(surface, number_of_spanwise_panels(surface, n_span), n_chord; chord_spacing = chord_spacing, span_spacing = span_spacing)
-
-function check_definition(surf :: Wing, n_span) 
-    @assert length(n_span) == length(surf.spans) "The spanwise number vector's length must be the same as the number of sections of the surface."
-end
-
-# check_definition(surf :: Wing, n_span) = @assert length(n_span) == length(surf.right.spans) == length(surf.left.spans) "The spanwise number vector's length must be the same as the number of sections of the surface."
-
-##
 """
     chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)
 
@@ -212,16 +201,16 @@ surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(
 """
     chord_panels(wing_mesh :: WingMesh)
 
-Generate the chord panel distribution from a `WingMesh`.
+Generate the chord mesh as a matrix of `Panel3D` from a `WingMesh`.
 """
-chord_panels(wing :: WingMesh) = make_panels(wing.chord_mesh)
+chord_panels(wing :: WingMesh) = make_panels(chord_coordinates(wing))
 
 """
     camber_panels(wing_mesh :: WingMesh)
 
-Generate the camber panel distribution from a `WingMesh`.
+Generate the camber mesh as a matrix of `Panel3D` from a `WingMesh`.
 """
-camber_panels(wing :: WingMesh) = make_panels(wing.camber_mesh)
+camber_panels(wing :: WingMesh) = make_panels(camber_coordinates(wing))
 
 """
     wetted_area(
@@ -243,13 +232,14 @@ wetted_area(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foi
 
 Determine the wetted area ratio ``S_{wet}/S`` of a `WingMesh` by calculating the ratio of the total area of the surface panels to the projected area of the `Wing`.
 
-Should be approximately above 2 for thin airfoils.
+The wetted area ratio should be slightly above 2 for thin airfoils.
 """
 wetted_area_ratio(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foils(wing.surface)).x)) = wetted_area(wing, n_span, n_chord) / projected_area(wing.surface)
 
 function Base.show(io :: IO, mesh :: WingMesh)
-    n_c, n_s = size(mesh.chord_mesh) .- 1
+    n_c, n_s = mesh.num_chord, mesh.num_span # size(mesh.chord_mesh) .- 1
     println(io, "WingMesh —")
+    show(io, mesh.surface)
     println(io, "Spanwise panels: ", n_s)
     println(io, "Chordwise panels: ", n_c)
     println(io, "Spanwise spacing: ", mesh.span_spacing)
@@ -257,3 +247,24 @@ function Base.show(io :: IO, mesh :: WingMesh)
 
     nothing
 end
+
+# ## 
+# function WingMesh(;
+#     chords, 
+#     twists    = zero(chords),
+#     spans     = ones(length(chords) - 1) / (length(chords) - 1),
+#     dihedrals = zero(spans),
+#     sweeps    = zero(spans),
+#     foils     = fill(naca4(0,0,1,2), length(chords)),
+#     w_sweep   = 0.0,
+#     position  = zeros(3),
+#     angle     = 0.,
+#     axis      = [0., 1., 0.],
+#     affine    = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
+#     symmetry  = false,
+#     flip      = false
+# )
+#     surface = Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep, symmetry, flip)
+
+#     WingMesh(surface, 
+# end

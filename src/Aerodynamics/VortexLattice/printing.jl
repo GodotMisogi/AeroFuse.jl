@@ -7,12 +7,19 @@
 Print a pretty table of the nearfield and farfield coefficients with an optional name.
 """
 function print_coefficients(nf_coeffs, ff_coeffs, name = "")
-    coeffs = [ ifelse(length(nf_coeffs) == 8, ["CD", "CDv"], []); [ "CX", "CY", "CZ", "Cl", "Cm", "Cn" ] ]
-    data = [ coeffs [ nf_coeffs... ] [ [ ff_coeffs...]; fill("—", 3) ] ]
-    head = [ name, "Nearfield", "Farfield" ]
-    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
+    visc = ifelse(length(nf_coeffs) == 8, ["CD", "CDv"], [])
+    coeffs = [ [ visc; "CX"; "CY"; "CZ"; "Cl"; "Cm"; "Cn" ] [ visc; "CDi"; "CYff"; "CL"; ""; ""; "" ] ]
+    data = [ coeffs[:,1] [ nf_coeffs... ] coeffs[:,2] [ [ ff_coeffs...]; fill("—", 3) ] ]
+    head = [ name, "Nearfield", "", "Farfield" ]
+    h1 = Highlighter( (data,i,j) -> (j == 1) || (j == 3), foreground = :cyan, bold = true)
 
-    pretty_table(data, head, alignment = [:c, :c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
+    pretty_table(data, 
+        header = head, 
+        alignment = [:c, :c, :c, :c], 
+        highlighters = h1, 
+        vlines = :none, 
+        formatters = ft_round(8)
+    )
 end
 
 """
@@ -23,11 +30,18 @@ Print a pretty table of the aerodynamic coefficients and derivatives with an opt
 """
 function print_derivatives(comp, name = "", farfield = false; axes = "")
     coeffs  = ["CX", "CY", "CZ", "Cℓ", "Cm", "Cn", "CDi ff", "CY ff", "CL ff"]
-    nf_vars = [ "$name" "Values" "" "" "Freestream" "Derivatives" "" "" ; "" "$axes" "∂/∂M" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ]
+    nf_vars = (["$name" "Values" "" "" "Freestream" "Derivatives" "" ""], ["" "$axes" "∂/∂M" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ])
     ff_index = ifelse(farfield, 9, 6)
     nf_rows = @views [ coeffs[1:ff_index] comp[1:ff_index,:] ]
 
-    pretty_table(nf_rows, nf_vars, alignment = :c, header_crayon = Crayon(bold = true), subheader_crayon = Crayon(foreground = :yellow, bold = true), highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), vlines = :none, formatters = ft_round(8))
+    pretty_table(nf_rows, 
+        header = nf_vars, 
+        alignment = :c, 
+        header_crayon = Crayon(bold = true), 
+        subheader_crayon = Crayon(foreground = :yellow, bold = true), 
+        highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), 
+        vlines = :none, formatters = ft_round(8)
+    )
 end
 
 """

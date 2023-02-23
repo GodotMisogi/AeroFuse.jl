@@ -124,10 +124,10 @@ plot(wing, zlim = (-0.5, 0.5) .* span(wing), aspect_ratio = 1, label = "Wing")
 print_info(wing, "Wing")
 
 #md # !!! tip
-#md #     You can use [Setfield.jl](https://github.com/jw3126/Setfield.jl) to conveniently copy and modify properties of an existing object.
+#md #     You can use [Accessors.jl](https://github.com/JuliaObjects/Accessors) to conveniently copy and modify properties of an existing object.
 
-## Import Setfield
-using Setfield
+## Import Accessors
+using Accessors
 
 ## Set only chords with other properties remaining identical.
 wing = @set wing.chords = [0.4, 0.1, 0.05]
@@ -268,7 +268,7 @@ nfs = nearfield_coefficients(system)
 # Similarly for the farfield coefficients of the components. 
 ffs = farfield_coefficients(system)
 
-# You can access the values corresponding to the components by the name used in the `ComponentArray` constrution.
+# You can access the values corresponding to the components by the name used in the `ComponentArray` construction.
 @show (nfs.wing, ffs.wing)
 
 # To obtain the total nearfield and farfield force coefficients:

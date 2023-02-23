@@ -18,10 +18,12 @@ using SplitApplyCombine: combinedimsview, combinedims, splitdimsview, splitdims
 export combinedimsview, combinedims, splitdimsview, splitdims
 
 using ComponentArrays
+export ComponentVector, ComponentArray
 
-export ComponentVector, ComponentArray, valkeys
+using Accessors
+export @set
 
-using Setfield
+using Accessors
 using LabelledArrays
 
 ## Methods to be extended in submodules
@@ -38,8 +40,6 @@ function solve_nonlinear! end
 
 function solve_system end
 
-function properties end
-
 function surface_velocities end
 
 function surface_coefficients end
@@ -50,7 +50,7 @@ export solve_linear, solve_nonlinear, solve_linear!, solve_nonlinear!, reynolds_
 #==========================================================================================#
 
 include("Tools/MathTools.jl")
-import .MathTools: forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
+# import .MathTools: weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
 
 # export forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_interpolation, sine_spacing
 
@@ -66,13 +66,20 @@ export dynamic_pressure, reynolds_number, force_coefficient, moment_coefficient,
 #==========================================================================================#
 
 include("Tools/Laplace.jl")
-import .Laplace: Freestream, Uniform2D, potential, stream, cartesian_to_freestream, freestream_to_cartesian
 
-export Uniform2D, stream, vortex_stream_1, vortex_stream_2, source_stream, cartesian_to_freestream, freestream_to_cartesian
+import .Laplace: PointSingularity2D, PointSingularity3D, ConstantStrengthLineSingularity3D, potential, stream, velocity
 
-import .Laplace: DoubletLine3D, velocity
+export PointSingularity2D, PointSingularity3D, ConstantStrengthLineSingularity3D, potential, stream, velocity
 
-export DoubletLine3D, velocity
+# Traits
+import .Laplace: Source2D, Doublet2D, Vortex2D, Uniform2D, Source3D, Doublet3D, SourceLine3D, DoubletLine3D
+
+export Source2D, Doublet2D, Vortex2D, Uniform2D, Source3D, Doublet3D, SourceLine3D, DoubletLine3D
+
+# Others
+import .Laplace: Freestream, cartesian_to_freestream, freestream_to_cartesian
+
+export Freestream, cartesian_to_freestream, freestream_to_cartesian
 
 ## Panels
 #==========================================================================================#
@@ -119,9 +126,20 @@ export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, a
 
 # export WingControlSurface
 
-make_horseshoes(wing :: WingMesh) = Horseshoe.(chord_panels(wing), normal_vector.(camber_panels(wing)))
+make_horseshoes(wing :: WingMesh) = map((cho,cam) -> Horseshoe(cho, normal_vector(cam)), chord_panels(wing), camber_panels(wing))
 
-make_vortex_rings(wing :: WingMesh) = VortexRing.(camber_panels(wing))
+function make_vortex_rings(wing :: WingMesh)
+    cams = camber_panels(wing) 
+
+    # Vortex rings on surface
+    rings = VortexRing.(cams)
+
+    # Trailing edge semi-infinite vortex lines
+    horsies = Horseshoe.(cams[end,:], normal_vector.(cams[end,:]))
+
+    # Assemble
+    [ rings; permutedims(horsies) ]
+end
 
 export make_horseshoes, make_vortex_rings
 
@@ -145,9 +163,9 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, AbstractVortexLatticeSystem, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
+import .VortexLattice: Horseshoe, AbstractVortexLatticeSystem, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
 
-export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, Freestream, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
+export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
 
 ## Profile drag estimation
 include("Aerodynamics/profile_drag.jl")
@@ -174,17 +192,24 @@ include("Aerodynamics/Cases/foil_cases.jl")
 #==========================================================================================#
 
 include("Structures/Beams.jl")
-import .Beams: Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
+import .Beams: Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress, weight
 
-export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress
+export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, build_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress, weight
 
-## Aerostructural analyses
+## Propulsion analyses
 #==========================================================================================#
 
-include("Aerostructural/Aerostructural.jl")
-import .Aerostructural: AerostructWing, make_beam_mesh, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
+include("Propulsion/propulsion.jl")
 
-export AerostructWing, make_beam_mesh, transform_stiffy, permute_stiffy, build_big_stiffy, adjacent_adder, section_moments, compute_loads, fem_load_vector, rotation_matrix, transfer_displacements, mesh_translation, mesh_rotation, new_horseshoes, solve_coupled_residual!, aerostruct_gauss_seidel
+# Actuator disc
+import .Propulsion: ActuatorDisc, actuator_disc_induced_velocity
+
+export ActuatorDisc, actuator_disc_induced_velocity
+
+# Blade-element momentum theory
+import .Propulsion: induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream_contraction
+
+export induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream_contraction
 
 ## Post-processing
 #==========================================================================================#

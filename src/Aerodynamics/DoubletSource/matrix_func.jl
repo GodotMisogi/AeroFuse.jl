@@ -1,5 +1,5 @@
 """
-doublet_matrix(panels_1, panels_2)
+    doublet_matrix(panels_1, panels_2)
 
 Create the matrix of doublet potential influence coefficients between pairs of `panels₁` and `panels₂`.
 """
@@ -101,7 +101,7 @@ end
 """
     solve_linear(panels, u, sources, bound)
 
-Solve the system of equations ``[AIC][φ] = [\\vec{U} ⋅ n̂] - B[σ]`` condition given the array of Panel2Ds, a velocity ``\\vec U``, a condition whether to disable source terms (``σ = 0``), and an optional named bound for the length of the wake.
+Solve the system of equations ``[AIC][φ] = [\\vec{U} ⋅ n̂] - B[σ]`` condition given the array of `Panel2D`s, a velocity ``\\vec U``, a condition whether to disable source terms (``σ = 0``), and an optional named bound for the length of the wake.
 """
 function solve_linear(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     # Wake

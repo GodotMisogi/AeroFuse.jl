@@ -64,19 +64,20 @@ scale(foil :: Foil, scale) = Foil(scale .* coordinates(foil), foil.name)
 
 translate(foil :: Foil; vector) = Foil(foil.x .+ vector[1], foil.y .+ vector[2])
 
-function rotate(foil :: Foil; angle, center = zeros(2)) 
+@views function rotate(foil :: Foil; angle :: Real, center = zeros(2))
+    T = promote_type(eltype(angle), eltype(center))
     trans  = @views [ foil.x .- center[1] foil.y .- center[2] ]     # Translate
-    rotate = trans * RotMatrix{2,eltype(angle)}(deg2rad(angle))'    # Rotate
-    @views Foil(rotate[:,1] .+ center[1], rotate[:,2] .+ center[2], foil.name) # Inverse translate
+    rotate = trans * RotMatrix{2,T}(deg2rad(angle))'    # Rotate
+    Foil(rotate[:,1] .+ center[1], rotate[:,2] .+ center[2], foil.name) # Inverse translate
 end
 
-function interpolate(foil :: Foil, xs)
+@views function interpolate(foil :: Foil, xs)
     upper, lower = split_surface(foil)
 
-    y_u = @views LinearInterpolation(upper[:,1], upper[:,2]).(xs)
-    y_l = @views LinearInterpolation(lower[:,1], lower[:,2]).(xs)
+    y_u = linear_interpolation(upper[:,1], upper[:,2]).(xs)
+    y_l = linear_interpolation(lower[:,1], lower[:,2]).(xs)
 
-    @views Foil([ xs[end:-1:2]; xs ], [ y_u[end:-1:2]; y_l ], foil.name)
+    Foil([ xs[end:-1:2]; xs ], [ y_u[end:-1:2]; y_l ], foil.name)
 end
 
 reflect(foil :: Foil) = setproperties(foil, y = -foil.y, name = "Inverted " * foil.name)
@@ -97,14 +98,14 @@ leading_edge_index(foil :: Foil) = argmin(coordinates(foil)[:,1])
 
 Get the upper surface coordinates of a `Foil` from leading to trailing edge.
 """
-upper_surface(foil :: Foil) = @views reverse(coordinates(foil)[1:leading_edge_index(foil),:], dims = 1)
+@views upper_surface(foil :: Foil) = reverse(coordinates(foil)[1:leading_edge_index(foil),:], dims = 1)
 
 """
     lower_surface(foil :: Foil)
 
 Get the lower surface coordinates of a `Foil` from leading to trailing edge.
 """
-lower_surface(foil :: Foil) = @view coordinates(foil)[leading_edge_index(foil):end,:]
+@views lower_surface(foil :: Foil) = coordinates(foil)[leading_edge_index(foil):end,:]
 
 """
     split_surface(foil :: Foil)
@@ -128,8 +129,8 @@ end
 function camber_line(foil :: Foil, n = 60)
     upper, lower = split_surface(foil)
     xs  = LinRange(minimum(foil.x), maximum(foil.x), n + 1)
-    y_u = @views LinearInterpolation(upper[:,1], upper[:,2]).(xs)
-    y_l = @views LinearInterpolation(lower[:,1], lower[:,2]).(xs)
+    y_u = @views linear_interpolation(upper[:,1], upper[:,2]).(xs)
+    y_l = @views linear_interpolation(lower[:,1], lower[:,2]).(xs)
 
     [ xs (y_u + y_l) / 2 ]
 end
@@ -141,17 +142,14 @@ end
 
 Generate a vector of `Panel2D`s from a `Foil`, additionally with cosine interpolation using (approximately) ``n`` points if provided.
 """
-function make_panels(foil :: Foil)
-    vecs = SVector.(foil.x, foil.y)
-    @views Panel2D.(vecs[2:end,:], vecs[1:end-1,:])[end:-1:1]
-end
+make_panels(foil :: Foil) =@views Panel2D.(foil.x[2:end], foil.y[2:end], foil.x[1:end-1], foil.y[1:end-1])[end:-1:1]
 
 make_panels(foil :: Foil, n :: Integer) = make_panels(cosine_interpolation(foil, n ÷ 2))
 
 function camber(foil :: Foil, x_by_c)
     upper, lower = split_surface(foil)
-    y_u = @views LinearInterpolation(upper[:,1], upper[:,2])(x_by_c * chord_length(foil))
-    y_l = @views LinearInterpolation(lower[:,1], lower[:,2])(x_by_c * chord_length(foil))
+    y_u = @views linear_interpolation(upper[:,1], upper[:,2])(x_by_c * chord_length(foil))
+    y_l = @views linear_interpolation(lower[:,1], lower[:,2])(x_by_c * chord_length(foil))
 
     (y_u + y_l) / 2
 end

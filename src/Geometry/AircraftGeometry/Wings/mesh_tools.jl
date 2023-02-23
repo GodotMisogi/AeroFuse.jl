@@ -3,9 +3,9 @@ An abstract type to define custom spacing distributions.
 """
 abstract type AbstractSpacing end
 
-struct Cosine  <: AbstractSpacing end
+struct Cosine <: AbstractSpacing end
 
-struct Sine    <: AbstractSpacing 
+struct Sine <: AbstractSpacing 
     dir :: Bool
 end
 
@@ -48,10 +48,16 @@ function chop_wing(xyz_coords, span_nums, chord_num; span_spacing, chord_spacing
 
     return xyz_coords
 end
-# chop_coordinates
 
-# Maybe switch to tensors?
-transform_coordinates(xyz, twist, section) = eachrow(xyz * RotY(-twist)') .+ Ref(section)
+# Rotation uses StaticArrays which doesn't appear to be compatible with the pullbacks in ReverseDiff.
+y_rotation(θ) = ((sθ, cθ) = sincos(θ);
+    [ cθ 0 -sθ;
+      0  1   0;
+      sθ 0  cθ ]
+)
+
+# Maybe switch to multidimensional arrays
+transform_coordinates(xyz, rot, section) = eachrow(xyz * rot) .+ Ref(section)
 
 function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, spacings, symmetry = false, flip = false)
 
@@ -65,10 +71,10 @@ function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, 
     end
 
     # Rotate and translate coordinates
-    foil_coords = combinedimsview(transform_coordinates.(scaled_foils, twisties, leading_xyz))
+    foil_coords = @. transform_coordinates(scaled_foils, permutedims(y_rotation(-twisties)), leading_xyz)
 
     # Chop up spanwise sections
-    xyz_span = chop_spans(foil_coords, span_nums, spacings)
+    xyz_span = chop_spans(combinedimsview(foil_coords), span_nums, spacings)
 
     return xyz_span
 end

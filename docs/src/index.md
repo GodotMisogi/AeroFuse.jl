@@ -33,7 +33,7 @@ An additional aim is to write code compatible with automatic differentiation lib
 - Generic, flexible and efficient flight dynamics integrator in 2 and 3 dimensions.
 - Fuselage geometry parametrization and aerodynamic implementation.
 
-![](https://godot-bloggy.xyz/post/diagrams/AerostructAircraft.svg)
+![](assets/AerostructWingTail.svg)
 
 ## Installation
 
@@ -52,8 +52,8 @@ If you use AeroFuse in your research, please cite the following until any releva
   author  = {Arjit Seth, Rhea P. Liem, Stephane Redonnet},
   title   = {AeroFuse},
   url     = {https://github.com/GodotMisogi/AeroFuse},
-  version = {0.4},
-  date    = {2021-04-21},
+  version = {0.4.1},
+  date    = {2023-02-23},
 }
 ```
 

@@ -1,9 +1,15 @@
 ## Horseshoe methods
 #==========================================================================================#
 
-quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(1/4, 0, 1/4))
+function quarter_point(p1, p2) 
+    μ = SVector(1/4, 0, 1/4)
+    return @. (1 - μ) * p1 + μ * p2
+end 
 
-three_quarter_point(p1, p2) = weighted_vector(p1, p2, SVector(3/4, 0, 3/4))
+function three_quarter_point(p1, p2) 
+    μ = SVector(3/4, 0, 3/4)
+    return @. (1 - μ) * p1 + μ * p2
+end 
 
 control_point(p1, p2, p3, p4) = ( three_quarter_point(p1, p2) + three_quarter_point(p4, p3) ) / 2
 bound_leg(p1, p2, p3, p4) = SVector(quarter_point(p1, p2), quarter_point(p4, p3))
@@ -50,7 +56,7 @@ abstract type AbstractVortex end
 """
     Horseshoe(r1, r2, rc, normal, chord)
 
-Define a horseshoe vortex with a start and endpoints ``r₁, r₂`` for the bound leg, a collocation point ``r``, a normal vector ``̂n``, and a finite core size.
+Define a horseshoe vortex with a start and endpoints ``r₁, r₂`` for the bound leg, a collocation point ``r``, a normal vector ``n̂``, and a finite core size.
 
 The finite core setup is not implemented for now.
 """
@@ -79,7 +85,7 @@ Getter for bound leg field of a `Horseshoe`.
 """
 bound_leg(horseshoe :: Horseshoe) = horseshoe.bound_leg
 control_point(horseshoe :: Horseshoe)  = horseshoe.rc
-horseshoe_normal(horseshoe :: Horseshoe) = horseshoe.normal
+normal_vector(horseshoe :: Horseshoe) = horseshoe.normal
 
 r1(r, horseshoe :: Horseshoe) = r - horseshoe.r1
 r2(r, horseshoe :: Horseshoe) = r - horseshoe.r2
@@ -98,7 +104,7 @@ end
 """
     transform(horseshoe :: Horseshoe, T :: LinearMap)
 
-Generate a new `Horseshoe` with the points and normal vectors transformed by the linear map ``T``.
+Generate a new `Horseshoe` with the points and normal vectors transformed by the `LinearMap` ``T``.
 """
 transform(horseshoe :: Horseshoe, T :: LinearMap) = setproperties(horseshoe,
     r1 = T(horseshoe.r1),

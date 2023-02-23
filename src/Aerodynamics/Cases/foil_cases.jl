@@ -10,13 +10,3 @@ function solve_case(foil :: Foil, freestream :: Uniform2D; viscous = false, sour
     panels = make_panels(foil, num_panels)
     solve_system(panels, freestream, num_wake, wake_length)
 end
-
-function solve_case(wing :: Wing, α, β, U; wake_length = 1.0e5, npt_span :: Vector{Int64} = [40], npt_chord :: Int64 = 60)
-	wing_mesh = WingMesh(wing, npt_span, npt_chord)
-	surf_pts  = surface_coordinates(wing_mesh)
-	surf_pans = make_panels(surf_pts)
-
-	fs = Freestream(α, β, zeros(3))
-
-	solve_system(surf_pans, U, fs, wake_length)
-end

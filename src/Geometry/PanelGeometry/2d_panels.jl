@@ -16,6 +16,7 @@ end
 
 Base.length(:: Panel2D) = 1
 
+Panel2D(x1, y1, x2, y2) = Panel2D(SVector(x1, y1), SVector(x2, y2))
 Panel2D(p1 :: FieldVector{2,T}, p2 :: FieldVector{2,T}) where T <: Real = Panel2D{T}(p1, p2)
 WakePanel2D(p1 :: FieldVector{2,T}, p2 :: FieldVector{2,T}) where T <: Real = WakePanel2D{T}(p1, p2)
 

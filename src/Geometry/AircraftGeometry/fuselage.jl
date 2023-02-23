@@ -15,15 +15,15 @@ end
 projected_area(fuse :: Fuselage) = forward_sum(fuse.radii) / 2 .* fuse.weights
 Base.length(fuse :: Fuselage) = fuse.length
 
-truncated_cone_curved_area(r, R, H) = (R + r) * √(H^2 + r^2) * π
+truncated_cone_curved_area(r, R, H) = (R + r) * √(H^2 + (R - r)^2) * π
 
 truncated_cone_volume(r, R, H) = H * π/3 * (R^2 + R * r + r^2) 
 
-wetted_area(fuse :: Fuselage) = sum(x -> truncated_cone_curved_area(x...), zip(fuse.radii[1:end-1], fuse.radii[2:end], fuse.weights * fuse.length))
+@views wetted_area(fuse :: Fuselage) = sum(x -> truncated_cone_curved_area(x...), zip(fuse.radii[1:end-1], fuse.radii[2:end], fuse.weights * fuse.length))
 
-volume(fuse :: Fuselage) = sum(x -> truncated_cone_volume(x...), zip(fuse.radii[1:end-1], fuse.radii[2:end], fuse.weights * fuse.length))
+@views volume(fuse :: Fuselage) = sum(x -> truncated_cone_volume(x...), zip(fuse.radii[1:end-1], fuse.radii[2:end], fuse.weights * fuse.length))
 
-function coordinates(fuse :: Fuselage, n)
+@views function coordinates(fuse :: Fuselage, n)
     ws_rads = cosine_interpolation(fuse, n)
 
     [ ws_rads[:,1] .* fuse.length ws_rads[:,2] ]
@@ -36,7 +36,7 @@ function cosine_interpolation(fuse :: Fuselage, n)
     x_min, x_max = extrema(xs)
     x_circ = cosine_spacing((x_min + x_max) / 2, x_max - x_min, n)
 
-    y_u = @views LinearInterpolation(xs, ys).(x_circ)
+    y_u = linear_interpolation(xs, ys).(x_circ)
 
     return [ x_circ y_u ]
 end
