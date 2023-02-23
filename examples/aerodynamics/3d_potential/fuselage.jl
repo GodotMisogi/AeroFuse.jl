@@ -57,7 +57,7 @@ boco = map(n -> -dot(Vinf, n), ns)
 ##
 σs = AIC \ boco
 
-using Setfield
+using Accessors
 src_lines = StructArray(map((line, σ) -> line(strength = σ), src_lines, σs))
 
 

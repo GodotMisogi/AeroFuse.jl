@@ -145,7 +145,7 @@ plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 ## VARIABLE ANALYSES
 #=========================================================#
 
-using Setfield
+using Accessors
 using Base.Iterators: product
 
 ## Speed sweep

@@ -85,7 +85,7 @@ ref = References(
 )
 
 ## Evaluate cases
-using Setfield
+using Accessors
 
 αs = -5:0.5:5
 results = combinedimsview(

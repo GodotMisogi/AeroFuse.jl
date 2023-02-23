@@ -14,7 +14,7 @@ wing = Wing(
 )
 
 ## Create symmetric wing instead
-using Setfield
+using Accessors
 
 wing = @set wing.symmetry = true
 

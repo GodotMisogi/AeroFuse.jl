@@ -6,7 +6,7 @@ module Laplace
 using StaticArrays
 using LinearAlgebra
 using CoordinateTransformations, Rotations
-using Setfield
+using Accessors
 
 import Base: *
 

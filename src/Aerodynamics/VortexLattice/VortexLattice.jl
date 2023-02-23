@@ -6,7 +6,7 @@ using Rotations, CoordinateTransformations
 using SplitApplyCombine
 using TimerOutputs
 using LabelledArrays
-using Setfield
+using Accessors
 using PrettyTables
 using ForwardDiff: jacobian!
 using DiffResults: JacobianResult, jacobian, value

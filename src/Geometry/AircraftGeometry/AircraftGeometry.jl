@@ -12,7 +12,7 @@ using Rotations
 using LinearAlgebra
 using SplitApplyCombine
 using Interpolations
-using Setfield
+using Accessors
 using MacroTools
 
 # Math tools

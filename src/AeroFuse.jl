@@ -23,7 +23,7 @@ export ComponentVector, ComponentArray
 using Accessors
 export @set
 
-using Setfield
+using Accessors
 using LabelledArrays
 
 ## Methods to be extended in submodules
