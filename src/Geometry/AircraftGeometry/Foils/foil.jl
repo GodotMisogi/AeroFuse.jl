@@ -142,10 +142,7 @@ end
 
 Generate a vector of `Panel2D`s from a `Foil`, additionally with cosine interpolation using (approximately) ``n`` points if provided.
 """
-function make_panels(foil :: Foil)
-    vecs = SVector.(foil.x, foil.y)
-    @views Panel2D.(vecs[2:end,:], vecs[1:end-1,:])[end:-1:1]
-end
+make_panels(foil :: Foil) =@views Panel2D.(foil.x[2:end], foil.y[2:end], foil.x[1:end-1], foil.y[1:end-1])[end:-1:1]
 
 make_panels(foil :: Foil, n :: Integer) = make_panels(cosine_interpolation(foil, n ÷ 2))
 
