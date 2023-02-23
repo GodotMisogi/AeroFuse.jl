@@ -145,7 +145,7 @@ refs = References(
 );
 
 # You can run the aerodynamic analysis by providing the aircraft configuration, freestream, and reference values. Optionally you can also print the results.
-system = solve_case(
+system = VortexLatticeSystem(
     aircraft, fs, refs;
     print            = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
@@ -164,7 +164,7 @@ nf = nearfield(system)
 # Now let's analyze the drag polar of this aircraft configuration by varying the angle of attack and collecting the induced drag coefficient $C_{D_i}$.
 
 ## Define function to compute system varying with angle of attack.
-vary_alpha(aircraft, α, refs) = solve_case(aircraft, Freestream(alpha = α), refs)
+vary_alpha(aircraft, α, refs) = VortexLatticeSystem(aircraft, Freestream(alpha = α), refs)
 
 ## Run loop
 αs      = -5:0.5:5

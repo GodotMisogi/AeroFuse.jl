@@ -1,13 +1,15 @@
 """
-    Wing(foils :: Vector{Foil}, 
-             chords, 
-             twists, 
-             spans, 
-             dihedrals, 
-             sweeps,
-             position = zeros(3),
-             angle    = 0.
-             axis     = [0.,1.,0.])
+    Wing(
+        foils :: Vector{Foil}, 
+        chords, 
+        twists, 
+        spans, 
+        dihedrals, 
+        sweeps,
+        position = zeros(3),
+        angle    = 0.
+        axis     = [0.,1.,0.]
+    )
 
 Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees.
 """
@@ -23,24 +25,15 @@ struct Wing{T <: Number, N <: AbstractAffineMap} <: AbstractWing
     flip       :: Bool
 
     # Default constructor
-    function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep = 0., symmetry = false, flip = false)
+    function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip)
         # Error handling
         check_wing(foils, chords, twists, spans, dihedrals, sweeps)
-
-        # Convert sweep angles to leading-edge
-        sweeps = @. sweep_angle(
-            chords[2:end] / chords[1:end-1], # Section tapers
-            aspect_ratio(spans, chords[2:end], chords[1:end-1]), # Section aspect ratios
-            sweeps, # Sweep angles at desired normalized location
-            -w_sweep # Normalized sweep angle location ∈ [0,1]
-        )
 
         # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
         # foils = cosine_interpolation.(foils, 60)
 
-        T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps), typeof(w_sweep))
+        T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps))
         N = typeof(affine)
-        # S = promote_type(typeof(symmetry), typeof(flip))
 
         # Convert angles to radians, adjust twists to leading edge, and generate Wing
         new{T,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip)
@@ -50,21 +43,29 @@ end
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
 function Wing(;
     chords, 
+    foils     = fill(naca4(0,0,1,2), length(chords)),
     twists    = zero(chords),
     spans     = ones(length(chords) - 1) / (length(chords) - 1),
     dihedrals = zero(spans),
     sweeps    = zero(spans),
-    foils     = fill(naca4(0,0,1,2), length(chords)),
     w_sweep   = 0.0,
     position  = zeros(3),
     angle     = 0.,
     axis      = [0., 1., 0.],
-    affine    = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
+    affine    = AffineMap(AngleAxis(deg2rad(angle), axis...), position),
     symmetry  = false,
     flip      = false
 )
 
-    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep, symmetry, flip)
+    # Convert sweep angles to leading-edge
+    sweeps = @. sweep_angle(
+        chords[2:end] / chords[1:end-1], # Section tapers
+        aspect_ratio(spans, chords[2:end], chords[1:end-1]), # Section aspect ratios
+        sweeps, # Sweep angles at desired normalized location
+        -w_sweep # Normalized sweep angle location ∈ [0,1]
+    )
+
+    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip)
 end
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
@@ -78,10 +79,10 @@ end
 
 
 # Getters
-foils(wing     :: Wing) = wing.foils
-chords(wing    :: Wing) = wing.chords
-twists(wing    :: Wing) = wing.twists
-spans(wing     :: Wing) = wing.spans
+foils(wing :: Wing) = wing.foils
+chords(wing :: Wing) = wing.chords
+twists(wing :: Wing) = wing.twists
+spans(wing :: Wing) = wing.spans
 dihedrals(wing :: Wing) = wing.dihedrals
 
 """
@@ -204,7 +205,7 @@ function wing_bounds(wing :: Wing)
     dihedraled_spans = [ 0; cumsum(@. spans * tand(dihedrals)) ]
 
     # Compute x points
-    chords          = wing.chords
+    chords = wing.chords
     twisted_chords  = @. chords * sind(wing.twists)
 
     # Leading edge
@@ -237,6 +238,7 @@ function Base.show(io :: IO, wing :: AbstractWing)
     println(io, "Projected Area (m): ", projected_area(wing))
     println(io, "Mean Aerodynamic Chord (m): ", mean_aerodynamic_chord(wing))
     println(io, "Mean Aerodynamic Center (m): ", mean_aerodynamic_center(wing))
+    println(io, "Position (m): ", wing.affine.translation)
 
     nothing
 end

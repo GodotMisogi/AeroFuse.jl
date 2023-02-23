@@ -5,6 +5,13 @@ module Laplace
 
 using StaticArrays
 using LinearAlgebra
+using CoordinateTransformations, Rotations
+using Accessors
+
+import Base: *
+
+const cfs = CartesianFromSpherical()
+const sfc = SphericalFromCartesian()
 
 import ..MathTools: Point2D, Point3D, magnitude, angle
 
@@ -28,91 +35,195 @@ function grid_data(objects :: Vector{<: AbstractLaplace}, xs)
     vels, pots
 end
 
+# Generic attempt
+abstract type AbstractSingularity <: AbstractLaplace end
+
+# Generic geometric type
+struct GeometricSingularity{T <: Number, K <: AbstractSingularity, P <: Integer, M <: Integer, N <: Integer} <: AbstractLaplace
+    type :: K # Type of singularity (doublet, source, vortex, uniform, etc. if any more exist)
+    strs :: Union{T,SVector{P,T}} # Represents P (constant = 1, linear = 2, quadratic = 3, etc.) singularity strengths
+    rs   :: SMatrix{M,N,T} # Represents M points in N dimensions
+end
+
 ## 2D singularities
 #============================================#
 
-struct Singularity2D{T <: Real} <: AbstractLaplace
+abstract type AbstractSingularity2D <: AbstractSingularity end
+
+# Geometric type
+struct PointSingularity2D{T <: Number, N <: AbstractSingularity2D} <: AbstractLaplace
+    type     :: N
     strength :: T
-    r        :: Point2D{T}
+    x        :: T
+    y        :: T
+end
+
+# Promoted-type constructor
+function PointSingularity2D(type :: N, str, x, y) where N <: AbstractSingularity2D
+    T = promote_type(eltype(str), eltype(x), eltype(y))
+    PointSingularity2D{T,N}(type, str, x, y)
 end
 
 # Getters
-strength(s :: Singularity2D) = s.strength
-x(s :: Singularity2D)        = s.r.x
-y(s :: Singularity2D)        = s.r.y
+strength(s :: PointSingularity2D) = s.strength
+x(s :: PointSingularity2D) = s.x
+y(s :: PointSingularity2D) = s.y
 
-source_velocity(src :: Singularity2D, x, y) = SVector(strength(src) / (2π) * (x - y(src)) / ((x - y(src))^2 + (y - x(src))^2), str / (2π) * (y - x(src)) / ((x - y(src))^2 + (y - x(src))^2))
-source_potential(src :: Singularity2D, x, y) = strength(src) / (4π) * log((x - y(src))^2 + (y - x(src))^2)
-source_stream(src :: Singularity2D, x, y) = strength(src) / (2π) * atan(y - x(src), x - y(src))
+# Dispatchers
+potential(src :: PointSingularity2D, x, y) = potential(src.type, src.strength, x - src.x, y - src.y) 
+velocity(src :: PointSingularity2D, x, y) = velocity(src.type, src.strength, x - src.x, y - src.y) 
+stream(src :: PointSingularity2D, x, y) = stream(src.type, src.strength, x - src.x, y - src.y) 
 
-doublet_velocity(dub :: Singularity2D, x, y) = SVector(strength(dub) / (2π) * ((x - y(dub))^2 - (y - x(dub))^2) / ((x - y(dub))^2 + (y - x(dub))^2)^2, - strength(dub) / (2π) * 2 * (x - y(dub)) * (y - x(dub)) / ((x - y(dub))^2 + (y - x(dub))^2)^2)
-doublet_potential(dub :: Singularity2D, x, y) = -strength(dub) / (2π) * (y - x(dub)) / ((x - y(dub))^2 + (y - x(dub))^2)
-doublet_stream(dub :: Singularity2D, x, y) = -strength(dub) / (2π) * (y - x(dub)) / ((x - y(dub))^2 + (y - x(dub))^2)
+# Scaling law
+# Base.*(a :: Real, src :: PointSingularity2D) = @set src.strength = src.strength * a 
 
-vortex_velocity(vor :: Singularity2D, x, y) = SVector(-strength(vor) / (2π) * (y - x(vor)) / ((x - y(vor))^2 + (y - x(vor))^2), str / (2π) * (x - y(vor)) / ((x - y(vor))^2 + (y - x(vor))^2))
-vortex_potential(vor :: Singularity2D, x, y) = strength(vor) / (2π) * atan(y - x(vor), x - y(vor))
-vortex_stream(vor :: Singularity2D, x, y) = -strength(vor) / (4π) * log((x - y(vor))^2 + (y - x(vor))^2)
+# Linearity by generated functions?
+# @generated velocity()
 
+# Source relations
+struct Source2D <: AbstractSingularity2D end
 
-struct Uniform2D{T <: Real} <: AbstractLaplace
+Source2D(str, x, y) = PointSingularity2D(Source2D(), str, x, y)
+Source2D(str, r) = PointSingularity2D(Source2D(), str, r[1], r[2])
+
+potential(:: Source2D, σ, x, y) = σ / 4π * log(x^2 + y^2)
+velocity(:: Source2D, σ, x, y) = @SVector [ σ / (2π) * x / (x^2 + y^2), str / (2π) * y / (x^2 + y^2) ]
+stream(:: Source2D, σ, x, y) = σ / 2π * atan(y, x)
+
+# Doublet relations
+struct Doublet2D <: AbstractSingularity2D end
+
+Doublet2D(str, x, y) = PointSingularity2D(Doublet2D(), str, x, y)
+Doublet2D(str, r) = PointSingularity2D(Doublet2D(), str, r[1], r[2])
+
+potential(:: Doublet2D, μ, x, y) = -μ / (2π) * y / (x^2 + y^2)
+velocity(:: Doublet2D, μ, x, y) = @SVector [μ / (2π) * (x^2 - y^2) / (x^2 + y^2)^2, - μ / (2π) * 2 * x * y / (x^2 + y^2)^2]
+stream(:: Doublet2D, μ, x, y) = -μ / (2π) * y / (x^2 + y^2)
+
+# Vortex relations
+struct Vortex2D <: AbstractSingularity2D end
+
+Vortex2D(str, x, y) = PointSingularity2D(Vortex2D(), str, x, y)
+Vortex2D(str, r) = PointSingularity2D(Vortex2D(), str, r[1], r[2])
+
+potential(:: Vortex2D, γ, x, y) = γ / (2π) * atan(y, x)
+velocity(:: Vortex2D, γ, x, y) = @SVector [-γ / (2π) * y / (x^2 + y^2), str / (2π) * x / (x^2 + y^2) ]
+stream(:: Vortex2D, γ, x, y) = -γ / (4π) * log(x^2 + yp^2)
+
+# Uniform relations
+
+# struct Uniform2D <: AbstractSingularity2D end
+
+# Uniform2D(str, r) = PointSingularity2D(Uniform2D(), str, r)
+
+struct Uniform2D{T <: Real} <: AbstractSingularity2D
     magnitude :: T
     angle     :: T
     Uniform2D{T}(mag, ang) where T <: Real = new(mag, deg2rad(ang))
 end
 
 magnitude(uni :: Uniform2D) = uni.magnitude
-angle(uni :: Uniform2D)     = uni.angle
+angle(uni :: Uniform2D) = uni.angle
 
 Uniform2D(mag :: T, ang :: T) where T <: Real = Uniform2D{T}(mag, ang)
 Uniform2D(mag, ang) = Uniform2D(promote(mag, ang)...)
 Uniform2D(velocity) = Uniform2D((sqrt ∘ sum)(velocity.^2), atan(velocity[2], velocity[1]))
 Uniform2D(; angle)  = Uniform2D(1., angle)
 
+potential(uni :: Uniform2D, x, y) = let (sa, ca) = sincos(uni.angle); uni.magnitude * (x * ca + y * sa) end
 velocity(uni :: Uniform2D) = let (sa, ca) = sincos(uni.angle); uni.magnitude * SVector(ca, sa) end
-potential(uni :: Uniform2D, x, y) = uni.magnitude * (x * cos(uni.angle) + y * sin(uni.angle))
-stream(uni :: Uniform2D, x, y)    = uni.magnitude * (y * cos(uni.angle) - x * sin(uni.angle))
+stream(uni :: Uniform2D, x, y) = let (sa, ca) = sincos(uni.angle); uni.magnitude * (y * ca - x * sa) end
 
 ## 3D singularities
 #============================================#
 
-# struct Singularity3D{T <: Real} <: AbstractLaplace
-#       str :: T
-#       r   :: Point3D{T}
-# end
+# Traits
+abstract type AbstractSingularity3D <: AbstractSingularity end
 
-# source_velocity(src :: Source2D, x, y, z)
-# source_potential(src :: Source2D, x, y, z) 
-# source_stream(src :: Source2D, x, y, z) 
+# Geometric type
+struct PointSingularity3D{T <: Number, N <: AbstractSingularity3D} <: AbstractLaplace
+    type     :: N
+    strength :: T
+    r        :: SVector{3,T}
+end
 
-struct DoubletLine3D{T <: Real} <: AbstractLaplace
+# Promoted-type constructor
+function PointSingularity3D(type :: N, str, r) where N <: AbstractSingularity3D
+    T = promote_type(eltype(str), eltype(r))
+    PointSingularity3D{T,N}(type, str, r)
+end
+
+# Getters
+strength(s :: PointSingularity3D) = s.strength
+position(s :: PointSingularity3D) = s.r
+
+# Dispatchers (streamfunction is not uniquely defined in 3D)
+potential(src :: PointSingularity3D, r) = potential(src.type, src.strength, r - src.r) 
+velocity(src :: PointSingularity3D, r) = velocity(src.type, src.strength, r - src.r) 
+
+# Point source
+struct Source3D <: AbstractSingularity3D end
+
+Source3D(str, x, y, z) = PointSingularity3D(Source3D(), str, @SVector [x, y, z])
+Source3D(str, r) = PointSingularity3D(Source3D(), str, r)
+
+potential(:: Source3D, σ, r) = σ / (4π * norm(r))
+velocity(:: Source3D, σ, r) = σ / 4π * r / norm(r)^3
+
+# Doublet/dipole aligned along arbitrary axis
+struct Doublet3D{T <: Number} <: AbstractSingularity3D 
+    p :: SVector{3,T} # Orientation axis of the dipole
+end
+
+Doublet3D(str, x, y, z, p = SVector(1., 0., 0.)) = PointSingularity3D(Doublet3D(normalize(p)), str, @SVector [x, y, z])
+Doublet3D(str, r, p = SVector(1., 0., 0.)) = PointSingularity3D(Doublet3D(normalize(p)), str, r)
+
+function velocity(src :: Doublet3D, μ, r)
+    x, y, z = r
+    rn = norm(r)
+    cφ = dot(src.p, r)
+
+    μ / (4π * rn^3) * @SVector [ 3z * x / rn^2, 3z * y / rn^2, 3 * (cφ^2 - 1) ]
+end
+
+potential(dub :: Doublet3D, μ, r) = -μ / 4π * dot(dub.p, r) / norm(r)^3
+
+struct ConstantStrengthLineSingularity3D{T <: Number, K <: AbstractSingularity3D} <: AbstractSingularity
+    type     :: K
     strength :: T
     r1       :: SVector{3,T}
     r2       :: SVector{3,T}
-    eta      :: SVector{3,T}
 end
 
-function DoubletLine3D(str, r1, r2, η)
+# Alias
+const CSLine3D = ConstantStrengthLineSingularity3D
+
+(l :: CSLine3D)(; type = l.type, strength = l.strength, r1 = l.r1, r2 = l.r2) = CSLine3D(type, strength, r1, r2)
+
+# function Base.show(io :: IO, src :: ConstantStrengthLine3D)
+#     println(io, "Constant strength 3D potential line")
+#     println(io, "    (r1, r2) = ", src.r1, " ", src.r2)
+# end
+
+function ConstantStrengthLineSingularity3D(type :: K, str, r1, r2, η) where K <: AbstractSingularity3D
     T = promote_type(typeof(str), eltype(r1), eltype(r2), eltype(η))
-
-    DoubletLine3D{T}(str, r1, r2, η)
+    CSLine{T,K}(type, str, r1, r2, η)
 end
 
-function doublet_influence(r, φ, η)
-    r_φ = dot(r, φ)
-    r_η = dot(r, η)
-    den = (norm(r)^2 - dot(r, φ)^2) * norm(r)
+# Dispatchers (streamfunction is not uniquely defined in 3D)
+potential(src :: CSLine3D, r) = potential(src.type, src.strength, r - src.r2) - potential(src.type, src.strength, r - src.r1)
+velocity(src :: CSLine3D, r) = velocity(src.type, src.strength, r - src.r2) - velocity(src.type, src.strength, r - src.r1)
 
-    ((r_φ * η + r_η * φ) * den - (den * r / norm(r)^2 + 2 * (r - r_φ * η) * r) * r_φ * r_η) / den^2
-end
+# Source line
+SourceLine3D(str, r1, r2) = CSLine3D(Source3D(), str, r1, r2)
 
-function velocity(src :: DoubletLine3D)
-    l = normalize(src.r2 - src.r1)
-    
-    f(x) = src.strength / 4π * (doublet_influence(x - src.r2, l, src.eta) - doublet_influence(x - src.r1, l, src.eta))
-end
+# Doublet line
+DoubletLine3D(str, r1, r2, p = @SVector [1., 0., 0.]) = CSLine3D(Doublet3D(p), str, r1, r2)
+
 
 ## Freestream
 #============================================#
+
 abstract type AbstractFreestream end
 
 """
@@ -141,7 +252,7 @@ Freestream(α_deg, β_deg, Ω) = let T = promote_type(eltype(α_deg), eltype(β_
 
 Freestream(α_deg, β_deg, Ω_x, Ω_y, Ω_z) = Freestream(deg2rad(α_deg), deg2rad(β_deg), SVector(Ω_x, Ω_y, Ω_z))
 
-Freestream(U, Ω) = let (_, α, β) = cartesian_to_freestream(normalize(U)); Freestream{T}(α, β, Ω) end
+Freestream(U, Ω) = let (_, α, β) = cartesian_to_freestream(normalize(U)); Freestream(α, β, Ω) end
 
 Freestream(; alpha = 0., beta = 0., omega = zeros(3)) = Freestream(alpha, beta, omega)
 
@@ -151,6 +262,8 @@ function Base.show(io :: IO, fs :: Freestream)
         println(io, "    ", fname, " = ", getfield(fs, fname))
     end
 end
+
+potential(fs :: Freestream, r) = dot(velocity(fs), r)
 
 """
     velocity(freestream :: Freestream)

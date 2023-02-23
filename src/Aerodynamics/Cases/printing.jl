@@ -13,5 +13,5 @@ function print_info(wing :: AbstractWing, head = "")
     header = [ head, "Value" ]
     h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
 
-    pretty_table(data, header, alignment = [:c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
+    pretty_table(data, header = header, alignment = [:c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
 end

@@ -229,7 +229,7 @@ refs = References(
 # The vortex lattice analysis can be executed with the horseshoes, freestream condition, and reference values defined.
 
 ## Solve system
-system = solve_case(
+system = VortexLatticeSystem(
     aircraft, fs, refs;
     print = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components

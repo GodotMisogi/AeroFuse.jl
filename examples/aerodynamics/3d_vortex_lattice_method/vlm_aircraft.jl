@@ -280,7 +280,7 @@ nframes = length(streams[:,1])
 ## VARIABLE ANALYSES
 #=========================================================#
 
-using Setfield
+using Accessors
 using Base.Iterators: product
 using Plots
 

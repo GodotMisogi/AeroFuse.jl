@@ -119,14 +119,6 @@ panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer
 ## Meshing type for convenience
 #==========================================================================================#
 
-struct WingMesh{M <: AbstractWing, N <: Integer, P, Q} <: AbstractWing
-    surface       :: M
-    num_span      :: Vector{N}
-    num_chord     :: N
-    chord_spacing :: P
-    span_spacing  :: Q
-end
-
 """
     WingMesh(
         surface :: AbstractWing, 
@@ -140,7 +132,22 @@ Optionally a combination of `AbstractSpacing` types (`Sine(), Cosine(), Uniform(
 
 For surface coordinates, the wing mesh will have (n_chord - 1) * 2 chordwise panels from TE-LE-TE and (n_span * 2) spanwise panels.
 """
-function WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N; chord_spacing :: P = Cosine(), span_spacing :: Q = symmetric_spacing(surface)) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}}
+struct WingMesh{M <: AbstractWing, N <: Integer, P, Q} <: AbstractWing
+    surface       :: M
+    num_span      :: Vector{N}
+    num_chord     :: N
+    chord_spacing :: P
+    span_spacing  :: Q
+
+    # Main constructor
+    WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N, chord_spacing :: P, span_spacing :: Q) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}} = new{M,N,P,Q}(surface, n_span, n_chord, chord_spacing, span_spacing)
+end
+
+function check_definition(surf :: Wing, n_span) 
+    @assert length(n_span) == length(surf.spans) "$(length(n_span)) ≂̸ $(length(surf.spans)), the spanwise number vector's length must be the same as the number of sections of the surface."
+end
+
+function WingMesh(surface, n_span, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) 
     check_definition(surface, n_span)
 
     if surface.symmetry
@@ -149,21 +156,14 @@ function WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N; chord
         n_span = reverse(n_span)
     end
     
-    return WingMesh{M,N,P,Q}(surface, n_span, n_chord, chord_spacing, span_spacing)
+    WingMesh(surface, n_span, n_chord, chord_spacing, span_spacing)
 end
+
+WingMesh(surface, n_span :: Integer, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) = WingMesh(surface, number_of_spanwise_panels(surface, n_span), n_chord, chord_spacing, span_spacing)
 
 # Forwarding functions for Wing type
-MacroTools.@forward WingMesh.surface chords, spans, twists, sweeps, mean_aerodynamic_chord, camber_thickness, leading_edge, trailing_edge, wing_bounds, mean_aerodynamic_center, projected_area, span, position, orientation, affine_transformation, maximum_thickness_to_chord
+MacroTools.@forward WingMesh.surface foils, chords, spans, twists, sweeps, dihedrals, mean_aerodynamic_chord, camber_thickness, leading_edge, trailing_edge, wing_bounds, mean_aerodynamic_center, projected_area, span, position, orientation, affine_transformation, maximum_thickness_to_chord
 
-WingMesh(surface, n_span :: Integer, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) = WingMesh(surface, number_of_spanwise_panels(surface, n_span), n_chord; chord_spacing = chord_spacing, span_spacing = span_spacing)
-
-function check_definition(surf :: Wing, n_span) 
-    @assert length(n_span) == length(surf.spans) "The spanwise number vector's length must be the same as the number of sections of the surface."
-end
-
-# check_definition(surf :: Wing, n_span) = @assert length(n_span) == length(surf.right.spans) == length(surf.left.spans) "The spanwise number vector's length must be the same as the number of sections of the surface."
-
-##
 """
     chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)
 
@@ -237,7 +237,7 @@ The wetted area ratio should be slightly above 2 for thin airfoils.
 wetted_area_ratio(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foils(wing.surface)).x)) = wetted_area(wing, n_span, n_chord) / projected_area(wing.surface)
 
 function Base.show(io :: IO, mesh :: WingMesh)
-    n_c, n_s = mesh.num_span, mesh.num_chord # size(mesh.chord_mesh) .- 1
+    n_c, n_s = mesh.num_chord, mesh.num_span # size(mesh.chord_mesh) .- 1
     println(io, "WingMesh —")
     show(io, mesh.surface)
     println(io, "Spanwise panels: ", n_s)

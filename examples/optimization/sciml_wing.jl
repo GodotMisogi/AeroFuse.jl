@@ -1,11 +1,8 @@
 using AeroFuse
 using Roots
-using Setfield
 using LinearAlgebra
-using Optimization, OptimizationMOI, OptimizationOptimJL, ForwardDiff, ModelingToolkit
-using Optim
+using Optimization, OptimizationMOI
 using Ipopt
-using OptimizationNLopt
 
 include("wing_definition.jl")
 
@@ -36,7 +33,7 @@ end
 ## Initial run
 sys = make_case(α0, wing_init, refs)
 init = get_forces(sys, wing_init)
-print_coefficients(sys)
+# print_coefficients(sys)
 
 # Common
 function get_res(x, w_sweep = 0.25, ref=  refs)
@@ -125,7 +122,7 @@ xopt = sol.u
 wing_opt = make_wing(xopt[2:end])
 sys_opt = make_case(xopt[1], wing_opt, refs)
 opt = get_forces(sys_opt, wing_opt)
-print_coefficients(sys_opt)
+# print_coefficients(sys_opt)
 
 # Exact solution
 y_exact = LinRange(0., 1., n_vars)
@@ -134,7 +131,7 @@ x_exact = @. √(1. - y_exact^2) * 4 / π * c
 wing_exact = make_wing(x_exact)
 sys_exact = make_case(xopt[1], wing_exact, refs)
 exact = get_forces(sys_exact, wing_exact)
-print_coefficients(sys_exact)
+# print_coefficients(sys_exact)
 
 ## Plotting
 #==========================================================================================#
@@ -155,7 +152,7 @@ using Plots, LaTeXStrings
 pgfplotsx() # Needs LaTeX
 # gr()
 # plotlyjs()
-
+##
 plt_opt = plot(
     camera = (90, 90),
     legend = :bottom,
