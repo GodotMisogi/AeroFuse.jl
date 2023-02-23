@@ -48,9 +48,10 @@ wing = Wing(
     spans     = [4.0],       # Section span lengths
     dihedrals = [5.],        # Dihedral angles (degrees)
     sweeps    = [5.],        # Sweep angles (degrees)
-    w_sweep   = 0.,          # Sweep angle location w.r.t. normalized chord lengths ∈ [0,1]
+    w_sweep   = 0.,          # Sweep angle location w.r.t.
+                             # normalized chord lengths ∈ [0,1]
     symmetry  = true,        # Whether wing is symmetric
-    # flip      = false     # Whether wing is reflected
+    # flip      = false      # Whether wing is reflected
 )
 ````
 
@@ -215,7 +216,7 @@ Now let's analyze the drag polar of this aircraft configuration by varying the a
 
 ````@example tutorials-aircraft
 # Define function to compute system varying with angle of attack.
-vary_alpha(aircraft, α, refs) = solve_case(aircraft, Freestream(alpha = α), refs)
+vary_alpha(aircraft, α, refs) = VortexLatticeSystem(aircraft, Freestream(alpha = α), refs)
 
 # Run loop
 αs      = -5:0.5:5

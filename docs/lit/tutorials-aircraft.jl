@@ -145,7 +145,7 @@ refs = References(
 );
 
 # You can run the aerodynamic analysis by providing the aircraft configuration, freestream, and reference values. Optionally you can also print the results.
-system = VortexLatticeSystem(
+system = solve_case(
     aircraft, fs, refs;
     print            = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
