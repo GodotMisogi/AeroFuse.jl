@@ -201,14 +201,14 @@ surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(
 """
     chord_panels(wing_mesh :: WingMesh)
 
-Generate the chord mesh as a matrix of ``Panel3D`` from a `WingMesh`.
+Generate the chord mesh as a matrix of `Panel3D` from a `WingMesh`.
 """
 chord_panels(wing :: WingMesh) = make_panels(chord_coordinates(wing))
 
 """
     camber_panels(wing_mesh :: WingMesh)
 
-Generate the camber mesh as a matrix of ``Panel3D`` from a `WingMesh`.
+Generate the camber mesh as a matrix of `Panel3D` from a `WingMesh`.
 """
 camber_panels(wing :: WingMesh) = make_panels(camber_coordinates(wing))
 

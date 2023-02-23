@@ -6,7 +6,7 @@
     reflect_xz(line :: Line)
     reflect_xz(horseshoe :: Horseshoe)
 
-Reflect the ``y``-coordinate of a given 3-dimensional vector (or ``Line`` or ``Horseshoe``) about the ``x``-``z`` plane.
+Reflect the ``y``-coordinate of a given 3-dimensional vector (or `Line` or `Horseshoe`) about the ``x``-``z`` plane.
 """
 reflect_xz(vector) = SVector(vector[1], -vector[2], vector[3])
 reflect_xz(horseshoe :: Horseshoe) = (Horseshoe ∘ reflect_xz ∘ bound_leg)(horseshoe)

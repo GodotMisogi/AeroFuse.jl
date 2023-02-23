@@ -154,9 +154,9 @@ get_transformation(p, P = I(3)) = LinearMap(P * local_coordinate_system(p)') ∘
 
 
 """
-    wake_panel(panels :: AbstractPanel3D, bound, α)
+    wake_panel(panels :: DenseArray{<: AbstractPanel3D}, bound, U)
 
-Calculate required transformation from GCS to panel LCS.
+Calculate required transformation from the global coordinate system to an to an `AbstractPanel3D`'s local coordinate system.
 """
 function wake_panel(panels :: DenseArray{<: AbstractPanel3D}, bound, U)
     pt1 = 0.5 * ( p1(first(panels)) + p2(last(panels)) )

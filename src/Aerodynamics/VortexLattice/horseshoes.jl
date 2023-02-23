@@ -56,7 +56,7 @@ abstract type AbstractVortex end
 """
     Horseshoe(r1, r2, rc, normal, chord)
 
-Define a horseshoe vortex with a start and endpoints ``r₁, r₂`` for the bound leg, a collocation point ``r``, a normal vector ``̂n``, and a finite core size.
+Define a horseshoe vortex with a start and endpoints ``r₁, r₂`` for the bound leg, a collocation point ``r``, a normal vector ``n̂``, and a finite core size.
 
 The finite core setup is not implemented for now.
 """
