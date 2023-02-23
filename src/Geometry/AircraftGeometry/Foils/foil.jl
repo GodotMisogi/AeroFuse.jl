@@ -64,9 +64,10 @@ scale(foil :: Foil, scale) = Foil(scale .* coordinates(foil), foil.name)
 
 translate(foil :: Foil; vector) = Foil(foil.x .+ vector[1], foil.y .+ vector[2])
 
-@views function rotate(foil :: Foil; angle :: Real, center = zeros(2)) 
+@views function rotate(foil :: Foil; angle :: Real, center = zeros(2))
+    T = promote_type(eltype(angle), eltype(center))
     trans  = @views [ foil.x .- center[1] foil.y .- center[2] ]     # Translate
-    rotate = trans * RotMatrix{2,eltype(angle)}(deg2rad(angle))'    # Rotate
+    rotate = trans * RotMatrix{2,T}(deg2rad(angle))'    # Rotate
     Foil(rotate[:,1] .+ center[1], rotate[:,2] .+ center[2], foil.name) # Inverse translate
 end
 
