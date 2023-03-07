@@ -232,8 +232,8 @@ By default, the header is assumed to exist and should contain the airfoil name, 
 function read_foil(path :: String; name = "") 
     coords, foil_name = readdlm(path, header = true)
     if name != ""
-        return Foil(coords, name)
+        return Foil(Float16.(coords[:,1:2]), name)
     else
-        return Foil(coords, strip(join(foil_name, " ")))
+        return Foil(Float16.(coords[:,1:2]), strip(join(foil_name, " ")))
     end
 end
