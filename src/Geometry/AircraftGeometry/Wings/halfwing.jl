@@ -137,7 +137,7 @@ function mean_aerodynamic_center(wing :: Wing, factor = 0.25; symmetry = wing.sy
     areas = section_projected_areas(wing)
 
     # Get leading edge coordinates
-    wing_LE = combinedimsview(leading_edge(wing), (1))
+    wing_LE = leading_edge(wing)
     x_LEs   = @views wing_LE[:,1]
     y_LEs   = @views wing_LE[:,2]
 
@@ -192,11 +192,6 @@ function max_thickness_to_chord_ratio_sweeps(wing :: Wing, num)
     xs, tbycs, sweeps
 end
 
-"""
-    wing_bounds(wing :: Wing, flip = false)
-
-Compute the leading and trailing edge coordinates of a `Wing`, with an option to flip the signs of the ``y``-coordinates.
-"""
 function wing_bounds(wing :: Wing)
     # Compute y-z points
     spans, dihedrals, sweeps = wing.spans, wing.dihedrals, wing.sweeps
@@ -216,9 +211,9 @@ function wing_bounds(wing :: Wing)
 
     # Get actual bounds by sum-cumming, hehe I wanna die
     # Indexing: [section,xyz,le/te]
-    bounds = cumsum([ le ;;; te ], dims = 3)
+    bounds = cumsum(cat(le, te, dims = Val(3)), dims = 3)
 
-    return splitdimsview(bounds, (3,1))
+    return bounds
 end
 
 """
@@ -226,8 +221,8 @@ end
 
 Compute the trailing edge coordinates of a `Wing`, with an option to flip the signs of the ``y``-coordinates.
 """
-leading_edge(wing :: Wing) = @views wing_bounds(wing)[1,:]
-trailing_edge(wing :: Wing) = @views wing_bounds(wing)[2,:]
+leading_edge(wing :: Wing) = @views wing_bounds(wing)[:,:,1]
+trailing_edge(wing :: Wing) = @views wing_bounds(wing)[:,:,2]
 
 
 function Base.show(io :: IO, wing :: AbstractWing)
