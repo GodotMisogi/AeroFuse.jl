@@ -29,7 +29,7 @@ lambda_w_c4 = sweeps(wing, 0.25) # Quarter-chord sweep angles
 lambda_w_c2 = sweeps(wing, 0.5) # Half-chord sweep angles
 
 ct = camber_thickness(wing, 60) # Camber-thickness distribution
-coords = wing_bounds(wing) # Leading and trailing edge coordinates
+coords = coordinates(wing) # Leading and trailing edge coordinates
 
 ## Plotting
 using plots

@@ -24,6 +24,7 @@ span_length(b, AR) = √(b * AR)
 # Root chord
 root_chord(S, b, λ) = (2 * S) / (b * (1 + λ))
 
+# Single-section constructor
 function Wing(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 
     # Control surface deflections at root and tip
@@ -63,27 +64,31 @@ end
 # end
 
 """
-    WingSection(; span, dihedral, sweep, taper, root_chord,
+    WingSection(; area, aspect, dihedral, sweep, taper, root_chord,
                   root_twist, tip_twist, root_foil, tip_foil,
                   position, angle, axis)
 
 Define a `Wing` in the ``x``-``z`` plane, with optional Boolean arguments for symmetry and flipping in the plane.
 
 # Arguments
-- `span :: Real = 1.`: Span length 
+- `area :: Real = 1.`: Area (m²)
+- `aspect :: Real = 6.`: Aspect ratio
 - `dihedral :: Real = 1.`: Dihedral angle (degrees)
-- `LE_sweep :: Real = 0.`: Leading-edge sweep angle (degrees)
+- `sweep :: Real = 0.`: Sweep angle (degrees)
+- `w_sweep :: Real = 0.`: Chord ratio for sweep angle 
+                          e.g., 0    = Leading-edge sweep, 
+                                1    = Trailing-edge sweep,
+                                0.25 = Quarter-chord sweep
 - `taper :: Real = 1.`: Taper ratio of tip to root chord
-- `root_chord :: Real = 1.`: Root chord length
 - `root_twist :: Real = 0.`: Twist angle at root (degrees)
 - `tip_twist :: Real = 0.`: Twist angle at tip (degrees)
-- `root_foil :: Foil = naca4((0,0,1,2))`: Foil coordinates at root
-- `tip_foil :: Foil = root_foil`: Foil coordinates at tip
-- `root_control :: NTuple{2} = (0., 0.75)`: (Angle, chord-length ratio) for adding a control surface at the root.
-- `tip_control :: NTuple{2} = root_control`: (Angle, chord-length ratio) for adding a control surface at the tip. Defaults to root control's settings.
 - `position :: Vector{Real} = zeros(3)`: Position
 - `angle :: Real = 0.`: Angle of rotation (degrees)
 - `axis :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
+- `root_foil :: Foil = naca4((0,0,1,2))`: `Foil` at root
+- `tip_foil :: Foil = root_foil`: `Foil` at tip. Defaults to root foil.
+- `root_control :: NTuple{2} = (0., 0.75)`: (Angle, hinge ratio) for adding a control surface at the root.
+- `tip_control :: NTuple{2} = root_control`: (Angle, hinge ratio) for adding a control surface at the tip. Defaults to root control's settings.
 """
 function WingSection(;
         area         = 1.,

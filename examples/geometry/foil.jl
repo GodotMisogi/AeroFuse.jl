@@ -18,6 +18,7 @@ cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.))
 
 ## Plot
 plot(cst_foil)
+plot!(naca_foil)
 
 ## Control surface
 cst_foil_flap = control_surface(cst_foil, 

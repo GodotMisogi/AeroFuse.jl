@@ -142,7 +142,7 @@ end
 
 Generate a vector of `Panel2D`s from a `Foil`, additionally with cosine interpolation using (approximately) ``n`` points if provided.
 """
-make_panels(foil :: Foil) =@views Panel2D.(foil.x[2:end], foil.y[2:end], foil.x[1:end-1], foil.y[1:end-1])[end:-1:1]
+make_panels(foil :: Foil) = @views Panel2D.(foil.x[2:end], foil.y[2:end], foil.x[1:end-1], foil.y[1:end-1])[end:-1:1]
 
 make_panels(foil :: Foil, n :: Integer) = make_panels(cosine_interpolation(foil, n ÷ 2))
 
@@ -196,7 +196,7 @@ end
 Convert the camber-thickness representation to 2-dimensional coordinates given the ``x``-locations and their corresponding camber and thickness values.
 """
 camber_thickness_to_coordinates(xs, camber, thickness) = 
-    @views [ [xs camber + thickness / 2][end:-1:1,:];
+    @views [ [xs camber + thickness / 2][end:-1:2,:];
               xs camber - thickness / 2             ]
 
 camber_thickness_to_coordinates(coords) = @views camber_thickness_to_coordinates(coords[:,1], coords[:,2], coords[:,3])

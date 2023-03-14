@@ -7,10 +7,10 @@ using Ipopt
 include("wing_definition.jl")
 
 ## Initial guess
-n_vars = 30 # Number of spanwise stations
+n_vars = 32 # Number of spanwise stations
 c = 0.125 # Fixed chord
 c_w = LinRange(c, c, n_vars) # Constant distribution
-CL_tgt = 1.5 # Target lift coefficient
+CL_tgt = 1. # Target lift coefficient
 nc = length(c_w)
 
 wing_init = make_wing(c_w)
@@ -33,7 +33,7 @@ end
 ## Initial run
 sys = make_case(α0, wing_init, refs)
 init = get_forces(sys, wing_init)
-# print_coefficients(sys)
+print_coefficients(sys)
 
 # Common
 function get_res(x, w_sweep = 0.25, ref=  refs)
@@ -51,17 +51,10 @@ end
 function opt_drag(x, p) 
     sys, mesh = get_res(x)
 
-    # Evaluate aerodynamic coefficients
-    CDi, _, _, _, _, _ = nearfield(sys)
-
-    # Calculate local-dissipation/local-friction drag
-    CVs = norm.(surface_velocities(sys)).wing
-    CDv = profile_drag_coefficient(mesh, 0.98, CVs, sys.reference)
-
-    # @info "Variables:" x
-    # @info "Objective:" CDi
+    # Get forces
+    res = get_forces(sys, mesh)
     
-    CDi # + CDv
+    res.CD
 end
 
 # Constraints
@@ -122,7 +115,7 @@ xopt = sol.u
 wing_opt = make_wing(xopt[2:end])
 sys_opt = make_case(xopt[1], wing_opt, refs)
 opt = get_forces(sys_opt, wing_opt)
-# print_coefficients(sys_opt)
+print_coefficients(sys_opt)
 
 # Exact solution
 y_exact = LinRange(0., 1., n_vars)
@@ -131,7 +124,7 @@ x_exact = @. √(1. - y_exact^2) * 4 / π * c
 wing_exact = make_wing(x_exact)
 sys_exact = make_case(xopt[1], wing_exact, refs)
 exact = get_forces(sys_exact, wing_exact)
-# print_coefficients(sys_exact)
+print_coefficients(sys_exact)
 
 ## Plotting
 #==========================================================================================#
@@ -158,7 +151,7 @@ plt_opt = plot(
     legend = :bottom,
     xlabel = L"x,~m",
     guidefontrotation = 90.0,
-    title = LaTeXString("Planform, \$ S = $(round(Sw; digits = 4)),~C_L = $(round(CL_tgt; digits = 4)) \$"),
+    title = LaTeXString("Planform, \$ S = $(round(Sw; digits = 4)),~C_{L_{req}} = $(round(CL_tgt; digits = 4)) \$"),
     grid = false,
     # aspect_ratio = 1,
     # zlim = (-0.5, 0.5) .* span(wing_init)
@@ -215,19 +208,19 @@ plot!(
     [ -cumsum(wing_init.surface.spans)[end:-1:1]; 0; cumsum(wing_init.surface.spans) ], 
     [ wing_init.surface.chords[end:-1:2]; wing_init.surface.chords ], 
     lc = :black,
-    label = LaTeXString("Initial Wing: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([init.CDi;init.CDv;init.CD]; digits = 4)) \$"),
+    label = LaTeXString("Initial Wing: \$ (C_{D_i}, C_{D_v}, C_D, C_L) = $(round.([init.CDi;init.CDv;init.CD;init.CL]; digits = 4)) \$"),
 )
 plot!(
     [ -cumsum(wing_opt.surface.spans)[end:-1:1]; 0; cumsum(wing_opt.surface.spans) ], 
     [ wing_opt.surface.chords[end:-1:2]; wing_opt.surface.chords ],
     lc = :cornflowerblue, 
-    label = LaTeXString("Optimized Wing: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([opt.CDi;opt.CDv;init.CD]; digits = 4)) \$"),
+    label = LaTeXString("Optimized Wing: \$ (C_{D_i}, C_{D_v}, C_D, C_L) = $(round.([opt.CDi;opt.CDv;opt.CD;opt.CL]; digits = 4)) \$"),
 )
 plot!(
     [ -cumsum(wing_exact.surface.spans)[end:-1:1]; 0; cumsum(wing_exact.surface.spans) ], 
     [ wing_exact.surface.chords[end:-1:2]; wing_exact.surface.chords ],
     lc = :green, 
-    label =LaTeXString("Inviscid Optimum: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([exact.CDi;exact.CDv;exact.CD]; digits = 6)) \$"),
+    label = LaTeXString("Inviscid Optimum: \$ (C_{D_i}, C_{D_v}, C_D, C_L) = $(round.([exact.CDi;exact.CDv;exact.CD;exact.CL]; digits = 6)) \$"),
 )
 
 plt_CL = plot(

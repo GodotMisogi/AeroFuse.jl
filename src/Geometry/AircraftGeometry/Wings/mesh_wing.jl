@@ -4,15 +4,15 @@
 chop_leading_edge(obj :: Wing, span_num) = @views chop_coordinates(coordinates(obj)[1,:], span_num, Uniform())
 chop_trailing_edge(obj :: Wing, span_num) = @views chop_coordinates(coordinates(obj)[end,:], span_num, Uniform())
 
-function coordinates(wing :: Wing, affine = false)
-    bounds = combinedimsview(wing_bounds(wing), (1,3))
+function coordinates(wing :: Wing, affine = true)
+    bounds = permutedims(wing_bounds(wing), (3,2,1))
 
     # Symmetry
     if wing.symmetry
         sym_bounds = bounds[:,:,end:-1:2]
         sym_bounds[:,2,:] .*= -1
 
-        bounds = [ sym_bounds ;;; bounds ]
+        bounds = cat(sym_bounds, bounds, dims = Val(3))
     # Reflection
     elseif wing.flip
         sym_bounds = bounds[:,:,end:-1:1]
@@ -22,41 +22,48 @@ function coordinates(wing :: Wing, affine = false)
     end
 
     # Reshape into matrix of vectors
-    bounds = splitdimsview(bounds,(1,3))
+    vec_bounds = splitdimsview(bounds,(1,3))
 
     # TODO: Weird hack
     if affine
         aff = wing.affine
     else
-        aff = AffineMap(I, zeros(3))
+        aff = AffineMap(AngleAxis(0., 1, 0, 0.), zeros(3))
     end
 
-    return aff.(bounds)
+    # @tullio t1[i,k,l] := aff.linear[i,j] * bounds[k,j,l]
+    # @tullio verbose=true t2[i,k,l] := bounds[k,i,l] + aff.translation[i]
+    # @tullio t3[i,k,l] := (aff.linear[i,j] * coo2[j,k,l]) + aff.translation[i]
+
+    return map(aff, vec_bounds)
 end
 
-function chord_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; span_spacing = symmetric_spacing(wing), chord_spacing = Cosine())
-    coords = chop_wing(coordinates(wing), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
+# coo2: [[x,y,z],[le,te],secs]
 
-    return affine_transformation(wing).(coords)
+function chord_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; span_spacing = symmetric_spacing(wing), chord_spacing = Cosine())
+    coords = chop_wing(coordinates(wing, false), span_num, chord_num; span_spacing = span_spacing, chord_spacing = chord_spacing)
+
+    return map(wing.affine, coords)
 end
 
 function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; span_spacing = symmetric_spacing(wing))
     # Get leading edge coordinates
-    leading_xyz  = @views coordinates(wing)[1,:]
+    leading_xyz = @views coordinates(wing, false)[1,:]
 
     # Scale camber distribution of airfoil
-    scaled_foils = @. wing.chords * (camber_coordinates ∘ camber_thickness)(wing.foils, chord_num)
+    # scaled_foils = @. wing.chords * camber_coordinates(camber_thickness(wing.foils, chord_num))
+    scaled_foils =  map((c, foil) -> c * camber_coordinates(camber_thickness(foil, chord_num)), wing.chords, wing.foils) 
 
-    # Discretize spanwise sections
+    # # Discretize spanwise sections
     coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
 
-    # Transform
-    return affine_transformation(wing).(coords)
+    # # Transform
+    return map(wing.affine, coords)
 end
 
 function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; span_spacing = symmetric_spacing(wing))
     # Get leading edge coordinates
-    leading_xyz  = @views coordinates(wing)[1,:]
+    leading_xyz  = @views coordinates(wing, false)[1,:]
 
     # Scale airfoil coordinates
     scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_interpolation)(reflect.(wing.foils), chord_num)
@@ -65,7 +72,7 @@ function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord
     coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
 
     # Transform
-    return affine_transformation(wing).(coords)
+    return map(wing.affine, coords)
 end
 
 function number_of_spanwise_panels(wing :: Wing, span_num :: Integer) 
@@ -88,7 +95,7 @@ end
 
 # Spacing
 function symmetric_spacing(wing :: Wing)
-    sins = [Sine(1); Sine(0)]
+    sins = AbstractSpacing[Sine(1); Sine(0)]
     if length(wing.spans) == 1 && wing.symmetry
         return sins
     else
@@ -106,13 +113,13 @@ mesh_wing(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; sp
 
 mesh_cambers(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(camber_coordinates(wing, span_num, chord_num; span_spacing = spacings))
 
-function make_panels(wing :: AbstractWing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
+function make_panels(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
     horseshoe_panels = mesh_chords(wing, span_num, chord_num; spacings = spacings)
     camber_panels = mesh_cambers(wing, span_num, chord_num; spacings = spacings)
     horseshoe_panels, normal_vector.(camber_panels)
 end
 
-make_panels(wing :: AbstractWing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(wing, [span_num], chord_num; spacings = spacings)
+make_panels(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(wing, [span_num], chord_num; spacings = spacings)
 
 panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = symmetric_spacing(comp)) = make_panels(comp, span_panels, chord_panels, spacings = spacing)
 

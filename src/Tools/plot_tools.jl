@@ -11,7 +11,7 @@ plot_panels(panels) = plot_panel.(panels)
 
 # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coordinates ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
 
-function plot_planform(mesh :: Matrix{SVector{3,T}}) where T <: Real
+function plot_planform(mesh)
     coords  =   [ 
                     mesh[1,1:end-1]; 
                     mesh[1:end-1,end]; 
@@ -27,7 +27,7 @@ end
 
 Get the planform coordinates of an `AbstractWing` for plotting.
 """
-plot_planform(wing :: Wing) = plot_planform(affine_transformation(wing).(coordinates(wing)))
+plot_planform(wing :: Wing) = plot_planform(coordinates(wing))
 
 plot_streamlines(system :: VortexLatticeSystem, points, length, num_steps) = combinedimsview(streamlines(system, points, length, num_steps), (1,3))
 

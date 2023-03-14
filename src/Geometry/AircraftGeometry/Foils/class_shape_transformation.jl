@@ -4,12 +4,26 @@
 # Basic shape function
 function shape_function(x, basis_func, coeffs, coeff_LE = 0)
     n     = length(coeffs)
-    terms = basis_func.(x, n - 1, 0:n-1)
+    terms = basis_func.(x, n - 1, 0:n - 1)
     dot(coeffs, terms) + coeff_LE * (x^0.5) * (1 - x)^(n - 0.5)
 end
 
 # Computing coordinates
 CST_coordinates(class_func, basis_func, x, alphas, dz, coeff_LE, args...) = class_func(x) * shape_function(x, basis_func, alphas, coeff_LE) + x * dz
+
+# struct KulfanCST{T <: Real}
+#     upper :: Vector{T}
+#     lower :: Vector{T}
+#     dzs   :: SVector{2,T}
+#     LEs   :: SVector{2,T}
+# end
+
+# function KulfanCST(upper, lower, dzs, LEs, n = 40)
+#     # Type promotion for autodiff compatibility
+#     T = promote_type(eltype(upper), eltype(lower), eltype(dzs), eltype(LEs))
+    
+#     KulfanCST{T}(upper, lower, dzs, LEs)
+# end
 
 ## Bernstein basis
 #==========================================================================================#
@@ -45,23 +59,22 @@ end
 
 """
     camber_CST(α_c, α_t,
-               (Δz_u, Δz_l) :: NTuple{2, Real},
-               coeff_LE = 0.,
+               Δz :: Real,
                n :: Integer = 40)
 
 Define a cosine-spaced foil with ``2n`` points using the Class Shape Transformation method on a Bernstein polynomial basis for the camber and thickness coordinates.
 
 The foil is defined by arrays of coefficients ``(α_c,~ α_t)`` for the upper and lower surfaces, trailing-edge spacing values ``(Δz_u,~Δz_l)``, and a coefficient for the leading edge modifications at the nose.
 """
-function camber_CST(α_cam, α_thicc, dz_thicc = 0., coeff_LE = 0, n :: Integer = 40, N1 = 0.5, N2 = 1.)
+function camber_CST(α_cam, α_thicc, dz_thicc = 0., n :: Integer = 40, N1 = 0.5, N2 = 1.)
     # Cosine spacing for airfoil of unit chord length
     xs = cosine_spacing(0.5, 1, n)
 
     # λ-function for Bernstein polynomials
-    bernie(x, αs, dz = 0.) = CST_coordinates(y -> bernstein_class(y, N1, N2), bernstein_basis, x, αs, dz, coeff_LE)
+    bernie(x, αs, dz) = CST_coordinates(y -> bernstein_class(y, N1, N2), bernstein_basis, x, αs, dz, zero(eltype(α_cam)))
 
     # Upper and lower surface generation
-    cam   = [ bernie(x, α_cam) for x ∈ xs ]
+    cam   = [ bernie(x, α_cam, zero(dz_thicc)) for x ∈ xs ]
     thicc = [ bernie(x, α_thicc, dz_thicc) for x ∈ xs ]
 
     Foil(camber_thickness_to_coordinates(xs, cam, thicc), "Camber-Thickness CST")
@@ -70,7 +83,7 @@ end
 """
     coordinates_to_CST(coords, num_dvs)
 
-Convert coordinates to a specified number of CST variables by performing a least-squares solution.
+Convert coordinates to a specified number of Bernstein polynomial coefficients under a Class Shape Transformation by performing a least-squares solution.
 """
 function coordinates_to_CST(coords, num_dvs)
     xs       = @views coords[:,1]
@@ -81,7 +94,7 @@ end
 """
     camber_thickness_to_CST(coords, num_dvs)
 
-Convert camber-thickness coordinates to a specified number of CST variables by performing a least-squares solution.
+Convert camber-thickness coordinates to a specified number of Bernstein polynomial coefficients under a Class Shape Transformation by performing a least-squares solution.
 """
 function camber_thickness_to_CST(coords, num_dvs)
     xs, camber, thickness = (columns ∘ coordinates_to_camber_thickness)(coords)
