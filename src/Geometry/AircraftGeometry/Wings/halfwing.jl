@@ -164,7 +164,7 @@ end
 
 camber_thickness(wing :: Wing, num :: Integer) = camber_thickness.(wing.foils, num)
 
-maximum_thickness_to_chord(wing :: Wing, num :: Integer) = maximum_thickness_to_chord.(camber_thickness(wing, num))
+maximum_thickness_to_chord(wing :: Wing, num :: Integer) = map(maximum_thickness_to_chord, camber_thickness(wing, num))
 
 function max_thickness_to_chord_ratio_sweeps(wing :: Wing, num)
     # Compute (t/c)_max locations and values

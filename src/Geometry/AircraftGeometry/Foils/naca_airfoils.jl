@@ -2,7 +2,7 @@
 #==========================================================================================#
 
 # NACA 4-digit parameter functions
-naca4_thickness(t_by_c, xc, sharp_trailing_edge :: Bool) = 5 * t_by_c * (0.2969 * √xc - 0.1260 * xc - 0.3516 * xc^2 + 0.2843 * xc^3 - (ifelse(sharp_trailing_edge, 0.1036, 0.1015) * xc^4))
+naca4_thickness(t_by_c, xc, sharp_TE :: Bool) = 5 * t_by_c * (0.2969 * √xc - 0.1260 * xc - 0.3516 * xc^2 + 0.2843 * xc^3 - (ifelse(sharp_TE, 0.1036, 0.1015) * xc^4))
 
 naca4_camberline(pos, cam, xc) = ifelse(
                                         xc < pos, 
@@ -13,11 +13,11 @@ naca4_camberline(pos, cam, xc) = ifelse(
 naca4_gradient(pos, cam, xc) = atan(2 * cam / (ifelse(xc < pos, pos^2, (1 - pos)^2)) * (pos - xc))
 
 """
-    naca4_coordinates(digits :: NTuple{4, <: Real}, n :: Integer, sharp_trailing_edge :: Bool)
+    naca4_coordinates(digits :: NTuple{4, <: Real}, n :: Integer, sharp_TE :: Bool)
 
 Generate the coordinates of a NACA 4-digit series profile with a specified number of points, and a Boolean flag to specify a sharp or blunt trailing edge.
 """
-function naca4_coordinates(digits :: NTuple{4, <: Real}, n :: Integer, sharp_trailing_edge :: Bool)
+function naca4_coordinates(digits :: NTuple{4, <: Real}, n :: Integer, sharp_TE :: Bool)
     # Camber
     cam = digits[1] / 100
     # Position
@@ -29,7 +29,7 @@ function naca4_coordinates(digits :: NTuple{4, <: Real}, n :: Integer, sharp_tra
     xs = cosine_spacing(0.5, 1.0, n)
 
     # Thickness distribution
-    thickness = naca4_thickness.(Ref(t_by_c), xs, Ref(sharp_trailing_edge))
+    thickness = naca4_thickness.(Ref(t_by_c), xs, Ref(sharp_TE))
     if pos == 0 || cam == 0
         x_upper = xs
         y_upper = thickness
@@ -52,10 +52,13 @@ function naca4_coordinates(digits :: NTuple{4, <: Real}, n :: Integer, sharp_tra
 end
 
 """
-    naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_trailing_edge :: Bool)
+    naca4(digits :: NTuple{4, <: Real}, n :: Integer = 40; sharp_TE :: Bool)
+    naca4(a, b, c, d, n :: Integer = 40; sharp_TE :: Bool)
 
-Generate a `Foil` of a NACA 4-digit series profile with a specified number of points (40 by default), and a named option to specify a sharp or blunt trailing edge.
+Generate a `Foil` of a NACA 4-digit series profile with the specified digits, number of points (40 by default), and a named option to specify a sharp or blunt trailing edge. 
+
+Refer to the formula for the digits here: `http://airfoiltools.com/airfoil/naca4digit`
 """
-naca4(digits :: NTuple{4, <: Real}, n = 40; sharp_trailing_edge = true) = Foil(naca4_coordinates(digits, n, sharp_trailing_edge), string("NACA ", digits...))
+naca4(digits :: NTuple{4, <: Real}, n = 40; sharp_TE = true) = Foil(naca4_coordinates(digits, n, sharp_TE), string("NACA ", digits...))
 
-naca4(a, b, c, d, n = 40; sharp_trailing_edge = true) = naca4((a,b,c,d), n; sharp_trailing_edge = sharp_trailing_edge)
+naca4(a, b, c, d, n = 40; sharp_TE = true) = naca4((a,b,c,d), n; sharp_TE = sharp_TE)

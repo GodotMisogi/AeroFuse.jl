@@ -13,10 +13,10 @@ using Ipopt # The optimizer
 includet("wing_definition.jl")
 
 ## Initial guess
-n_vars = 30 # Number of spanwise stations
+n_vars = 64 # Number of spanwise stations
 c = 0.125 # Fixed chord
 c_w = LinRange(c, c, n_vars) # Constant distribution
-CL_tgt = 1.5 # Target lift coefficient
+CL_tgt = 1 # Target lift coefficient
 nc = length(c_w)
 
 wing_init = make_wing(c_w)
@@ -51,7 +51,7 @@ function optimize_drag!(g, x, w = 0.25, ref = refs)
     res = get_forces(system, wing_mesh)
 
     # Objective
-    f = res.CDi
+    f = res.CD
 
     # Constraints
     g[1] = res.CL # Lift coefficient
@@ -88,7 +88,7 @@ opts = Options(
 )
 
 ## Run optimization
-@time xopt, fopt, info = minimize(optimize_drag!, x0, ng, lx, ux, lg, ug, opts)
+@time xopt, fopt, info = minimize(optimize_drag!, x0, ng, lx, ux, lg, ug, opts);
 
 ## Substitute
 wing_opt = make_wing(xopt[2:end])
@@ -131,7 +131,7 @@ plt_opt = plot(
     legend = :bottom,
     xlabel = L"x,~m",
     guidefontrotation = 90.0,
-    title = LaTeXString("Planform, \$ S = $(round(Sw; digits = 6)),~C_L = $(round(CL_tgt; digits = 6)) \$"),
+    title = LaTeXString("Planform, \$ S = $(round(Sw; digits = 4)),~C_{L_{req}} = $(round(CL_tgt; digits = 4)) \$"),
     grid = false,
     # aspect_ratio = 1,
     # zlim = (-0.5, 0.5) .* span(wing_init)
@@ -188,19 +188,19 @@ plot!(
     [ -cumsum(wing_init.surface.spans)[end:-1:1]; 0; cumsum(wing_init.surface.spans) ], 
     [ wing_init.surface.chords[end:-1:2]; wing_init.surface.chords ], 
     lc = :black,
-    label = LaTeXString("Initial Wing: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([init.CDi;init.CDv;init.CD]; digits = 6)) \$"),
+    label = LaTeXString("Initial Wing: \$ (C_{D_i}, C_{D_v}, C_D, C_L) = $(round.([init.CDi;init.CDv;init.CD;init.CL]; digits = 4)) \$"),
 )
 plot!(
     [ -cumsum(wing_opt.surface.spans)[end:-1:1]; 0; cumsum(wing_opt.surface.spans) ], 
     [ wing_opt.surface.chords[end:-1:2]; wing_opt.surface.chords ],
     lc = :cornflowerblue, 
-    label = LaTeXString("Optimized Wing: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([opt.CDi;opt.CDv;opt.CD]; digits = 6)) \$"),
+    label = LaTeXString("Optimized Wing: \$ (C_{D_i}, C_{D_v}, C_D, C_L) = $(round.([opt.CDi;opt.CDv;opt.CD;opt.CL]; digits = 4)) \$"),
 )
 plot!(
     [ -cumsum(wing_exact.surface.spans)[end:-1:1]; 0; cumsum(wing_exact.surface.spans) ], 
     [ wing_exact.surface.chords[end:-1:2]; wing_exact.surface.chords ],
     lc = :green, 
-    label =LaTeXString("Inviscid Optimum: \$ (C_{D_i}, C_{D_v}, C_D) = $(round.([exact.CDi;exact.CDv;exact.CD]; digits = 6)) \$"),
+    label = LaTeXString("Inviscid Optimum: \$ (C_{D_i}, C_{D_v}, C_D, C_L) = $(round.([exact.CDi;exact.CDv;exact.CD;exact.CL]; digits = 6)) \$"),
 )
 
 plt_CL = plot(
