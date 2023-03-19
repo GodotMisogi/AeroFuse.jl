@@ -1,5 +1,36 @@
-## Pretty-printing
+## Pretty-printing and show methods
 #==========================================================================================#
+
+# Axis systems
+Base.show(io :: IO, :: Geometry)  = print(io, "Geometry")
+Base.show(io :: IO, :: Body)      = print(io, "Body")
+Base.show(io :: IO, :: Stability) = print(io, "Stability")
+Base.show(io :: IO, :: Wind)      = print(io, "Wind")
+
+# Reference values
+function Base.show(io :: IO, refs :: References)
+    println(io, "References: ")
+    for fname in fieldnames(typeof(refs))
+        println(io, "    ", fname, " = ", getfield(refs, fname))
+    end
+end
+
+function Base.show(io :: IO, ring :: AbstractVortex)
+    println(io, "Vortex: ")
+    for fname in fieldnames(typeof(ring))
+        println(io, "    ", fname, " = ", getfield(ring, fname))
+    end
+end
+
+# Vortex lattice system
+function Base.show(io :: IO, sys :: VortexLatticeSystem)     
+    println(io, "VortexLatticeSystem -")
+    println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements")
+    println(io, "Axes: ", sys.axes)
+    show(io, sys.freestream)
+    show(io, sys.reference)
+end
+
 
 """
     print_coefficients(nf_coeffs, ff_coeffs, name = "")

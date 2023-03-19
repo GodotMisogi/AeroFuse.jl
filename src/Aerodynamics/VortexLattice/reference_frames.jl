@@ -3,19 +3,15 @@
 
 """
     reflect_xz(vector)
-    reflect_xz(line :: Line)
-    reflect_xz(horseshoe :: Horseshoe)
 
-Reflect the ``y``-coordinate of a given 3-dimensional vector (or `Line` or `Horseshoe`) about the ``x``-``z`` plane.
+Reflect the ``y``-coordinate of a given 3-dimensional vector about the ``x``-``z`` plane.
 """
 reflect_xz(vector) = SVector(vector[1], -vector[2], vector[3])
-reflect_xz(horseshoe :: Horseshoe) = (Horseshoe ∘ reflect_xz ∘ bound_leg)(horseshoe)
 
 """
     project_yz(vector)
-    project_yz(line :: Line)
 
-Project a given 3-dimensional vector or `Line` into the ``y``-``z`` plane.
+Project a given 3-dimensional vector or into the ``y``-``z`` plane.
 """
 project_yz(vector) = SVector(0, vector[2], vector[3])
 
@@ -47,23 +43,23 @@ stability_to_geometry_axes(coords, α :: T) where T <: Real = geometry_to_stabil
 
 """
     geometry_to_wind_axes(coords, α, β)
-    geometry_to_wind_axes(horseshoe :: Horseshoe, α, β)
+    geometry_to_wind_axes(vor :: AbstractVortex, α, β)
 
 Convert coordinates from geometry axes to wind axes for given angles of attack ``α`` and sideslip ``\\beta.``
 """
 geometry_to_wind_axes(coords, α, β) = let T = promote_type(eltype(α), eltype(β)); RotZY{T}(β, α) * coords end
 
-function geometry_to_wind_axes(horseshoe :: Horseshoe, α, β) 
+function geometry_to_wind_axes(vortex :: AbstractVortex, α, β) 
     T = promote_type(eltype(α), eltype(β))
-    return transform(horseshoe, LinearMap(RotZY{T}(β, α)))
+    return transform(vortex, LinearMap(RotZY{T}(β, α)))
 end
 
 geometry_to_wind_axes(coords, fs :: Freestream) = geometry_to_wind_axes(coords, fs.alpha, fs.beta)
-geometry_to_wind_axes(horseshoe :: Horseshoe, fs :: Freestream) = geometry_to_wind_axes(horseshoe, fs.alpha, fs.beta)
+geometry_to_wind_axes(vor :: AbstractVortex, fs :: Freestream) = geometry_to_wind_axes(vor, fs.alpha, fs.beta)
 
 """
     wind_to_geometry_axes(coords, α, β)
-    wind_to_geometry_axes(horseshoe :: Horseshoe, α, β) 
+    wind_to_geometry_axes(vor :: AbstractVortex, α, β) 
 
 Convert coordinates from wind axes to geometry axes for given angles of attack ``α`` and sideslip \\beta.``
 """
@@ -73,9 +69,9 @@ function wind_to_geometry_axes(coords, α, β)
     return RotYZ{T}(-α, -β) * coords
 end
 
-function wind_to_geometry_axes(horseshoe :: Horseshoe, α, β) 
+function wind_to_geometry_axes(vor :: AbstractVortex, α, β) 
     T = promote_type(eltype(α), eltype(β))
-    return transform(horseshoe, LinearMap(RotYZ{T}(-α, -β)))
+    return transform(vor, LinearMap(RotYZ{T}(-α, -β)))
 end
 
 

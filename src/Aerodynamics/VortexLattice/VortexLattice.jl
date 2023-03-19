@@ -14,9 +14,6 @@ using DiffResults: JacobianResult, jacobian, value
 ## Package imports
 #==========================================================================================#
 
-# Panel geometry
-import ..PanelGeometry: Panel3D, panel_area, panel_coordinates, midpoint, normal_vector, transform, p1, p2, p3, p4, average_chord, average_width
-
 # Non-dimensionalization
 import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coefficient, moment_coefficient, rate_coefficient
 
@@ -28,9 +25,7 @@ import ..AeroFuse: velocity, solve_system, solve_linear, solve_nonlinear, solve_
 ## Vortex types and methods
 #==========================================================================================#
 
-include("horseshoes.jl")
-
-include("vortex_rings.jl")
+include("vortices.jl")
 
 ## Reference frames
 #==========================================================================================#
@@ -42,11 +37,6 @@ struct Geometry <: AbstractAxisSystem end
 struct Body      <: AbstractAxisSystem end
 struct Stability <: AbstractAxisSystem end
 struct Wind      <: AbstractAxisSystem end
-
-Base.show(io :: IO, :: Geometry)  = print(io, "Geometry")
-Base.show(io :: IO, :: Body)      = print(io, "Body")
-Base.show(io :: IO, :: Stability) = print(io, "Stability")
-Base.show(io :: IO, :: Wind)      = print(io, "Wind")
 
 """
     velocity(freestream :: Freestream, ::Body)
@@ -87,7 +77,6 @@ include("nearfield.jl")
 # Farfield forces
 include("farfield.jl")
 
-
 # System setups
 #==========================================================================================#
 
@@ -105,6 +94,5 @@ include("printing.jl")
 
 # Streamlines
 include("streamlines.jl")
-
 
 end

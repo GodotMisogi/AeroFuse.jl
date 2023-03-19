@@ -20,11 +20,10 @@ export combinedimsview, combinedims, splitdimsview, splitdims
 using ComponentArrays
 export ComponentVector, ComponentArray
 
-using Accessors
-export @set
+using LabelledArrays
 
 using Accessors
-using LabelledArrays
+export @set
 
 ## Methods to be extended in submodules
 #==========================================================================================#
@@ -100,9 +99,9 @@ import .AircraftGeometry: AbstractAircraft, AbstractWing, AbstractFoil
 export AbstractAircraft, AbstractWing, AbstractFoil
 
 # Foil
-import .AircraftGeometry: Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, reflect, camber, camber_line, control_surface
+import .AircraftGeometry: Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, reflect, camber, camber_line, thickness_line, control_surface
 
-export Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, reflect, camber, camber_line, control_surface
+export Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, reflect, camber, camber_line, thickness_line, control_surface
 
 # Fuselage
 import .AircraftGeometry: Fuselage, projected_area, length, cosine_interpolation, volume
@@ -129,13 +128,42 @@ export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, a
 make_horseshoes(wing :: WingMesh) = map((cho,cam) -> Horseshoe(cho, normal_vector(cam)), chord_panels(wing), camber_panels(wing))
 
 function make_vortex_rings(wing :: WingMesh)
-    cams = camber_panels(wing) 
+    cam_coo = camber_coordinates(wing)
+    cams = combinedimsview(cam_coo, (1,2))
 
-    # Vortex rings on surface
-    rings = VortexRing.(cams)
+    # Generate vortex ring mesh
+    vor_cams = similar(cams)
+    vor_cams = 0.75 * cams[1:end-1,:,:] + 0.25 * cams[2:end,:,:]
+    vor_cams[end,:,:] = cams[end,:,:]
+
+    @views rings = VortexRing.(make_panels(splitdimsview(vor_cams, (1,2))))
+
+    # NOTE: JUST ADD A TRAILING TYPE TO THE VORTEX RING AND ADD THE HORSESHOE VELOCITY METHOD
 
     # Trailing edge semi-infinite vortex lines
-    horsies = Horseshoe.(cams[end,:], normal_vector.(cams[end,:]))
+    cam_pan = camber_panels(wing)
+    @views horsies = Horseshoe.(cam_pan[end,:], normal_vector.(cam_pan[end,:]))
+
+    # Generate vortex ring mesh
+    # vor_cams = similar(cams)
+    # vor_cams[1:end-1,:,:] = 0.75 * cams[1:end-1,:,:] + 0.25 * cams[2:end,:,:]
+    # vor_cams[end,:,:] = cams[end,:,:]
+
+    # # display(vor_cams)
+    
+    # vor_coo = splitdimsview(vor_cams, (1,2))
+    # vor_pan = make_panels(vor_coo)
+    # @views rings = @. VortexRing(vor_pan)
+
+    # # Trailing edge semi-infinite vortex lines
+    # hor_cams = similar(cams[end-1:end,:,:])
+    # hor_cams[end-1,:,:] = vor_cams[end,:,:]
+    # hor_cams[end,:,:] = (cams[end,:,:] - cams[end-1,:,:]) * 0.25 + cams[end,:,:]
+
+    # hor_coo = splitdimsview(hor_cams, (1,2))
+    # hor_pan = make_panels(hor_coo)
+    # @views horsies = @. Horseshoe(hor_pan[end,:], normal_vector(hor_pan[end,:]))
+    
 
     # Assemble
     [ rings; permutedims(horsies) ]
@@ -163,9 +191,12 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, AbstractVortexLatticeSystem, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
+import .VortexLattice: Horseshoe, AbstractVortexLatticeSystem, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, bound_leg_center, bound_leg_vector, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
 
-export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, transform, bound_leg, bound_leg_center, bound_leg_vector, r1, r2, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
+export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, bound_leg_center, bound_leg_vector, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
+
+## Panel-VLM interface
+include("Aerodynamics/vlm_interface.jl")
 
 ## Profile drag estimation
 include("Aerodynamics/profile_drag.jl")

@@ -15,8 +15,8 @@ Define reference values with speed ``V``, density ``ρ``, _dynamic_ viscosity ``
 - `density     :: Real         = 1.225`: Density (m)
 - `viscosity   :: Real         = 1.5e-5`: Dynamic viscosity (m)
 - `sound_speed :: Real         = 330.`: Speed of sound (m/s)
-- `span        :: Real         = 1.`: Span length (m)
 - `area        :: Real         = 1.`: Area (m²)
+- `span        :: Real         = 1.`: Span length (m)
 - `chord       :: Real         = 1.`: Chord length (m)
 - `location    :: Vector{Real} = [0,0,0]`: Position
 """
@@ -41,13 +41,6 @@ end
 References(; speed = 1., density = 1.225, viscosity = 1.5e-5, sound_speed = 330., area = 1., span = 1., chord = 1., location = zeros(3)) = References(speed, density, viscosity, sound_speed, area, span, chord, location)
 
 Base.broadcastable(refs :: References) = Ref(refs)
-
-function Base.show(io :: IO, refs :: References)
-    println(io, "References: ")
-    for fname in fieldnames(typeof(refs))
-        println(io, "    ", fname, " = ", getfield(refs, fname))
-    end
-end
 
 dynamic_pressure(refs :: References) = 1/2 * refs.density * refs.speed^2
 
@@ -100,7 +93,7 @@ function VortexLatticeSystem(components, fs :: Freestream, refs :: References, a
     # Mach number bound checks
     M = mach_number(refs)
     @assert M < 1.  "Only compressible subsonic flow conditions (M < 1) are valid!"
-    if M > 0.7 @warn "Results in transonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
+    if M > 0.7 @warn "Results in transonic to sonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
 
     # (Prandtl-Glauert ∘ Wind axis) transformation
     β_pg = √(1 - M^2)
@@ -114,16 +107,6 @@ function VortexLatticeSystem(components, fs :: Freestream, refs :: References, a
     Γs, AIC, boco = solve_linear(comp, U, Ω)
 
     return VortexLatticeSystem(components, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, axes)
-end
-
-# Made out of annoyance and boredom
-function Base.show(io :: IO, sys :: VortexLatticeSystem)     
-    println(io, "VortexLatticeSystem -")
-    println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements\n")
-    println(io, "    Axes: ", sys.axes)
-    show(io, sys.freestream)
-    println(io, "")
-    show(io, sys.reference)
 end
 
 # Miscellaneous
@@ -334,4 +317,4 @@ function center_of_pressure(system :: VortexLatticeSystem)
     return x_CP
 end
 
-residual!(R, system :: VortexLatticeSystem) = solve_nonlinear!(R, system.vortices, system.circulations, -velocity(system.freestream), system.freestream.omega)
+residual!(R, Γ, system :: VortexLatticeSystem) = solve_nonlinear!(R, system.vortices, Γ, -velocity(system.freestream), system.freestream.omega)
