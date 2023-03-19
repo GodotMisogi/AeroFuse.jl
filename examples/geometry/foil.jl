@@ -2,10 +2,14 @@ using AeroFuse
 using Plots
 
 ## NACA
-naca_foil = naca4(2,4,1,2) # NACA 4-digit
+naca_foil = naca4(4,6,3,6) # NACA 4-digit
 
 ## Plot
-plot(naca_foil)
+plot(naca_foil, 
+    aspect_ratio = 1, 
+    camber = true, 
+    thickness = true
+)
 
 ## Fitting to Kulfan Class Shape Transformation parametrisation
 num_dv = 8

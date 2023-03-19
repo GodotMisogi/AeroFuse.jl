@@ -78,21 +78,20 @@ end
     # aspect_ratio --> 1
     label --> foil.name
 
-    if camber || thickness
-        xcamthick = camber_thickness(foil)
-        if camber
-            @series begin
-                ls := :dash
-                label := foil.name * " Camber"
-                xcamthick[:,1], xcamthick[:,2]
-            end
+    if camber
+        xcam = camber_line(foil)
+        @series begin
+            ls := :dash
+            label := foil.name * " Camber"
+            xcam[:,1], xcam[:,2]
         end
-        if thickness
-            @series begin
-                ls := :dot
-                label := foil.name * " Thickness"
-                xcamthick[:,1], xcamthick[:,3]
-            end
+    end
+    if thickness
+        xthicc = thickness_line(foil)
+        @series begin
+            ls := :dot
+            label := foil.name * " Thickness"
+            xthicc[:,1], xthicc[:,2]
         end
     end
 

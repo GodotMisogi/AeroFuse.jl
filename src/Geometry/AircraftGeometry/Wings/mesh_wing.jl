@@ -55,7 +55,7 @@ function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_
     scaled_foils =  map((c, foil) -> c * camber_coordinates(camber_thickness(foil, chord_num)), wing.chords, wing.foils) 
 
     # # Discretize spanwise sections
-    coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
+    coords = chop_spanwise_sections(scaled_foils, -deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
 
     # # Transform
     return map(wing.affine, coords)
@@ -69,7 +69,7 @@ function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord
     scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_interpolation)(reflect.(wing.foils), chord_num)
 
     # Discretize spanwise sections
-    coords = chop_spanwise_sections(scaled_foils, deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
+    coords = chop_spanwise_sections(scaled_foils, -deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
 
     # Transform
     return map(wing.affine, coords)

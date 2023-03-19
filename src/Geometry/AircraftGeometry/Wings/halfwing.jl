@@ -69,12 +69,17 @@ function Wing(;
 end
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
-    # Check if number of sections match up with number of edges (NEEDS WORK)
-    @assert (length ∘ zip)(foils, chords, twists) == (length ∘ zip)(spans, dihedrals, sweeps) + 1 "N+1 foils, chords and twists are required for N section(s)."
+    # Check if number of sections match up with number of edges
+    nf, nc, nt = length(foils), length(chords), length(twists)
+    nb, nd, ns = length(spans), length(dihedrals), length(spans)
+    @assert nf == nc == nt "Number of foils, chords and twists specified must be the same!"
+    @assert nb == nd == ns "Number of spans, dihedrals, and sweeps specified must be the same!"
+    @assert nf == ns + 1 "$(nf+1) foils, chords and twists are required for $ns spanwise section(s)."
+
     # Check if lengths are positive
-    @assert any(x -> x >= 0., chords) || any(x -> x >= 0., spans) "Chord and span lengths must be positive."
+    @assert any(x -> x >= zero(eltype(x)), chords) | any(x -> x >= zero(eltype(x)), spans) "Chord and span lengths must be positive."
     # Check if dihedrals and sweeps are within bounds
-    @assert any(x -> x >= -90. || x <= 90., dihedrals) || any(x -> x >= -90. || x <= 90., sweeps) "Dihedrals and sweep angles must not exceed ±90ᵒ."
+    @assert all(x -> x > -convert(typeof(x), 90) && x < convert(typeof(x), 90), dihedrals) && all(x -> x > -convert(typeof(x), 90) && x < convert(typeof(x), 90), sweeps) "Dihedrals and sweep angles must not exceed ±90ᵒ."
 end
 
 
