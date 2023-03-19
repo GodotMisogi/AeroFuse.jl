@@ -129,10 +129,19 @@ end
 function camber_line(foil :: Foil, n = 60)
     upper, lower = split_surface(foil)
     xs  = LinRange(minimum(foil.x), maximum(foil.x), n + 1)
-    y_u = @views linear_interpolation(upper[:,1], upper[:,2]).(xs)
-    y_l = @views linear_interpolation(lower[:,1], lower[:,2]).(xs)
+    y_u = @views map(linear_interpolation(upper[:,1], upper[:,2]), xs)
+    y_l = @views map(linear_interpolation(lower[:,1], lower[:,2]), xs)
 
     [ xs (y_u + y_l) / 2 ]
+end
+
+function thickness_line(foil :: Foil, n = 60)
+    upper, lower = split_surface(foil)
+    xs  = LinRange(minimum(foil.x), maximum(foil.x), n + 1)
+    y_u = @views map(linear_interpolation(upper[:,1], upper[:,2]), xs)
+    y_l = @views map(linear_interpolation(lower[:,1], lower[:,2]), xs)
+
+    [ xs (y_u - y_l) ]
 end
 
 
