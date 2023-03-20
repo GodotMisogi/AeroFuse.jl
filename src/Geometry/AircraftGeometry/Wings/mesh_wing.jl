@@ -96,8 +96,12 @@ end
 # Spacing
 function symmetric_spacing(wing :: Wing)
     sins = AbstractSpacing[Sine(1); Sine(0)]
-    if length(wing.spans) == 1 && wing.symmetry
-        return sins
+    if length(wing.spans) == 1 
+        if wing.symmetry
+            return sins
+        else 
+            return Cosine()
+        end
     else
         cosins = fill(Cosine(), (length(spans(wing)) - 1))
         return [ cosins; sins; cosins ]
@@ -169,7 +173,7 @@ end
 WingMesh(surface, n_span :: Integer, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) = WingMesh(surface, number_of_spanwise_panels(surface, n_span), n_chord, chord_spacing, span_spacing)
 
 # Forwarding functions for Wing type
-MacroTools.@forward WingMesh.surface foils, chords, spans, twists, sweeps, dihedrals, mean_aerodynamic_chord, camber_thickness, leading_edge, trailing_edge, wing_bounds, mean_aerodynamic_center, projected_area, span, position, orientation, affine_transformation, maximum_thickness_to_chord
+MacroTools.@forward WingMesh.surface foils, chords, spans, twists, sweeps, dihedrals, mean_aerodynamic_chord, camber_thickness, leading_edge, trailing_edge, wing_bounds, mean_aerodynamic_center, projected_area, span, position, orientation, affine_transformation, maximum_thickness_to_chord, chop_leading_edge
 
 """
     chord_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num_chord)
