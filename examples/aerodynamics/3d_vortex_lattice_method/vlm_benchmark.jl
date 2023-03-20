@@ -49,8 +49,7 @@ end
 ##
 @time CF, CM, CDiff, byu_sys = vlm_byu();
 
-##
-# @benchmark vlm_byu()
+print_coefficients([CF; CM], [CDiff,"—","—"], "BYU")
 
 ## AeroFuse.jl
 using AeroFuse
@@ -83,10 +82,10 @@ function vlm_aerofuse()
         speed     = 1., # m/s
         density   = 1.225, # kg/m³
         viscosity = 1.5e-5, # ???
-        area      = Sref, # m²
-        span      = bref, # m
-        chord     = cref, # m
-        location  = rref # m
+        area      = 30.0, # m²
+        span      = 15.0, # m
+        chord     = 2.0, # m
+        location  = [0.50, 0.0, 0.0] # m
     )
 
     ## Horseshoes
@@ -103,8 +102,55 @@ end
 ##
 @time nfs, ffs, sys = vlm_aerofuse();
 
-##
-print_coefficients(nfs,ffs)
+print_coefficients(nfs, ffs, "AeroFuse")
+
+## Results
+# ───────────────────────────────────
+#  BYU  Nearfield          Farfield  
+# ───────────────────────────────────
+#  CX   0.00246661  CDi   0.00247615
+#  CY      0.0      CYff      —
+#  CZ    0.244371    CL       —
+#  Cl      0.0                —
+#  Cm   -0.0208467            —
+#  Cn      0.0                —
+# ───────────────────────────────────
+
+# ────────────────────────────────────────
+#  AeroFuse  Nearfield          Farfield  
+# ────────────────────────────────────────
+#     CX     0.0023826   CDi   0.00249797
+#     CY        -0.0     CYff     -0.0
+#     CZ      0.245316    CL    0.245319
+#     Cl        0.0                —
+#     Cm     -0.0211525            —
+#     Cn        0.0                —
+# ────────────────────────────────────────
+
+## Benchmarking
+@benchmark vlm_byu()
+
+# BenchmarkTools.Trial: 1938 samples with 1 evaluation.
+#  Range (min … max):  2.348 ms … 53.391 ms  ┊ GC (min … max): 0.00% … 0.00%
+#  Time  (median):     2.393 ms              ┊ GC (median):    0.00%
+#  Time  (mean ± σ):   2.578 ms ±  1.586 ms  ┊ GC (mean ± σ):  3.06% ± 6.92%
+
+#   █▃▁                                                         
+#   ███▇█▆▅▅▅▅▃▃▃▄▁▁▃▃▄▄▁▃▁▄▃▁▃▃▃▁▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃▁▃▁▁▁▁▃▁▁▁▃ █
+#   2.35 ms      Histogram: log(frequency) by time     8.82 ms <
+
+#  Memory estimate: 941.44 KiB, allocs estimate: 8188.
 
 ##
 @benchmark vlm_aerofuse()
+
+# BenchmarkTools.Trial: 4353 samples with 1 evaluation.
+#  Range (min … max):  1.037 ms …  14.134 ms  ┊ GC (min … max): 0.00% … 91.51%
+#  Time  (median):     1.085 ms               ┊ GC (median):    0.00%
+#  Time  (mean ± σ):   1.147 ms ± 666.701 μs  ┊ GC (mean ± σ):  3.80% ±  6.19%
+
+#      █▆▁                                                       
+#   ▃▄▇███▇▄▃▃▃▂▂▂▂▂▂▂▂▂▂▂▂▂▁▂▁▂▂▂▂▁▁▂▁▁▂▂▁▁▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▂▁▁▂ ▃
+#   1.04 ms         Histogram: frequency by time        1.67 ms <
+
+#  Memory estimate: 587.05 KiB, allocs estimate: 1230.

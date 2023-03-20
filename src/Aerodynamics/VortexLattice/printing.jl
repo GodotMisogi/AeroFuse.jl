@@ -15,12 +15,12 @@ function Base.show(io :: IO, refs :: References)
     end
 end
 
-function Base.show(io :: IO, ring :: AbstractVortex)
-    println(io, "Vortex: ")
-    for fname in fieldnames(typeof(ring))
-        println(io, "    ", fname, " = ", getfield(ring, fname))
-    end
-end
+# function Base.show(io :: IO, ring :: AbstractVortex)
+#     println(io, "Vortex: ")
+#     for fname in fieldnames(typeof(ring))
+#         println(io, "    ", fname, " = ", getfield(ring, fname))
+#     end
+# end
 
 # Vortex lattice system
 function Base.show(io :: IO, sys :: VortexLatticeSystem)     

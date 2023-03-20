@@ -83,7 +83,7 @@ end
         @series begin
             ls := :dash
             label := foil.name * " Camber"
-            xcam[:,1], xcam[:,2]
+            @views xcam[:,1], xcam[:,2]
         end
     end
     if thickness
@@ -91,7 +91,7 @@ end
         @series begin
             ls := :dot
             label := foil.name * " Thickness"
-            xthicc[:,1], xthicc[:,2]
+            @views xthicc[:,1], xthicc[:,2]
         end
     end
 
@@ -107,12 +107,12 @@ end
     # zlim --> span(wing) .* (-0.5, 0.5)
 
     @series begin
-        wing_plan[:,1], wing_plan[:,2], wing_plan[:,3]
+        @views wing_plan[:,1], wing_plan[:,2], wing_plan[:,3]
     end
 
     @series begin
         seriestype := :scatter
-        [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
+        @views [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
     end
 end
 
@@ -125,7 +125,7 @@ end
             primary := false
             # linecolor := :lightgray
             # fillcolor := :lightgray
-            coords[:,1], coords[:,2], coords[:,3]
+            @views coords[:,1], coords[:,2], coords[:,3]
         end
     end
 end
@@ -143,14 +143,14 @@ end
             primary := false
             linecolor := :lightgray
             # fillcolor := :lightgray
-            coords[:,1], coords[:,2], coords[:,3]
+            @views coords[:,1], coords[:,2], coords[:,3]
         end
     end
 
     @series begin
         seriestype := :scatter
         # label --> "Mean Aerodynamic Chord"
-        [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
+        @views [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
     end
 
     @series begin
@@ -199,16 +199,12 @@ end
     end
 end
 
-# get_span_points(wing :: Wing, pts) = (wing.right.affine).(chop_leading_edge(wing, pts))
-get_span_points(wing :: Wing, pts) = affine_transformation(wing).(chop_leading_edge(wing, pts))
-
-
 @recipe function streamline_plot(system :: VortexLatticeSystem, wing :: AbstractWing; dist = 5 * mean_aerodynamic_chord(wing), num = 100, span = 20, linecolor = :green)
     # ys          = LinRange(-span(wing) / 2, span(wing) / 2, span_points)
     # init        = SVector.(0., ys, -0.5) 
-    init        = get_span_points(wing, span)
     dx, dy, dz  = 0, 0, 1e-3
-    seed        = init .+ Ref([dx, dy,  dz]);
+    init = chop_leading_edge(wing, span)
+    seed = init .+ Ref([dx, dy,  dz]);
 
     streams = plot_streamlines(system, seed, dist, num)
 

@@ -77,11 +77,27 @@ end
 
 spanwise_loading(wing :: WingMesh, CFs, S) = spanwise_loading(chord_panels(wing), CFs, S)
 
+"""
+    spanwise_loading(wing_mesh :: WingMesh, ref :: References, CFs, Γ)
+
+Obtain the spanwise aerodynamic loads `(CDi, CY, CL, CL_norm)` for a given `WingMesh`, reference values `ref`, surface coefficients `CFs`, and circulations ``Γ``. 
+    
+The chordwise normalized lift coefficient loading `CL_norm` is calculated via the formula ``C_L = 2Γ / ρVc`` based on the reference speed ``V`` and chord ``c`` from `ref`.
+
+Note that the surface coefficients `CFs` should be computed in wind axes to match `CL_norm`.
+"""
+function spanwise_loading(wing_mesh :: WingMesh, ref :: References, CFs, Γs)
+    span_loads = spanwise_loading(wing_mesh, CFs, ref.area) # 
+    CL_loads = vec(sum(Γs, dims = 1)) / (0.5 * ref.speed * ref.chord) # Normalized CL loading
+
+    [ span_loads CL_loads ]
+end
+
 ## Mesh connectivities
-triangle_connectivities(inds) = @views [ 
-                                         vec(inds[1:end-1,1:end-1]) vec(inds[1:end-1,2:end]) vec(inds[2:end,2:end])    ;
-                                         vec(inds[2:end,2:end])     vec(inds[2:end,1:end-1]) vec(inds[1:end-1,1:end-1])
-                                       ]
+@views triangle_connectivities(inds) = [ 
+        vec(inds[1:end-1,1:end-1]) vec(inds[1:end-1,2:end]) vec(inds[2:end,2:end])    ;
+        vec(inds[2:end,2:end])     vec(inds[2:end,1:end-1]) vec(inds[1:end-1,1:end-1])
+    ]
 
 ## Extrapolating surface values to neighbouring points
 function extrapolate_point_mesh(mesh, weight = 0.75)
@@ -89,10 +105,10 @@ function extrapolate_point_mesh(mesh, weight = 0.75)
     points = zeros(eltype(mesh), m + 1, n + 1)
 
     # The quantities are measured at the bound leg of a Horseshoe by default (0.25×)
-    @views @. points[1:end-1,1:end-1] += weight       / 2 * mesh
-    @views @. points[1:end-1,2:end]   += weight       / 2 * mesh
-    @views @. points[2:end,1:end-1]   += (1 - weight) / 2 * mesh
-    @views @. points[2:end,2:end]     += (1 - weight) / 2 * mesh
+    @. points[1:end-1,1:end-1] += weight       / 2 * mesh
+    @. points[1:end-1,2:end]   += weight       / 2 * mesh
+    @. points[2:end,1:end-1]   += (1 - weight) / 2 * mesh
+    @. points[2:end,2:end]     += (1 - weight) / 2 * mesh
 
     points
 end
