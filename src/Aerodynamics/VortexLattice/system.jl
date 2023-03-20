@@ -46,6 +46,7 @@ dynamic_pressure(refs :: References) = 1/2 * refs.density * refs.speed^2
 
 kinematic_viscosity(refs :: References) = refs.viscosity / refs.density
 mach_number(refs :: References) = refs.speed / refs.sound_speed
+reynolds_number(refs :: References) = refs.density * refs.speed * refs.chord / refs.viscosity
 
 force_coefficient(force, refs :: References) = force_coefficient(force, dynamic_pressure(refs), refs.area)
 moment_coefficient(moment, refs :: References) = moment_coefficient(moment, dynamic_pressure(refs), refs.area, refs.span, refs.chord)

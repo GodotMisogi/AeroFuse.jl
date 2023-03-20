@@ -10,6 +10,8 @@ Base.show(io :: IO, :: Wind)      = print(io, "Wind")
 # Reference values
 function Base.show(io :: IO, refs :: References)
     println(io, "References: ")
+    println(io, "    ", "Mach = ", mach_number(refs))
+    println(io, "    ", "Reynolds = ", reynolds_number(refs))
     for fname in fieldnames(typeof(refs))
         println(io, "    ", fname, " = ", getfield(refs, fname))
     end
