@@ -131,7 +131,13 @@ struct VortexRing{T <: Real} <: AbstractVortex
     r4 :: SVector{3,T}
     rc :: SVector{3,T}
     normal :: SVector{3,T}
+    trailing :: Bool
     core :: T
+end
+
+function VortexRing(r1, r2, r3, r4, rc, n, trailing, c)
+    T = promote_type(eltype(r1), eltype(r2), eltype(rc), eltype(n), eltype(c))
+    VortexRing{T}(r1, r2, r3, r4, rc, n, trailing, c)
 end
 
 control_point(ring :: VortexRing) = ring.rc
@@ -140,9 +146,11 @@ normal_vector(ring :: VortexRing) = ring.normal
 Base.length(::VortexRing) = 1
 
 """
-Computes the induced velocities at a point ``r`` of a VortexRing with constant strength ``Γ``.
+    velocity(r, ring :: VortexRing, Γ)
+
+Computes the velocity at a point ``r`` induced by a `VortexRing` with constant strength ``Γ``.
 """
-function velocity(r, ring :: VortexRing, Γ)
+function velocity(r, ring :: VortexRing, Γ, V_hat = SVector(1,0,0))
     # Compute vectors to evaluation point
     r1, r2, r3, r4 = r - ring.r1, r - ring.r2, r - ring.r3, r - ring.r4
     core = ring.core
@@ -153,7 +161,14 @@ function velocity(r, ring :: VortexRing, Γ)
     v3 = bound_leg_velocity(r3, r2, Γ, core)
     v4 = bound_leg_velocity(r2, r1, Γ, core)
 
-    return v1 + v2 + v3 + v4
+    v = v1 + v2 + v3 + v4
+
+    # Add horseshoe velocity contribution if trailing edge panel
+    if ring.trailing
+        v += total_horseshoe_velocity(r2, r3, Γ, V_hat, ring.core)
+    end
+
+    return v
 end
 
 trailing_velocity(r, ring :: VortexRing, Γ, V) = trailing_legs_velocities(r - ring.r1, r - ring.r4, Γ, V, ring.core)
@@ -169,7 +184,9 @@ transform(ring :: VortexRing, T :: LinearMap) = setproperties(ring,
     r3 = T(ring.r3),
     r4 = T(ring.r4),
     rc = T(ring.rc),
-    normal = T(ring.normal)
+    normal = T(ring.normal),
+    trailing = ring.trailing,
+    core = ring.core,
 )
 
 bound_leg_center(ring :: VortexRing) = (ring.r1 + ring.r4) / 2

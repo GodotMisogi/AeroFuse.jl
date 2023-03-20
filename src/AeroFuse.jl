@@ -125,52 +125,6 @@ export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, a
 
 # export WingControlSurface
 
-make_horseshoes(wing :: WingMesh) = map((cho,cam) -> Horseshoe(cho, normal_vector(cam)), chord_panels(wing), camber_panels(wing))
-
-function make_vortex_rings(wing :: WingMesh)
-    cam_coo = camber_coordinates(wing)
-    cams = combinedimsview(cam_coo, (1,2))
-
-    # Generate vortex ring mesh
-    vor_cams = similar(cams)
-    vor_cams = 0.75 * cams[1:end-1,:,:] + 0.25 * cams[2:end,:,:]
-    vor_cams[end,:,:] = cams[end,:,:]
-
-    @views rings = VortexRing.(make_panels(splitdimsview(vor_cams, (1,2))))
-
-    # NOTE: JUST ADD A TRAILING TYPE TO THE VORTEX RING AND ADD THE HORSESHOE VELOCITY METHOD
-
-    # Trailing edge semi-infinite vortex lines
-    cam_pan = camber_panels(wing)
-    @views horsies = Horseshoe.(cam_pan[end,:], normal_vector.(cam_pan[end,:]))
-
-    # Generate vortex ring mesh
-    # vor_cams = similar(cams)
-    # vor_cams[1:end-1,:,:] = 0.75 * cams[1:end-1,:,:] + 0.25 * cams[2:end,:,:]
-    # vor_cams[end,:,:] = cams[end,:,:]
-
-    # # display(vor_cams)
-    
-    # vor_coo = splitdimsview(vor_cams, (1,2))
-    # vor_pan = make_panels(vor_coo)
-    # @views rings = @. VortexRing(vor_pan)
-
-    # # Trailing edge semi-infinite vortex lines
-    # hor_cams = similar(cams[end-1:end,:,:])
-    # hor_cams[end-1,:,:] = vor_cams[end,:,:]
-    # hor_cams[end,:,:] = (cams[end,:,:] - cams[end-1,:,:]) * 0.25 + cams[end,:,:]
-
-    # hor_coo = splitdimsview(hor_cams, (1,2))
-    # hor_pan = make_panels(hor_coo)
-    # @views horsies = @. Horseshoe(hor_pan[end,:], normal_vector(hor_pan[end,:]))
-    
-
-    # Assemble
-    [ rings; permutedims(horsies) ]
-end
-
-export make_horseshoes, make_vortex_rings
-
 ## Aerodynamic analyses
 #==========================================================================================#
 
@@ -198,13 +152,14 @@ export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability
 ## Panel-VLM interface
 include("Aerodynamics/vlm_interface.jl")
 
+export make_horseshoes, make_vortex_rings
+
 ## Profile drag estimation
 include("Aerodynamics/profile_drag.jl")
 
 export profile_drag_coefficient, wetted_area_drag, local_dissipation_drag, form_factor
 
 ## Cases
-
 include("Aerodynamics/Cases/printing.jl")
 
 export print_info
@@ -247,6 +202,6 @@ export induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream
 
 include("Tools/plot_tools.jl")
 
-export plot_panel, plot_panels, plot_streamlines, plot_planform, plot_surface
+export plot_panel, plot_panels, plot_streamlines, plot_planform, plot_surface, plot_spanload
 
 end

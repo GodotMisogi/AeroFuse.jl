@@ -5,7 +5,7 @@ using StructArrays
 
 ## Wing section setup
 wing = Wing(
-    foils     = fill(naca4((0,0,1,2)), 2),
+    foils     = fill(naca4((2,4,1,2)), 2),
     chords    = [2.2, 1.8],
     twists    = [0.0, 0.0],
     spans     = [7.5],
@@ -15,11 +15,11 @@ wing = Wing(
     symmetry  = true,
 )
 
-wing_mesh = WingMesh(wing, [24], 6, span_spacing = Uniform());
+wing_mesh = WingMesh(wing, [24], 8, span_spacing = Uniform());
 
 # Freestream conditions
 fs  = Freestream(
-    alpha = 1.0, # deg
+    alpha = 2.0, # deg
     beta  = 0.0, # deg
     omega = [0.,0.,0.]
 )
@@ -32,24 +32,15 @@ ref = References(
     area      = projected_area(wing), # m²
     span      = span(wing), # m
     chord     = mean_aerodynamic_chord(wing), # m
-    location  = [0.5,0.,0.] # m
+    location  = mean_aerodynamic_center(wing) # m
 )
 
 ## Horseshoes
 ac_hs = ComponentVector(wing = make_horseshoes(wing_mesh))
 system = VortexLatticeSystem(ac_hs, fs, ref)
-print_coefficients(nearfield(system), farfield(system))
+print_coefficients(nearfield(system ), farfield(system))
 
 ## Vortex rings
 ac_vs = ComponentVector(wing = make_vortex_rings(wing_mesh))
 sys = VortexLatticeSystem(ac_vs, fs, ref)
-print_coefficients(nearfield(sys), farfield(sys))
-
-## Manual
-A = influence_matrix(ac_vs)
-b = boundary_condition(ac_vs, -velocity(fs), fs.omega)
-gam = A \ b 
-
-##
-sys = VortexLatticeSystem(ac_vs, gam * ref.speed, A, b, fs, ref, Wind())
 print_coefficients(nearfield(sys), farfield(sys))
