@@ -47,6 +47,7 @@ ref = References(
 @time begin 
     system = solve_case(
         aircraft, fs, ref;
+        compressible = true,
         # print            = true, # Prints the results for only the aircraft
         # print_components = true, # Prints the results for all components
     );
@@ -100,14 +101,14 @@ using Plots
 gr()
 
 ## Coordinates
-plot(
+Plots.plot(
     aspect_ratio = 1,
     camera = (30, 30),
     zlim = span(wing) .* (-0.5, 0.5),
     size = (800, 600)
 )
-plot!(wing_mesh, label = "Wing")
-plot!(system, wing, dist = 3, num_stream = 50, span = 10, color = :green)
+Plots.plot!(wing_mesh, label = "Wing")
+Plots.plot!(system, wing, dist = 3, num_stream = 50, span = 10, color = :green)
 
 ## Compute spanwise loads
 span_loads = spanwise_loading(wing_mesh, ref, CFs.wing, system.circulations.wing)

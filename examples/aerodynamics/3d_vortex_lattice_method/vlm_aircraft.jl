@@ -51,20 +51,20 @@ print_info(htail, "Horizontal Tail")
 print_info(vtail, "Vertical Tail")
 
 ## WingMesh type
-wing_mesh  = WingMesh(wing, [24], 6,
+wing_mesh = WingMesh(wing, [24], 6,
     # span_spacing = Cosine()
 )
 htail_mesh = WingMesh(htail, [24], 6, 
     # span_spacing = Cosine()
 )
 vtail_mesh = WingMesh(vtail, [24], 6, 
-    span_spacing = Cosine()
+    # span_spacing = Cosine()
 )
 
 aircraft =  ComponentVector(
-    wing  = make_horseshoes(wing_mesh),
-    htail = make_horseshoes(htail_mesh),
-    vtail = make_horseshoes(vtail_mesh)
+    wing  = make_vortex_rings(wing_mesh),
+    htail = make_vortex_rings(htail_mesh),
+    vtail = make_vortex_rings(vtail_mesh)
 );
 
 ## Case
@@ -84,28 +84,30 @@ ref = References(
     location  = mean_aerodynamic_center(wing)
 )
 
-##
-@time system = solve_case(
+## Solve
+@time sys = solve_case(
     aircraft, fs, ref;
+    compressible     = true, # Compressibility correction flag
     print            = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
 );
 
-## Compute dynamics
+## Compute forces, moments and velocities over each surface
 ax_sys = Wind() # Axis systems: Geometry(), Stability(), Body()
-@time CFs, CMs = surface_coefficients(system; axes = ax_sys)
-# Fs, Ms   = surface_dynamics(system; axes = ax)
-# Fs       = surface_forces(system; axes = ax)
-# vels     = surface_velocities(system)
+@time CFs, CMs = surface_coefficients(sys; axes = ax_sys) # Coefficients
+# Fs, Ms   = surface_dynamics(sys; axes = ax) # Forces and moments
+# Fs       = surface_forces(sys; axes = ax) # Forces only
+# vels     = surface_velocities(sys) # Velocities
 
-nf  = nearfield(system)
-ff  = farfield(system)
+## Aerodynamic coefficients
+nf  = nearfield(sys)
+ff  = farfield(sys)
 
-nfs = nearfield_coefficients(system)
-ffs = farfield_coefficients(system)
+nfs = nearfield_coefficients(sys)
+ffs = farfield_coefficients(sys)
     
 ## Force/moment coefficients and derivatives
-@time dvs = freestream_derivatives(system; 
+@time dvs = freestream_derivatives(sys; 
     axes = ax_sys,
     print = true,
     print_components = true,
@@ -115,21 +117,21 @@ ffs = farfield_coefficients(system)
 ## Viscous drag prediction
 
 # Equivalent flat-plate skin friction estimation
-CDv_wing  = profile_drag_coefficient(wing,  [0.8, 0.8], system.reference)
-CDv_htail = profile_drag_coefficient(htail, [0.6, 0.6], system.reference)
-CDv_vtail = profile_drag_coefficient(vtail, [0.6, 0.6], system.reference)
+CDv_wing  = profile_drag_coefficient(wing,  [0.8, 0.8], sys.reference)
+CDv_htail = profile_drag_coefficient(htail, [0.6, 0.6], sys.reference)
+CDv_vtail = profile_drag_coefficient(vtail, [0.6, 0.6], sys.reference)
 
 CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 
 ## Local dissipation form factor friction estimation
 import LinearAlgebra: norm
 
-edge_speeds = norm.(surface_velocities(system)); # Inviscid speeds on the surfaces
+edge_speeds = norm.(surface_velocities(sys)); # Inviscid speeds on the surfaces
 
 # Drag coefficients
-CDvd_wing  = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  system.reference)
-CDvd_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, system.reference)
-CDvd_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, system.reference)
+CDvd_wing  = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  sys.reference)
+CDvd_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, sys.reference)
+CDvd_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, sys.reference)
 
 CDv_diss = CDvd_wing + CDvd_htail + CDvd_vtail
 
@@ -137,166 +139,84 @@ CDv_diss = CDvd_wing + CDvd_htail + CDvd_vtail
 CDv = CDv_diss
 
 ## Total force coefficients with empirical viscous drag prediction
-CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(system) 
-CDi_ff, CY_ff, CL_ff = ff = farfield(system)
+CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(sys) 
+CDi_ff, CY_ff, CL_ff = ff = farfield(sys)
 
 nf_v = [ CDi_nf + CDv; CDv; nf ]
 ff_v = [ CDi_ff + CDv; CDv; ff ]
 
 print_coefficients(nf_v, ff_v)
 
-## Spanwise forces/lifting line loads
-wing_ll  = spanwise_loading(wing_mesh, CFs.wing,  S)
-htail_ll = spanwise_loading(htail_mesh, CFs.htail, S)
-vtail_ll = spanwise_loading(vtail_mesh, CFs.vtail, S);
-
 ## Plotting
-using CairoMakie
-CairoMakie.activate!()
+#=========================================================#
 
-set_theme!(
-            # theme_black()
-            # theme_light()
-          )
+using Plots
+gr()
 
 using LaTeXStrings
 const LS = LaTeXString
 
-## Streamlines
-# Spanwise distribution
-span_points = 20
-init        = chop_leading_edge(wing, span_points)
-dx, dy, dz  = 0, 0, 1e-3
-seed        = init .+ Ref([dx, dy, dz])
-                   #   init .+ Ref([dx, dy, -dz]) ];
+## Coordinates
+Plots.plot(
+    aspect_ratio = 1,
+    camera = (30, 30),
+    zlim = span(wing) .* (-0.5, 0.5),
+    size = (800, 600)
+)
+Plots.plot!(wing_mesh, label = "Wing")
+Plots.plot!(htail_mesh, label = "Wing")
+Plots.plot!(vtail_mesh, label = "Wing")
+Plots.plot!(sys, wing_mesh, dist = 10, num_stream = 50, span = 10, color = :green)
+Plots.plot!(sys, htail_mesh, dist = 2, num_stream = 50, span = 10, color = :green)
+Plots.plot!(sys, vtail_mesh, dist = 2, num_stream = 50, span = 10, color = :green)
 
-distance = 5
-num_stream_points = 100
-streams = streamlines(system, seed, distance, num_stream_points);
+## Compute spanwise loads
+wing_ll = spanwise_loading(wing_mesh, ref, CFs.wing,  sys.circulations.wing)
+htail_ll = spanwise_loading(htail_mesh, ref, CFs.htail, sys.circulations.htail)
+vtail_ll = spanwise_loading(vtail_mesh, ref, CFs.vtail, sys.circulations.vtail);
 
-wing_cam_connec  = triangle_connectivities(LinearIndices(wing_mesh.camber_mesh))
-htail_cam_connec = triangle_connectivities(LinearIndices(htail_mesh.camber_mesh))
-vtail_cam_connec = triangle_connectivities(LinearIndices(vtail_mesh.camber_mesh));
-
-## Surface velocities
-vels = surface_velocities(system);
-sps  = norm.(vels)
-
-wing_sp_points  = extrapolate_point_mesh(sps.wing)
-htail_sp_points = extrapolate_point_mesh(sps.htail)
-vtail_sp_points = extrapolate_point_mesh(sps.vtail)
-
-## Surface pressure coefficients
-cps  = norm.(CFs) * S
-
-wing_cp_points  = extrapolate_point_mesh(cps.wing)
-htail_cp_points = extrapolate_point_mesh(cps.htail)
-vtail_cp_points = extrapolate_point_mesh(cps.vtail)
-
-## Figure plot
-fig1  = Figure(resolution = (1280, 720))
-
-scene = LScene(fig1[1:4,1])
-ax    = fig1[1:4,2] = GridLayout()
-
-ax_cd = Axis(ax[1,1:2], ylabel = L"C_{D_i}", title = LS("Spanwise Loading"))
-ax_cy = Axis(ax[2,1:2], ylabel = L"C_Y",)
-ax_cl = Axis(ax[3,1:2], xlabel = L"y", ylabel = L"C_L")
-
-# Spanload plot
-function plot_spanload!(ax, ll_loads, name = "Wing")
-    @views lines!(ax[1,1:2], ll_loads[:,1], ll_loads[:,2], label = name,)
-    @views lines!(ax[2,1:2], ll_loads[:,1], ll_loads[:,3], label = name,)
-    @views lines!(ax[3,1:2], ll_loads[:,1], ll_loads[:,4], label = name,)
-
-    nothing
+## Plot spanwise loadings
+plot_CD = begin
+    Plots.plot(label = :none, ylabel = "CDi")
+    Plots.plot!(wing_ll[:,1], wing_ll[:,2], label = "Wing")
+    Plots.plot!(htail_ll[:,1], htail_ll[:,2], label = "Horizontal Tail")
+    Plots.plot!(vtail_ll[:,1], vtail_ll[:,2], label = "Vertical Tail")
 end
 
-plot_spanload!(ax, wing_ll, LS("Wing"))
-plot_spanload!(ax, htail_ll, LS("Horizontal Tail"))
-plot_spanload!(ax, vtail_ll, LS("Vertical Tail"))
+plot_CY = begin
+    Plots.plot(label = :none, ylabel = "CY")
+    Plots.plot!(wing_ll[:,1], wing_ll[:,3], label = "Wing")
+    Plots.plot!(htail_ll[:,1], htail_ll[:,3], label = "Horizontal Tail")
+    Plots.plot!(vtail_ll[:,1], vtail_ll[:,3], label = "Vertical Tail")
+end
 
-# Legend
-Legend(ax[4,1:2], ax_cl)
+plot_CL = begin
+    Plots.plot(label = :none, ylabel = "CL")
+    Plots.plot!(wing_ll[:,1], wing_ll[:,4], label = "Wing")
+    Plots.plot!(htail_ll[:,1], htail_ll[:,4], label = "Horizontal Tail")
+    Plots.plot!(vtail_ll[:,1], vtail_ll[:,4], label = "Vertical Tail")
+    Plots.plot!(wing_ll[:,1], wing_ll[:,5], label = "Wing Normalized", xlabel = "y")
+end
 
-# Surface pressure meshes
-m1 = poly!(scene, vec(wing_mesh.camber_mesh),  wing_cam_connec,  color = vec(wing_cp_points))
-m2 = poly!(scene, vec(htail_mesh.camber_mesh), htail_cam_connec, color = vec(htail_cp_points))
-m3 = poly!(scene, vec(vtail_mesh.camber_mesh), vtail_cam_connec, color = vec(vtail_cp_points))
-
-Colorbar(fig1[4,1], m1.plots[1], label = L"Pressure Coefficient, $C_p$", vertical = false)
-
-fig1[0, :] = Label(fig1, LS("Vortex Lattice Analysis"), textsize = 20)
-
-
-# Airfoil meshes
-# wing_surf = surface_coordinates(wing_mesh, wing_mesh.n_span, 60)
-# surf_connec = triangle_connectivities(LinearIndices(wing_surf))
-# wing_surf_mesh = mesh(vec(wing_surf), surf_connec)
-# w1 = wireframe!(scene, wing_surf_mesh.plot[1][], color = :grey, alpha = 0.1)
-
-# Borders
-lines!(scene, plot_planform(wing))
-lines!(scene, plot_planform(htail))
-lines!(scene, plot_planform(vtail))
-
-# l1 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(wing_mesh))  ]
-# l2 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(htail_mesh)) ]
-# l3 = [ lines!(scene, pts, color = :grey) for pts in plot_panels(camber_panels(vtail_mesh)) ]
-
-# Streamlines
-[ lines!(scene, Point3f.(stream[:]), color = :green) for stream in eachcol(streams) ]
-
-fig1.scene
-
-## Save figure
-# save("plots/VortexLattice.pdf", fig1, px_per_unit = 1.5)
-
-## Animation settings
-pts = [ Point3f[stream] for stream in streams[1,:] ]
-
-[ lines!(scene, pts[i], color = :green, axis = (; type = Axis3)) for i in eachindex(pts) ]
-
-# Recording
-fps     = 30
-nframes = length(streams[:,1])
-
-# record(fig, "plots/vlm_animation.mp4", 1:nframes) do i 
-#     for j in eachindex(streams[1,:])
-#         pts[j][] = push!(pts[j][], Point3f0(streams[i,j]))
-#     end
-#     sleep(1/fps) # refreshes the display!
-#     notify(pts[i])
-# end
-
-## Arrows
-# hs_pts = vec(Tuple.(bound_leg_center.(horses)))
-# arrows!(scene, getindex.(hs_pts, 1), getindex.(hs_pts, 2), getindex.(hs_pts, 3), 
-#                 vec(CDis),vec(CYs),vec( Ls), 
-#                 arrowsize = Vec3f.(0.3, 0.3, 0.4),
-#                 lengthscale = 10,
-#                 label = "Forces (Exaggerated)")
+Plots.plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 
 ## VARIABLE ANALYSES
 #=========================================================#
 
 using Accessors
 using Base.Iterators: product
-using Plots
 
-pyplot()
-
-## Speed sweep
+## Speed variation
 Vs = 1.0:10:300
 res_Vs = combinedimsview(
     map(Vs) do V
         ref1 = @set ref.speed = V
-        sys = solve_case(aircraft, fs, ref1)
-        [ mach_number(ref1); farfield(sys)...; nearfield(sys)... ]
+        sys = solve_case(aircraft, fs, ref1, compressible = true)
+        [ mach_number(ref1); farfield(sys); nearfield(sys) ]
     end, (1)
 )
 
-## 
+## Plot
 Plots.plot(
     res_Vs[:,1], res_Vs[:,2:end],
     layout = (3,3), size = (900, 800),
@@ -304,7 +224,65 @@ Plots.plot(
     labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
 )
 
-##
+## Alpha variation
+αs = -5:0.5:5
+res_αs = combinedimsview(
+    map(αs) do α
+        fst = @set fs.alpha = deg2rad(α)
+        sys = solve_case(aircraft, fst, ref, compressible = true)
+        [ α; farfield(sys); nearfield(sys) ]
+    end, (1)
+)
+
+## Plot
+Plots.plot(
+    res_αs[:,1], res_αs[:,2:end],
+    layout = (3,3), size = (900, 800),
+    xlabel = "α",
+    labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
+)
+
+
+## (Speed, alpha) variation
+res = combinedimsview(
+    map(product(Vs, αs)) do (V, α)
+        ref1 = @set ref.speed = V
+        fst = @set fs.alpha = deg2rad(α)
+        sys = solve_case(aircraft, fst, ref1, compressible = true)
+        [ mach_number(ref1); α; farfield(sys); nearfield(sys) ]
+    end
+)
+
+res_p = permutedims(res, (3,1,2))
+
+## CDi
+plt_CDi_ff = Plots.plot(camera = (75, 30), ylabel = L"\alpha", xlabel = "V", zlabel = L"C_{D_i}")
+[ Plots.plot!(res_p[:,1,n], res_p[:,2,n], res_p[:,3,n], label = "", c = :black) for n in axes(res_p,3) ]
+
+# CL
+plt_CL_ff = Plots.plot(camera = (75,15), 
+ylabel = L"\alpha", xlabel = "V", zlabel = L"C_{L}", 
+label = "", c = :black)
+[ Plots.plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,8,n], label = "", c = :black) for n in axes(res_p,3) ]
+
+# Cm
+plt_Cm_ff = Plots.plot(camera = (100,30), ylabel = L"\alpha", xlabel = "V", zlabel = L"C_m", label = "")
+[ Plots.plot!(
+    res_p[:,1,n], res_p[:,2,n], res_p[:,10,n], label = "", c = :black) for n in axes(res_p,3) ]
+
+# Plot
+p = Plots.plot(plt_CDi_ff, plt_CL_ff, plt_Cm_ff, layout = (1,3), size = (1300, 400))
+
+## Save
+savefig(p, "coeffs.png")
+
+## Fancy plotting using Makie, if needed
+#==================================================================#
+
+include("vlm_aircraft_makie_plot.jl")
+
+## Speed variation
 f2 = Figure()
 ax1 = Axis(f2[1,1], xlabel = L"M", ylabel = L"C_{D_{ff}}")
 lines!(res_Vs[:,1], res_Vs[:,2]) # CD_ff
@@ -327,24 +305,7 @@ lines!(res_Vs[:,1], res_Vs[:,10])
 
 f2
 
-## Alpha sweep
-αs = -5:0.5:5
-res_αs = combinedimsview(
-    map(αs) do α
-        fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, ref)
-        [ α; farfield(sys)...; nearfield(sys)... ]
-    end, (1)
-)
-
-Plots.plot(
-    res_αs[:,1], res_αs[:,2:end],
-    layout = (3,3), size = (900, 800),
-    xlabel = "α",
-    labels = ["CD_ff" "CY_ff" "CL_ff" "CD" "CY" "CL" "Cl" "Cm" "Cn"]
-)
-
-## Makie
+## Alpha variation
 f3 = Figure()
 ax1 = Axis(f3[1,1], xlabel = L"α", ylabel = L"C_{D_{ff}}")
 lines!(res_αs[:,1], res_αs[:,2]) # CD_ff
@@ -366,37 +327,3 @@ ax9 = Axis(f3[3,3], xlabel = L"M", ylabel = L"C_n")
 lines!(res_αs[:,1], res_αs[:,10])
 
 f3
-
-## (Speed, alpha) sweep
-res = combinedimsview(
-    map(product(Vs, αs)) do (V, α)
-        ref1 = @set ref.speed = V
-        fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, ref1)
-        [ mach_number(ref1); α; farfield(sys)...; nearfield(sys)... ]
-    end
-)
-
-##
-res_p = permutedims(res, (3,1,2))
-
-# CDi
-plt_CDi_ff = Plots.plot(camera = (75, 30), ylabel = L"\alpha", xlabel = "V", zlabel = L"C_{D_i}")
-[ Plots.plot!(res_p[:,1,n], res_p[:,2,n], res_p[:,3,n], label = "", c = :black) for n in axes(res_p,3) ]
-
-# CL
-plt_CL_ff = Plots.plot(camera = (75,15), 
-ylabel = L"\alpha", xlabel = "V", zlabel = L"C_{L}", 
-label = "", c = :black)
-[ Plots.plot!(
-    res_p[:,1,n], res_p[:,2,n], res_p[:,8,n], label = "", c = :black) for n in axes(res_p,3) ]
-
-plt_Cm_ff = Plots.plot(camera = (100,30), ylabel = L"\alpha", xlabel = "V", zlabel = L"C_m", label = "")
-[ Plots.plot!(
-    res_p[:,1,n], res_p[:,2,n], res_p[:,10,n], label = "", c = :black) for n in axes(res_p,3) ]
-
-##
-p = Plots.plot(plt_CDi_ff, plt_CL_ff, plt_Cm_ff, layout = (1,3), size = (1300, 400))
-
-##
-savefig(p, "coeffs.png")
