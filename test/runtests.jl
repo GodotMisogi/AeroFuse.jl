@@ -104,7 +104,7 @@ end
 
 @testset "Geometry - Two-Section Trapezoidal Wing" begin
     # Define wing
-    wing_right = Wing(
+    wing = Wing(
         chords    = [1.0, 0.6, 0.2],
         twists    = [2.0, 0.0, -0.2],
         spans     = [5.0, 0.5],
@@ -114,12 +114,12 @@ end
     );
 
     # Get wing info
-    b = span(wing_right)
-    S = projected_area(wing_right)
-    c = mean_aerodynamic_chord(wing_right)
-    AR = aspect_ratio(wing_right)
-    λ = taper_ratio(wing_right)
-    wing_mac = mean_aerodynamic_center(wing_right)
+    b = span(wing)
+    S = projected_area(wing)
+    c = mean_aerodynamic_chord(wing)
+    AR = aspect_ratio(wing)
+    λ = taper_ratio(wing)
+    wing_mac = mean_aerodynamic_center(wing)
 
     @test b        ≈ 5.50000000                    atol = 1e-6
     @test S        ≈ 4.19939047                    atol = 1e-6
@@ -129,11 +129,34 @@ end
     @test wing_mac ≈ [0.4209310, 1.3343524, 0.0]   atol = 1e-6
 end
 
+@testset "Geometry - Single-Section Trapezoidal Wing" begin
+    # Define wing section
+    wing_sec = WingSection(aspect = 6.25, area = 4.0, taper = 0.6, symmetry = true)
+
+    # Using Wing constructor
+    wing = Wing(
+        foils     = fill(naca4((0,0,1,2)), 2),
+        chords    = [1.0, 0.6],
+        twists    = [0.0, 0.0],
+        spans     = [5.0] / 2,
+        dihedrals = [11.39],
+        sweeps    = [0.],
+        symmetry  = true, 
+    );
+
+    @test span(wing) ≈ span(wing_sec) atol = 1e-6  # Span 
+    @test projected_area(wing) ≈ projected_area(wing_sec) atol = 1e-6 # Projected area 
+    @test mean_aerodynamic_chord(wing) ≈ mean_aerodynamic_chord(wing_sec) atol = 1e-6 # Mean aerodynamic chord
+    @test aspect_ratio(wing) ≈ aspect_ratio(wing_sec) atol = 1e-6 # Aspect ratio
+    @test taper_ratio(wing) ≈ taper_ratio(wing_sec) atol = 1e-6 # Taper ratio
+    @test mean_aerodynamic_center(wing) ≈ mean_aerodynamic_center(wing_sec) atol = 1e-6 # Mean aerodynamic center
+end
+
 @testset "Geometry - 3D Panel" begin
     panel = Panel3D(
         [1.0, -1., 0.0], 
-        [0.0, -1., -0.5], 
-        [0.0, 0.0, -0.5], 
+        [0.0, -1., -0.0], 
+        [0.0, 0.0, -0.0], 
         [1.0, 0.0, 0.0]
     )
     
@@ -143,9 +166,24 @@ end
     T = get_transformation(panel)
 
     @test inv(T)(T(mp) + T(p)) ≈ p atol = 1e-6
+    @test panel_area(panel) ≈ 1.0 atol = 1e-6
+    @test normal_vector(panel) ≈ [0,0,-2.0] atol = 1e-6
 end
 
-@testset "Vortex Lattice Method (Incompressible) - NACA 0012 Tapered Wing" begin
+@testset "Freestream 3D Velocity Conversion" begin
+    φ, θ = 1.0, 1.0
+    fs = Freestream(alpha = φ, beta = θ)
+    V_test = [ cosd(θ) * cosd(φ), -sind(φ), sind(θ) * cosd(φ) ]
+    V_run = velocity(fs)
+
+    φ_test, θ_test = cartesian_to_freestream(V_run)
+
+    @test V_run ≈ V_test atol = 1e-6
+    @test φ_test ≈ φ atol = 1e-6
+    @test θ_test ≈ -θ atol = 1e-6
+end
+
+@testset "Vortex Lattice Method (Horseshoes, Incompressible) - NACA 0012 Tapered Wing" begin
     # Define wing
     wing = Wing(
         foils     = [ naca4((0,0,1,2)) for i ∈ 1:2 ],
@@ -171,7 +209,7 @@ end
     aircraft = ComponentArray(wing = make_horseshoes(WingMesh(wing, [20], 5, span_spacing = [Sine(1); Sine()])))
 
     # Evaluate stability case
-    system = VortexLatticeSystem(aircraft, fs, refs)
+    system = VortexLatticeSystem(aircraft, fs, refs, false)
     dv_data = freestream_derivatives(system)
 
     dcf = dv_data.wing
@@ -182,13 +220,13 @@ end
     # Test values
     nf_tests = [0.0013533, 0.0002199, 0.1159468, 0.0009056, 0.000387, -9.45e-5]
     ff_tests = [0.0014281, 0.0001743, 0.1159415]
-    dv_tests = [ 0.0797419  -0.0004936  -0.0039018   0.0637380   0.0004044
-                 0.0066033   0.0024036   0.0809152   0.0302107  -0.0121575
-                 3.4110222  -0.0060238  -0.185695    5.179196    0.0065573
-                 0.0084357   0.0064223   0.285074    0.1109742  -0.0385723
-                -0.0088809   0.0004686   0.0618588  -0.6604790  -0.0051181
-                -0.0009645  -0.0018438   0.0054144  -0.0044697   0.0013694]
-
+    dv_tests = [ 0.0797418  -0.0004935 -0.0039018  0.06373702665595818     0.0004043938437192077;
+                 0.0066032   0.0024036  0.0809152  0.030210659199330615   -0.012157465112956763;
+                 3.4110144  -0.0060237 -0.1856945  5.1791598961593985      0.006557296956889664;
+                 0.0084356   0.0064222  0.2850743  0.11097309781645154    -0.03857231877442366;
+                -0.0088809   0.0004686  0.0618588 -0.6604736234860606     -0.005118057094076678;
+                -0.0009645  -0.0018438  0.0054143 -0.004469695166159752    0.001369403002390149]
+    
     # Nearfield coefficients test
     [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
     # Farfield coefficients test
@@ -197,166 +235,17 @@ end
     [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
 end
 
-@testset "Vortex Lattice Method (Incompressible) - Vanilla Aircraft" begin
-    ## Wing
-    wing = Wing(
-        foils     = fill(naca4((0,0,1,2)), 2),
-        chords    = [1.0, 0.6],
-        twists    = [0.0, 0.0],
-        spans     = [5.0] / 2,
-        dihedrals = [11.39],
-        sweeps    = [0.],
-        symmetry  = true, 
-    );
+# Include common aircraft definition
+include(string(@__DIR__, "/aircraft_definition.jl"))
 
-    # Horizontal tail
-    htail = Wing(
-        foils     = fill(naca4((0,0,1,2)), 2),
-        chords    = [0.7, 0.42],
-        twists    = [0.0, 0.0],
-        spans     = [1.25] / 2,
-        dihedrals = [0.],
-        sweeps    = [6.39],
-        position  = [4., 0, 0],
-        angle     = -2.,
-        axis      = [0., 1., 0.],
-        symmetry  = true
-    )
-
-    # Vertical tail
-    vtail = Wing(
-        foils     = fill(naca4((0,0,0,9)), 2),
-        chords    = [0.7, 0.42],
-        twists    = [0.0, 0.0],
-        spans     = [1.0],
-        dihedrals = [0.],
-        sweeps    = [7.97],
-        position  = [4., 0, 0],
-        angle     = 90.,
-        axis      = [1., 0., 0.],
-    )
-
-    ## Assembly
-    wing_mesh = WingMesh(wing, [32], 10; span_spacing = Cosine())
-    htail_mesh = WingMesh(htail, [12],  6; span_spacing = Cosine())
-    vtail_mesh = WingMesh(vtail, [5],  6; span_spacing = Cosine())
-
+@testset "Vortex Lattice Method (Horseshoes, Compressible) - Vanilla Aircraft" begin
     aircraft = ComponentArray(
         wing  = make_horseshoes(wing_mesh),
         htail = make_horseshoes(htail_mesh),
         vtail = make_horseshoes(vtail_mesh),
     )
-
-    ## Reference quantities
-    fs = Freestream(
-        alpha    = 1.0, 
-        beta     = 1.0, 
-        omega    = zeros(3)
-    )
-                         
-    refs = References(
-        speed    = 1.0,
-        area     = projected_area(wing),
-        span     = span(wing),
-        chord    = mean_aerodynamic_chord(wing),
-        density  = 1.225,
-        location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
-    )
-
     ## Stability case
-    system = VortexLatticeSystem(aircraft, fs, refs)
-    dv_data = freestream_derivatives(system)
-
-    dcf = dv_data.aircraft
-    nfs = @views dcf[1:6,1]
-    ffs = @views dcf[7:9,1]
-    dvs = @views dcf[1:6,3:end]
-
-    nf_tests = [0.0003809, -0.0092002, 0.0653607, -0.0026762, 0.0601839, 0.0059991]
-    ff_tests = [0.0005143, -0.0092706, 0.0653322]
-    dv_tests = [ 0.0268317   0.0059901   0.0012994    0.0767768  -0.0023994
-                 0.0048546  -0.517466    0.30401     -0.0744164  -0.899784
-                 4.7952172   0.0598145  -0.0557912   11.9681911   0.0348196
-                 0.0413913  -0.155083    0.489466     0.1469693  -0.0990389
-                -1.5608632  -0.0360026  -0.0616955  -25.5170944  -0.124964
-                 0.010348    0.336414    0.0155232    0.0906727   0.693076 ]
-
-    # Nearfield coefficients test
-    [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
-    # Farfield coefficients test
-    [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
-    # Stability derivatives' coefficients test
-    [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
-end
-
-@testset "Vortex Lattice Method (Compressible) - Vanilla Aircraft" begin
-    ## Wing
-    wing = Wing(
-        foils     = fill(naca4((0,0,1,2)), 2),
-        chords    = [1.0, 0.6],
-        twists    = [0.0, 0.0],
-        spans     = [5.0] / 2,
-        dihedrals = [11.39],
-        sweeps    = [0.],
-        symmetry  = true, 
-    );
-
-    # Horizontal tail
-    htail = Wing(
-        foils     = fill(naca4((0,0,1,2)), 2),
-        chords    = [0.7, 0.42],
-        twists    = [0.0, 0.0],
-        spans     = [1.25] / 2,
-        dihedrals = [0.],
-        sweeps    = [6.39],
-        position  = [4., 0, 0],
-        angle     = -2.,
-        axis      = [0., 1., 0.],
-        symmetry  = true
-    )
-
-    # Vertical tail
-    vtail = Wing(
-        foils     = fill(naca4((0,0,0,9)), 2),
-        chords    = [0.7, 0.42],
-        twists    = [0.0, 0.0],
-        spans     = [1.0],
-        dihedrals = [0.],
-        sweeps    = [7.97],
-        position  = [4., 0, 0],
-        angle     = 90.,
-        axis      = [1., 0., 0.],
-    )
-
-    ## Assembly
-    wing_mesh = WingMesh(wing, [32], 10; span_spacing = Cosine())
-    htail_mesh = WingMesh(htail, [12], 6; span_spacing = Cosine())
-    vtail_mesh = WingMesh(vtail, [5], 6; span_spacing = Cosine())
-
-    aircraft = ComponentArray(
-        wing  = make_horseshoes(wing_mesh),
-        htail = make_horseshoes(htail_mesh),
-        vtail = make_horseshoes(vtail_mesh),
-    )
-
-    ## Reference quantities
-    fs = Freestream(
-        alpha    = 1.0, 
-        beta     = 1.0, 
-        omega    = zeros(3)
-    )
-                         
-    refs = References(
-        speed    = 150.0,
-        area     = projected_area(wing),
-        span     = span(wing),
-        chord    = mean_aerodynamic_chord(wing),
-        density  = 1.225,
-        location = [0.25 * mean_aerodynamic_chord(wing), 0., 0.]
-    )
-
-    ## Stability case
-    system = VortexLatticeSystem(aircraft, fs, refs)
+    system = VortexLatticeSystem(aircraft, fs, refs, true)
     dv_data = freestream_derivatives(system)
 
     dcf = dv_data.aircraft
@@ -372,6 +261,38 @@ end
                 -0.000318489   0.0468793   -0.15929      0.514803      0.184925   -0.11513
                 0.0205454    -1.5507      -0.0366944   -0.0862627   -29.7754714     -0.149386
                 0.00161937    0.0117921    0.35447      0.0190155     0.119573    0.825448 ]
+
+    # Nearfield coefficients test
+    [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
+    # Farfield coefficients test
+    [ @test ff_c ≈ ff_t atol = 1e-6 for (ff_c, ff_t) in zip(ffs, ff_tests) ]
+    # # Stability derivatives' coefficients test
+    [ @test dv_c ≈ dv_t atol = 1e-6 for (dv_c, dv_t) in zip(dvs, dv_tests) ]
+end
+
+@testset "Vortex Lattice Method (Rings, Compressible) - Vanilla Aircraft" begin
+    aircraft = ComponentArray(
+        wing  = make_vortex_rings(wing_mesh),
+        htail = make_vortex_rings(htail_mesh),
+        vtail = make_vortex_rings(vtail_mesh),
+    )
+
+    ## Stability case
+    dv_data = freestream_derivatives(aircraft, fs, refs, name = :aircraft, compressible = true)
+
+    dcf = dv_data.aircraft
+    nfs = @views dcf[1:6,1]
+    ffs = @views dcf[7:9,1]
+    dvs = @views dcf[1:6,2:end]
+
+    nf_tests = [0.0004485, -0.0102081, 0.0706159, -0.0028898, 0.0653328, 0.0067422]
+    ff_tests = [0.0006049, -0.0102852, 0.0705857]
+    dv_tests = [ 0.000306494   0.0316461    0.00767591   0.00118087   0.0837572   0.000839109
+                -0.00232925    0.00389612  -0.565213     0.315484    -0.0809676  -1.13528256
+                 0.0283188     5.1464928    0.0345146   -0.04648     14.2846332   0.0138955
+                -0.000401224   0.0417969   -0.167955     0.515156     0.16723    -0.120098
+                 0.021139     -1.502605     0.0895636   -0.0791555  -29.800452   -0.0345743
+                 0.00166363    0.0116769    0.370111     0.0211191    0.102458    0.882128 ]
 
     # Nearfield coefficients test
     [ @test nf_c ≈ nf_t atol = 1e-6 for (nf_c, nf_t) in zip(nfs, nf_tests) ]
