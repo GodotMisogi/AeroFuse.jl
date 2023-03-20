@@ -43,7 +43,7 @@ function surface_velocities end
 
 function surface_coefficients end
 
-export solve_linear, solve_nonlinear, solve_linear!, solve_nonlinear!, reynolds_number
+export solve_linear, solve_nonlinear, solve_linear!, solve_nonlinear!
 
 ## Math tools
 #==========================================================================================#

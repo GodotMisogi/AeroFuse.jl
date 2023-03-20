@@ -183,6 +183,34 @@ end
     @test θ_test ≈ -θ atol = 1e-6
 end
 
+@testset "Freestream 3D Velocity Conversion" begin
+    φ, θ = 1.0, 1.0
+    fs = Freestream(alpha = φ, beta = θ)
+    V_test = [ cosd(θ) * cosd(φ), -sind(φ), sind(θ) * cosd(φ) ]
+    V_run = velocity(fs)
+
+    φ_test, θ_test = cartesian_to_freestream(V_run)
+
+    @test V_run ≈ V_test atol = 1e-6
+    @test φ_test ≈ φ atol = 1e-6
+    @test θ_test ≈ -θ atol = 1e-6
+end
+
+@testset "Aerodynamics - Reference Values" begin
+    refs = References(
+        speed    = 150.0,
+        area     = 30.0,
+        span     = 15.0,
+        chord    = 2.0,
+        density  = 1.225,
+        location = [0.25, 0., 0.]
+    )
+
+    @test mach_number(refs) ≈ 0.454545 atol = 1e-6
+    @test reynolds_number(refs) ≈ 2.45e7 atol = 1e-6
+    @test dynamic_pressure(refs) ≈ 13781.25 atol = 1e-6
+end
+
 @testset "Vortex Lattice Method (Horseshoes, Incompressible) - NACA 0012 Tapered Wing" begin
     # Define wing
     wing = Wing(

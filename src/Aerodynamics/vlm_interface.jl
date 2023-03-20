@@ -92,3 +92,5 @@ Generate an array of `VortexRing`s defined by the camber coordinates and normal 
 
     return rings
 end
+
+reynolds_number(refs :: References) = refs.density * refs.speed * refs.chord / refs.viscosity
