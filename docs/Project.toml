@@ -2,6 +2,7 @@
 Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DocumenterTools = "35a29f4d-8980-5a13-9543-d66fff28ecb8"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
 PlotlyBase = "a03496cd-edff-5a9b-9e67-9cda94a718b5"

@@ -8,19 +8,32 @@ using LaTeXStrings # hide
 # How to work with airfoil geometry.
 
 # ### Import Coordinates File
-# You can specify the path consisting of the foil's coordinates to the `read_foil` function. The format for the coordinates file requires a header for the name in the first line of the file. A custom name can be provided by setting the optional `name` variable.
+# You can specify the path consisting of the foil's coordinates to the `read_foil` function. The [Selig format](https://openvsp.org/wiki/doku.php?id=airfoilexport) for the coordinates file is followed, in which a header for the name in the first line of the file with the coordinates following from the second line are required. A custom name can be provided by setting the optional `name` variable.
 
 ## Airfoil coordinates file path
 foilpath = string(@__DIR__, "/misc/s1223.dat")
 
+# Note that, in this example, `@__DIR__` points to the Julia REPL's current working directory. Use the correct local path for the coordinates on your computer.
+
 ## Read coordinates file
-my_foil = read_foil(foilpath;
-                    name   = "S1223" # To overwrite name in header
-                   )
+my_foil = read_foil(
+    foilpath; # Path to the airfoil coordinates file
+    name = "S1223" # To overwrite name in header
+)
 
 #
 plot(xlabel = L"x", ylabel = L"y", aspect_ratio = 1)
 plot!(my_foil)
+
+# !!! tip
+#     You can also import airfoil coordinates from the internet by using `FileIO`.
+
+## Read coordinates from an internet address.
+using FileIO
+
+online_foil = read_foil(download("https://m-selig.ae.illinois.edu/ads/coord/s1210.dat"))
+
+plot!(online_foil)
 
 # ### Interpolate and Process Coordinates
 
@@ -141,7 +154,7 @@ print_info(wing, "My Wing")
 # ### Geometry 
 # First we define the lifting surfaces. These can be a combination of `Wing` types constructed using the various methods available.
 # !!! warning "Alert"
-#     Support for fuselages and control surfaces will be added soon.
+#     Support for fuselages and control surfaces is in progress.
 
 # Horizontal tail
 htail = WingSection(
@@ -197,6 +210,9 @@ vtail_mesh = WingMesh(vtail, [10], 5); # Vertical tail
 # The inviscid 3D analysis uses a vortex lattice method. The `WingMesh` type allows you to generate horseshoe elements easily.
 wing_horsies = make_horseshoes(wing_mesh)
 
+# !!! note
+#     You can also generate vortex ring elements by calling `make_vortex rings`.
+
 # For multiple lifting surfaces, it is most convenient to define a single vector consisting of all the components' horseshoes using [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl).
 aircraft = ComponentVector(
     wing = wing_horsies,
@@ -217,7 +233,7 @@ fs = Freestream(
 
 ## Define reference values
 refs = References(
-    speed     = 10.0,
+    speed     = 150.0,
     density   = 1.225,
     viscosity = 1.5e-5,
     area      = projected_area(wing),
@@ -226,11 +242,12 @@ refs = References(
     location  = mean_aerodynamic_center(wing)
 )
 
-# The vortex lattice analysis can be executed with the horseshoes, freestream condition, and reference values defined.
+# The vortex lattice analysis can be executed with the vortex elements, freestream conditions, and reference values defined. An optional named argument is provided for enabling compressibility corrections at ``M > 0.3`` via the Prandtl-Glauert transformation.
 
 ## Solve system
 system = solve_case(
     aircraft, fs, refs;
+    compressible = true, # Compressibility corrections via Prandtl-Glauert transformation
     print = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
 )
@@ -260,7 +277,8 @@ Fs, Ms = surface_dynamics(system; axes = ax)
 # A Trefftz plane integration is performed to compute farfield forces.
 # 
 # !!! note
-#     The farfield forces are usually more accurate compared to nearfield forces, as the components do not interact as in the evaluation of the Biot-Savart integrals for the latter.
+#     The farfield forces are usually more accurate compared to nearfield forces. 
+#     (This is because the components do not interact as in the evaluation of the Biot-Savart integrals for the latter.)
 # 
 # To obtain the nearfield coefficients of the components (in wind axes by definition):
 nfs = nearfield_coefficients(system)
@@ -279,7 +297,7 @@ print_coefficients(nfs.wing, ffs.wing, :wing)
 print_coefficients(nf, ff, :aircraft)
 
 # ## Aerodynamic Stability Analyses
-# The derivatives of the aerodynamic coefficients with respect to the freestream values is obtained by automatic differentiation enabled by [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl). The following function evaluates the derivatives of the aerodynamic coefficients with respect to the freestream values. You can also optionally provide the axes for the reference frame of the coefficients.
+# The derivatives of the aerodynamic coefficients with respect to the freestream values are obtained by automatic differentiation enabled by [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl). The following function evaluates the derivatives of the aerodynamic coefficients with respect to the freestream values. You can also optionally provide the axes for the reference frame of the coefficients.
 dv_data = freestream_derivatives(
     system,
     print = true,  # Prints the results for only the aircraft
