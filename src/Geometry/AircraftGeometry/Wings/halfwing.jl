@@ -112,11 +112,21 @@ affine_transformation(wing :: Wing) = wing.affine
 
 (f :: AffineMap)(wing :: Wing) = @set wing.affine = f ∘ wing.affine
 
+"""
+    span(wing :: Wing)
+
+Compute the planform span of a `Wing`.
+"""
 function span(wing :: Wing)
     b = sum(wing.spans)
     ifelse(wing.symmetry, 2b, b)
 end
 
+"""
+    taper_ratio(wing :: Wing)
+
+Compute the taper ratio of a `Wing`, defined as the tip chord length divided by the root chord length, independent of the number of sections.
+"""
 taper_ratio(wing :: Wing) = last(wing.chords) / first(wing.chords)
 
 section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) / 2)
@@ -126,16 +136,35 @@ function section_projected_areas(wing :: Wing)
     @views section_projected_area.(spans, wing.chords[1:end-1], wing.chords[2:end], wing.twists[1:end-1], wing.twists[2:end])
 end
 
+"""
+    projected_area(wing :: Wing)
+
+Compute the projected area (onto the spanwise plane) of a `Wing`.
+"""
 projected_area(wing :: Wing) = sum(section_projected_areas(wing))
 
 section_macs(wing :: Wing) = @views @. mean_aerodynamic_chord(wing.chords[1:end-1], wing.chords[2:end] / wing.chords[1:end-1])
 
+"""
+    mean_aerodynamic_chord(wing :: Wing)
+
+Compute the mean aerodynamic chord of a `Wing`.
+"""
 function mean_aerodynamic_chord(wing :: Wing)
     areas = section_projected_areas(wing)
     macs = section_macs(wing)
     sum(macs .* areas) / sum(areas)
 end
 
+"""
+    mean_aerodynamic_center(wing :: Wing, 
+        factor = 0.25; 
+        symmetry = wing.symmetry, 
+        flip = wing.flip
+    )
+
+Compute the mean aerodynamic center of a `Wing`. By default, the factor is assumed to be at 25% from the leading edge, which can be adjusted. Similarly, options are provided to account for symmetry or to flip the location in the ``x``-``z`` plane.
+"""
 function mean_aerodynamic_center(wing :: Wing, factor = 0.25; symmetry = wing.symmetry, flip = wing.flip)
     # Compute mean aerodynamic chords and projected areas
     macs = section_macs(wing)
@@ -167,8 +196,18 @@ function mean_aerodynamic_center(wing :: Wing, factor = 0.25; symmetry = wing.sy
     return affine_transformation(wing)(mac)
 end
 
+"""
+    camber_thickness(wing :: Wing, num :: Integer)
+
+Compute the camber-thickness distribution at each spanwise intersection of a `Wing`. A `num` must be specified to interpolate the internal `Foil` coordinates, which affects the accuracy of ``(t/c)ₘₐₓ`` accordingly.
+"""
 camber_thickness(wing :: Wing, num :: Integer) = camber_thickness.(wing.foils, num)
 
+"""
+    maximum_thickness_to_chord(wing :: Wing, num :: Integer)
+
+Compute the maximum thickness-to-chord ratio ``(t/c)ₘₐₓ`` at each spanwise intersection of a `Wing`. A `num` must be specified to interpolate the internal `Foil` coordinates, which affects the accuracy of ``(t/c)ₘₐₓ`` accordingly.
+"""
 maximum_thickness_to_chord(wing :: Wing, num :: Integer) = map(maximum_thickness_to_chord, camber_thickness(wing, num))
 
 function max_thickness_to_chord_ratio_sweeps(wing :: Wing, num)
@@ -181,7 +220,7 @@ function max_thickness_to_chord_ratio_sweeps(wing :: Wing, num)
     le = leading_edge(wing)
 
     # Determine x-coordinates in geometry frame
-    xs = @. getindex(le, 1) + wing.chords * getindex(xs_temp, 1)
+    xs = @. le[:,1] + wing.chords * getindex(xs_temp, 1)
 
     # Compute sectional x-coordinates
     ds = xs[2:end] - xs[1:end-1]
@@ -222,11 +261,17 @@ function wing_bounds(wing :: Wing)
 end
 
 """
-    trailing_edge(wing :: Wing, flip = false)
+    trailing_edge(wing :: Wing)
 
-Compute the trailing edge coordinates of a `Wing`, with an option to flip the signs of the ``y``-coordinates.
+Compute the leading edge coordinates of a `Wing`.
 """
 leading_edge(wing :: Wing) = @views wing_bounds(wing)[:,:,1]
+
+"""
+    trailing_edge(wing :: Wing)
+
+Compute the trailing edge coordinates of a `Wing`.
+"""
 trailing_edge(wing :: Wing) = @views wing_bounds(wing)[:,:,2]
 
 

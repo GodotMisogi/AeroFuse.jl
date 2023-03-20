@@ -252,7 +252,7 @@ Freestream(α_deg, β_deg, Ω) = let T = promote_type(eltype(α_deg), eltype(β_
 
 Freestream(α_deg, β_deg, Ω_x, Ω_y, Ω_z) = Freestream(deg2rad(α_deg), deg2rad(β_deg), SVector(Ω_x, Ω_y, Ω_z))
 
-Freestream(U, Ω) = let (_, α, β) = cartesian_to_freestream(normalize(U)); Freestream(α, β, Ω) end
+Freestream(U, Ω) = let (_, α, β) = cartesian_to_freestream(normalize(U)); Freestream(α, -β, Ω) end
 
 Freestream(; alpha = 0., beta = 0., omega = zeros(3)) = Freestream(alpha, beta, omega)
 
@@ -270,7 +270,7 @@ potential(fs :: Freestream, r) = dot(velocity(fs), r)
 
 Compute the velocity of a `Freestream`.
 """
-velocity(fs :: Freestream) = freestream_to_cartesian(1., fs.alpha, fs.beta)
+velocity(fs :: Freestream) = freestream_to_cartesian(one(promote_type(eltype(fs.alpha), eltype(fs.beta))), fs.alpha, fs.beta)
 
 """
     freestream_to_cartesian(r, θ, φ)

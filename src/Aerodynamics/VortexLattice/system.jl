@@ -15,8 +15,8 @@ Define reference values with speed ``V``, density ``ρ``, _dynamic_ viscosity ``
 - `density     :: Real         = 1.225`: Density (m)
 - `viscosity   :: Real         = 1.5e-5`: Dynamic viscosity (m)
 - `sound_speed :: Real         = 330.`: Speed of sound (m/s)
-- `span        :: Real         = 1.`: Span length (m)
 - `area        :: Real         = 1.`: Area (m²)
+- `span        :: Real         = 1.`: Span length (m)
 - `chord       :: Real         = 1.`: Chord length (m)
 - `location    :: Vector{Real} = [0,0,0]`: Position
 """
@@ -42,17 +42,11 @@ References(; speed = 1., density = 1.225, viscosity = 1.5e-5, sound_speed = 330.
 
 Base.broadcastable(refs :: References) = Ref(refs)
 
-function Base.show(io :: IO, refs :: References)
-    println(io, "References: ")
-    for fname in fieldnames(typeof(refs))
-        println(io, "    ", fname, " = ", getfield(refs, fname))
-    end
-end
-
 dynamic_pressure(refs :: References) = 1/2 * refs.density * refs.speed^2
 
 kinematic_viscosity(refs :: References) = refs.viscosity / refs.density
 mach_number(refs :: References) = refs.speed / refs.sound_speed
+reynolds_number(refs :: References) = refs.density * refs.speed * refs.chord / refs.viscosity
 
 force_coefficient(force, refs :: References) = force_coefficient(force, dynamic_pressure(refs), refs.area)
 moment_coefficient(moment, refs :: References) = moment_coefficient(moment, dynamic_pressure(refs), refs.area, refs.span, refs.chord)
@@ -92,38 +86,46 @@ struct VortexLatticeSystem{
     boundary_vector   :: S
     freestream        :: P
     reference         :: Q
-    axes :: T
+    compressible      :: Bool
+    axes              :: T
 end
 
-function VortexLatticeSystem(components, fs :: Freestream, refs :: References, axes = Geometry())
+"""
+    VortexLatticeSystem(
+        aircraft, 
+        fs :: Freestream, 
+        refs :: References, 
+        compressible = false, 
+        axes = Geometry()
+    )
+
+Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an aircraft (must be a `ComponentArray` of `Horseshoe`s or `VortexRing`s) with `Freestream` conditions and `References` for non-dimensionalization. Options are provided for compressibility corrections via the Prandtl-Glauert transformation (false by default) and axis system for computing velocities and forces (`Geometry` by default).
+"""
+function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, axes = Geometry())
 
     # Mach number bound checks
     M = mach_number(refs)
     @assert M < 1.  "Only compressible subsonic flow conditions (M < 1) are valid!"
-    if M > 0.7 @warn "Results in transonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
+    if M > 0.7 @warn "Results in transonic to sonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
+    if M > 0.3 && !compressible @warn "Compressible regime (M > 0.3) but compressibility correction is off, be wary of the analysis!" end
 
     # (Prandtl-Glauert ∘ Wind axis) transformation
-    β_pg = √(1 - M^2)
-    comp = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(components, fs), β_pg)
+    if compressible
+        β_pg = √(1 - M^2)
+        ac = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(aircraft, fs), β_pg)
+    else
+        β_pg = 1
+        ac = @. geometry_to_wind_axes(aircraft, fs)
+    end
 
     # Quasi-steady freestream velocity
     U = geometry_to_wind_axes(velocity(fs, Body()), fs)
     Ω = geometry_to_wind_axes(fs.omega, fs) / refs.speed
 
     # Solve system
-    Γs, AIC, boco = solve_linear(comp, U, Ω)
+    Γs, AIC, boco = solve_linear(ac, U, Ω)
 
-    return VortexLatticeSystem(components, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, axes)
-end
-
-# Made out of annoyance and boredom
-function Base.show(io :: IO, sys :: VortexLatticeSystem)     
-    println(io, "VortexLatticeSystem -")
-    println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements\n")
-    println(io, "    Axes: ", sys.axes)
-    show(io, sys.freestream)
-    println(io, "")
-    show(io, sys.reference)
+    return VortexLatticeSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible, axes)
 end
 
 # Miscellaneous
@@ -334,4 +336,4 @@ function center_of_pressure(system :: VortexLatticeSystem)
     return x_CP
 end
 
-residual!(R, system :: VortexLatticeSystem) = solve_nonlinear!(R, system.vortices, system.circulations, -velocity(system.freestream), system.freestream.omega)
+residual!(R, Γ, system :: VortexLatticeSystem) = solve_nonlinear!(R, system.vortices, Γ, -velocity(system.freestream), system.freestream.omega)

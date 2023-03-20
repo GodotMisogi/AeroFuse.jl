@@ -55,6 +55,7 @@ makedocs(
         analytics = "UA-89998292-1"
         # highlightjs = "theme/highlight.js",
     ),
+    checkdocs = :exports,
 )
 
 ## Deployment

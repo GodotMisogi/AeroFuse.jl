@@ -26,7 +26,7 @@ scale_freestream(fs :: Freestream, refs :: References) =
     ]
 
 # Closure to generate results with input vector
-function freestream_derivatives!(y, x, aircraft, fs, ref, axes = Wind())
+function freestream_derivatives!(y, x, aircraft, fs, ref, compressible = false, axes = Wind())
     # Scale Mach number
     ref = @views setproperties(ref, 
         speed = x[1] * ref.sound_speed
@@ -40,17 +40,14 @@ function freestream_derivatives!(y, x, aircraft, fs, ref, axes = Wind())
     )
 
     # Solve system
-    system = VortexLatticeSystem(aircraft, fs, ref)
+    system = VortexLatticeSystem(aircraft, fs, ref, compressible)
 
     # Evaluate nearfield coefficients
     CFs, CMs = surface_coefficients(system; axes = axes)
 
     # Evaluate farfield coefficients
-    q = dynamic_pressure(system.reference.density, system.reference.speed)
-    FFs = map(farfield_forces(system)) do F
-        force_coefficient(F, q, system.reference.area)
-    end
-    
+    FFs = farfield_coefficients(system)
+
     # Create array of nearfield and farfield coefficients as a column, for each component as a row.
     comp_coeffs = @views mapreduce(name -> [ sum(CFs[name]); sum(CMs[name]); FFs[name] ], hcat, keys(system.vortices))
 
@@ -63,19 +60,19 @@ function freestream_derivatives!(y, x, aircraft, fs, ref, axes = Wind())
         y[:,end] = comp_coeffs
     end
 
-    # return [ comp_coeffs sum_coeffs ] # Append sum of all forces for aircraft
+    # return nothing
 end
 
-function freestream_derivatives(aircraft, fs, ref; axes = Wind(), name = :aircraft, print = false, print_components = false, farfield = false)
+function freestream_derivatives(aircraft, fs, ref; axes = Wind(), name = :aircraft, compressible = false, print = false, print_components = false, farfield = false)
     # Reference values and scaling inputs
     x = scale_freestream(fs, ref)
 
-    names     = [ reduce(vcat, keys(aircraft)); name ]
+    names = [ reduce(vcat, keys(aircraft)); name ]
     num_comps = length(names)
 
     y = zeros(eltype(x), 9, num_comps)
     ∂y∂x = zeros(eltype(x), 9, num_comps, length(x))
-    jacobian!(∂y∂x, (y, x) -> freestream_derivatives!(y, x, aircraft, fs, ref, axes), y, x)
+    jacobian!(∂y∂x, (y, x) -> freestream_derivatives!(y, x, aircraft, fs, ref, compressible, axes), y, x)
     
     data = cat(y, ∂y∂x, dims = 3) # Appending outputs with derivatives
 
@@ -103,4 +100,4 @@ end
 
 Obtain the force and moment coefficients of a `VortexLatticeSystem` and the derivatives of its components with respect to freestream values.
 """
-freestream_derivatives(system :: VortexLatticeSystem; axes = Wind(), name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; axes = axes, name = name, print = print, print_components = print_components, farfield = farfield)
+freestream_derivatives(system :: VortexLatticeSystem; axes = Wind(), name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; axes = axes, name = name, compressible = system.compressible, print = print, print_components = print_components, farfield = farfield)

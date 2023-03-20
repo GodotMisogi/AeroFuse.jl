@@ -4,13 +4,14 @@ using AeroFuse
 ## Wing section setup
 wing = Wing(
     foils     = fill(naca4((2,4,1,2)), 3),
-    chords    = [2.0, 1.6, 0.2],
+    chords    = [2.0, 1.2, 0.6],
     twists    = [0.0, 0.0, 0.0],
     spans     = [5., 0.6],
     dihedrals = [5., 5.],
-    sweeps    = [20.,20.],
+    sweeps    = [20.,30.],
     w_sweep   = 0.25, # Quarter-chord sweep
     symmetry  = true,
+    position  = [4.0, 0.0, 0.0]
     # flip      = true
 )
 
@@ -19,15 +20,15 @@ x_w, y_w, z_w = wing_mac = mean_aerodynamic_center(wing)
 print_info(wing, "Wing")
 
 ## Meshing and assembly
-wing_mesh = WingMesh(wing, [24,12], 6, 
-                     span_spacing = Cosine()
+wing_mesh = WingMesh(wing, [24,6], 6, 
+                    #  span_spacing = Cosine()
                     );
 aircraft = ComponentVector(wing = make_horseshoes(wing_mesh))
 
 # Freestream conditions
 fs  = Freestream(
     alpha = 2.0, # deg
-    beta  = 2.0, # deg
+    beta  = 0.0, # deg
     omega = [0.,0.,0.]
 )
 
@@ -46,6 +47,7 @@ ref = References(
 @time begin 
     system = solve_case(
         aircraft, fs, ref;
+        compressible = true,
         # print            = true, # Prints the results for only the aircraft
         # print_components = true, # Prints the results for all components
     );
@@ -67,7 +69,7 @@ ref = References(
     dvs = freestream_derivatives(system; 
         axes = ax,
         print_components = true,
-        farfield = false
+        farfield = true
     )
 end;
 
@@ -92,55 +94,33 @@ CDi_ff, CY_ff, CL_ff = ff = farfield(system)
 nf_v = [ CDi_nf + CDv; CDv; nf ]
 ff_v = [ CDi_ff + CDv; CDv; ff ]
 
+print_coefficients(nf_v, ff_v)
+
 ## Plotting
 using Plots
 gr()
 
-## Display
-horseshoe_panels = chord_panels(wing_mesh)
-horseshoe_coords = plot_panels(horseshoe_panels)
-horseshoe_points = Tuple.(control_point.(system.vortices))
-ys = getindex.(horseshoe_points, 2)
-
 ## Coordinates
-plot(
+Plots.plot(
     aspect_ratio = 1,
     camera = (30, 30),
     zlim = span(wing) .* (-0.5, 0.5),
     size = (800, 600)
 )
-plot!(wing_mesh, label = "Wing")
-plot!(system, wing, dist = 3, num_stream = 50, span = 10, color = :green)
+Plots.plot!(wing_mesh, label = "Wing")
+Plots.plot!(system, wing, dist = 3, num_stream = 50, span = 10, color = :green)
 
 ## Compute spanwise loads
-CL_loads = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * ref.speed * ref.chord)
-
-span_loads = spanwise_loading(wing_mesh, CFs.wing, ref.area)
+span_loads = spanwise_loading(wing_mesh, ref, CFs.wing, system.circulations.wing)
 
 ## Plot spanwise loadings
 plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = "CDi")
 plot_CY = plot(span_loads[:,1], span_loads[:,3], label = :none, ylabel = "CY")
 plot_CL = begin
             plot(span_loads[:,1], span_loads[:,4], label = :none, xlabel = "y", ylabel = "CL")
-            plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = "y")
+            plot!(span_loads[:,1], span_loads[:,5], label = "Normalized", xlabel = "y")
           end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
-
-## Lift distribution
-
-# Exaggerated CF distribution for plot
-# hs_pts = vec(Tuple.(bound_leg_center.(system.vortices)))
-
-# plot(xaxis = "x", yaxis = "y", zaxis = "z",
-#      aspect_ratio = 1,
-#      camera = (60, 60),
-#      zlim = span(wing) .* (-0.5, 0.5),
-#      title = "Forces (Exaggerated)"
-#     )
-# plot!.(horseshoe_coords, color = :gray, label = :none)
-# # scatter!(cz_pts, zcolor = vec(CLs), marker = 2, label = "CL (Exaggerated)")
-# quiver!(hs_pts, quiver=(span_loads[:,2], span_loads[:,3], span_loads[:,4]) .* 10)
-# plot!(size = (800, 600))
 
 ## VARIABLE ANALYSES
 #=========================================================#
@@ -170,7 +150,7 @@ res_αs = combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, ref)
-        [ α; farfield(sys)...; nearfield(sys)... ]
+        [ α; farfield(sys); nearfield(sys) ]
     end, (1)
 )
 
@@ -187,14 +167,13 @@ res = combinedimsview(
         refs = @set ref.speed = V
         fst = @set fs.alpha = deg2rad(α)
         sys = solve_case(aircraft, fst, refs)
-        [ mach_number(refs); α; farfield(sys)...; nearfield(sys)... ]
+        [ mach_number(refs); α; farfield(sys); nearfield(sys) ]
     end
 )
 
-##
 res_p = permutedims(res, (3,1,2))
 
-# CDi
+## CDi
 plt_CDi_ff = plot(camera = (60,45))
 [ plot!(
     res_p[:,1,n], res_p[:,2,n], res_p[:,3,n], 
