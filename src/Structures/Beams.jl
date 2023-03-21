@@ -81,7 +81,7 @@ function Tube(material :: Material, length, radius, thickness)
 end
 
 # Convenience constructor for linearly varying radii and thickness
-function Beam(material, Ls_beam, r1, r2, t1, t2, symmetry = false)
+function Beam(material :: Material, Ls_beam, (r1, r2), (t1, t2), symmetry = false)
     n = ifelse(symmetry, length(Ls_beam) ÷ 2, length(Ls_beam))
     rs_beam = LinRange(r1, r2, n)  # Outer radii, m
     ts_beam = LinRange(t1, t2, n)  # Thickness, m
@@ -143,7 +143,7 @@ function von_mises_stress(tube :: Tube, ds, θs)
     σ_xx_2 = principal_stress(E, L, R, -dx, dθ_yz)
     σ_xt   = torsional_stress(G, L, R, θs[1])
 
-    return von_mises_stress.(SVector(σ_xx_1, σ_xx_2), σ_xt)
+    return von_mises_stress.(MVector(σ_xx_1, σ_xx_2), σ_xt)
 end
 
 ## Stiffness matrices

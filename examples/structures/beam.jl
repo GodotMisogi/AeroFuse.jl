@@ -12,7 +12,7 @@ aluminum = Material(# Aluminum properties
 ##
 n = 18 # Number of elements
 Ls = 0:1/(n-1):1
-beam = Beam(aluminum, Ls, 1e-1, 8e-2, 2e-2, 8e-3, true)
+beam = Beam(aluminum, Ls, (1e-1, 8e-2), (2e-2, 8e-3), true)
 coords = [ LinRange(0., 0., n) LinRange(0., 1., n) LinRange(0., 0., n) ] # Coordinates
 
 
