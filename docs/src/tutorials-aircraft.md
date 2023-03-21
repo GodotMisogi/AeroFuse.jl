@@ -279,14 +279,13 @@ CFs, CMs = surface_coefficients(system)
 
 # Compute spanwise loads
 span_loads  = spanwise_loading(wing_mesh, CFs.wing, projected_area(wing))
-CL_loads    = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord);
 
 # Plot spanwise loadings
 plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = L"C_{D_i}")
 plot_CY = plot(span_loads[:,1], span_loads[:,3], label = :none, ylabel = L"C_Y")
 plot_CL = begin
             plot(span_loads[:,1], span_loads[:,4], label = :none, xlabel = L"y", ylabel = L"C_L")
-            plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = L"y")
+            plot!(span_loads[:,1], span_loads[:,5], label = "Sectional", xlabel = L"y")
           end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 ````

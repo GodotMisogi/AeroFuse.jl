@@ -47,7 +47,7 @@ ref = References(
 @time begin 
     system = solve_case(
         aircraft, fs, ref;
-        compressible = true,
+        compressible = true, # Compressibility correction option
         # print            = true, # Prints the results for only the aircraft
         # print_components = true, # Prints the results for all components
     );
@@ -133,7 +133,7 @@ Vs = 1.0:10:300
 res_Vs = combinedimsview(
     map(Vs) do V
         refs = @set ref.speed = V
-        sys = solve_case(aircraft, fs, refs)
+        sys = solve_case(aircraft, fs, refs, compressible = true)
         [ mach_number(refs); farfield(sys)...; nearfield(sys)... ]
     end, (1))
 
@@ -149,7 +149,7 @@ plot(
 res_αs = combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, ref)
+        sys = solve_case(aircraft, fst, ref, compressible = true)
         [ α; farfield(sys); nearfield(sys) ]
     end, (1)
 )
@@ -166,7 +166,7 @@ res = combinedimsview(
     map(product(Vs, αs)) do (V, α)
         refs = @set ref.speed = V
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, refs)
+        sys = solve_case(aircraft, fst, refs, compressible = true)
         [ mach_number(refs); α; farfield(sys); nearfield(sys) ]
     end
 )

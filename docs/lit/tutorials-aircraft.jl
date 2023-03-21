@@ -147,6 +147,7 @@ refs = References(
 # You can run the aerodynamic analysis by providing the aircraft configuration, freestream, and reference values. Optionally you can also print the results.
 system = solve_case(
     aircraft, fs, refs;
+    compressible     = true, # Compressibility option
     print            = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
 )
@@ -214,14 +215,13 @@ df = DataFrame(round.(data, digits = 6), [:α, :CX, :CY, :CZ, :Cl, :Cm, :Cn])
 CFs, CMs = surface_coefficients(system)
 
 ## Compute spanwise loads
-span_loads  = spanwise_loading(wing_mesh, CFs.wing, projected_area(wing))
-CL_loads    = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord);
+span_loads = spanwise_loading(wing_mesh, system.reference, CFs.wing, system.circulations.wing)
 
 ## Plot spanwise loadings
 plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = L"C_{D_i}")
 plot_CY = plot(span_loads[:,1], span_loads[:,3], label = :none, ylabel = L"C_Y")
 plot_CL = begin
             plot(span_loads[:,1], span_loads[:,4], label = :none, xlabel = L"y", ylabel = L"C_L")
-            plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = L"y")
-          end
+            plot!(span_loads[:,1], span_loads[:,5], label = "Normalized", xlabel = L"y")
+        end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))

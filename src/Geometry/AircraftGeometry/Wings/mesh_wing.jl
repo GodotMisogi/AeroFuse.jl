@@ -132,12 +132,12 @@ panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer
 
 """
     WingMesh(
-        surface :: AbstractWing, 
+        wing :: AbstractWing, 
         n_span :: Vector{Integer}, n_chord :: Integer;
-        span_spacing :: AbstractSpacing = symmetric_spacing(surface)
+        span_spacing :: AbstractSpacing = symmetric_spacing(wing)
     )
 
-Define a container to generate meshes and panels for a given `AbstractWing` with a specified distribution of number of spanwise panels, and a number of chordwise panels.
+Define a container to generate meshes and panels for a given `Wing` with a specified distribution of number of spanwise panels, and a number of chordwise panels.
 
 Optionally a combination of `AbstractSpacing` types (`Sine(), Cosine(), Uniform()`) can be provided to the **named argument** `span_spacing`, either as a singleton or as a vector with length equal to the number of spanwise sections. By default, the combination is `[Sine(), Cosine(), ..., Cosine()]`.
 

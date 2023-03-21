@@ -102,12 +102,17 @@ refs = References(
 )
 
 ac_name = :aircraft
+sys = solve_case(aircraft, fs, refs, 
+    name = ac_name,
+    compressible = true
+)
+
+##
 @time dv_data = freestream_derivatives(
-    aircraft, fs, refs;
-#    axes             = Wind(),
-    name             = ac_name,
-    print            = true,    # Prints the results for only the aircraft
-    # print_components = true,    # Prints the results for all components
+    sys;
+    print_components = true,    # Prints the results for all components
+    # print            = true,    # Prints the results for only the aircraft
+    # axes             = Wind(),
 );
 
 ## Aerodynamic quantities of aircraft
@@ -170,7 +175,7 @@ function alpha_sweep(aircraft, refs, α)
                          beta  = 0.0, 
                          omega = [0.,0.,0.])
 
-    system = solve_case(aircraft, fs, refs)
+    system = solve_case(aircraft, fs, refs, compressible = true)
 
     dvs = freestream_derivatives(system)
 
@@ -201,9 +206,9 @@ Cm_αs  = [ re.aircraft.Cm_al for re in res ]
 CL_αs  = [ re.aircraft.CZ_al for re in res ]
 
 ##
-plot(CL_αs, Cm_αs, xlabel = "CL_α", ylabel = "Cm_α")
+plot(CL_αs, Cm_αs, xlabel = "CL_α", ylabel = "Cm_α", label = "")
 
 ##
 ∂Cm_∂CLs = Cm_αs ./ CL_αs
 
-plot(αs, ∂Cm_∂CLs, ls = :solid, xlabel = "α", ylabel = "Cm/CL")
+plot(αs, ∂Cm_∂CLs, ls = :solid, xlabel = "α", ylabel = "Cm/CL", label = "")
