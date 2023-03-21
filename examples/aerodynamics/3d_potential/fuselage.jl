@@ -61,6 +61,9 @@ using Accessors
 src_lines = StructArray(map((line, σ) -> line(strength = σ), src_lines, σs))
 
 
+##
+using CoordinateTransformations, Rotations
+cfs = CartesianFromSpherical()
 
 ## Streamlines
 seed = cfs.(Spherical(0.001, 0.0, θ) for θ in LinRange(0, 2π, 51)) .- Ref([-0., 0., 0.])
@@ -92,13 +95,15 @@ for (i, _) in enumerate(seed)
 end
 
 
-##
-ls = Point3f.(splitdimsview(Ps, (1,2)))
-
-
 ## Visualization
+# using CairoMakie
+# CairoMakie.activate!()
+
 using WGLMakie
 WGLMakie.activate!()
+
+##
+ls = Point3f.(splitdimsview(Ps, (1,2)))
 
 fig = Figure()
 scene = LScene(fig[1,1])
