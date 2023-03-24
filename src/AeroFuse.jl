@@ -43,6 +43,8 @@ function surface_velocities end
 
 function surface_coefficients end
 
+function coordinates end
+
 export solve_linear, solve_nonlinear, solve_linear!, solve_nonlinear!
 
 ## Math tools
@@ -94,9 +96,9 @@ export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Pa
 include("Geometry/AircraftGeometry/AircraftGeometry.jl")
 
 # Abstract types
-import .AircraftGeometry: AbstractAircraft, AbstractWing, AbstractFoil
+import .AircraftGeometry: AbstractAircraft, AbstractWing, AbstractFoil, AbstractFuselage
 
-export AbstractAircraft, AbstractWing, AbstractFoil
+export AbstractAircraft, AbstractWing, AbstractFoil, AbstractFuselage
 
 # Foil
 import .AircraftGeometry: Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, reflect, camber, camber_line, thickness_line, control_surface
@@ -104,9 +106,9 @@ import .AircraftGeometry: Foil, arc_length, kulfan_CST, naca4, camber_CST, make_
 export Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, reflect, camber, camber_line, thickness_line, control_surface
 
 # Fuselage
-import .AircraftGeometry: Fuselage, projected_area, length, cosine_interpolation, volume
+import .AircraftGeometry: Fuselage, projected_area, length, cosine_interpolation, volume, HyperEllipseFuselage, curve, coordinates
 
-export Fuselage, projected_area, length, cosine_interpolation, volume
+export Fuselage, projected_area, length, cosine_interpolation, volume, HyperEllipseFuselage, curve, coordinates
 
 # Wing
 import .AircraftGeometry: Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, make_panels, mesh_chords, mesh_wing, mesh_cambers, max_thickness_to_chord_ratio_sweeps, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio

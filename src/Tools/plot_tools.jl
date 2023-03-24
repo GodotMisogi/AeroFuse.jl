@@ -186,6 +186,16 @@ end
     end
 end
 
+@recipe function fuselage_plot(fuse :: HyperEllipseFuselage; n_secs = 10, n_circ = 20)
+    ts = LinRange(0, 1, n_secs)
+    fuse_plan = coordinates(fuse, ts, n_circ)
+    @series begin
+        # primary := false
+        # linewidth := 2
+        @views fuse_plan[:,1], fuse_plan[:,2], fuse_plan[:,3]
+    end
+end
+
 @recipe function streamline_plot(system :: VortexLatticeSystem, seed, distance, num_stream_points = 100)
     streams = plot_streamlines(system, seed, distance, num_stream_points)
 

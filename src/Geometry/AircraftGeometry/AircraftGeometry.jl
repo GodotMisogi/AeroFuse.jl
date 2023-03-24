@@ -27,6 +27,7 @@ import ..PanelGeometry: Panel2D, Panel3D, panel_area, normal_vector, transform, 
 abstract type AbstractAircraft end
 
 abstract type AbstractWing <: AbstractAircraft end
+abstract type AbstractFuselage <: AbstractAircraft end
 
 ## Foil geometry
 #==========================================================================================#
