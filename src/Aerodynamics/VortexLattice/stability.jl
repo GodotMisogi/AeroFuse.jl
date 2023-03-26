@@ -81,9 +81,9 @@ function freestream_derivatives(aircraft, fs, ref; axes = Wind(), name = :aircra
 
     # Printing
     if print_components
-        @views [ print_derivatives(comps[comp], comp, farfield) for comp in keys(comps) ]
+        @views [ print_derivatives(comps[comp], comp, farfield = farfield) for comp in keys(comps) ]
     elseif print
-        @views print_derivatives(comps[name], name, farfield)
+        @views print_derivatives(comps[name], name, farfield = farfield)
     end
 
     return comps
@@ -98,6 +98,8 @@ end
         print_components = false
     )
 
-Obtain the force and moment coefficients of a `VortexLatticeSystem` and the derivatives of its components with respect to freestream values.
+Obtain the force and moment coefficients of the components of a `VortexLatticeSystem` and their derivatives with respect to freestream values: Mach ``M`` (if compressible), angles of attack ``α`` and sideslip ``β``, and non-dimensionalized angular velocity rates ``p̄, q̄, r̄``.
+
+The axes can be changed by passing any axis system (such as `Body(), Geometry(), Wind(), Stability()`) to the named `axes` argument. The force and moment coefficients are reported in wind axes by default.
 """
 freestream_derivatives(system :: VortexLatticeSystem; axes = Wind(), name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; axes = axes, name = name, compressible = system.compressible, print = print, print_components = print_components, farfield = farfield)

@@ -56,12 +56,13 @@ function print_coefficients(nf_coeffs, ff_coeffs, name = "")
 end
 
 """
-    print_derivatives(nf_coeffs, ff_coeffs, name = ""; 
+    print_derivatives(nf_coeffs, ff_coeffs, name = "";
+                      farfield = false,
                       axes = "")
 
-Print a pretty table of the aerodynamic coefficients and derivatives with an optional name and axis name.
+Print a pretty table of the aerodynamic coefficients and derivatives with an optional name and named arguments for enabling printing of farfield coefficients and the axis name.
 """
-function print_derivatives(comp, name = "", farfield = false; axes = "")
+function print_derivatives(comp, name = ""; farfield = false, axes = "")
     coeffs  = ["CX", "CY", "CZ", "Cℓ", "Cm", "Cn", "CDi ff", "CY ff", "CL ff"]
     nf_vars = (["$name" "Values" "" "" "Freestream" "Derivatives" "" ""], ["" "$axes" "∂/∂M" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ])
     ff_index = ifelse(farfield, 9, 6)
