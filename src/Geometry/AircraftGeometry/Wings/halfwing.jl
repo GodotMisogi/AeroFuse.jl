@@ -1,3 +1,25 @@
+## Wing definition
+#=====================================================================#
+
+# Helper functions
+aspect_ratio(span, area) = span^2 / area
+mean_geometric_chord(span, area) = area / span
+taper_ratio(root_chord, tip_chord) = tip_chord / root_chord
+area(span, chord) = span * chord
+mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
+y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / (3(1 + λ))
+quarter_chord(chord) = 0.25 * chord
+
+# Projected area of a single trapezoidal section
+section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) / 2)
+
+# Aspect ratio for a single trapezoidal section
+aspect_ratio(b, c1, c2) = 2b / (c1 + c2)
+
+# Conversion of sweep angle to any normalized point along the chord
+sweep_angle(λ, AR, Λ_LE, w) = Λ_LE - atand(2w * (1 - λ), AR * (1 + λ))
+
+# Wing type definition
 """
     Wing(
         foils :: Vector{Foil}, 
@@ -7,7 +29,7 @@
         dihedrals, 
         sweeps,
         position = zeros(3),
-        angle    = 0.
+        angle    = 0.,
         axis     = [0.,1.,0.]
     )
 
@@ -102,9 +124,6 @@ sweeps(wing :: Wing, w = 0.) = @views @. sweep_angle(
     w # Normalized sweep angle location ∈ [0,1]
 )
 
-aspect_ratio(b, c1, c2) = 2b / (c1 + c2)
-sweep_angle(λ, AR, Λ_LE, w) = Λ_LE - atand(2w * (1 - λ), AR * (1 + λ))
-
 # Affine transformations
 Base.position(wing :: Wing) = wing.affine.translation
 orientation(wing :: Wing) = wing.affine.linear
@@ -129,7 +148,19 @@ Compute the taper ratio of a `Wing`, defined as the tip chord length divided by 
 """
 taper_ratio(wing :: Wing) = last(wing.chords) / first(wing.chords)
 
-section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) / 2)
+"""
+    aspect_ratio(wing :: AbstractWing)
+
+Compute the aspect ratio of an `AbstractWing`.
+"""
+aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
+
+"""
+    properties(wing :: AbstractWing)
+
+Compute the generic properties of interest (span, area, etc.) of an `AbstractWing`.
+"""
+properties(wing :: AbstractWing) = [ aspect_ratio(wing), span(wing), projected_area(wing), mean_aerodynamic_chord(wing), mean_aerodynamic_center(wing) ]
 
 function section_projected_areas(wing :: Wing)
     spans = ifelse(wing.symmetry, 2 * wing.spans, wing.spans)
@@ -261,7 +292,7 @@ function wing_bounds(wing :: Wing)
 end
 
 """
-    trailing_edge(wing :: Wing)
+    leading_edge(wing :: Wing)
 
 Compute the leading edge coordinates of a `Wing`.
 """

@@ -51,35 +51,26 @@ solve_case(meshes, freestream :: Freestream, refs :: References; name = :aircraf
 ## Placeholder for functions I'm not sure where to put
 #==========================================================================================#
 
-spanwise_loading(CXs, weighted_areas) = vec(sum(CXs, dims = 1)) .* weighted_areas
+_spanwise_loading(CXs, weighted_areas) = vec(sum(CXs, dims = 1)) .* weighted_areas
 
 ## Span-loading
-"""
-    spanwise_loading(panels, CFs, S)
-    spanwise_loading(mesh :: WingMesh, CFs, S)
-
-Compute the spanwise loading of the forces given panels, associated force coefficients, and the reference area.
-
-Alternatively, provide a `WingMesh` type which gets the panels for you.
-"""
-function spanwise_loading(panels, CFs, S)
+function _spanwise_loading(panels, CFs, S)
     # Get y-coordinates of spanwise strips
     ys = @views vec(mean(x -> midpoint(x)[2], panels, dims = 1))
 
     # Compute weighted areas for spanwise strips
     area_scale = S ./ vec(sum(panel_area, panels, dims = 1))
-    # chords     = vec(sum(average_chord, panels, dims = 1))
 
     # Compute spanwise coefficients
-    span_CFs = permutedims(combinedimsview(spanwise_loading(CFs, area_scale)))
+    span_CFs = permutedims(combinedimsview(_spanwise_loading(CFs, area_scale)))
 
     [ ys span_CFs ]
 end
 
-spanwise_loading(wing :: WingMesh, CFs, S) = spanwise_loading(chord_panels(wing), CFs, S)
+spanwise_loading(wing :: WingMesh, CFs, S) = _spanwise_loading(chord_panels(wing), CFs, S)
 
 """
-    spanwise_loading(wing_mesh :: WingMesh, ref :: References, CFs, Γ)
+    spanwise_loading(wing_mesh :: WingMesh, ref :: References, CFs, Γs)
 
 Obtain the spanwise aerodynamic loads `(CDi, CY, CL, CL_norm)` for a given `WingMesh`, reference values `ref`, surface coefficients `CFs`, and circulations ``Γ``. 
     

@@ -64,25 +64,30 @@ end
 # end
 
 """
-    WingSection(; area, aspect, dihedral, sweep, taper, root_chord,
-                  root_twist, tip_twist, root_foil, tip_foil,
-                  position, angle, axis)
+    WingSection(; 
+        area, aspect, taper
+        dihedral, sweep, w_sweep,
+        root_twist, tip_twist,
+        position, angle, axis,
+        root_foil, tip_foil,
+        root_control, tip_control
+    )
 
 Define a `Wing` in the ``x``-``z`` plane, with optional Boolean arguments for symmetry and flipping in the plane.
 
 # Arguments
 - `area :: Real = 1.`: Area (m²)
 - `aspect :: Real = 6.`: Aspect ratio
+- `taper :: Real = 1.`: Taper ratio of tip to root chord
 - `dihedral :: Real = 1.`: Dihedral angle (degrees)
 - `sweep :: Real = 0.`: Sweep angle (degrees)
 - `w_sweep :: Real = 0.`: Chord ratio for sweep angle 
                           e.g., 0    = Leading-edge sweep, 
                                 1    = Trailing-edge sweep,
                                 0.25 = Quarter-chord sweep
-- `taper :: Real = 1.`: Taper ratio of tip to root chord
 - `root_twist :: Real = 0.`: Twist angle at root (degrees)
 - `tip_twist :: Real = 0.`: Twist angle at tip (degrees)
-- `position :: Vector{Real} = zeros(3)`: Position
+- `position :: Vector{Real} = zeros(3)`: Position (m)
 - `angle :: Real = 0.`: Angle of rotation (degrees)
 - `axis :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 - `root_foil :: Foil = naca4((0,0,1,2))`: `Foil` at root
