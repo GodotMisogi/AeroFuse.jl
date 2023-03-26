@@ -51,25 +51,49 @@ struct HyperEllipseFuselage{T <: Real, N <: AbstractAffineMap} <: AbstractFusela
     d_nose :: T
     d_rear :: T
     affine :: N
-    function HyperEllipseFuselage(R, L, x1, x2, ell1, ell2, d_nose, d_rear, affine)
+    function HyperEllipseFuselage(R, L, xa, xb, xi_a, xi_b, d_nose, d_rear, affine)
         # Type promotion for autodiff support
-        T = promote_type(eltype(R), eltype(L), eltype(x1), eltype(x2),  eltype(ell1), eltype(ell2), eltype(affine.linear), eltype(affine.translation), eltype(d_nose), eltype(d_rear))
+        T = promote_type(eltype(R), eltype(L), eltype(xa), eltype(xb),  eltype(xi_a), eltype(xi_b), eltype(affine.linear), eltype(affine.translation), eltype(d_nose), eltype(d_rear))
         N = typeof(affine)
 
-        @assert 0 < x1 < x2 < 1 "Ellipse blending points must lie between 0 and 1!"
+        @assert 0 < xa < xb < 1 "Ellipse blending points (x_a, x_b) must lie between 0 and 1!"
 
-        new{T,N}(R, L, x1, x2, ell1, ell2, d_nose, d_rear, affine)
+        new{T,N}(R, L, xa, xb, xi_a, xi_b, d_nose, d_rear, affine)
     end
 end
 
-    
+"""
+    HyperEllipseFuselage(; 
+
+Define a fuselage based on the following hyperelliptical parameterization.
+	
+Nose: Hyperellipse ``z(ξ) = (1 - ξ^a)^{(1/a)}``
+
+Cabin: Cylindrical ``z(ξ) = (1 - ξ^2)^{(1/2)}``
+
+Rear: Hyperellipse ``z(ξ) = (1 - ξ^b)^{(1/b)}``
+
+# Arguments
+- `radius :: Real = 1.`: Fuselage radius (m)
+- `length :: Real = 6.`: Fuselage length (m)
+- `x_a :: Real = 1.`: Location of front of cabin as a ratio of fuselage length ∈ [0,1]
+- `x_b :: Real = 0.`: Location of rear of cabin as a ratio of fuselage length ∈ [0,1]
+- `c_nose :: Real = 0.`: Curvature of nose in terms of hyperellipse parameter
+- `c_rear :: Real = 1.`: Curvature of rear in terms of hyperellipse parameter
+- `d_nose :: Real = 1.`: "Droop" or "rise" of nose from front of cabin centerline (m)
+- `d_rear :: Real = 1.`:"Droop" or "rise" of rear from rear of cabin centerline (m)
+- `position :: Vector{Real} = zeros(3)`: Position (m)
+- `angle :: Real = 0.`: Angle of rotation (degrees)
+- `axis :: Vector{Real} = [0, 1 ,0]`: Axis of rotation
+- `affine :: AffineMap = AffineMap(AngleAxis(deg2rad(angle), axis...), position)`: Affine mapping for the position and orientation via `CoordinateTransformations.jl` (overrides `angle` and `axis` if specified)
+"""
 function HyperEllipseFuselage(;
         radius      = 1., 
         length      = 1., 
         x_a         = 0.2, 
         x_b         = 0.7,
         c_nose      = 1.6,
-        c_rear  = 1.2,
+        c_rear      = 1.2,
         d_nose      = 0.,
         d_rear      = 0.,
         position    = zeros(3),
@@ -90,17 +114,18 @@ function circle3D_yz(x, R, n, zs = zeros(n))
 end
 
 function undrooped_curve(fuse :: HyperEllipseFuselage, ts)
+    # Check parametric curve domain
     @assert ts[1] >= 0
     @assert ts[end] <= 1
 
-    x_a = fuse.x_a
-    x_b = fuse.x_b
-    R_f  = fuse.radius
-    L_f  = fuse.length
+    # Properties
+    x_a     = fuse.x_a
+    x_b     = fuse.x_b
+    R_f     = fuse.radius
+    L_f     = fuse.length
+    x_nose  = fuse.affine.translation[1]
 
-    x_nose = fuse.affine.translation[1]
-    x_end  = x_nose + fuse.length
-
+    # Lengths of sections
     L_nose  = (x_a - 0) * L_f   # Nose length
     L_cabin = (x_b - x_a) * L_f # Cabin length
     L_rear  = (1 - x_b) * L_f   # Rear length
@@ -110,6 +135,7 @@ function undrooped_curve(fuse :: HyperEllipseFuselage, ts)
     x_cabin = @. ts * L_cabin + x_nose[end]
     x_rear  = @. ts * L_rear + x_cabin[end]
 
+    # y-coordinates
     y_nose  = @. R_f * hyperellipse(ts, fuse.xi_a)[end:-1:1]
     y_cabin = fill(R_f, length(x_cabin))
     y_rear  = @. R_f * hyperellipse(ts, fuse.xi_b)
@@ -134,24 +160,34 @@ function coordinates(fuse :: HyperEllipseFuselage, ts, n_circ = 20)
 	dy_nose = LinRange(fuse.d_nose, 0, length(x_nose))
 	dy_rear = LinRange(0, fuse.d_rear, length(x_rear))
 	
-	coords = reduce(vcat, [ 
+    # Generate 3D coordinates
+	coo = reduce(vcat, [ 
 		circle3D_yz.(x_nose, z_nose, n_circ, dy_nose); 
 		circle3D_yz.(x_cabin, z_cabin, n_circ); 
 		circle3D_yz.(x_rear, z_rear, n_circ, dy_rear)
 	])
 
-    return coords
+    # Do the affine map
+    aff_coo = combinedimsview(map(fuse.affine, splitdimsview(coo, (1))), (1))
+
+    # Reshape with indices [rad_number,sec_number,xyz]
+    return reshape(aff_coo, n_circ, length(ts) * 3, 3)
 end
 
-function volume(fuse :: HyperEllipseFuselage)
+@views function wetted_area(fuse :: HyperEllipseFuselage) 
     x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = curve(fuse, ts)
-
-    # Droop/rise
-    z_nose += LinRange(fuse.d_nose, 0, length(x_nose))
-    z_rear += LinRange(0, fuse.d_rear, length(x_rear))
 
     xs = [x_nose; x_cabin; x_rear]
     zs = [z_nose; z_cabin; z_rear]
 
-    @views sum(x -> truncated_cone_volume(x...), zip(zs[1:end-1], zs[2:end], diff(xs)))
+    return sum(x -> truncated_cone_curved_area(x...), zip(zs[1:end-1], zs[2:end], diff(xs)))
+end
+
+@views function volume(fuse :: HyperEllipseFuselage, ts)
+    x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = curve(fuse, ts)
+
+    xs = [x_nose; x_cabin; x_rear]
+    zs = [z_nose; z_cabin; z_rear]
+
+    return sum(x -> truncated_cone_volume(x...), zip(zs[1:end-1], zs[2:end], diff(xs)))
 end
