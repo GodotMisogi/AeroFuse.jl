@@ -6,9 +6,12 @@ aspect_ratio(span, area) = span^2 / area
 mean_geometric_chord(span, area) = area / span
 taper_ratio(root_chord, tip_chord) = tip_chord / root_chord
 area(span, chord) = span * chord
-mean_aerodynamic_chord(root_chord, taper_ratio) = (2/3) * root_chord * (1 + taper_ratio + taper_ratio^2)/(1 + taper_ratio)
+
+# Mean aerodynamic chord for a single section
+mean_aerodynamic_chord(c_r, λ) = (2/3) * c_r * (1 + λ + λ^2)/(1 + λ)
+
+# Spanwise location of mean aerodynamic chord for a single section
 y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / (3(1 + λ))
-quarter_chord(chord) = 0.25 * chord
 
 # Projected area of a single trapezoidal section
 section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) / 2)
@@ -16,7 +19,7 @@ section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) /
 # Aspect ratio for a single trapezoidal section
 aspect_ratio(b, c1, c2) = 2b / (c1 + c2)
 
-# Conversion of sweep angle to any normalized point along the chord
+# Conversion of sweep angle from leading-edge to any ratio along the chord
 sweep_angle(λ, AR, Λ_LE, w) = Λ_LE - atand(2w * (1 - λ), AR * (1 + λ))
 
 # Wing type definition
@@ -196,15 +199,15 @@ end
 
 Compute the mean aerodynamic center of a `Wing`. By default, the factor is assumed to be at 25% from the leading edge, which can be adjusted. Similarly, options are provided to account for symmetry or to flip the location in the ``x``-``z`` plane.
 """
-function mean_aerodynamic_center(wing :: Wing, factor = 0.25; symmetry = wing.symmetry, flip = wing.flip)
+@views function mean_aerodynamic_center(wing :: Wing, factor = 0.25; symmetry = wing.symmetry, flip = wing.flip)
     # Compute mean aerodynamic chords and projected areas
     macs = section_macs(wing)
     areas = section_projected_areas(wing)
 
     # Get leading edge coordinates
     wing_LE = leading_edge(wing)
-    x_LEs   = @views wing_LE[:,1]
-    y_LEs   = @views wing_LE[:,2]
+    x_LEs = wing_LE[:,1]
+    y_LEs = wing_LE[:,2]
 
     # Compute x-y locations of section MACs
     x_mac_LEs = @views @. y_mac(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])

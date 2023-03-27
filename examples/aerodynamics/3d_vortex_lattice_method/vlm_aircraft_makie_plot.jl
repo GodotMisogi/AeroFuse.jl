@@ -1,3 +1,4 @@
+## NOTE: This is called in vlm_aircraft.jl. It won't work by itself.
 using CairoMakie
 CairoMakie.activate!()
 
