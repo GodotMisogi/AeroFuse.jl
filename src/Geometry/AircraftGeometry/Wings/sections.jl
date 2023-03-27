@@ -110,8 +110,8 @@ function WingSection(;
         tip_control  = root_control,
         position     = zeros(3),
         angle        = 0.,
-        axis         = SVector(0., 1., 0.),
-        affine       = AffineMap(AngleAxis(deg2rad(angle), axis...), position),
+        axis         = [0., 1., 0.],
+        affine       = AffineMap(AngleAxis(deg2rad(angle), axis...), SVector(position...)),
         symmetry     = false,
         flip         = false
     )

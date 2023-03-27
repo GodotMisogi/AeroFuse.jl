@@ -77,7 +77,7 @@ function Wing(;
     position  = zeros(3),
     angle     = 0.,
     axis      = [0., 1., 0.],
-    affine    = AffineMap(AngleAxis(deg2rad(angle), axis...), position),
+    affine    = AffineMap(AngleAxis(deg2rad(angle), axis...), SVector(position...)),
     symmetry  = false,
     flip      = false
 )
