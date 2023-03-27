@@ -124,7 +124,10 @@ ac_dvs = dv_data[ac_name]
 x_cp = -refs.chord * ac_dvs.Cm / ac_dvs.CZ
 
 ## Neutral point
-x_np = -refs.chord * ac_dvs.Cm_al / ac_dvs.CZ_al
+x_np_lon = -refs.chord * ac_dvs.Cm_al / ac_dvs.CZ_al
+
+## Lateral neutral point
+x_np_lat = -refs.span * ac_dvs.Cn_be / ac_dvs.CY_be
 
 ## Spiral stability
 γ = ac_dvs.Cl_be * ac_dvs.Cn_rb / (ac_dvs.Cl_rb * ac_dvs.Cn_be)
@@ -133,13 +136,13 @@ x_np = -refs.chord * ac_dvs.Cm_al / ac_dvs.CZ_al
 htail_dvs = dv_data.htail
 
 # Locations
-x_np, y_np, z_np = loc_np = [ refs.location[1] .+ x_np; zeros(2) ]  # Neutral point
-x_cp, y_cp, z_cp = loc_cp = [ refs.location[1] .+ x_cp; zeros(2) ]  # Center of pressure
+x_np, y_np, z_np = r_np = refs.location + [ x_np_lon; zeros(2) ]  # Neutral point
+x_cp, y_cp, z_cp = r_cp = refs.location + [ x_cp; zeros(2) ]  # Center of pressure
 
-println("Aerodynamic Center x_ac: $(x_w) m")
-println("Neutral Point      x_np: $(x_np) m")
-println("Center of Pressure x_cp: $(x_cp) m")
-println("Spiral Stability      γ: $γ")
+@info "Aerodynamic Center x_ac (m):" x_w
+@info "Neutral Point      x_np (m):" x_np
+@info "Center of Pressure x_cp (m):" x_cp
+@info "Spiral Stability      γ:" γ
 
 ## Plotting everything
 using Plots
@@ -162,9 +165,9 @@ plot!(wing,  label = "Wing")
 plot!(htail, label = "Horizontal Tail")
 plot!(vtail, label = "Vertical Tail")
 
-scatter!(Tuple(loc_np), color = :orange, label = "Neutral Point")
-scatter!(Tuple(loc_cp), color = :brown, label = "Center of Pressure")
-savefig(aircraft_plot, "plots/static_stability.png")
+scatter!(Tuple(r_np), color = :orange, label = "Neutral Point")
+scatter!(Tuple(r_cp), color = :brown, label = "Center of Pressure")
+# savefig(aircraft_plot, "plots/static_stability.png")
 plot!()
 
 
