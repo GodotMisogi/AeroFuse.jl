@@ -110,7 +110,7 @@ wing = Wing(
     ## flip      = false           # Whether wing is flipped in x-z plane
 )
 
-# The `symmetry` Boolean argument specifies whether the geometry should be reflected in the ``x``-``z`` plane. The `flip` Boolean argument specifies whether the coordinates should be flipped in the ``x``-``z`` plane.
+# The `symmetry` Boolean argument specifies whether the geometry should be reflected in the ``x``-``z`` plane. The `flip` Boolean argument specifies whether the coordinates should be flipped in the ``x``-``z`` plane. The `w_sweep` argument specifies the chordwise-ratio of the sweep angles, e.g. 0. = leading edge sweep angle (default), 1. = trailing edge, 0.25 = quarter-chord.
 
 # The following "getter" functions provide quantities of interest such as chord lengths, spans, twist, dihedral, and sweep angles.
 
@@ -120,7 +120,9 @@ wing = Wing(
 # spans(wing)
 # twists(wing)
 # dihedrals(wing)
-# sweeps(wing)
+# sweeps(wing) # Leading-edge sweep angles
+# sweeps(wing, 0.25) # Quarter-chord sweep angles
+# sweeps(wing, 1.0) # Trailing-edge sweep angles
 # ```
 
 # You can evaluate commonly defined properties such as the aspect ratio, projected area, etc., with the following functions.
@@ -215,7 +217,8 @@ vtail = WingSection(
 ## Wing meshes
 wing_mesh = WingMesh(wing, [20,8], 10)
 
-# Optionally the type of spanwise spacing can be specified by the keyword `span_spacing` and providing types `Sine(), Cosine(), Uniform()` or a vector of the combination with length corresponding to the number of sections.
+# !!! tip 
+#     Optionally ,the type of spanwise spacing can be specified by the keyword `span_spacing` and providing types `Sine(), Cosine(), Uniform()` or a vector of the combination with length corresponding to the number of sections. For example, if you have two spanwise sections and the wing is symmetric, then the total number of spanwise sections is four. So the spanwise spacing argument would be, for example, `spanwise_spacing = [Uniform(), Cosine(), Cosine(), Uniform()]`
 
 ## Horizontal tail
 htail_mesh = WingMesh(htail, [10], 5;
@@ -281,7 +284,7 @@ system.boundary_vector[:wing]
 # 
 # The analysis computes the aerodynamic force coefficients $C_{\mathbf{F}}$ by surface pressure integration for nearfield forces. The aerodynamic moment coefficients $C_{\mathbf M}$ are calculated by computing the cross product of the moment arm of each control point from the reference point $\mathbf r_i - \mathbf r_{ref}$, i.e. $(C_{\mathbf{M}})_i = (\mathbf r_i - \mathbf r_{ref}) \times (C_{\mathbf{F}})_i$
 
-# !!! tip
+# !!! note
 #     You can specify the axis system for the nearfield forces, with choices of geometry, body, wind, or stability axes. The wind axes are used by default.
 
 ## Compute dynamics
@@ -325,3 +328,14 @@ dv_data = freestream_derivatives(
     print = true,  # Prints the results for only the aircraft
     print_components = true,  # Prints the results for all components
 );
+
+#md # !!! note
+#md #     For efficiency, instead of calling `solve_case` to compute the forces and then computing the derivatives, you can directly call:
+#md #     ```julia
+#md #     dvs = freestream_derivatives(
+#md #               aircraft, fs, refs,
+#md #               compressible     = true, # Compressibility option
+#md #               print            = true, # Prints the results for only the aircraft
+#md #               print_components = true, # Prints the results for all components
+#md #           )
+#md #     ```

@@ -1,8 +1,9 @@
 # ## Objectives
 #
-# Here we will show you how to perform an aerodynamic stability analysis of a conventional aircraft. Here, we'll attempt to replicate the design of a Boeing 777-200LR. It won't be a realistic replication, but the overall geometry will match to a certain extent.
-# ![](https://www.norebbo.com/wp-content/uploads/2012/12/777-200-custom-livery-001.jpg)
-# **Source**: [https://www.norebbo.com/wp-content/uploads/2012/12/777-200-custom-livery-001.jpg](https://www.norebbo.com/wp-content/uploads/2012/12/777-200-custom-livery-001.jpg)
+# Here we will show you how to perform an aerodynamic stability analysis of a conventional aircraft. Here, we'll attempt to replicate the design of a Boeing 777. It won't be a realistic replication, but the overall geometry will match to a certain extent.
+# 
+# ![](https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/dc763bf2-302c-46be-8a52-4cb7c11598e5/d74vi3c-372cf93b-f4ad-4046-85e3-49f667d3c55a.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcL2RjNzYzYmYyLTMwMmMtNDZiZS04YTUyLTRjYjdjMTE1OThlNVwvZDc0dmkzYy0zNzJjZjkzYi1mNGFkLTQwNDYtODVlMy00OWY2NjdkM2M1NWEucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.bS5c5rkhqB2yoaOmIeRut7TgVsqgnPIfMOBSgYOO-TI)
+# **Source**: [boeingboeing2, DeviantArt](https://www.deviantart.com/boeingboeing2/art/Boeing-777-vector-431451480)
 #md # !!! note
 #md #     Refer to the [Aircraft Aerodynamic Analysis](tutorials-aircraft.md) tutorial before studying this tutorial.
 # > **Recipe**
@@ -41,7 +42,7 @@ fuse = HyperEllipseFuselage(
 ## Get coordinates of end
 fuse_end = fuse.affine.translation + [ fuse.length, 0., 0. ]
 
-# Now, let's define the lifting surfaces. We'll download a supercritical airfoil for the wing section. **This is not the same one as used in the Boeing 777-200LR.** We'll also define a two-section wing.
+# Now, let's define the lifting surfaces. We'll download a supercritical airfoil for the wing section; note that this is not the same one as used in the Boeing 777-200LR. We'll also define a two-section wing.
 
 ## Define one airfoil
 foil_w = read_foil(download("http://airfoiltools.com/airfoil/seligdatfile?airfoil=rae2822-il"))
@@ -80,19 +81,19 @@ plot!(wing, label = "Wing")
 # ### Stabilizers
 # Now, let's add the stabilizers. First, the horizontal tail.
 htail = WingSection(
-    area        = 101, # Area (m²)
-    aspect      = 4.2, # Aspect ratio
-    taper       = 0.4, # Taper ratio
-    dihedral    = 7., # Dihedral angle (deg)
-    sweep       = 35., # Sweep angle (deg)
-    w_sweep     = 0., # Leading-edge sweep
-    angle       = -2, # Incidence angle (deg)
+    area        = 101,  # Area (m²)
+    aspect      = 4.2,  # Aspect ratio
+    taper       = 0.4,  # Taper ratio
+    dihedral    = 7.,   # Dihedral angle (deg)
+    sweep       = 35.,  # Sweep angle (deg)
+    w_sweep     = 0.,   # Leading-edge sweep
     root_foil   = naca4(0,0,1,2),
-
+    symmetry    = true,
+    
     ## Orientation
+    angle       = -2,           # Incidence angle (deg)
     axis        = [0., 1., 0.], # Axis of rotation, y-axis
     position    = [ fuse_end.x - 8., 0., 0.],
-    symmetry    = true
 )
 
 b_h = span(htail)
@@ -103,14 +104,14 @@ x_h, y_h, z_h = mac_h = mean_aerodynamic_center(htail)
 # Now the vertical tail.
 vtail = WingSection(
     area        = 56.1, # Area (m²)
-    aspect      = 1.5, # Aspect ratio
-    taper       = 0.4, # Taper ratio
+    aspect      = 1.5,  # Aspect ratio
+    taper       = 0.4,  # Taper ratio
     sweep       = 44.4, # Sweep angle (deg)
-    w_sweep     = 0., # Leading-edge sweep
+    w_sweep     = 0.,   # Leading-edge sweep
     root_foil   = naca4(0,0,0,9),
     
     ## Orientation
-    angle       = 90., # To make it vertical
+    angle       = 90.,       # To make it vertical
     axis        = [1, 0, 0], # Axis of rotation, x-axis
     position    = htail.affine.translation - [2.,0.,0.]
 ) # Not a symmetric surface
@@ -192,17 +193,6 @@ dvs = freestream_derivatives(
     ## farfield         = true,    # Print farfield derivatives
 );
 
-#md # !!! note
-#md #     For efficiency, instead of calling `solve_case` you can directly call:
-#md #     ```julia
-#md #     dvs = freestream_derivatives(
-#md #               aircraft, fs, refs,
-#md #               compressible     = true, # Compressibility option
-#md #               print            = true, # Prints the results for only the aircraft
-#md #               print_components = true, # Prints the results for all components
-#md #           )
-#md #     ```
-
 # You can access the derivatives of each lifting surface based on the keys defined in the `ComponentVector`.
 ac_dvs = dvs.aircraft
 
@@ -218,7 +208,7 @@ print_derivatives(dvs.wing, "Wing")
 print_derivatives(dvs.htail, "Horizontal Tail")
 print_derivatives(dvs.vtail, "Vertical Tail")
 
-# ## Stability Analysis
+# ## Static Stability Analysis
 
 # You can evaluate the static stability of the aircraft using the various quantities computed in this process, following standard computations and definitions in aircraft design and stability analysis.
 l_h = x_h - x_w                 # Horizontal tail moment arm

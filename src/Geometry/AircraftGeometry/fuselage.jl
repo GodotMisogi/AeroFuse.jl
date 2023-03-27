@@ -78,13 +78,13 @@ Rear: Hyperellipse ``z(ξ) = (1 - ξ^b)^{(1/b)}``
 - `length :: Real = 6.`: Fuselage length (m)
 - `x_a :: Real = 1.`: Location of front of cabin as a ratio of fuselage length ∈ [0,1]
 - `x_b :: Real = 0.`: Location of rear of cabin as a ratio of fuselage length ∈ [0,1]
-- `c_nose :: Real = 0.`: Curvature of nose in terms of hyperellipse parameter
-- `c_rear :: Real = 1.`: Curvature of rear in terms of hyperellipse parameter
+- `c_nose :: Real = 0.`: Curvature of nose in terms of hyperellipse parameter ``a``
+- `c_rear :: Real = 1.`: Curvature of rear in terms of hyperellipse parameter ``b``
 - `d_nose :: Real = 1.`: "Droop" or "rise" of nose from front of cabin centerline (m)
 - `d_rear :: Real = 1.`:"Droop" or "rise" of rear from rear of cabin centerline (m)
 - `position :: Vector{Real} = zeros(3)`: Position (m)
 - `angle :: Real = 0.`: Angle of rotation (degrees)
-- `axis :: Vector{Real} = [0, 1 ,0]`: Axis of rotation
+- `axis :: Vector{Real} = [0, 1 ,0]`: Axis of rotation, y-axis by default
 - `affine :: AffineMap = AffineMap(AngleAxis(deg2rad(angle), axis...), position)`: Affine mapping for the position and orientation via `CoordinateTransformations.jl` (overrides `angle` and `axis` if specified)
 """
 function HyperEllipseFuselage(;

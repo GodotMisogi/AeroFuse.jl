@@ -102,7 +102,7 @@ end
     @test sum(cms_cst) ≈ -0.25986701 atol = 1e-6
 end
 
-@testset "Geometry - Two-Section Trapezoidal Wing" begin
+@testset "Geometry - Two-Section, Asymmetric Trapezoidal Wing" begin
     # Define wing
     wing = Wing(
         chords    = [1.0, 0.6, 0.2],
@@ -129,7 +129,7 @@ end
     @test wing_mac ≈ [0.4218125, 2.4305755, 0.0]   atol = 1e-6
 end
 
-@testset "Geometry - Single-Section Trapezoidal Wing" begin
+@testset "Geometry - Single-Section, Symmetric Trapezoidal Wing" begin
     # Define wing section
     wing_sec = WingSection(aspect = 6.25, area = 4.0, taper = 0.6, symmetry = true)
 
