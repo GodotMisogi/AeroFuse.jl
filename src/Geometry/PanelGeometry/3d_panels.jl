@@ -51,11 +51,6 @@ collocation_point(panel :: AbstractPanel3D, a = 0.5) = (p1(panel) + p2(panel) + 
 
 Base.length(:: Panel3D) = 1
 
-# Transformation laws with vectors
-+(p, v) = Panel3D(p.p1 + v, p.p2 + v, p.p3 + v, p.p4 + v)
--(p, v) = Panel3D(p.p1 - v, p.p2 - v, p.p3 - v, p.p4 - v)
-×(p, v) = Panel3D(p.p1 × v, p.p2 × v, p.p3 × v, p.p4 × v)
-
 average_chord(panel :: Panel3D) = (p2(panel) - p1(panel) + p3(panel) - p4(panel)) / 2
 average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)) / 2
 
