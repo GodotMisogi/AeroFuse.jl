@@ -152,6 +152,28 @@ end
     @test mean_aerodynamic_center(wing) ≈ mean_aerodynamic_center(wing_sec) atol = 1e-6 # Mean aerodynamic center
 end
 
+@testset "Geometry - Hyperelliptical-Cylindrical Fuselage" begin
+    # Fuselage parameters
+    l_fuselage = 18. # Length (m)
+    h_fuselage = 1.5 # Height (m)
+    w_fuselage = 1.8 # Width (m)
+
+    ## Hyperelliptic fuselage
+    fuse = HyperEllipseFuselage(
+        radius = w_fuselage / 2,
+        length = l_fuselage,
+        c_nose = 2,
+        c_rear = 2,
+    )
+
+    ts = 0:0.1:1                # Distribution of sections
+    S_f = wetted_area(fuse, ts) # Surface area, m²
+    V_f = volume(fuse, ts)      # Volume, m³
+
+    @test S_f ≈ 91.1407334 atol = 1e-6
+    @test V_f ≈ 38.0380653 atol = 1e-6
+end
+
 @testset "Geometry - 3D Panel" begin
     panel = Panel3D(
         [1.0, -1., 0.0], 

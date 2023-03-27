@@ -65,11 +65,11 @@ end
 """
     HyperEllipseFuselage(; 
 
-Define a fuselage based on the following hyperelliptical parameterization.
+Define a fuselage based on the following hyperelliptical-cylindrical parameterization.
 	
 Nose: Hyperellipse ``z(ξ) = (1 - ξ^a)^{(1/a)}``
 
-Cabin: Cylindrical ``z(ξ) = (1 - ξ^2)^{(1/2)}``
+Cabin: Cylindrical ``z(ξ) = 1``
 
 Rear: Hyperellipse ``z(ξ) = (1 - ξ^b)^{(1/b)}``
 
@@ -115,8 +115,8 @@ end
 
 function undrooped_curve(fuse :: HyperEllipseFuselage, ts)
     # Check parametric curve domain
-    @assert ts[1] >= 0
-    @assert ts[end] <= 1
+    @assert ts[1] == 0
+    @assert ts[end] == 1
 
     # Properties
     x_a     = fuse.x_a
@@ -144,15 +144,20 @@ function undrooped_curve(fuse :: HyperEllipseFuselage, ts)
 end
 
 function curve(fuse :: HyperEllipseFuselage, ts)
-	x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = undrooped_curve(fuse, ts)
+    x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = undrooped_curve(fuse, ts)
 
-	# Droop/rise
-	z_nose += LinRange(fuse.d_nose, 0, length(x_nose))
-	z_rear += LinRange(0, fuse.d_rear, length(x_rear))
+    # Droop/rise
+    z_nose += LinRange(fuse.d_nose, 0, length(x_nose))
+    z_rear += LinRange(0, fuse.d_rear, length(x_rear))
 
-	return x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear
+    return x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear
 end
 
+"""
+    wetted_area(fuse :: HyperEllipseFuselage, t) 
+
+Get the coordinates of a `HyperEllipseFuselage` given the parameter distribution ``t``. Note that the distribution must have endpoints `0` and `1`.
+"""
 function coordinates(fuse :: HyperEllipseFuselage, ts, n_circ = 20)
     x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = undrooped_curve(fuse, ts)
 
@@ -174,7 +179,13 @@ function coordinates(fuse :: HyperEllipseFuselage, ts, n_circ = 20)
     return reshape(aff_coo, n_circ, length(ts) * 3, 3)
 end
 
-@views function wetted_area(fuse :: HyperEllipseFuselage) 
+
+"""
+    wetted_area(fuse :: HyperEllipseFuselage, t) 
+
+Compute the wetted area of a `HyperEllipseFuselage` given the parameter distribution ``t``. Note that the distribution must have endpoints `0` and `1`.
+"""
+@views function wetted_area(fuse :: HyperEllipseFuselage, ts) 
     x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = curve(fuse, ts)
 
     xs = [x_nose; x_cabin; x_rear]
@@ -183,6 +194,11 @@ end
     return sum(x -> truncated_cone_curved_area(x...), zip(zs[1:end-1], zs[2:end], diff(xs)))
 end
 
+"""
+    volume(fuse :: HyperEllipseFuselage, ts) 
+
+Compute the volume of a `HyperEllipseFuselage` given the parameter distribution ``t``. Note that the distribution must have endpoints `0` and `1`.
+"""
 @views function volume(fuse :: HyperEllipseFuselage, ts)
     x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = curve(fuse, ts)
 

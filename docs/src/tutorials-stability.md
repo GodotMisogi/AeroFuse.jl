@@ -47,7 +47,12 @@ fuse = HyperEllipseFuselage(
     position = [0.,0.,0.]   # Set nose at origin, m
 )
 
-# Get coordinates of end
+# Compute geometric properties
+ts = 0:0.1:1                # Distribution of sections for nose, cabin and rear
+S_f = wetted_area(fuse, ts) # Surface area, m²
+V_f = volume(fuse, ts)      # Volume, m³
+
+# Get coordinates of rear end
 fuse_end = fuse.affine.translation + [ fuse.length, 0., 0. ]
 ````
 
