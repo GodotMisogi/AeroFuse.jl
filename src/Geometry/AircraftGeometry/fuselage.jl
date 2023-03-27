@@ -156,16 +156,16 @@ end
 function coordinates(fuse :: HyperEllipseFuselage, ts, n_circ = 20)
     x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = undrooped_curve(fuse, ts)
 
-	# Droop/rise
-	dy_nose = LinRange(fuse.d_nose, 0, length(x_nose))
-	dy_rear = LinRange(0, fuse.d_rear, length(x_rear))
-	
+    # Droop/rise
+    dy_nose = LinRange(fuse.d_nose, 0, length(x_nose))
+    dy_rear = LinRange(0, fuse.d_rear, length(x_rear))
+
     # Generate 3D coordinates
-	coo = reduce(vcat, [ 
-		circle3D_yz.(x_nose, z_nose, n_circ, dy_nose); 
-		circle3D_yz.(x_cabin, z_cabin, n_circ); 
-		circle3D_yz.(x_rear, z_rear, n_circ, dy_rear)
-	])
+    coo = reduce(vcat, [ 
+        circle3D_yz.(x_nose, z_nose, n_circ, dy_nose); 
+        circle3D_yz.(x_cabin, z_cabin, n_circ); 
+        circle3D_yz.(x_rear, z_rear, n_circ, dy_rear)
+    ])
 
     # Do the affine map
     aff_coo = combinedimsview(map(fuse.affine, splitdimsview(coo, (1))), (1))

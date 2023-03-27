@@ -23,21 +23,6 @@ aspect_ratio(b, c1, c2) = 2b / (c1 + c2)
 sweep_angle(λ, AR, Λ_LE, w) = Λ_LE - atand(2w * (1 - λ), AR * (1 + λ))
 
 # Wing type definition
-"""
-    Wing(
-        foils :: Vector{Foil}, 
-        chords, 
-        twists, 
-        spans, 
-        dihedrals, 
-        sweeps,
-        position = zeros(3),
-        angle    = 0.,
-        axis     = [0.,1.,0.]
-    )
-
-Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees.
-"""
 struct Wing{T <: Number, N <: AbstractAffineMap} <: AbstractWing
     foils      :: Vector{<: AbstractFoil}
     chords     :: Vector{T}
@@ -66,6 +51,40 @@ struct Wing{T <: Number, N <: AbstractAffineMap} <: AbstractWing
 end
 
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
+"""
+    Wing(
+        chords, 
+        foils :: Vector{Foil}, 
+        twists, 
+        spans, 
+        dihedrals, 
+        sweeps,
+        symmetry = false,
+        flip     = false,
+        position = zeros(3),
+        angle    = 0.,
+        axis     = [0.,1.,0.],
+    )
+
+Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees. Optionally, specify translation and a rotation in angle-axis representation for defining coordinates in a global axis system. Additionally, specify Boolean arguments for symmetry or reflecting in the ``x``-``z`` plane.
+
+# Arguments
+- `chords :: Vector{Real}`: Chord lengths (m)
+- `foils :: Vector{Foil} = fill(naca4(0,0,1,2), length(chords))`: `Foil` shapes, default is NACA 0012.
+- `spans :: Vector{Real} = ones(length(chords) - 1) / (length(chords) - 1)`: Span lengths (m), default yields total span length 1.
+- `dihedrals :: Vector{Real} = zero(spans)`: Dihedral angles (deg), default is zero.
+- `sweeps :: Vector{Real} = zero(spans)`: Sweep angles (deg), default is zero.
+- `w_sweep :: Real = 0.`: Chord ratio for sweep angle 
+                          e.g., 0    = Leading-edge sweep, 
+                                1    = Trailing-edge sweep,
+                                0.25 = Quarter-chord sweep
+- `symmetry :: Bool = false`: Symmetric in the ``x``-``z`` plane
+- `flip :: Bool = false`: Flip coordinates in the ``x``-``z`` plane
+- `position :: Vector{Real} = zeros(3)`: Position (m)
+- `angle :: Real = 0.`: Angle of rotation (degrees)
+- `axis :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
+- `affine :: AffineMap = AffineMap(AngleAxis(deg2rad(angle), axis...), position)`: Affine mapping for the position and orientation via `CoordinateTransformations.jl` (overrides `angle` and `axis` if specified)
+"""
 function Wing(;
     chords, 
     foils     = fill(naca4(0,0,1,2), length(chords)),
