@@ -29,13 +29,14 @@ end
 makedocs(
     # modules = [AeroFuse, AeroFuse.VortexLattice],
     sitename = "AeroFuse",
-    authors  = "Arjit Seth, Stephane Redonnet, and Rhea P. Liem",
+    authors  = "Arjit Seth and Rhea P. Liem",
     # repo = "https://github.com/GodotMisogi/AeroFuse.jl",
     pages = [
         "Home"          => "index.md"
         "Tutorials"     =>  [
             "Airfoil Aerodynamic Analysis"  => "tutorials-airfoil.md",
-            "Aircraft Aerodynamic Analysis" => "tutorials-aircraft.md"
+            "Aircraft Aerodynamic Analysis" => "tutorials-aircraft.md",
+            "Aerodynamic Stability Analysis" => "tutorials-stability.md",
         ]
         "How-to Guide"  => "howto.md"
         "Theory"        => "theory.md"
