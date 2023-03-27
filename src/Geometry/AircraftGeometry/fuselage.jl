@@ -99,7 +99,7 @@ function HyperEllipseFuselage(;
         position    = zeros(3),
         angle       = 0.,
         axis        = [0., 1., 0.],
-        affine      = AffineMap(AngleAxis(deg2rad(angle), axis...), position),
+        affine      = AffineMap(AngleAxis(deg2rad(angle), axis...), SVector(position...)),
     )
    
     return HyperEllipseFuselage(radius, length, x_a, x_b, c_nose, c_rear, d_nose, d_rear, affine)
