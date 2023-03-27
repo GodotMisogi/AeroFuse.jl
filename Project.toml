@@ -1,7 +1,7 @@
 name = "AeroFuse"
 uuid = "477c59f4-51f5-487f-bf1e-8db39645b227"
 authors = ["GodotMisogi <arjitseth@gmail.com>"]
-version = "0.4.5"
+version = "0.4.6"
 
 [deps]
 Accessors = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"

@@ -23,8 +23,16 @@ The current focus is to enable tutorials in computation in an aerospace educatio
 - Automatic differentiation support primarily via [`ForwardDiff.jl`](https://github.com/JuliaDiff/ForwardDiff.jl).
 - Optimization capabilities with these features.
 
+**Aerodynamic Analysis:**
+
 ![](assets/VortexLattice.svg)
-![](assets/LinearVortex.svg)
+
+**Stability Analysis:**
+
+![](assets/boeing777.svg)
+
+**Optimization:**
+
 ![](assets/SciMLWingOptimization.svg)
 
 **In progress:**
@@ -53,8 +61,8 @@ If you use AeroFuse in your research, please cite the following until any releva
   author  = {Arjit Seth, Rhea P. Liem},
   title   = {AeroFuse},
   url     = {https://github.com/GodotMisogi/AeroFuse},
-  version = {0.4.5},
-  date    = {2023-03-20},
+  version = {0.4.6},
+  date    = {2023-03-27},
 }
 ```
 
