@@ -5,7 +5,7 @@
 [![CI](https://github.com/GodotMisogi/AeroFuse.jl/workflows/CI/badge.svg?branch=main)](https://github.com/GodotMisogi/AeroFuse.jl/actions?query=workflow%3ACI+branch%3Amain)
 
 <p align="center">
-<img width="60%", src="https://raw.githubusercontent.com/GodotMisogi/AeroFuse.jl/main/docs/src/assets/logo.svg">
+<img width="60%", src="docs/src/assets/logo.svg">
 </p>
 
 AeroFuse is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aircraft geometry, aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
@@ -31,8 +31,16 @@ The current focus is to enable tutorials in computation in an aerospace educatio
 - Automatic differentiation support primarily via [`ForwardDiff.jl`](https://github.com/JuliaDiff/ForwardDiff.jl).
 - Optimization capabilities with these features.
 
+**Aerodynamic Analysis:**
+
 ![](plots/VortexLattice.svg)
-<!-- ![](plots/LinearVortex.svg) -->
+
+**Stability Analysis:**
+
+![](plots/boeing777.svg)
+
+**Optimization:**
+
 ![](plots/SciMLWingOptimization.svg)
 
 **In progress:**
@@ -61,7 +69,7 @@ If you use AeroFuse in your research, please cite the following until any releva
   author  = {Arjit Seth, Rhea P. Liem},
   title   = {AeroFuse},
   url     = {https://github.com/GodotMisogi/AeroFuse},
-  version = {0.4.5},
-  date    = {2023-03-20},
+  version = {0.4.6},
+  date    = {2023-03-27},
 }
 ```

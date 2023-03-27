@@ -45,19 +45,14 @@ vtail = Wing(
     axis      = [1., 0., 0.]
 )
 
-# Print info
-print_info(wing, "Wing")
-print_info(htail, "Horizontal Tail")
-print_info(vtail, "Vertical Tail")
-
 ## WingMesh type
 wing_mesh = WingMesh(wing, [24], 6,
     # span_spacing = Cosine()
 )
-htail_mesh = WingMesh(htail, [24], 6, 
+htail_mesh = WingMesh(htail, [12], 6, 
     # span_spacing = Cosine()
 )
-vtail_mesh = WingMesh(vtail, [24], 6, 
+vtail_mesh = WingMesh(vtail, [12], 6, 
     # span_spacing = Cosine()
 )
 
@@ -111,7 +106,7 @@ ffs = farfield_coefficients(sys)
     axes = ax_sys,
     print = true,
     print_components = true,
-    # farfield = false
+    # farfield = true
 );
 
 ## Viscous drag prediction

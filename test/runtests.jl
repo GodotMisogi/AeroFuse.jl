@@ -102,14 +102,14 @@ end
     @test sum(cms_cst) ≈ -0.25986701 atol = 1e-6
 end
 
-@testset "Geometry - Two-Section Trapezoidal Wing" begin
+@testset "Geometry - Two-Section, Asymmetric Trapezoidal Wing" begin
     # Define wing
     wing = Wing(
         chords    = [1.0, 0.6, 0.2],
         twists    = [2.0, 0.0, -0.2],
         spans     = [5.0, 0.5],
         dihedrals = [5., 5.],
-        sweeps    = [5., 5.],
+        sweeps    = [5., 10.],
     #   symmetry  = true
     );
 
@@ -126,10 +126,10 @@ end
     @test c        ≈ 0.79841008                    atol = 1e-6
     @test AR       ≈ 7.20342634                    atol = 1e-6
     @test λ        ≈ 0.20000000                    atol = 1e-6
-    @test wing_mac ≈ [0.4209310, 1.3343524, 0.0]   atol = 1e-6
+    @test wing_mac ≈ [0.4218125, 2.4305755, 0.0]   atol = 1e-6
 end
 
-@testset "Geometry - Single-Section Trapezoidal Wing" begin
+@testset "Geometry - Single-Section, Symmetric Trapezoidal Wing" begin
     # Define wing section
     wing_sec = WingSection(aspect = 6.25, area = 4.0, taper = 0.6, symmetry = true)
 
@@ -168,19 +168,6 @@ end
     @test inv(T)(T(mp) + T(p)) ≈ p atol = 1e-6
     @test panel_area(panel) ≈ 1.0 atol = 1e-6
     @test normal_vector(panel) ≈ [0,0,-2.0] atol = 1e-6
-end
-
-@testset "Freestream 3D Velocity Conversion" begin
-    φ, θ = 1.0, 1.0
-    fs = Freestream(alpha = φ, beta = θ)
-    V_test = [ cosd(θ) * cosd(φ), -sind(φ), sind(θ) * cosd(φ) ]
-    V_run = velocity(fs)
-
-    φ_test, θ_test = cartesian_to_freestream(V_run)
-
-    @test V_run ≈ V_test atol = 1e-6
-    @test φ_test ≈ φ atol = 1e-6
-    @test θ_test ≈ -θ atol = 1e-6
 end
 
 @testset "Freestream 3D Velocity Conversion" begin

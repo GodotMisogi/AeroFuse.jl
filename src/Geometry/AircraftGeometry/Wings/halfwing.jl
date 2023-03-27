@@ -1,18 +1,28 @@
-"""
-    Wing(
-        foils :: Vector{Foil}, 
-        chords, 
-        twists, 
-        spans, 
-        dihedrals, 
-        sweeps,
-        position = zeros(3),
-        angle    = 0.
-        axis     = [0.,1.,0.]
-    )
+## Wing definition
+#=====================================================================#
 
-Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees.
-"""
+# Helper functions
+aspect_ratio(span, area) = span^2 / area
+mean_geometric_chord(span, area) = area / span
+taper_ratio(root_chord, tip_chord) = tip_chord / root_chord
+area(span, chord) = span * chord
+
+# Mean aerodynamic chord for a single section
+mean_aerodynamic_chord(c_r, λ) = (2/3) * c_r * (1 + λ + λ^2)/(1 + λ)
+
+# Spanwise location of mean aerodynamic chord for a single section
+y_mac(y, b, λ) = y + b * (1 + 2λ) / (3(1 + λ))
+
+# Projected area of a single trapezoidal section
+section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) / 2)
+
+# Aspect ratio for a single trapezoidal section
+aspect_ratio(b, c1, c2) = 2b / (c1 + c2)
+
+# Conversion of sweep angle from leading-edge to any ratio along the chord
+sweep_angle(λ, AR, Λ_LE, w) = Λ_LE - atand(2w * (1 - λ), AR * (1 + λ))
+
+# Wing type definition
 struct Wing{T <: Number, N <: AbstractAffineMap} <: AbstractWing
     foils      :: Vector{<: AbstractFoil}
     chords     :: Vector{T}
@@ -41,6 +51,40 @@ struct Wing{T <: Number, N <: AbstractAffineMap} <: AbstractWing
 end
 
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
+"""
+    Wing(
+        chords, 
+        foils :: Vector{Foil}, 
+        twists, 
+        spans, 
+        dihedrals, 
+        sweeps,
+        symmetry = false,
+        flip     = false,
+        position = zeros(3),
+        angle    = 0.,
+        axis     = [0.,1.,0.],
+    )
+
+Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees. Optionally, specify translation and a rotation in angle-axis representation for defining coordinates in a global axis system. Additionally, specify Boolean arguments for symmetry or reflecting in the ``x``-``z`` plane.
+
+# Arguments
+- `chords :: Vector{Real}`: Chord lengths (m)
+- `foils :: Vector{Foil} = fill(naca4(0,0,1,2), length(chords))`: `Foil` shapes, default is NACA 0012.
+- `spans :: Vector{Real} = ones(length(chords) - 1) / (length(chords) - 1)`: Span lengths (m), default yields total span length 1.
+- `dihedrals :: Vector{Real} = zero(spans)`: Dihedral angles (deg), default is zero.
+- `sweeps :: Vector{Real} = zero(spans)`: Sweep angles (deg), default is zero.
+- `w_sweep :: Real = 0.`: Chord ratio for sweep angle 
+                          e.g., 0    = Leading-edge sweep, 
+                                1    = Trailing-edge sweep,
+                                0.25 = Quarter-chord sweep
+- `symmetry :: Bool = false`: Symmetric in the ``x``-``z`` plane
+- `flip :: Bool = false`: Flip coordinates in the ``x``-``z`` plane
+- `position :: Vector{Real} = zeros(3)`: Position (m)
+- `angle :: Real = 0.`: Angle of rotation (degrees)
+- `axis :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
+- `affine :: AffineMap = AffineMap(AngleAxis(deg2rad(angle), axis...), position)`: Affine mapping for the position and orientation via `CoordinateTransformations.jl` (overrides `angle` and `axis` if specified)
+"""
 function Wing(;
     chords, 
     foils     = fill(naca4(0,0,1,2), length(chords)),
@@ -52,7 +96,7 @@ function Wing(;
     position  = zeros(3),
     angle     = 0.,
     axis      = [0., 1., 0.],
-    affine    = AffineMap(AngleAxis(deg2rad(angle), axis...), position),
+    affine    = AffineMap(AngleAxis(deg2rad(angle), axis...), SVector(position...)),
     symmetry  = false,
     flip      = false
 )
@@ -102,9 +146,6 @@ sweeps(wing :: Wing, w = 0.) = @views @. sweep_angle(
     w # Normalized sweep angle location ∈ [0,1]
 )
 
-aspect_ratio(b, c1, c2) = 2b / (c1 + c2)
-sweep_angle(λ, AR, Λ_LE, w) = Λ_LE - atand(2w * (1 - λ), AR * (1 + λ))
-
 # Affine transformations
 Base.position(wing :: Wing) = wing.affine.translation
 orientation(wing :: Wing) = wing.affine.linear
@@ -129,7 +170,19 @@ Compute the taper ratio of a `Wing`, defined as the tip chord length divided by 
 """
 taper_ratio(wing :: Wing) = last(wing.chords) / first(wing.chords)
 
-section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) / 2)
+"""
+    aspect_ratio(wing :: AbstractWing)
+
+Compute the aspect ratio of an `AbstractWing`.
+"""
+aspect_ratio(wing) = aspect_ratio(span(wing), projected_area(wing))
+
+"""
+    properties(wing :: AbstractWing)
+
+Compute the generic properties of interest (span, area, etc.) of an `AbstractWing`.
+"""
+properties(wing :: AbstractWing) = [ aspect_ratio(wing), span(wing), projected_area(wing), mean_aerodynamic_chord(wing), mean_aerodynamic_center(wing) ]
 
 function section_projected_areas(wing :: Wing)
     spans = ifelse(wing.symmetry, 2 * wing.spans, wing.spans)
@@ -165,18 +218,18 @@ end
 
 Compute the mean aerodynamic center of a `Wing`. By default, the factor is assumed to be at 25% from the leading edge, which can be adjusted. Similarly, options are provided to account for symmetry or to flip the location in the ``x``-``z`` plane.
 """
-function mean_aerodynamic_center(wing :: Wing, factor = 0.25; symmetry = wing.symmetry, flip = wing.flip)
+@views function mean_aerodynamic_center(wing :: Wing, factor = 0.25; symmetry = wing.symmetry, flip = wing.flip)
     # Compute mean aerodynamic chords and projected areas
     macs = section_macs(wing)
     areas = section_projected_areas(wing)
 
     # Get leading edge coordinates
     wing_LE = leading_edge(wing)
-    x_LEs   = @views wing_LE[:,1]
-    y_LEs   = @views wing_LE[:,2]
+    x_LEs = wing_LE[:,1]
+    y_LEs = wing_LE[:,2]
 
     # Compute x-y locations of section MACs
-    x_mac_LEs = @views @. y_mac(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
+    x_mac_LEs = @views @. y_mac(x_LEs[1:end-1], x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
     y_macs = @views @. y_mac(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
 
     # Calculate section MAC coords
@@ -261,7 +314,7 @@ function wing_bounds(wing :: Wing)
 end
 
 """
-    trailing_edge(wing :: Wing)
+    leading_edge(wing :: Wing)
 
 Compute the leading edge coordinates of a `Wing`.
 """
@@ -280,7 +333,7 @@ function Base.show(io :: IO, wing :: AbstractWing)
     println(io, sym, supertype(typeof(wing)),  " with ", length(spans(wing)), " spanwise section(s).")
     println(io, "Aspect Ratio: ", aspect_ratio(wing))
     println(io, "Span (m): ", span(wing))
-    println(io, "Projected Area (m): ", projected_area(wing))
+    println(io, "Projected Area (m²): ", projected_area(wing))
     println(io, "Mean Aerodynamic Chord (m): ", mean_aerodynamic_chord(wing))
     println(io, "Mean Aerodynamic Center (m): ", mean_aerodynamic_center(wing))
     println(io, "Position (m): ", wing.affine.translation)

@@ -110,14 +110,15 @@ print_coefficients(sys_exact)
 
 
 ## Plot spanwise loading
-ll_init = spanwise_loading(wing_init, surface_coefficients(sys)[1].wing, sys.reference.area)
-ll_opt = spanwise_loading(wing_opt, surface_coefficients(sys_opt)[1].wing, sys_opt.reference.area)
+ll_init = spanwise_loading(wing_init, sys.reference, surface_coefficients(sys)[1].wing, sys.circulations.wing)
+ll_opt = spanwise_loading(wing_opt, sys_opt.reference, surface_coefficients(sys_opt)[1].wing, sys_opt.circulations.wing)
+ll_exact = spanwise_loading(wing_exact, sys_exact.reference, surface_coefficients(sys_exact)[1].wing, sys_exact.circulations.wing)
 
-CL_init = vec(sum(sys.circulations.wing, dims = 1)) / (0.5 * sys.reference.speed * sys.reference.chord)
-CL_loads = vec(sum(sys_opt.circulations.wing, dims = 1)) / (0.5 * sys_opt.reference.speed * sys_opt.reference.chord)
+# CL_init = vec(sum(sys.circulations.wing, dims = 1)) / (0.5 * sys.reference.speed * sys.reference.chord)
+# CL_loads = vec(sum(sys_opt.circulations.wing, dims = 1)) / (0.5 * sys_opt.reference.speed * sys_opt.reference.chord)
 
-ll_exact = spanwise_loading(wing_exact, surface_coefficients(sys_exact)[1].wing, sys_exact.reference.area)
-CL_exact = vec(sum(sys_exact.circulations.wing, dims = 1)) / (0.5 * sys_exact.reference.speed * sys_exact.reference.chord)
+# ll_exact = spanwise_loading(wing_exact, sys_exact.reference.area, surface_coefficients(sys_exact)[1].wing, sys_exact.circulations.wing)
+# CL_exact = vec(sum(sys_exact.circulations.wing, dims = 1)) / (0.5 * sys_exact.reference.speed * sys_exact.reference.chord)
 
 ##
 using Plots, LaTeXStrings
@@ -209,13 +210,13 @@ plt_CL = plot(
     xlabel = L"Spanwise Location $y$, $m$",
     grid = false,
 )
-plot!(ll_init[:,1], CL_init,
+plot!(ll_init[:,1], ll_init[:,5],
     lc = :black, label = ""
 )
-plot!(ll_opt[:,1], CL_loads, 
+plot!(ll_opt[:,1], ll_opt[:,5], 
     lc = :cornflowerblue, label = ""
 )
-plot!(ll_exact[:,1], CL_exact, 
+plot!(ll_exact[:,1], ll_exact[:,5], 
     lc = :green, label = ""
 )
 

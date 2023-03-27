@@ -1,23 +1,6 @@
 ## Section definitions
 #==========================================================================================#
 
-# mutable struct WingSection{T <: Real, F <: AbstractFoil, A <: AbstractAffineMap, W <: AbstractWing}
-#     S :: T
-#     AR :: T
-#     b  :: T
-#     dihedral :: T
-#     sweep :: T
-#     w_sweep :: T
-#     c_r:: T
-#     c_t :: T
-#     tau_r :: T
-#     tau_t :: T
-#     foil_r :: F
-#     foil_t :: F
-#     affine :: A
-#     wing :: W
-# end
-
 # Span length from aspect ratio and area
 span_length(b, AR) = √(b * AR)
 
@@ -56,39 +39,41 @@ function Wing(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip
     return section
 end
 
-# function WingSection(S, taper, sweep, w_sweep, dihedral, root_twist, tip_twist, root_foil, tip_foil, affine, symmetry)
-#     span = S^2 / AR
-#     root_chord = 2 * S / (b * (1 + λ))
-
-#     Wing(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
-# end
-
 """
-    WingSection(; area, aspect, dihedral, sweep, taper, root_chord,
-                  root_twist, tip_twist, root_foil, tip_foil,
-                  position, angle, axis)
+    WingSection(; 
+        area, aspect, taper
+        dihedral, sweep, w_sweep,
+        root_twist, tip_twist,
+        position, angle, axis,
+        symmetry, flip,
+        root_foil, tip_foil,
+        root_control, tip_control,
+    )
 
 Define a `Wing` in the ``x``-``z`` plane, with optional Boolean arguments for symmetry and flipping in the plane.
 
 # Arguments
 - `area :: Real = 1.`: Area (m²)
 - `aspect :: Real = 6.`: Aspect ratio
+- `taper :: Real = 1.`: Taper ratio of tip to root chord
 - `dihedral :: Real = 1.`: Dihedral angle (degrees)
 - `sweep :: Real = 0.`: Sweep angle (degrees)
 - `w_sweep :: Real = 0.`: Chord ratio for sweep angle 
                           e.g., 0    = Leading-edge sweep, 
                                 1    = Trailing-edge sweep,
                                 0.25 = Quarter-chord sweep
-- `taper :: Real = 1.`: Taper ratio of tip to root chord
 - `root_twist :: Real = 0.`: Twist angle at root (degrees)
 - `tip_twist :: Real = 0.`: Twist angle at tip (degrees)
-- `position :: Vector{Real} = zeros(3)`: Position
-- `angle :: Real = 0.`: Angle of rotation (degrees)
-- `axis :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 - `root_foil :: Foil = naca4((0,0,1,2))`: `Foil` at root
 - `tip_foil :: Foil = root_foil`: `Foil` at tip. Defaults to root foil.
 - `root_control :: NTuple{2} = (0., 0.75)`: (Angle, hinge ratio) for adding a control surface at the root.
 - `tip_control :: NTuple{2} = root_control`: (Angle, hinge ratio) for adding a control surface at the tip. Defaults to root control's settings.
+- `symmetry :: Bool = false`: Symmetric in the ``x``-``z`` plane
+- `flip :: Bool = false`: Flip coordinates in the ``x``-``z`` plane
+- `position :: Vector{Real} = zeros(3)`: Position (m)
+- `angle :: Real = 0.`: Angle of rotation (degrees)
+- `axis :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
+- `affine :: AffineMap = AffineMap(AngleAxis(deg2rad(angle), axis...), position)`: Affine mapping for the position and orientation via `CoordinateTransformations.jl` (overrides `angle` and `axis` if specified)
 """
 function WingSection(;
         area         = 1.,
@@ -105,8 +90,8 @@ function WingSection(;
         tip_control  = root_control,
         position     = zeros(3),
         angle        = 0.,
-        axis         = SVector(0., 1., 0.),
-        affine       = AffineMap(AngleAxis(deg2rad(angle), axis...), position),
+        axis         = [0., 1., 0.],
+        affine       = AffineMap(AngleAxis(deg2rad(angle), axis...), SVector(position...)),
         symmetry     = false,
         flip         = false
     )

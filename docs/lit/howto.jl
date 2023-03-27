@@ -26,11 +26,9 @@ plot(xlabel = L"x", ylabel = L"y", aspect_ratio = 1)
 plot!(my_foil)
 
 # !!! tip
-#     You can also import airfoil coordinates from the internet by using `FileIO`.
+#     You can also import airfoil coordinates from the internet.
 
 ## Read coordinates from an internet address.
-using FileIO
-
 online_foil = read_foil(download("https://m-selig.ae.illinois.edu/ads/coord/s1210.dat"))
 
 plot!(online_foil)
@@ -93,7 +91,11 @@ locs     = panel_location.(panels);   # Upper or lower surface
 # ## Wing Geometry
 # How to work with wing geometry.
 # 
-# To define a wing, AeroFuse provides a `Wing` constructor.
+# To define a wing, AeroFuse provides a `Wing` constructor based on the following parametrization. The named arguments correspond to the foil shapes, chord and span lengths, twist, dihedral and sweep angles.
+# !!! info
+#    A **wing section** consists of two foil profiles and their chord lengths and twist angles. Between them is their span length with associated _leading-edge_ dihedral and sweep angles. So a general half-wing consisting of ``n`` sections will have ``n`` entries for spans $b$, dihedrals $\delta$, sweeps $\Lambda$, and ``n+1`` entries for foils, chords $c$, and twists $\iota$, for some ``n \in \mathbb N``.
+# 
+# ![](https://godot-bloggy.xyz/post/diagrams/WingGeometry.svg)
 airfoil = naca4((2,4,1,2))
 wing = Wing(
     foils     = [ airfoil for i in 1:3 ],   # Foils
@@ -105,10 +107,10 @@ wing = Wing(
     w_sweep   = 0.25,             # Sweep angle location w.r.t. 
                                   ## normalized chord lengths ∈ [0,1]
     symmetry  = true,             # Whether wing is symmetric
-    ## flip      = false           # Whether wing is reflected
+    ## flip      = false           # Whether wing is flipped in x-z plane
 )
 
-# The `symmetry` Boolean argument determines whether the geometry should be reflected in the ``x``-``z`` plane.
+# The `symmetry` Boolean argument specifies whether the geometry should be reflected in the ``x``-``z`` plane. The `flip` Boolean argument specifies whether the coordinates should be flipped in the ``x``-``z`` plane. The `w_sweep` argument specifies the chordwise-ratio of the sweep angles, e.g. 0. = leading edge sweep angle (default), 1. = trailing edge, 0.25 = quarter-chord.
 
 # The following "getter" functions provide quantities of interest such as chord lengths, spans, twist, dihedral, and sweep angles.
 
@@ -118,22 +120,43 @@ wing = Wing(
 # spans(wing)
 # twists(wing)
 # dihedrals(wing)
-# sweeps(wing)
+# sweeps(wing) # Leading-edge sweep angles
+# sweeps(wing, 0.25) # Quarter-chord sweep angles
+# sweeps(wing, 1.0) # Trailing-edge sweep angles
 # ```
 
-# You can evaluate commonly defined properties such as the aspect ratio, projected area, etc. with the following functions.
+# You can evaluate commonly defined properties such as the aspect ratio, projected area, etc., with the following functions.
 
 # ```@repl howto
 # aspect_ratio(wing)
 # projected_area(wing)
 # span(wing)
 # taper_ratio(wing)
+# mean_aerodynamic_chord(wing)
 # ```
 
-# You can plot the wing with `Plots.jl` quite simply.
-plot(wing, zlim = (-0.5, 0.5) .* span(wing), aspect_ratio = 1, label = "Wing")
+# The mean aerodynamic center calculation merits discussion. Its calculation procedure is depicted in the following diagram:
+# 
+# ![](https://raw.githubusercontent.com/HKUST-OCTAD-LAB/MECH3620Materials/main/pics/WingParams.svg)
+mac25_w = mean_aerodynamic_center(wing) # 25% MAC by default
+mac40_w = mean_aerodynamic_center(wing, 0.4) # at 40% MAC
 
-# There is also a convenient function for pretty-printing information, in which the first argument takes the `Wing` type and the second takes a name (as a `String` or `Symbol`).
+# You can plot the wing with `Plots.jl` quite simply.
+plot(wing, 
+    0.25; # Aerodynamic center location in terms of chord ratio plot 
+    mac = true, # Optional named argument to disable aerodynamic center plot
+    zlim = (-0.5, 0.5) .* span(wing), 
+    aspect_ratio = 1, 
+    label = "Wing",
+)
+
+# At 40% MAC
+plot!(wing, 
+    0.40; # 40% MAC
+    label = "40% MAC"
+)
+
+# There is also a convenient function for pretty-printing information (using [PrettyTables.jl](https://ronisbr.github.io/PrettyTables.jl/stable/)), in which the first argument takes the `Wing` type and the second takes a name (as a `String` or `Symbol`).
 print_info(wing, "Wing")
 
 #md # !!! tip
@@ -143,9 +166,7 @@ print_info(wing, "Wing")
 using Accessors
 
 ## Set only chords with other properties remaining identical.
-wing = @set wing.chords = [0.4, 0.1, 0.05]
-
-print_info(wing, "My Wing")
+new_wing = @set wing.chords = [0.4, 0.1, 0.05]
 
 # ## Vortex Lattice Aerodynamic Analyses
 # 
@@ -153,7 +174,7 @@ print_info(wing, "My Wing")
 #
 # ### Geometry 
 # First we define the lifting surfaces. These can be a combination of `Wing` types constructed using the various methods available.
-# !!! warning "Alert"
+# !!! info
 #     Support for fuselages and control surfaces is in progress.
 
 # Horizontal tail
@@ -196,7 +217,8 @@ vtail = WingSection(
 ## Wing meshes
 wing_mesh = WingMesh(wing, [20,8], 10)
 
-# Optionally the type of spanwise spacing can be specified by the keyword `span_spacing` and providing types `Sine(), Cosine(), Uniform()` or a vector of the combination with length corresponding to the number of sections.
+# !!! tip 
+#     Optionally ,the type of spanwise spacing can be specified by the keyword `span_spacing` and providing types `Sine(), Cosine(), Uniform()` or a vector of the combination with length corresponding to the number of sections. For example, if you have two spanwise sections and the wing is symmetric, then the total number of spanwise sections is four. So the spanwise spacing argument would be, for example, `spanwise_spacing = [Uniform(), Cosine(), Cosine(), Uniform()]`
 
 ## Horizontal tail
 htail_mesh = WingMesh(htail, [10], 5;
@@ -211,7 +233,7 @@ vtail_mesh = WingMesh(vtail, [10], 5); # Vertical tail
 wing_horsies = make_horseshoes(wing_mesh)
 
 # !!! note
-#     You can also generate vortex ring elements by calling `make_vortex rings`.
+#     You can also generate vortex ring elements by calling `make_vortex rings`, but the aerodynamic analysis is slightly slower.
 
 # For multiple lifting surfaces, it is most convenient to define a single vector consisting of all the components' horseshoes using [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl).
 aircraft = ComponentVector(
@@ -258,9 +280,12 @@ system.influence_matrix[:wing, :htail];
 
 system.boundary_vector[:wing]
 
-# ### Dynamics
+# ### Forces and Moments
 # 
-# The analysis computes the aerodynamic forces by surface pressure integration for nearfield forces. You can specify the axis system for the nearfield forces, with choices of geometry, body, wind, or stability axes. The wind axes are used by default.
+# The analysis computes the aerodynamic force coefficients $C_{\mathbf{F}}$ by surface pressure integration for nearfield forces. The aerodynamic moment coefficients $C_{\mathbf M}$ are calculated by computing the cross product of the moment arm of each control point from the reference point $\mathbf r_i - \mathbf r_{ref}$, i.e. $(C_{\mathbf{M}})_i = (\mathbf r_i - \mathbf r_{ref}) \times (C_{\mathbf{F}})_i$
+
+# !!! note
+#     You can specify the axis system for the nearfield forces, with choices of geometry, body, wind, or stability axes. The wind axes are used by default.
 
 ## Compute dynamics
 ax = Wind() # Body(), Stability(), Geometry()
@@ -304,47 +329,13 @@ dv_data = freestream_derivatives(
     print_components = true,  # Prints the results for all components
 );
 
-# ## Euler-Bernoulli Beam Structural Analysis
-# The tubular beam's relevant properties, viz. the Young's (elastic) modulus $E$, shear modulus $G$, and torsional moment of inertia $J$ must be specified to define the stiffness matrix for its discretization with $n$ elements.
-
-## Material properties
-E = 1. # Elastic modulus
-G = 1. # Shear modulus
-J = 2. # Torsional moment of inertia
-n = 2  # Number of sections
-
-## Stiffness matrix
-K = bending_stiffness_matrix(
-    fill(E, 2), 
-    fill(G, 2),
-    fill(J, 2), 
-    :z         # Direction of deflection
-)
-
-# Fixed, hinged beam subjected to force and moment at the center.
-
-## Stiffness matrix
-A = K[[3,4,6],[3,4,6]]  # v2, φ2, φ3
-
-## Load vector
-b = [-1000, 1000, 0]    # F2, M2, M3
-
-## Solution
-x = A \ b
-
-## Forces
-F1 = K * [ 0.; 0.; x[1:2]; 0.; x[3] ]
-
-# Propped cantilever beam subjected to force at free end.
-
-## Stiffness matrix
-A = K[[1,2,4],[1,2,4]] # v1, φ1, φ2
-
-## Load vector
-b = [10, 0, 0]
-
-## Solution
-x = A \ b
-
-## Forces
-F2 = K * [ x[1:2]; 0.; x[3]; 0.; 0. ]
+#md # !!! note
+#md #     For efficiency, instead of calling `solve_case` to compute the forces and then computing the derivatives, you can directly call:
+#md #     ```julia
+#md #     dvs = freestream_derivatives(
+#md #               aircraft, fs, refs,
+#md #               compressible     = true, # Compressibility option
+#md #               print            = true, # Prints the results for only the aircraft
+#md #               print_components = true, # Prints the results for all components
+#md #           )
+#md #     ```

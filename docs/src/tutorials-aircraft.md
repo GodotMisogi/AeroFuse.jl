@@ -15,10 +15,14 @@ Here we will show you how to perform an aerodynamic analysis of a conventional a
 For this, we will need to import some packages which will be convenient for plotting.
 
 ````@example tutorials-aircraft
-using AeroFuse      # Main package
-using Plots         # Plotting library
-gr(dpi = 300)       # Plotting backend
-using LaTeXStrings  # For LaTeX printing in plots
+using AeroFuse          # Main package
+using Plots             # Plotting library
+gr(                     # Plotting backend
+    size = (800,600),   # Size
+    dpi = 300,          # Resolution
+    palette = :Dark2_8  # Color scheme
+)
+using LaTeXStrings      # For LaTeX printing in plots
 ````
 
 ## Your First Wing
@@ -37,8 +41,9 @@ airfoils  = [ airfoil_1, naca4((0,0,1,2)) ]
     Refer to the [Airfoil Aerodynamic Analysis](tutorials-airfoil.md) tutorial for an introduction to the `Foil` type.
 
 ### Parametrization
-The following function defines a symmetric wing and prints the relevant information. Named arguments corresponding to the foil shapes, chord and span lengths, twist, dihedral and sweep angles. The following parametrization is used for the wing, presented for visual understanding.
-![](https://godot-bloggy.xyz/post/diagrams/WingGeometry.svg)
+The following function defines a symmetric, single-section wing and prints the relevant information.
+!!! note
+    All relevant units are presented in metric.
 
 ````@example tutorials-aircraft
 wing = Wing(
@@ -55,6 +60,8 @@ wing = Wing(
 )
 ````
 
+In this case, the root chord is $1.0~m$ and the tip chord is $0.6~m$, and so on.
+
 !!! info
     See the [How-to Guide](howto.md) for the various ways of constructing wings.
 
@@ -64,9 +71,7 @@ You can plot the lifting surface by calling `plot` with `Plots.jl`.
 
 ````@example tutorials-aircraft
 plt = plot(
-    xlabel = "x",
-    ylabel = "y",
-    zlabel = "z",
+    xlabel = L"x", ylabel = L"y", zlabel = L"z",
     aspect_ratio = 1,
     camera = (30, 30),
     zlim = (-0.5, 0.5) .* span(wing),
@@ -194,8 +199,9 @@ You can run the aerodynamic analysis by providing the aircraft configuration, fr
 ````@example tutorials-aircraft
 system = solve_case(
     aircraft, fs, refs;
-    print            = true, # Prints the results for only the aircraft
-    print_components = true, # Prints the results for all components
+    compressible     = false, # Compressibility option
+    # print            = true, # Prints the results for only the aircraft
+    # print_components = true, # Prints the results for all components
 )
 ````
 
@@ -209,6 +215,21 @@ The force coefficients are printed as $(C_X, C_Y, C_Z)$ for general axis systems
 
 !!! tip
     Refer to the [how-to guide](howto.md) to see how to compute the aerodynamic coefficients of each component and perform stability analyses.
+
+A convenience method is also provided for plotting streamlines from the leading edge of each surface.
+
+````@example tutorials-aircraft
+plot!(plt,
+    system,     # VortexLattice System
+    wing_mesh,  # Lifting surface (or mesh)
+    span = 4,   # Number of streamlines per spanwise section
+    dist = 10,  # Distance of streamlines (m)
+    # lc = :green, # Color of streamlines
+)
+
+plot!(plt, system, htail_mesh, span = 3, lc = :cyan) # For horizontal tail
+plot!(plt, system, vtail, span = 2, lc = :cyan) # For vertical tail
+````
 
 ### Drag Polar
 
@@ -257,9 +278,8 @@ plot(
     round.(data[:,2:end], digits = 4), # Aerodynamic coefficients
     layout = (3,2),
     xlabel = L"\alpha",
-    ylabel = [L"C_{D_i}" L"C_Y" L"C_L" L"C_\ell" L"C_m" L"C_n" ],
+    ylabel = [L"C_{D_i}" L"C_Y" L"C_L" L"C_\ell" L"C_m" L"C_n"],
     labels = "",
-    size   = (800, 600)
 )
 ````
 
@@ -278,16 +298,15 @@ You can compute the aerodynamic coefficients on the panels from the system.
 CFs, CMs = surface_coefficients(system)
 
 # Compute spanwise loads
-span_loads  = spanwise_loading(wing_mesh, CFs.wing, projected_area(wing))
-CL_loads    = vec(sum(system.circulations.wing, dims = 1)) / (0.5 * refs.speed * refs.chord);
+span_loads = spanwise_loading(wing_mesh, system.reference, CFs.wing, system.circulations.wing)
 
 # Plot spanwise loadings
 plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = L"C_{D_i}")
 plot_CY = plot(span_loads[:,1], span_loads[:,3], label = :none, ylabel = L"C_Y")
 plot_CL = begin
             plot(span_loads[:,1], span_loads[:,4], label = :none, xlabel = L"y", ylabel = L"C_L")
-            plot!(span_loads[:,1], CL_loads, label = "Normalized", xlabel = L"y")
-          end
+            plot!(span_loads[:,1], span_loads[:,5], label = L"Γ/ρVc", xlabel = L"y")
+        end
 plot(plot_CD, plot_CY, plot_CL, size = (800, 700), layout = (3,1))
 ````
 

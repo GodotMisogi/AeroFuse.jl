@@ -12,12 +12,12 @@ plot_panels(panels) = plot_panel.(panels)
 # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coordinates ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
 
 function plot_planform(mesh)
-    coords  =   [ 
-                    mesh[1,1:end-1]; 
-                    mesh[1:end-1,end]; 
-                    mesh[end,end:-1:2]; 
-                    mesh[end:-1:1,1] 
-                ]
+    coords = [ 
+        mesh[1,1:end-1]; 
+        mesh[1:end-1,end]; 
+        mesh[end,end:-1:2]; 
+        mesh[end:-1:1,1] 
+    ]
                     
     combinedimsview(coords, (1))
 end
@@ -98,9 +98,8 @@ end
     foil.x, foil.y
 end
 
-@recipe function wing_plot(wing :: AbstractWing, w = 0.25)
+@recipe function wing_plot(wing :: AbstractWing, w = 0.25; mac = true)
     wing_plan = plot_planform(wing)
-    wing_mac = mean_aerodynamic_center(wing, w)
 
     # set a default value for an attribute with `-->`
     # aspect_ratio --> true
@@ -110,9 +109,12 @@ end
         @views wing_plan[:,1], wing_plan[:,2], wing_plan[:,3]
     end
 
-    @series begin
-        seriestype := :scatter
-        @views [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
+    if mac
+        wing_mac = mean_aerodynamic_center(wing, w)
+        @series begin
+            seriestype := :scatter
+            @views [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
+        end
     end
 end
 
@@ -130,10 +132,9 @@ end
     end
 end
 
-@recipe function wing_mesh_plot(wing :: WingMesh, w = 0.25)
+@recipe function wing_mesh_plot(wing :: WingMesh, w = 0.25; mac = true)
     wing_plan = plot_planform(wing.surface)
     wing_pans = plot_panels(camber_panels(wing))
-    wing_mac = mean_aerodynamic_center(wing.surface, w)
     # aspect_ratio --> true
     # zlim --> span(wing.surface) .* (-0.5, 0.5)
 
@@ -147,10 +148,13 @@ end
         end
     end
 
-    @series begin
-        seriestype := :scatter
-        # label --> "Mean Aerodynamic Chord"
-        @views [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
+    if mac 
+        wing_mac = mean_aerodynamic_center(wing.surface, w)
+        @series begin
+            seriestype := :scatter
+            # label --> "Mean Aerodynamic Chord"
+            @views [wing_mac[1]], [wing_mac[2]], [wing_mac[3]]
+        end
     end
 
     @series begin
@@ -186,6 +190,18 @@ end
     end
 end
 
+@recipe function fuselage_plot(fuse :: HyperEllipseFuselage; n_secs = 10, n_circ = 20)
+    ts = LinRange(0, 1, n_secs)
+    fuse_coo = coordinates(fuse, ts, n_circ) # Get coordinates
+    fuse_ske = [ fuse_coo[end÷4,:,1:3]; fuse_coo[end÷2,:,1:3]; fuse_coo[3 * end÷4,:,1:3] ]
+    fuse_plan = [ reshape(fuse_coo, n_circ * n_secs * 3, 3); fuse_ske ] 
+    @series begin
+        # primary := false
+        # linewidth := 2
+        @views fuse_plan[:,1], fuse_plan[:,2], fuse_plan[:,3]
+    end
+end
+
 @recipe function streamline_plot(system :: VortexLatticeSystem, seed, distance, num_stream_points = 100)
     streams = plot_streamlines(system, seed, distance, num_stream_points)
 
@@ -193,7 +209,7 @@ end
         @series begin 
             seriestype := :line
             primary := false
-            linecolor := :green
+            # linecolor := :green
             @views streams[:,1,i], streams[:,2,i], streams[:,3,i]
         end
     end

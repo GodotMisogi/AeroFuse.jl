@@ -70,16 +70,17 @@ make_horseshoes(wing :: WingMesh) = map((cho,cam) -> Horseshoe(cho, normal_vecto
 
 Generate an array of `VortexRing`s defined by the camber coordinates and normal vectors of a `WingMesh`.
 """
-@views function make_vortex_rings(wing_mesh :: WingMesh)
-    cam_pan = camber_panels(wing_mesh)
-    cams = combinedimsview(camber_coordinates(wing_mesh), (1,2))
+@views make_vortex_rings(wing_mesh :: WingMesh) = make_vortex_rings(camber_coordinates(wing_mesh))
 
+function make_vortex_rings(cam_coo)
     # Generate vortex ring mesh
+    cams = combinedimsview(cam_coo, (1,2))
     vor_cams = similar(cams)
     vor_cams[1:end-1,:,:] = 0.75 * cams[1:end-1,:,:] + 0.25 * cams[2:end,:,:]
     vor_cams[end,:,:] = cams[end,:,:]
 
     # Construct vortex rings with trailing edge identification for boundary condition
+    cam_pan = make_panels(cam_coo)
     vor_pans = make_panels(splitdimsview(vor_cams, (1,2)))
     rings = map(CartesianIndices(vor_pans)) do ind
         i, j = ind.I

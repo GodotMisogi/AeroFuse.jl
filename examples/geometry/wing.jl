@@ -32,12 +32,15 @@ ct = camber_thickness(wing, 60) # Camber-thickness distribution
 coords = coordinates(wing) # Leading and trailing edge coordinates
 
 ## Plotting
-using plots
+using Plots
 plt = plot(
-    size = (1920, 1080),
+    size = (800, 600),
     aspect_ratio = 1, 
     zlim = (-0.5, 0.5) .* span(wing),
+    camera = (30, 60)
 )
-plot!(wing, label = "Wing")
+plot!(wing, label = "Wing", 
+    # mac = false # Disable mean aerodynamic center plot
+)
 
 # savefig(plt, "plots/wing_geom.pdf")
