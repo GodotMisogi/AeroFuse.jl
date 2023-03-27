@@ -12,12 +12,12 @@ plot_panels(panels) = plot_panel.(panels)
 # foil_coords = [ [ [coord[1]; 0; coord[2]] .* chord .+ loc for coord in foil.coordinates ] for (chord, foil, loc) in zip(wing.right.chords[end:-1:1], wing.right.foils[end:-1:1], wing_coords) ]
 
 function plot_planform(mesh)
-    coords  =   [ 
-                    mesh[1,1:end-1]; 
-                    mesh[1:end-1,end]; 
-                    mesh[end,end:-1:2]; 
-                    mesh[end:-1:1,1] 
-                ]
+    coords = [ 
+        mesh[1,1:end-1]; 
+        mesh[1:end-1,end]; 
+        mesh[end,end:-1:2]; 
+        mesh[end:-1:1,1] 
+    ]
                     
     combinedimsview(coords, (1))
 end
@@ -192,7 +192,9 @@ end
 
 @recipe function fuselage_plot(fuse :: HyperEllipseFuselage; n_secs = 10, n_circ = 20)
     ts = LinRange(0, 1, n_secs)
-    fuse_plan = reshape(coordinates(fuse, ts, n_circ), n_circ * n_secs * 3, 3)
+    fuse_coo = coordinates(fuse, ts, n_circ) # Get coordinates
+    fuse_ske = [ fuse_coo[end÷4,:,1:3]; fuse_coo[end÷2,:,1:3]; fuse_coo[3 * end÷4,:,1:3] ]
+    fuse_plan = [ reshape(fuse_coo, n_circ * n_secs * 3, 3); fuse_ske ] 
     @series begin
         # primary := false
         # linewidth := 2
@@ -207,7 +209,7 @@ end
         @series begin 
             seriestype := :line
             primary := false
-            linecolor := :green
+            # linecolor := :green
             @views streams[:,1,i], streams[:,2,i], streams[:,3,i]
         end
     end
