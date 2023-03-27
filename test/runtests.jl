@@ -109,7 +109,7 @@ end
         twists    = [2.0, 0.0, -0.2],
         spans     = [5.0, 0.5],
         dihedrals = [5., 5.],
-        sweeps    = [5., 5.],
+        sweeps    = [5., 10.],
     #   symmetry  = true
     );
 
@@ -126,7 +126,7 @@ end
     @test c        ≈ 0.79841008                    atol = 1e-6
     @test AR       ≈ 7.20342634                    atol = 1e-6
     @test λ        ≈ 0.20000000                    atol = 1e-6
-    @test wing_mac ≈ [0.4209310, 1.3343524, 0.0]   atol = 1e-6
+    @test wing_mac ≈ [0.4218125, 2.4305755, 0.0]   atol = 1e-6
 end
 
 @testset "Geometry - Single-Section Trapezoidal Wing" begin

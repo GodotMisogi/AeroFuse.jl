@@ -11,7 +11,7 @@ area(span, chord) = span * chord
 mean_aerodynamic_chord(c_r, λ) = (2/3) * c_r * (1 + λ + λ^2)/(1 + λ)
 
 # Spanwise location of mean aerodynamic chord for a single section
-y_mac(y, b, λ) = y + b / 2 * (1 + 2λ) / (3(1 + λ))
+y_mac(y, b, λ) = y + b * (1 + 2λ) / (3(1 + λ))
 
 # Projected area of a single trapezoidal section
 section_projected_area(b, c1, c2, t1, t2) = b * (c1 + c2) / 2 * cosd((t1 + t2) / 2)
@@ -229,7 +229,7 @@ Compute the mean aerodynamic center of a `Wing`. By default, the factor is assum
     y_LEs = wing_LE[:,2]
 
     # Compute x-y locations of section MACs
-    x_mac_LEs = @views @. y_mac(x_LEs[1:end-1], 2 * x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
+    x_mac_LEs = @views @. y_mac(x_LEs[1:end-1], x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
     y_macs = @views @. y_mac(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
 
     # Calculate section MAC coords
