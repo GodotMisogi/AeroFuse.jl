@@ -14,14 +14,14 @@ bound_leg(p1, p2, p3, p4) = (quarter_point(p1, p2), quarter_point(p4, p3))
 """
     bound_leg(panel :: Panel3D)
 
-Compute the bound leg for a `Panel3D`, for horseshoes/vortex rings.
+Compute the bound leg for a `Panel3D`, for horseshoes/vortex rings, which quarter point on each side of the trailing legs.
 """
 bound_leg(panel :: Panel3D) = bound_leg(panel.p1, panel.p2, panel.p3, panel.p4)
 
 """
     control_point(panel :: Panel3D)
 
-Compute the control point of a `Panel3D` for horseshoes/vortex rings, which is the 3-quarter point on each side in the ``x``-``z`` plane.
+Compute the control point of a `Panel3D` for horseshoes/vortex rings, which is the average of the 3-quarter point on each side of the trailing legs.
 """
 control_point(panel :: Panel3D) = control_point(panel.p1, panel.p2, panel.p3, panel.p4)
 
@@ -38,7 +38,7 @@ function Horseshoe(panel :: Panel3D, normal, drift = SVector(0., 0., 0.); core_s
 end
 
 """
-Constructor for vortex rings on a Panel3D using Lines. The following convention is adopted:
+Constructor for making a `VortexRing` with a `Panel3D`. The following convention is adopted:
 
 ```
     p1 —front leg→ p4
@@ -56,7 +56,6 @@ function VortexRing(panel :: Panel3D{T}, rc, normal, trailing = false; core_size
     # rc = control_point(panel) # (r1 + r2 + r3 + r4) / 4
     VortexRing{T}(panel.p1, panel.p2, panel.p3, panel.p4, rc, normal, trailing, core_size)
 end
-
 
 """
     make_horseshoes(wing :: WingMesh)
