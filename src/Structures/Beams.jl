@@ -325,7 +325,7 @@ end
 
 function structural_loads!(W_loads, wing_beam :: Beam, fem_mesh)
     # Compute structural loads
-    W_tubes_wing = beam_weight.(wing_beam.section)
+    W_tubes_wing = map(beam_weight, wing_beam.section)
     dx_fem = combinedimsview(fem_mesh[2:end] - fem_mesh[1:end-1], (1))
     Δx = dx_fem[:,1]
     Δy = dx_fem[:,2]
@@ -352,7 +352,8 @@ end
 
 function structural_loads(beam :: Beam, fem_mesh)
     T = promote_type(eltype(fem_mesh[1]))
-    W_loads = MMatrix{6, length(fem_mesh), T}(undef)
+    # W_loads = MMatrix{6, length(fem_mesh), T}(undef)
+    W_loads = zeros(T, 6, length(fem_mesh))
     structural_loads!(W_loads, beam, fem_mesh)
 
     return W_loads
