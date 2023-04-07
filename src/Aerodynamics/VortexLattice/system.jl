@@ -103,17 +103,19 @@ Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an airc
 """
 function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, axes = Geometry())
 
-    # Mach number bound checks
-    M = mach_number(refs)
-    @assert M < 1.  "Only compressible subsonic flow conditions (M < 1) are valid!"
-    if M > 0.7 @warn "Results in transonic to sonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
-    if M > 0.3 && !compressible @warn "Compressible regime (M > 0.3) but compressibility correction is off, be wary of the analysis!" end
+    M = mach_number(refs) # For Mach number bound checks
 
-    # (Prandtl-Glauert ∘ Wind axis) transformation
+    # Compressible mode
     if compressible
+        @assert M < 1. "Only compressible subsonic flow conditions (M < 1) are valid!"
+        if M > 0.7 @warn "Results in transonic to sonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
+
+        # (Prandtl-Glauert ∘ Wind axis) transformation
         β_pg = √(1 - M^2)
         ac = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(aircraft, fs), β_pg)
-    else
+    else # Incompressible mode
+        if M > 0.3 @warn "Compressible regime (M > 0.3) but compressibility correction is off, be wary of the analysis!" end
+
         β_pg = 1
         ac = @. geometry_to_wind_axes(aircraft, fs)
     end
