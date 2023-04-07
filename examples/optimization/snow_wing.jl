@@ -1,9 +1,7 @@
-## Optimisation tests
+## Wing planform optimization with BYU Flow Lab's SNOW optimization framework
 using AeroFuse
 using Roots
 using LinearAlgebra
-
-## Using IPOPT with SNOW
 using SNOW # Helps set up optimization problems
 using Ipopt # The optimizer
 
@@ -16,7 +14,7 @@ includet("wing_definition.jl")
 n_vars = 64 # Number of spanwise stations
 c = 0.125 # Fixed chord
 c_w = LinRange(c, c, n_vars) # Constant distribution
-CL_tgt = 1 # Target lift coefficient
+CL_tgt = 1.6  # Target lift coefficient
 nc = length(c_w)
 
 wing_init = make_wing(c_w)
@@ -229,5 +227,5 @@ plt_wing = plot(
     size = (700,700)
 )
 
-#
+##
 savefig(plt_wing, "plots/SNOWWingOptimization.pdf")
