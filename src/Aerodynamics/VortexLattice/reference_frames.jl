@@ -1,25 +1,14 @@
 ## Reflections and projections
 #==========================================================================================#
 
-"""
-    reflect_xz(vector)
-
-Reflect the ``y``-coordinate of a given 3-dimensional vector about the ``x``-``z`` plane.
-"""
+# Reflect the ``y``-coordinate of a given 3-dimensional vector about the ``x``-``z`` plane.
 reflect_xz(vector) = SVector(vector[1], -vector[2], vector[3])
 
-"""
-    project_yz(vector)
 
-Project a given 3-dimensional vector or into the ``y``-``z`` plane.
-"""
+# Project a given 3-dimensional vector or into the ``y``-``z`` plane.
 project_yz(vector) = SVector(0, vector[2], vector[3])
 
-"""
-    flip_xz(vector)
-
-Reflect the ``x``- and ``z``- coordinates of a given 3-dimensional vector about the ``y``-``z`` and ``x``-``y`` planes respectively for the representation in body axes.
-"""
+# Reflect the ``x``- and ``z``- coordinates of a given 3-dimensional vector about the ``y``-``z`` and ``x``-``y`` planes respectively for the representation in body axes.
 flip_xz(vector) = SVector(-vector[1], vector[2], -vector[3])
 
 ## Axis transformations

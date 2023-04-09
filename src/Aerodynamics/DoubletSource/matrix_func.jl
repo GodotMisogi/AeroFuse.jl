@@ -38,14 +38,14 @@ end
 """
     doublet_matrix(panels_1, panels_2)
 
-Create the matrix of source potential influence coefficients between pairs of `panels₁` and `panels₂`.
+Create the matrix of source potential influence coefficients between two arrays of `Panel2D`s.
 """
 source_matrix(panels_1, panels_2) = [ source_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
 
 """
     kutta_condition(panels)
 
-Create the vector describing Morino's Kutta condition given `Panel2Ds`.
+Create the vector describing Morino's Kutta condition given `Panel2D`s.
 """
 kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 2)' -1 ]
 
@@ -77,7 +77,7 @@ source_strengths(panels, u) = dot.(Ref(u), normal_vector.(panels))
 """
     boundary_vector(panels, u)
 
-Create the vector for the boundary condition of the problem given an array of Panel2Ds and velocity ``u``.
+Create the vector for the boundary condition of the problem given an array of `Panel2D`s and velocity ``u``.
 """
 boundary_vector(panels, u) = [ - source_matrix(panels, panels) * source_strengths(panels, u); 0 ]
 

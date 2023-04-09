@@ -218,18 +218,10 @@ camber_thickness_to_coordinates(xs, camber, thickness) =
 
 camber_thickness_to_coordinates(coords) = @views camber_thickness_to_coordinates(coords[:,1], coords[:,2], coords[:,3])
 
-"""
-    camber_coordinates(coords :: Array{2, <: Real})
-
-Generate the camber coordinates on the ``x``-``z`` plane at ``y = 0``.
-"""
+# Generate the camber coordinates on the ``x``-``z`` plane at ``y = 0``.
 camber_coordinates(coords) = @views [ coords[:,1] zero(coords[:,1]) coords[:,2] ]
 
-"""
-    thickness_coordinates(coords :: Array{2, <: Real})
-
-Generate the thickness coordinates on the ``x``-``z`` plane at ``y = 0``.
-"""
+# Generate the thickness coordinates on the ``x``-``z`` plane at ``y = 0``.
 thickness_coordinates(coords) = @views [ coords[:,1] zero(coords[:,1]) coords[:,3] ]
 
 function maximum_thickness_to_chord(coords)

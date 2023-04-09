@@ -90,14 +90,14 @@ bound_leg_vector(hs :: Horseshoe) = hs.r2 - hs.r1
 """
     velocity(r, hs :: Horseshoe, Γ, u_hat = [1.,0.,0.])
 
-Compute the induced velocity at a point ``r`` of a given `Horseshoe` `hs` with a bound leg of constant strength ``Γ`` and semi-infinite trailing legs pointing in a given direction ``û``, by default `û = x̂`.
+Compute the induced velocity at a point ``r`` of a given `Horseshoe` with a bound leg of constant strength ``Γ`` and semi-infinite trailing legs pointing in a given direction ``û``, by default `û = x̂`.
 """
 velocity(r, hs :: Horseshoe, Γ, V_hat = SVector{3,promote_type(eltype(r),eltype(Γ),eltype(hs.core))}(1,0,0)) = total_horseshoe_velocity(r - hs.r1, r - hs.r2, Γ, V_hat, hs.core)
 
 """
-    bound_velocity(r, hs :: Horseshoes, Γ, u_hat)
+    bound_velocity(r, hs :: Horseshoe, Γ, u_hat)
 
-Compute the induced velocity at a point ``r`` from the bound leg with constant strength ``Γ`` of a given `Horseshoe` `hs`.
+Compute the induced velocity at a point ``r`` from the bound leg with constant strength ``Γ`` of a given `Horseshoe`.
 """
 bound_velocity(r, hs :: Horseshoe, Γ) = bound_leg_velocity(r - hs.r1, r - hs.r2, Γ, hs.core)
 

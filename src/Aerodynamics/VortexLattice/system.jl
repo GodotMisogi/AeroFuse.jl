@@ -5,20 +5,23 @@ abstract type AbstractReferences end
 
 """
     References(V, ρ, μ, S, b, c, r)
-    References(; speed, density, viscosity,
-                 sound_speed, area, span, 
-                 chord, location)
-Define reference values with speed ``V``, density ``ρ``, _dynamic_ viscosity ``μ``, area ``S``, span ``b``, chord ``c``, location ``r`` for a vortex lattice analysis.
+    References(; 
+        speed, density, viscosity,
+        sound_speed, area, span, 
+        chord, location
+    )
+
+Define reference values with speed ``V``, density ``ρ``, dynamic viscosity ``μ``, area ``S``, span ``b``, chord ``c``, location ``r`` for a vortex lattice analysis. A constructor with named arguments is provided for convenience:
 
 # Arguments
 - `speed       :: Real         = 1.`: Speed (m/s)
 - `density     :: Real         = 1.225`: Density (m)
-- `viscosity   :: Real         = 1.5e-5`: Dynamic viscosity (m)
+- `viscosity   :: Real         = 1.5e-5`: Dynamic viscosity (kg/(m ⋅ s))
 - `sound_speed :: Real         = 330.`: Speed of sound (m/s)
 - `area        :: Real         = 1.`: Area (m²)
 - `span        :: Real         = 1.`: Span length (m)
 - `chord       :: Real         = 1.`: Chord length (m)
-- `location    :: Vector{Real} = [0,0,0]`: Position
+- `location    :: Vector{Real} = [0,0,0]`: Position (m)
 """
 struct References{T} <: AbstractReferences
     speed       :: T
@@ -65,7 +68,7 @@ A system consisting of the relevant variables for a vortex lattice analysis for 
 
 # Arguments
 The accessible fields are:
-- `vortices`:  The array of vortices (currently `Horseshoe`).
+- `vortices`:  The array of vortices, presently of `AbstractVortex` types.
 - `circulations`: The circulation strengths of the vortices obtained by solving the linear system.
 - `influence_matrix`: The influence matrix of the linear system.
 - `boundary_vector`: The boundary condition corresponding to the right-hand-side of the linear system.
@@ -137,8 +140,10 @@ rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freest
 
 ## Velocities
 """
-    surface_velocities(system :: VortexLatticeSystem; 
-                       axes   :: AbstractAxisSystem = Geometry())
+    surface_velocities(
+        system :: VortexLatticeSystem; 
+        axes   :: AbstractAxisSystem = Geometry()
+    )
 
 Compute the induced velocities for all components of the `VortexLatticeSystem` in the reference axis system.
 """
@@ -154,8 +159,10 @@ surface_velocities(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axe
 
 ## Forces
 """
-    surface_forces(system :: VortexLatticeSystem; 
-                   axes   :: AbstractAxisSystem = Geometry())
+    surface_forces(
+        system :: VortexLatticeSystem; 
+        axes   :: AbstractAxisSystem = Geometry()
+    )
 
 Compute the forces for all components of the `VortexLatticeSystem` in the reference axis system.
 """
@@ -171,8 +178,10 @@ surface_forces(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(s
 
 ## Moments
 """
-    surface_moments(system :: VortexLatticeSystem; 
-                    axes   :: AbstractAxisSystem = Geometry())
+    surface_moments(
+        system :: VortexLatticeSystem; 
+        axes   :: AbstractAxisSystem = Geometry()
+    )
 
 Compute the moments for all components of the `VortexLatticeSystem` in the reference axis system.
 """
@@ -197,8 +206,10 @@ function surface_dynamics(system :: VortexLatticeSystem)
 end
 
 """
-    surface_dynamics(system :: VortexLatticeSystem; 
-                     axes   :: AbstractAxisSystem = Geometry())
+    surface_dynamics(
+        system :: VortexLatticeSystem; 
+        axes   :: AbstractAxisSystem = Geometry()
+    )
 
 Compute the forces and moments for all components of the `VortexLatticeSystem` in the reference axis system.
 """
@@ -247,8 +258,10 @@ function surface_dynamics(system :: VortexLatticeSystem, ::Wind)
 end
 
 """
-    surface_coefficients(system :: VortexLatticeSystem; 
-                         axes   :: AbstractAxisSystem = Wind())
+    surface_coefficients(
+        system :: VortexLatticeSystem; 
+        axes   :: AbstractAxisSystem = Wind()
+    )
 
 Compute the force and moment coefficients on the surface given the `VortexLatticeSystem` in the reference axis system.
 """
