@@ -1,12 +1,4 @@
-# AeroFuse
-
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://godotmisogi.github.io/AeroFuse.jl/stable/)
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://godotmisogi.github.io/AeroFuse.jl/dev/)
-[![CI](https://github.com/GodotMisogi/AeroFuse.jl/workflows/CI/badge.svg?branch=main)](https://github.com/GodotMisogi/AeroFuse.jl/actions?query=workflow%3ACI+branch%3Amain)
-
-<p align="center">
-<img width="60%", src="docs/src/assets/logo.svg">
-</p>
+# AeroFuse -- Aircraft Design Platform
 
 AeroFuse is meant to be a toolbox for aircraft design analyses. It currently provides convenient methods for developing studies in aircraft geometry, aerodynamics and structures, with implementations in other relevant fields such as flight dynamics and propulsion in progress.
 
@@ -33,22 +25,22 @@ The current focus is to enable tutorials in computation in an aerospace educatio
 
 **Aerodynamic Analysis:**
 
-![](plots/VortexLattice.svg)
+![](assets/VortexLattice.svg)
 
 **Stability Analysis:**
 
-![](plots/boeing777.svg)
+![](assets/boeing777.svg)
 
 **Optimization:**
 
-![](plots/SciMLWingOptimization.svg)
+![](assets/SciMLWingOptimization.svg)
 
 **In progress:**
 
 - Aeroelastic analyses coupling vortex lattice and beam element models. This is functioning, but a good interface is yet to be implemented.
 - Adjoints for aerodynamic, structural and aerostructural design via [`ChainRulesCore.jl`](https://github.com/JuliaDiff/ChainRulesCore.jl).
 
-![](plots/AerostructWingTail.svg)
+![](assets/AerostructWingTail.svg)
 
 ## Installation
 
@@ -70,6 +62,13 @@ If you use AeroFuse in your research, please cite the following until any releva
   title   = {AeroFuse},
   url     = {https://github.com/GodotMisogi/AeroFuse},
   version = {0.4.8},
-  date    = {2023-04-10},
+  date    = {2023-03-27},
 }
+```
+
+## Contents
+
+```@contents
+Pages = ["geometry.md", "aerodynamics.md", "structures.md", "theory.md", "api.md"]
+Depth =  5
 ```
