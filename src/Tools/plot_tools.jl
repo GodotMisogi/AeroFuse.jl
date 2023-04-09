@@ -268,7 +268,7 @@ function coordinates(b :: Box)
 end
 
 # Plotting connections
-const connections = [(1,2,3), (4,2,3), (4,7,8), (7,5,6), (2,4,7), (1,6,2), (2,7,6), (7,8,5), (4,8,5), (4,5,3), (1,6,3), (6,3,5)];
+const box_connections = [(1,2,3), (4,2,3), (4,7,8), (7,5,6), (2,4,7), (1,6,2), (2,7,6), (7,8,5), (4,8,5), (4,5,3), (1,6,3), (6,3,5)];
 
 
 # @recipe function mesh3d(b :: Box)
