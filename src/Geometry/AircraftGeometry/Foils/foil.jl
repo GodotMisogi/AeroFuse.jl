@@ -33,6 +33,26 @@ function Foil(coords :: AbstractMatrix{<: Real}, name = "")
     @views Foil(coords[:,1], coords[:,2], name)
 end
 
+"""
+    read_foil(
+        path :: String; 
+        header = true; 
+        name = ""
+    )
+
+Generate a `Foil` from a file consisting of 2D coordinates with named arguments to skip the header (first line of the file) or assign a name.
+
+By default, the header is assumed to exist and should contain the airfoil name, which is assigned to the name of the `Foil`.
+"""
+function read_foil(path :: String; name = "") 
+    coords, foil_name = readdlm(path, header = true)
+    if name != ""
+        return Foil(Float16.(coords[:,1:2]), name)
+    else
+        return Foil(Float16.(coords[:,1:2]), strip(join(foil_name, " ")))
+    end
+end
+
 function Base.show(io :: IO, foil :: Foil)
     print(io, foil.name, " ", typeof(foil), " with ", length(foil.x), " points.")
 end
@@ -62,8 +82,21 @@ Scale the coordinates of a `Foil` to a scaling value.
 """
 scale(foil :: Foil, scale) = Foil(scale .* coordinates(foil), foil.name)
 
+"""
+    translate(foil :: Foil, vector)
+
+Translate the coordinates of a `Foil` by a 2-dimensional vector ``\\mathbf v``.
+"""
 translate(foil :: Foil; vector) = Foil(foil.x .+ vector[1], foil.y .+ vector[2])
 
+"""
+    rotate(foil :: Foil; 
+        angle, 
+        center = zeros(2)
+    )
+
+Rotate the coordinates of a `Foil` about a 2-dimensional point (default is origin) by the angle ``θ`` (in degrees).
+"""
 @views function rotate(foil :: Foil; angle :: Real, center = zeros(2))
     T = promote_type(eltype(angle), eltype(center))
     trans  = @views [ foil.x .- center[1] foil.y .- center[2] ]     # Translate
@@ -71,6 +104,11 @@ translate(foil :: Foil; vector) = Foil(foil.x .+ vector[1], foil.y .+ vector[2])
     Foil(rotate[:,1] .+ center[1], rotate[:,2] .+ center[2], foil.name) # Inverse translate
 end
 
+"""
+    interpolate(foil :: Foil, xs)
+
+Linearly interpolate the coordinates of a `Foil` to a given ``x ∈ [0,1]`` distribution.
+"""
 @views function interpolate(foil :: Foil, xs)
     upper, lower = split_surface(foil)
 
@@ -80,17 +118,35 @@ end
     Foil([ xs[end:-1:2]; xs ], [ y_u[end:-1:2]; y_l ], foil.name)
 end
 
+"""
+    reflect(foil :: Foil)
+
+Reflect the ``y``-coordinates of a `Foil` about the ``y = 0`` line.
+"""
 reflect(foil :: Foil) = setproperties(foil, y = -foil.y, name = "Inverted " * foil.name)
 
+"""
+    affine(
+        foil :: Foil, 
+        angle, vector
+    )
+
+Perform an affine transformation on the coordinates of a `Foil` by a 2-dimensional vector ``\\mathbf v`` and angle ``θ``.
+"""
 affine(foil :: Foil; angle, vector) = translate(rotate(foil; angle = angle); vector = vector)
 
 """
     camber_thickness(foil :: Foil, num :: Integer)
 
-Compute the camber-thickness distribution of a `Foil` with cosine spacing.
+Compute the camber-thickness distribution of a `Foil` with cosine interpolation. Optionally specify the number of points for interpolation, default is 40.
 """
 camber_thickness(foil :: Foil, num = 40) = coordinates_to_camber_thickness(foil, num + 1)
 
+"""
+    leading_edge_index(foil :: Foil)
+
+Get the index of the leading edge of a `Foil`. This will be the index of the point with the minimum ``x``-coordinate.
+"""
 leading_edge_index(foil :: Foil) = argmin(coordinates(foil)[:,1])
 
 """
@@ -126,6 +182,11 @@ function cosine_interpolation(foil :: Foil, n :: Integer = 40)
     interpolate(foil, x_circ)
 end
 
+"""
+    camber_line(foil :: Foil, n :: Integer = 40)
+
+Get the camber line of a `Foil`. Optionally specify the number of points for linear interpolation, default is 40.
+"""
 function camber_line(foil :: Foil, n = 60)
     upper, lower = split_surface(foil)
     xs  = LinRange(minimum(foil.x), maximum(foil.x), n + 1)
@@ -135,6 +196,11 @@ function camber_line(foil :: Foil, n = 60)
     [ xs (y_u + y_l) / 2 ]
 end
 
+"""
+    thickness_line(foil :: Foil, n :: Integer = 40)
+
+Get the thickness line of a `Foil`. Optionally specify the number of points for linear interpolation, default is 40.
+"""
 function thickness_line(foil :: Foil, n = 60)
     upper, lower = split_surface(foil)
     xs  = LinRange(minimum(foil.x), maximum(foil.x), n + 1)
@@ -143,7 +209,6 @@ function thickness_line(foil :: Foil, n = 60)
 
     [ xs (y_u - y_l) ]
 end
-
 
 """
     make_panels(foil :: Foil)
@@ -155,6 +220,11 @@ make_panels(foil :: Foil) = @views Panel2D.(foil.x[2:end], foil.y[2:end], foil.x
 
 make_panels(foil :: Foil, n :: Integer) = make_panels(cosine_interpolation(foil, n ÷ 2))
 
+"""
+    camber(foil :: Foil, x_by_c)
+
+Obtain the camber value of a `Foil` at a specified ``(x/c)``.
+"""
 function camber(foil :: Foil, x_by_c)
     upper, lower = split_surface(foil)
     y_u = @views linear_interpolation(upper[:,1], upper[:,2])(x_by_c * chord_length(foil))
@@ -173,30 +243,25 @@ function control_surface(foil :: Foil, δ, xc_hinge)
 end
 
 """
+    control_surface(foil :: Foil, δ, xc_hinge)
     control_surface(foil :: Foil; angle, hinge)
 
-Modify a `Foil` to mimic a control surface by specifying a deflection angle (in degrees, clockwise-positive convention) and a normalized hinge ``x``-coordinate ``∈ [0,1]`` in terms of the chord length.
+Modify a `Foil` to mimic a control surface by specifying a deflection angle ``δ``` (in degrees, clockwise-positive convention) and a normalized hinge ``x``-coordinate ``∈ [0,1]`` in terms of the chord length. A constructor with named arguments `angle, hinge` is provided for convenience.
 """
 control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge)
 
-
 """
-    maximum_thickness_to_chord(wing :: Wing, num :: Integer)
+    maximum_thickness_to_chord(wing :: Foil, num :: Integer)
 
 Compute the maximum thickness-to-chord ratio ``(t/c)ₘₐₓ`` and its location ``(x/c)`` of a `Foil`. Returned as the pair ``(x/c, (t/c)ₘₐₓ)``.
 
-A `num` must be specified to interpolate the `Foil` coordinates, which affects the accuracy of ``(t/c)ₘₐₓ`` accordingly.
+A `num` must be specified to interpolate the `Foil` coordinates, which affects the accuracy of ``(t/c)ₘₐₓ`` accordingly, default is 40.
 """
 maximum_thickness_to_chord(foil :: Foil, n = 40) = maximum_thickness_to_chord(coordinates_to_camber_thickness(foil, n))
 
 ## Camber-thickness representation
 #==========================================================================================#
 
-"""
-    coordinates_to_camber_thickness(coords, n = 40)
-
-Convert 2-dimensional coordinates to its camber-thickness representation after cosine interpolation with ``2n`` points.
-"""
 function coordinates_to_camber_thickness(foil :: Foil, n = 40)
     # Cosine interpolation and splitting
     upper, lower = split_surface(cosine_interpolation(foil, n))
@@ -207,11 +272,7 @@ function coordinates_to_camber_thickness(foil :: Foil, n = 40)
     @views [ upper[:,1] camber thickness ]
 end
 
-"""
-    camber_thickness_to_coordinates(xs, camber, thickness)
-
-Convert the camber-thickness representation to 2-dimensional coordinates given the ``x``-locations and their corresponding camber and thickness values.
-"""
+# Convert the camber-thickness representation to 2-dimensional coordinates given the ``x``-locations and their corresponding camber and thickness values.
 camber_thickness_to_coordinates(xs, camber, thickness) = 
     @views [ [xs camber + thickness / 2][end:-1:2,:];
               xs camber - thickness / 2             ]
@@ -229,20 +290,4 @@ function maximum_thickness_to_chord(coords)
     max_thick_arg = argmax(thiccs)
     chord         = @views maximum(coords[:,1])
     @views xs[max_thick_arg] / chord, thiccs[max_thick_arg] / chord
-end
-
-"""
-    read_foil(path :: String; header = true; name = "")
-
-Generate a `Foil` from a file consisting of 2D coordinates with named arguments to skip the header (first line of the file) or assign a name.
-
-By default, the header is assumed to exist and should contain the airfoil name, which is assigned to the name of the `Foil`.
-"""
-function read_foil(path :: String; name = "") 
-    coords, foil_name = readdlm(path, header = true)
-    if name != ""
-        return Foil(Float16.(coords[:,1:2]), name)
-    else
-        return Foil(Float16.(coords[:,1:2]), strip(join(foil_name, " ")))
-    end
 end
