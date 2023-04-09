@@ -198,11 +198,11 @@ end
     V_test = [ cosd(θ) * cosd(φ), -sind(φ), sind(θ) * cosd(φ) ]
     V_run = velocity(fs)
 
-    φ_test, θ_test = cartesian_to_freestream(V_run)
+    φ_test, θ_test = AeroFuse.cartesian_to_freestream(-V_run)
 
     @test V_run ≈ V_test atol = 1e-6
     @test φ_test ≈ φ atol = 1e-6
-    @test θ_test ≈ -θ atol = 1e-6
+    @test θ_test ≈ θ atol = 1e-6
 end
 
 @testset "Aerodynamics - Reference Values" begin

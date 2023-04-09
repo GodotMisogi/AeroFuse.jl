@@ -284,6 +284,6 @@ freestream_to_cartesian(r, θ, φ) = r * SVector(cos(θ) * cos(φ), -sin(φ), si
 
 Convert Cartesian coordinates to freestream (spherical polar) flow coordinates.
 """
-cartesian_to_freestream(U) = SVector(norm(U), -atand(U[3], U[1]), -atand(U[2], √(U[1]^2 + U[3]^2)))
+cartesian_to_freestream(U) = SVector(norm(U), atand(-U[3], -U[1]), atand(U[2], √(U[1]^2 + U[3]^2)))
 
 end
