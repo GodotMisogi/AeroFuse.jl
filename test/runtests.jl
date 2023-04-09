@@ -119,14 +119,14 @@ end
     c = mean_aerodynamic_chord(wing)
     AR = aspect_ratio(wing)
     λ = taper_ratio(wing)
-    wing_mac = mean_aerodynamic_center(wing)
+    mac = mean_aerodynamic_center(wing)
 
-    @test b        ≈ 5.50000000                    atol = 1e-6
-    @test S        ≈ 4.19939047                    atol = 1e-6
-    @test c        ≈ 0.79841008                    atol = 1e-6
-    @test AR       ≈ 7.20342634                    atol = 1e-6
-    @test λ        ≈ 0.20000000                    atol = 1e-6
-    @test wing_mac ≈ [0.4218125, 2.4305755, 0.0]   atol = 1e-6
+    @test b   ≈ 5.50000000                    atol = 1e-6
+    @test S   ≈ 4.19939047                    atol = 1e-6
+    @test c   ≈ 0.79841008                    atol = 1e-6
+    @test AR  ≈ 7.20342634                    atol = 1e-6
+    @test λ   ≈ 0.20000000                    atol = 1e-6
+    @test mac ≈ [0.4218125, 2.4305755, 0.0]   atol = 1e-6
 end
 
 @testset "Geometry - Single-Section, Symmetric Trapezoidal Wing" begin
@@ -218,6 +218,76 @@ end
     @test mach_number(refs) ≈ 0.454545 atol = 1e-6
     @test reynolds_number(refs) ≈ 2.45e7 atol = 1e-6
     @test dynamic_pressure(refs) ≈ 13781.25 atol = 1e-6
+end
+
+@testset "Aerodynamics - Parasitic Drag (Wetted Area Method)" begin
+    ## Define wing planform
+    wing = WingSection(
+        area = 10.,
+        aspect = 6.,
+        taper = 1.0,
+        sweep = 0.,
+        w_sweep = 0.25,
+    )
+
+    # Get maximum (t/c) of root and tip
+    num = 60
+    xbyc_r, tbyc_r = maximum_thickness_to_chord(wing, num)[1]
+
+    # Compute average chord length of section
+    avg_c = (wing.chords[1] + wing.chords[2]) / 2
+
+    # Compute sweep angle from max (t/c) of root to tip
+    Λ = sweeps(wing, tbyc_r)[1]
+
+    # Compute wetted area
+    S_wet = avg_c * span(wing) # Trapezoidal area
+    S_ref = projected_area(wing)
+
+    # Reference values accounting for transition (SI units)
+    ρ = 1.225 # Density
+    V = 40. # Speed
+    a = 330. # Speed of sound
+    M = V / a # Mach number
+    μ = 1e-5 # Dynamic viscosity
+
+    x_tr = 0.75 # Transition ratio of length for testing
+
+    refs = References(
+        density = ρ,
+        speed = V,
+        sound_speed = a,
+        viscosity = μ,
+        area = S_ref,
+    )
+
+    L_wing = avg_c # Length
+    Kf_wing = (1 + 0.6tbyc_r / xbyc_r + 100tbyc_r^4) * cos(Λ)^0.28 # Wing form factor
+    fM_wing = 1.34M^0.18
+
+    CD0_wing = parasitic_drag_coefficient(L_wing, x_tr, ρ, V, M, μ, S_ref, S_wet, Kf_wing, fM_wing)
+
+    @test CD0_wing ≈ AeroFuse.wetted_area_drag_coefficient(wing, x_tr, ρ, V, M, μ, S_ref, num) atol = 1e-6
+    @test CD0_wing ≈ parasitic_drag_coefficient(wing, refs, x_tr)
+
+    ## Define fuselage
+    fuse = HyperEllipseFuselage(
+        length = 10,
+        radius = 4,
+    )
+
+    # Fuselage quantities
+    L_fuse = fuse.length
+    ts = 0:0.01:1 # Parametric distribution of sections
+    S_wet = wetted_area(fuse, ts) # Wetted area
+    f = fuse.length / 2fuse.radius # Fineness ratio
+    Kf_fuse = 1 + 60 / f^3 + f / 400 # Fuselage form factor
+    fM_fuse = (1 - 0.08M^1.45) # Mach number correction
+
+    CD0_fuse = parasitic_drag_coefficient(L_fuse, x_tr, ρ, V, M, μ, S_ref, S_wet, Kf_fuse, fM_fuse)
+
+    @test CD0_fuse ≈ AeroFuse.wetted_area_drag_coefficient(fuse, x_tr, ρ, V, M, μ, S_ref, ts)
+    @test CD0_fuse ≈ parasitic_drag_coefficient(fuse, refs, x_tr)
 end
 
 @testset "Vortex Lattice Method (Horseshoes, Incompressible) - NACA 0012 Tapered Wing" begin
