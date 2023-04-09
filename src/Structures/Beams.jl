@@ -127,11 +127,11 @@ beam_weight(tube :: Tube) = tube.material.density * volume(tube)
 ## Stress calculations (NEEDS CHECKING)
 #==========================================================================================#
 
-principal_stress(E, L, R, dx, dθ_yz) = E * (dx / L + R * dθ_yz / L)
+principal_stress(E, L, R, dx, dθ_yz) = E / L * (dx + R * dθ_yz)
 torsional_stress(G, L, R, dθ_x) = G * R * dθ_x / L
 von_mises_stress(σ_xx, σ_xt) = √(σ_xx^2 + 3σ_xt^2)
 
-function von_mises_stress(tube :: Tube, ds, θs)
+@views function von_mises_stress(tube :: Tube, ds, θs)
     E = (elastic_modulus ∘ material)(tube)
     G = (shear_modulus ∘ material)(tube)
     R = radius(tube)
