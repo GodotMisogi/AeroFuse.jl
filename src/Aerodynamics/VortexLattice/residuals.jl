@@ -7,30 +7,30 @@ influence_coefficient(vor_i :: AbstractVortex, vor_j :: AbstractVortex, V_hat) =
 
 
 """
-    influence_matrix(horseshoes)
-    influence_matrix(horseshoes, u_hat)
+    influence_matrix(vortices)
+    influence_matrix(vortices, u_hat)
 
-Assemble the Aerodynamic Influence Coefficient (AIC) matrix given an array of `Horseshoes` and the freestream direction ``̂u``.
+Assemble the Aerodynamic Influence Coefficient (AIC) matrix given an array of `AbstractVortex` and the freestream direction ``û``.
 """
-influence_matrix(horseshoes) = [ influence_coefficient(horsie_j, horsie_i) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
-influence_matrix(horseshoes, V_hat) = [ influence_coefficient(horsie_j, horsie_i, V_hat) for horsie_i ∈ horseshoes, horsie_j ∈ horseshoes ]
+influence_matrix(vortices) = [ influence_coefficient(horsie_j, horsie_i) for horsie_i ∈ vortices, horsie_j ∈ vortices ]
+influence_matrix(vortices, V_hat) = [ influence_coefficient(horsie_j, horsie_i, V_hat) for horsie_i ∈ vortices, horsie_j ∈ vortices ]
 
-function influence_matrix!(A, horseshoes)
+function influence_matrix!(A, vortices)
     for (i,j) in axes(A)
-        A[i,j] = influence_coefficient(horseshoes[j], horseshoes[i])
+        A[i,j] = influence_coefficient(vortices[j], vortices[i])
     end
     return A
 end
 
 """
-    boundary_condition(horseshoes, U, Ω)
+    boundary_condition(vortices, U, Ω)
 
-Assemble the boundary condition vector given an array of `Horseshoes`, the freestream velocity ``U``, and a quasi-steady rotation vector  ``Ω``.
+Assemble the boundary condition vector given an array of `AbstractVortex`, the freestream velocity ``U``, and a quasi-steady rotation vector  ``Ω``.
 """
-boundary_condition(horseshoes, U, Ω) = map(hs -> dot(U + Ω × control_point(hs), normal_vector(hs)), horseshoes)
+boundary_condition(vortices, U, Ω) = map(hs -> dot(U + Ω × control_point(hs), normal_vector(hs)), vortices)
 
 # Added velocity for slipstream model
-boundary_condition(horseshoes, U, Ups, Ω) = map((hs, Up) -> dot(U + Ω × control_point(hs) + Up, normal_vector(hs)), horseshoes, Ups)
+boundary_condition(vortices, U, Ups, Ω) = map((hs, Up) -> dot(U + Ω × control_point(hs) + Up, normal_vector(hs)), vortices, Ups)
 
 # Matrix-free setup for nonlinear analyses
 #==========================================================================================#

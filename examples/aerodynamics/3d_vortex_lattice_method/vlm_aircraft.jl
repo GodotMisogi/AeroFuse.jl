@@ -106,15 +106,15 @@ ffs = farfield_coefficients(sys)
     axes = ax_sys,
     print = true,
     print_components = true,
-    # farfield = true
+    farfield = true
 );
 
 ## Viscous drag prediction
 
 # Equivalent flat-plate skin friction estimation
-CDv_wing  = profile_drag_coefficient(wing,  [0.8, 0.8], sys.reference)
-CDv_htail = profile_drag_coefficient(htail, [0.6, 0.6], sys.reference)
-CDv_vtail = profile_drag_coefficient(vtail, [0.6, 0.6], sys.reference)
+CDv_wing  = parasitic_drag_coefficient(wing,  sys.reference, 0.8)
+CDv_htail = parasitic_drag_coefficient(htail, sys.reference, 0.6)
+CDv_vtail = parasitic_drag_coefficient(vtail, sys.reference, 0.6)
 
 CDv_plate = CDv_wing + CDv_htail + CDv_vtail
 
@@ -124,9 +124,9 @@ import LinearAlgebra: norm
 edge_speeds = norm.(surface_velocities(sys)); # Inviscid speeds on the surfaces
 
 # Drag coefficients
-CDvd_wing  = profile_drag_coefficient(wing_mesh,  [0.8, 0.8], edge_speeds.wing,  sys.reference)
-CDvd_htail = profile_drag_coefficient(htail_mesh, [0.6, 0.6], edge_speeds.htail, sys.reference)
-CDvd_vtail = profile_drag_coefficient(vtail_mesh, [0.6, 0.6], edge_speeds.vtail, sys.reference)
+CDvd_wing  = parasitic_drag_coefficient(wing_mesh,  sys.reference, 0.8, edge_speeds.wing)
+CDvd_htail = parasitic_drag_coefficient(htail_mesh, sys.reference, 0.6, edge_speeds.htail)
+CDvd_vtail = parasitic_drag_coefficient(vtail_mesh, sys.reference, 0.6, edge_speeds.vtail)
 
 CDv_diss = CDvd_wing + CDvd_htail + CDvd_vtail
 

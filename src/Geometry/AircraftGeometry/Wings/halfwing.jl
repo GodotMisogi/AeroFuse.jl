@@ -123,7 +123,9 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     # Check if lengths are positive
     @assert any(x -> x >= zero(eltype(x)), chords) | any(x -> x >= zero(eltype(x)), spans) "Chord and span lengths must be positive."
     # Check if dihedrals and sweeps are within bounds
-    @assert all(x -> x > -convert(typeof(x), 90) && x < convert(typeof(x), 90), dihedrals) && all(x -> x > -convert(typeof(x), 90) && x < convert(typeof(x), 90), sweeps) "Dihedrals and sweep angles must not exceed ±90ᵒ."
+    @assert all(x -> x > -convert(typeof(x), 90) && x < convert(typeof(x), 90), dihedrals) && 
+        all(x -> x > -convert(typeof(x), 90) && x < convert(typeof(x), 90), sweeps) 
+        "Dihedrals and sweep angles must not exceed ±90ᵒ."
 end
 
 
@@ -259,35 +261,13 @@ camber_thickness(wing :: Wing, num :: Integer) = camber_thickness.(wing.foils, n
 """
     maximum_thickness_to_chord(wing :: Wing, num :: Integer)
 
-Compute the maximum thickness-to-chord ratio ``(t/c)ₘₐₓ`` at each spanwise intersection of a `Wing`. A `num` must be specified to interpolate the internal `Foil` coordinates, which affects the accuracy of ``(t/c)ₘₐₓ`` accordingly.
+Compute the maximum thickness-to-chord ratios ``(t/c)ₘₐₓ`` and their locations ``(x/c)`` at each spanwise intersection of a `Wing`. 
+
+Returns an array of pairs ``[(x/c),(t/c)ₘₐₓ]``, in which the first entry of each pair is the location (normalized to the local chord length at the spanwise intersection) and the corresponding maximum thickness-to-chord ratio at the intersection.
+
+A `num` must be specified to interpolate the internal `Foil` coordinates, which affects the accuracy of ``(t/c)ₘₐₓ`` accordingly.
 """
 maximum_thickness_to_chord(wing :: Wing, num :: Integer) = map(maximum_thickness_to_chord, camber_thickness(wing, num))
-
-function max_thickness_to_chord_ratio_sweeps(wing :: Wing, num)
-    # Compute (t/c)_max locations and values
-    xs_max_tbyc = maximum_thickness_to_chord(wing, num)
-    max_tbyc = getindex.(xs_max_tbyc, 2)
-    xs_temp = getindex.(xs_max_tbyc, 1)
-    
-    # Get leading edge
-    le = leading_edge(wing)
-
-    # Determine x-coordinates in geometry frame
-    xs = @. le[:,1] + wing.chords * getindex(xs_temp, 1)
-
-    # Compute sectional x-coordinates
-    ds = xs[2:end] - xs[1:end-1]
-    
-    # Compute leading-edge sweep angles accounting for dihedral
-    widths = @. wing.spans / cosd(wing.dihedrals)
-    sweeps = @. atand(ds, widths)
-
-    # Averaging for sections
-    xs = (xs[1:end-1] + xs[2:end]) / 2
-    tbycs = (max_tbyc[1:end-1] + max_tbyc[2:end]) / 2
-
-    xs, tbycs, sweeps
-end
 
 function wing_bounds(wing :: Wing)
     # Compute y-z points

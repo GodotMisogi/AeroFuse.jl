@@ -122,16 +122,16 @@ function volume(tube :: Tube)
     return V
 end
 
-weight(tube :: Tube) = tube.material.density * volume(tube)
+beam_weight(tube :: Tube) = tube.material.density * volume(tube)
 
 ## Stress calculations (NEEDS CHECKING)
 #==========================================================================================#
 
-principal_stress(E, L, R, dx, dθ_yz) = E * (dx / L + R * dθ_yz / L)
+principal_stress(E, L, R, dx, dθ_yz) = E / L * (dx + R * dθ_yz)
 torsional_stress(G, L, R, dθ_x) = G * R * dθ_x / L
 von_mises_stress(σ_xx, σ_xt) = √(σ_xx^2 + 3σ_xt^2)
 
-function von_mises_stress(tube :: Tube, ds, θs)
+@views function von_mises_stress(tube :: Tube, ds, θs)
     E = (elastic_modulus ∘ material)(tube)
     G = (shear_modulus ∘ material)(tube)
     R = radius(tube)
@@ -320,6 +320,43 @@ end
 
     # Throw away the junk values for the constraint
     reshape(x[7:end], 6, length(Ks[1,1,:]) + 1)
+end
+
+
+function structural_loads!(W_loads, wing_beam :: Beam, fem_mesh)
+    # Compute structural loads
+    W_tubes_wing = map(beam_weight, wing_beam.section)
+    dx_fem = combinedimsview(fem_mesh[2:end] - fem_mesh[1:end-1], (1))
+    Δx = dx_fem[:,1]
+    Δy = dx_fem[:,2]
+
+    # Assume weight coincides with the elastic axis
+    z_forces = W_tubes_wing / 2.0
+    z_moments = @. W_tubes_wing / 12.0 * √(Δx^2 + Δy^2)
+
+    # Loads in z-direction
+    W_loads[3,1:end-1]  += -z_forces
+    W_loads[3,2:end]    += -z_forces
+
+    # Bending moments
+    bm3 = @. z_moments * Δy / wing_beam.section.length
+    W_loads[4,1:end-1]  += -bm3
+    W_loads[4,2:end]    += bm3
+
+    bm4 = @. z_moments * Δx / wing_beam.section.length
+    W_loads[5,1:end-1]  += -bm4
+    W_loads[5,2:end]    += bm4
+
+    return W_loads
+end
+
+function structural_loads(beam :: Beam, fem_mesh)
+    T = promote_type(eltype(fem_mesh[1]))
+    # W_loads = MMatrix{6, length(fem_mesh), T}(undef)
+    W_loads = zeros(T, 6, length(fem_mesh))
+    structural_loads!(W_loads, beam, fem_mesh)
+
+    return W_loads
 end
 
 end

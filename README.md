@@ -69,7 +69,7 @@ If you use AeroFuse in your research, please cite the following until any releva
   author  = {Arjit Seth, Rhea P. Liem},
   title   = {AeroFuse},
   url     = {https://github.com/GodotMisogi/AeroFuse},
-  version = {0.4.7},
-  date    = {2023-03-27},
+  version = {0.4.8},
+  date    = {2023-04-10},
 }
 ```

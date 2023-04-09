@@ -40,11 +40,11 @@ function get_forces(system, wing_mesh)
     # CDi, _, _ = farfield(system)
 
     # Calculate equivalent flat-plate skin-friction drag
-    # CDv = profile_drag_coefficient(wing_mesh, 1.0, system.reference)
+    # CDv = parasitic_drag_coefficient(wing_mesh, 1.0, system.reference)
 
     # Calculate local-dissipation/local-friction drag
     CVs = norm.(surface_velocities(system)).wing
-    CDv = profile_drag_coefficient(wing_mesh, 0.98, CVs, system.reference)
+    CDv = parasitic_drag_coefficient(wing_mesh, system.reference, 0.8, CVs)
 
     return (CDi = CDi, CDv = CDv, CD = CDi + CDv, CL = CL)
 end

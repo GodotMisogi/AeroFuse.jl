@@ -1,8 +1,12 @@
+## Wing planform optimization with SciML framework
 using AeroFuse
 using Roots
 using LinearAlgebra
 using Optimization, OptimizationMOI
 using Ipopt
+
+## Elliptic wing planform prediction test
+#==========================================================================================#
 
 include("wing_definition.jl")
 
@@ -10,7 +14,7 @@ include("wing_definition.jl")
 n_vars = 32 # Number of spanwise stations
 c = 0.125 # Fixed chord
 c_w = LinRange(c, c, n_vars) # Constant distribution
-CL_tgt = 1. # Target lift coefficient
+CL_tgt = 1.6 # Target lift coefficient
 nc = length(c_w)
 
 wing_init = make_wing(c_w)
@@ -224,13 +228,13 @@ plt_CL = plot(
     xlabel = L"Spanwise Location $y$, $m$",
     grid = false,
 )
-plot!(ll_init[:,1], CL_init,
+plot!(ll_init[:,1], ll_init[:,5],
     lc = :black, label = ""
 )
-plot!(ll_opt[:,1], CL_loads, 
+plot!(ll_opt[:,1], ll_opt[:,5], 
     lc = :cornflowerblue, label = ""
 )
-plot!(ll_exact[:,1], CL_exact, 
+plot!(ll_exact[:,1], ll_exact[:,5], 
     lc = :green, label = ""
 )
 
@@ -243,5 +247,5 @@ plt_wing = plot(
     size = (700,700)
 )
 
-#
+##
 savefig(plt_wing, "plots/SciMLWingOptimization.pdf")

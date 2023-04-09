@@ -76,13 +76,13 @@ end;
 ## Viscous drag prediction using empirical models
 
 # Equivalent flat-plate skin-friction estimation
-x_tr        = fill(0.98, 2) # Transition locations over sections
-CDv_plate   = profile_drag_coefficient(wing_mesh, x_tr, ref)
+x_tr        = 0.98 # Transition locations over sections
+CDv_plate   = parasitic_drag_coefficient(wing_mesh, ref, x_tr)
 
 ## Local-dissipation drag estimation
 cam_panels  = camber_panels(wing_mesh)
 edge_speeds = surface_velocities(system).wing
-CDv_diss    = profile_drag_coefficient(wing_mesh, x_tr, edge_speeds, ref)
+CDv_diss    = parasitic_drag_coefficient(wing_mesh, ref, x_tr, edge_speeds)
 
 ## Viscous drag coefficient
 CDv = CDv_diss
@@ -101,14 +101,14 @@ using Plots
 gr()
 
 ## Coordinates
-Plots.plot(
+plot(
     aspect_ratio = 1,
     camera = (30, 30),
     zlim = span(wing) .* (-0.5, 0.5),
     size = (800, 600)
 )
-Plots.plot!(wing_mesh, label = "Wing")
-Plots.plot!(system, wing, dist = 3, num_stream = 50, span = 10, color = :green)
+plot!(wing_mesh, label = "Wing")
+plot!(system, wing, dist = 3, num_stream = 50, span = 10, color = :green)
 
 ## Compute spanwise loads
 span_loads = spanwise_loading(wing_mesh, ref, CFs.wing, system.circulations.wing)

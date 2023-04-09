@@ -179,6 +179,14 @@ Modify a `Foil` to mimic a control surface by specifying a deflection angle (in 
 """
 control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge)
 
+
+"""
+    maximum_thickness_to_chord(wing :: Wing, num :: Integer)
+
+Compute the maximum thickness-to-chord ratio ``(t/c)ₘₐₓ`` and its location ``(x/c)`` of a `Foil`. Returned as the pair ``(x/c, (t/c)ₘₐₓ)``.
+
+A `num` must be specified to interpolate the `Foil` coordinates, which affects the accuracy of ``(t/c)ₘₐₓ`` accordingly.
+"""
 maximum_thickness_to_chord(foil :: Foil, n = 40) = maximum_thickness_to_chord(coordinates_to_camber_thickness(foil, n))
 
 ## Camber-thickness representation
@@ -210,18 +218,10 @@ camber_thickness_to_coordinates(xs, camber, thickness) =
 
 camber_thickness_to_coordinates(coords) = @views camber_thickness_to_coordinates(coords[:,1], coords[:,2], coords[:,3])
 
-"""
-    camber_coordinates(coords :: Array{2, <: Real})
-
-Generate the camber coordinates on the ``x``-``z`` plane at ``y = 0``.
-"""
+# Generate the camber coordinates on the ``x``-``z`` plane at ``y = 0``.
 camber_coordinates(coords) = @views [ coords[:,1] zero(coords[:,1]) coords[:,2] ]
 
-"""
-    thickness_coordinates(coords :: Array{2, <: Real})
-
-Generate the thickness coordinates on the ``x``-``z`` plane at ``y = 0``.
-"""
+# Generate the thickness coordinates on the ``x``-``z`` plane at ``y = 0``.
 thickness_coordinates(coords) = @views [ coords[:,1] zero(coords[:,1]) coords[:,3] ]
 
 function maximum_thickness_to_chord(coords)

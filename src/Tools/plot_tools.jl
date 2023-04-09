@@ -233,3 +233,48 @@ end
         end
     end
 end
+
+## Boxes
+#===================================#
+
+# Box type
+struct Box{T <: Real}
+    L :: T
+    w :: T
+    h :: T
+    position :: SVector{3,T}
+end
+
+function Box(L, w, h, pos)
+    T = promote_type(eltype(L), eltype(w), eltype(h), eltype(pos))
+    
+    return Box{T}(L, w, h, pos)
+end
+
+function coordinates(b :: Box) 
+    L, w, h = b.L, b.w, b.h
+    pts = [ 
+        SVector(-L/2, -w/2, -h/2),
+        SVector(-L/2,  w/2, -h/2),
+        SVector(-L/2, -w/2,  h/2),
+        SVector(-L/2,  w/2,  h/2),
+        SVector( L/2, -w/2,  h/2),
+        SVector( L/2, -w/2, -h/2),
+        SVector( L/2,  w/2, -h/2),
+        SVector( L/2,  w/2,  h/2),
+    ]
+    
+    return Ref(b.position) .+ pts
+end
+
+# Plotting connections
+const box_connections = [(1,2,3), (4,2,3), (4,7,8), (7,5,6), (2,4,7), (1,6,2), (2,7,6), (7,8,5), (4,8,5), (4,5,3), (1,6,3), (6,3,5)];
+
+
+# @recipe function mesh3d(b :: Box)
+    # pts = coordinates(b)
+
+    # @series begin
+            # Tuple.(pts)
+        # end
+# end

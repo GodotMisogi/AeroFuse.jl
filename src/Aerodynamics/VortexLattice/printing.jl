@@ -35,7 +35,10 @@ end
 
 
 """
-    print_coefficients(nf_coeffs, ff_coeffs, name = "")
+    print_coefficients(
+        nf_coeffs, ff_coeffs, 
+        name = ""
+    )
 
 Print a pretty table of the nearfield and farfield coefficients with an optional name.
 """
@@ -56,9 +59,11 @@ function print_coefficients(nf_coeffs, ff_coeffs, name = "")
 end
 
 """
-    print_derivatives(nf_coeffs, ff_coeffs, name = "";
-                      farfield = false,
-                      axes = "")
+    print_derivatives(
+        nf_coeffs, ff_coeffs, name = "";
+        farfield = false,
+        axes = ""
+    )
 
 Print a pretty table of the aerodynamic coefficients and derivatives with an optional name and named arguments for enabling printing of farfield coefficients and the axis name.
 """
@@ -79,8 +84,11 @@ function print_derivatives(comp, name = ""; farfield = false, axes = "")
 end
 
 """
-    print_coefficients(system :: VortexLatticeSystem, name = :aircraft;
-                       components = false)
+    print_coefficients(
+        system :: VortexLatticeSystem, 
+        name = :aircraft;
+        components = false
+    )
 
 Print a pretty table of the total nearfield and farfield coefficients of a `VortexLatticeSystem` with an optional name.
 

@@ -54,7 +54,15 @@ solve_case(meshes, freestream :: Freestream, refs :: References; name = :aircraf
 _spanwise_loading(CXs, weighted_areas) = vec(sum(CXs, dims = 1)) .* weighted_areas
 
 ## Span-loading
-function _spanwise_loading(panels, CFs, S)
+"""
+    spanwise_loading(panels :: Matrix{Panel3D}, CFs, S)
+    spanwise_loading(wing :: WingMesh, CFs, S)
+
+Obtain the spanwise aerodynamic loads `(CDi, CY, CL)` for a given matrix of `Panel3D`s, surface coefficients `CFs` over the panels, and reference area ``S``.
+
+If a `WingMesh` is provided instead of the matrix, then it will compute the chordwise panel distribution over the surface.
+"""
+function spanwise_loading(panels, CFs, S)
     # Get y-coordinates of spanwise strips
     ys = @views vec(mean(x -> midpoint(x)[2], panels, dims = 1))
 
@@ -67,7 +75,7 @@ function _spanwise_loading(panels, CFs, S)
     [ ys span_CFs ]
 end
 
-spanwise_loading(wing :: WingMesh, CFs, S) = _spanwise_loading(chord_panels(wing), CFs, S)
+spanwise_loading(wing :: WingMesh, CFs, S) = spanwise_loading(chord_panels(wing), CFs, S)
 
 """
     spanwise_loading(wing_mesh :: WingMesh, ref :: References, CFs, Γs)

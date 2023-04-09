@@ -286,8 +286,4 @@ Convert Cartesian coordinates to freestream (spherical polar) flow coordinates.
 """
 cartesian_to_freestream(U) = SVector(norm(U), -atand(U[3], U[1]), -atand(U[2], √(U[1]^2 + U[3]^2)))
 
-# 2D versions
-cartesian_to_freestream(u, w) = magnitude(u, w), angle(u, w)
-freestream_to_cartesian(V, α) = V * cos(α), V * sin(α)
-
 end

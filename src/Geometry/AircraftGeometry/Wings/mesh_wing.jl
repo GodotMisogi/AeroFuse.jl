@@ -258,24 +258,3 @@ function Base.show(io :: IO, mesh :: WingMesh)
 
     nothing
 end
-
-# ## 
-# function WingMesh(;
-#     chords, 
-#     twists    = zero(chords),
-#     spans     = ones(length(chords) - 1) / (length(chords) - 1),
-#     dihedrals = zero(spans),
-#     sweeps    = zero(spans),
-#     foils     = fill(naca4(0,0,1,2), length(chords)),
-#     w_sweep   = 0.0,
-#     position  = zeros(3),
-#     angle     = 0.,
-#     axis      = [0., 1., 0.],
-#     affine    = AffineMap(QuatRotation(AngleAxis(deg2rad(angle), axis...)), position),
-#     symmetry  = false,
-#     flip      = false
-# )
-#     surface = Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, w_sweep, symmetry, flip)
-
-#     WingMesh(surface, 
-# end
