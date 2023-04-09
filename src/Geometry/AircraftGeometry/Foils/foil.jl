@@ -179,6 +179,14 @@ Modify a `Foil` to mimic a control surface by specifying a deflection angle (in 
 """
 control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge)
 
+
+"""
+    maximum_thickness_to_chord(wing :: Wing, num :: Integer)
+
+Compute the maximum thickness-to-chord ratio ``(t/c)ₘₐₓ`` and its location ``(x/c)`` of a `Foil`. Returned as the pair ``(x/c, (t/c)ₘₐₓ)``.
+
+A `num` must be specified to interpolate the `Foil` coordinates, which affects the accuracy of ``(t/c)ₘₐₓ`` accordingly.
+"""
 maximum_thickness_to_chord(foil :: Foil, n = 40) = maximum_thickness_to_chord(coordinates_to_camber_thickness(foil, n))
 
 ## Camber-thickness representation

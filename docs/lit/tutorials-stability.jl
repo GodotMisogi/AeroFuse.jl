@@ -170,7 +170,7 @@ fs  = Freestream(
 # Similarly, define the reference values. Here, the reference flight condition will be set to Mach number $M = 0.84$.
 M = 0.84 # Mach number
 refs = References(
-    speed    = 0.84 * 330., 
+    speed    = M * 330., 
     density  = 1.225,
     span     = b_w,
     area     = S_w,
@@ -208,10 +208,10 @@ keys(dvs.aircraft)
 ac_dvs[:CZ_al], ac_dvs.CZ_al, ac_dvs.CLff_al # Lift coefficient derivative wrt. alpha 
 
 # Note that the nearfield forces and moments $(C_X, C_Y, C_Z, C_l, C_m, C_n)$ depend on the axis system used ($C_Z$ is not lift if body axes are used!). You can also pretty-print the derivatives for each surface.
-print_derivatives(dvs.aircraft, "Aircraft")
-print_derivatives(dvs.wing, "Wing")
-print_derivatives(dvs.htail, "Horizontal Tail")
-print_derivatives(dvs.vtail, "Vertical Tail")
+print_derivatives(dvs.aircraft, "Aircraft", farfield = true)
+print_derivatives(dvs.wing, "Wing", farfield = true)
+print_derivatives(dvs.htail, "Horizontal Tail", farfield = true)
+print_derivatives(dvs.vtail, "Vertical Tail", farfield = true)
 
 # ## Static Stability Analysis
 
