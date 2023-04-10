@@ -251,7 +251,7 @@ Modify a `Foil` to mimic a control surface by specifying a deflection angle ``δ
 control_surface(foil :: Foil; angle, hinge) = control_surface(foil, angle, hinge)
 
 """
-    maximum_thickness_to_chord(wing :: Foil, num :: Integer)
+    maximum_thickness_to_chord(foil :: Foil, num :: Integer)
 
 Compute the maximum thickness-to-chord ratio ``(t/c)ₘₐₓ`` and its location ``(x/c)`` of a `Foil`. Returned as the pair ``(x/c, (t/c)ₘₐₓ)``.
 
