@@ -65,7 +65,7 @@ aircraft =  ComponentVector(
 ## Case
 fs  = Freestream(
     alpha = 4.0, 
-    beta  = 0.0, 
+    beta  = 4.0, 
     omega = [0., 0., 0.]
 );
 
@@ -85,11 +85,16 @@ ref = References(
     compressible     = true, # Compressibility correction flag
     print            = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
+    axes             = Stability(), 
+    # Axis system for reporting forces and moments of surfaces (not nearfield and farfield)
+    # Available axis systems: Geometry(), Stability(), Body(), Wind()
 );
 
 ## Compute forces, moments and velocities over each surface
-ax_sys = Wind() # Axis systems: Geometry(), Stability(), Body()
-@time CFs, CMs = surface_coefficients(sys; axes = ax_sys) # Coefficients
+ax = Wind() # Custom choice of axes
+@time CFs, CMs = surface_coefficients(sys;
+    # axes = ax
+) # Coefficients
 # Fs, Ms   = surface_dynamics(sys; axes = ax) # Forces and moments
 # Fs       = surface_forces(sys; axes = ax) # Forces only
 # vels     = surface_velocities(sys) # Velocities
@@ -103,7 +108,7 @@ ffs = farfield_coefficients(sys)
     
 ## Force/moment coefficients and derivatives
 @time dvs = freestream_derivatives(sys; 
-    axes = ax_sys,
+    axes  = ax,  # Optional for changing the axes
     print = true,
     print_components = true,
     farfield = true

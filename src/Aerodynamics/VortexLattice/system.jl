@@ -59,7 +59,7 @@ rate_coefficient(fs :: Freestream, refs :: References) = rate_coefficient(fs.ome
 ## System
 #==========================================================================================#
 
-abstract type AbstractVortexLatticeSystem end
+abstract type AbstractPotentialFlowSystem end
 
 """
     VortexLatticeSystem
@@ -82,7 +82,7 @@ struct VortexLatticeSystem{
     S,
     P <: AbstractFreestream,
     Q <: AbstractReferences,
-    T <: AbstractAxisSystem} <: AbstractVortexLatticeSystem
+    T <: AbstractAxisSystem} <: AbstractPotentialFlowSystem
     vortices          :: M
     circulations      :: N 
     influence_matrix  :: R
@@ -104,7 +104,7 @@ end
 
 Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an aircraft (must be a `ComponentArray` of `Horseshoe`s or `VortexRing`s) with `Freestream` conditions and `References` for non-dimensionalization. Options are provided for compressibility corrections via the Prandtl-Glauert transformation (false by default) and axis system for computing velocities and forces (`Geometry` by default).
 """
-function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, axes = Geometry())
+function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, axes = Geometry(), warn = true)
 
     M = mach_number(refs) # For Mach number bound checks
 
@@ -117,14 +117,16 @@ function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, com
         β_pg = √(1 - M^2)
         ac = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(aircraft, fs), β_pg)
     else # Incompressible mode
-        if M > 0.3 @warn "Compressible regime (M > 0.3) but compressibility correction is off, be wary of the analysis!" end
+        if warn 
+            if M > 0.3 @warn "Compressible regime (M > 0.3) but compressibility correction is off, be wary of the analysis!" end
+        end
 
         β_pg = 1
         ac = @. geometry_to_wind_axes(aircraft, fs)
     end
 
     # Quasi-steady freestream velocity
-    U = geometry_to_wind_axes(velocity(fs, Body()), fs)
+    U = geometry_to_wind_axes(-velocity(fs), fs.alpha, fs.beta)
     Ω = geometry_to_wind_axes(fs.omega, fs) / refs.speed
 
     # Solve system
@@ -142,14 +144,16 @@ rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freest
 """
     surface_velocities(
         system :: VortexLatticeSystem; 
-        axes   :: AbstractAxisSystem = Geometry()
+        axes :: AbstractAxisSystem = system.axes
     )
 
-Compute the induced velocities for all components of the `VortexLatticeSystem` in the reference axis system.
-"""
-surface_velocities(system :: VortexLatticeSystem; axes = Geometry()) = surface_velocities(system, axes)
+Compute the induced velocities for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
 
-surface_velocities(system :: VortexLatticeSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * velocity(system.freestream, Body()), system.freestream.omega)
+The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
+"""
+surface_velocities(system :: VortexLatticeSystem; axes = system.axes) = surface_velocities(system, axes)
+
+surface_velocities(system :: VortexLatticeSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega)
 
 surface_velocities(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
 
@@ -161,16 +165,18 @@ surface_velocities(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axe
 """
     surface_forces(
         system :: VortexLatticeSystem; 
-        axes   :: AbstractAxisSystem = Geometry()
+        axes :: AbstractAxisSystem = system.axes
     )
 
-Compute the forces for all components of the `VortexLatticeSystem` in the reference axis system.
+Compute the forces for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
+
+The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_forces(system; axes :: AbstractAxisSystem = Geometry()) = surface_forces(system, axes)
+surface_forces(system; axes :: AbstractAxisSystem = system.axes) = surface_forces(system, axes)
 
-surface_forces(system :: VortexLatticeSystem, ::Geometry) = surface_forces(system.vortices, system.circulations, system.reference.speed * velocity(system.freestream, Body()), system.freestream.omega, system.reference.density)
+surface_forces(system :: VortexLatticeSystem, ::Geometry) = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
 
-surface_forces(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_forces(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+surface_forces(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_forces(system, Geometry()))
 
 surface_forces(system :: VortexLatticeSystem, ::Stability) = geometry_to_stability_axes.(surface_forces(system, Geometry()), system.freestream.alpha)
 
@@ -180,26 +186,28 @@ surface_forces(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(s
 """
     surface_moments(
         system :: VortexLatticeSystem; 
-        axes   :: AbstractAxisSystem = Geometry()
+        axes :: AbstractAxisSystem = system.axes
     )
 
-Compute the moments for all components of the `VortexLatticeSystem` in the reference axis system.
+Compute the moments for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
+
+The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_moments(system; axes :: AbstractAxisSystem = Geometry()) = surface_moments(system, axes)
+surface_moments(system; axes :: AbstractAxisSystem = system.axes) = surface_moments(system, axes)
 
 surface_moments(system :: VortexLatticeSystem, ::Geometry) = surface_moments(system.vortices, surface_forces(system, Geometry()), system.reference.location)
 
-surface_moments(system :: VortexLatticeSystem, ::Body) = surface_moments(system.vortices, surface_forces(system, Body()), geometry_to_body_axes(system.reference.location))
+surface_moments(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_moments(system.vortices, surface_forces(system), system.reference.location))
 
-surface_moments(system :: VortexLatticeSystem, ::Stability) = surface_moments(system.vortices, flip_xz.(surface_forces(system, Stability())), geometry_to_stability_axes(system.reference.location, system.freestream.alpha))
+surface_moments(system :: VortexLatticeSystem, ::Stability) = geometry_to_stability_axes.(flip_xz.(surface_moments(system.vortices, surface_forces(system), system.reference.location)), system.freestream.alpha)
 
-surface_moments(system :: VortexLatticeSystem, ::Wind) =  surface_moments(system.vortices, flip_xz.(surface_forces(system, Wind())), geometry_to_wind_axes(system.reference.location, system.freestream.alpha, system.freestream.beta))
+surface_moments(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(flip_xz.(surface_moments(system.vortices, surface_forces(system), system.reference.location)), system.freestream.alpha, system.freestream.beta)
 
 
 ## Dynamics
 function surface_dynamics(system :: VortexLatticeSystem)
-    # Compute nearfield forces and moments
-    surf_forces  = surface_forces(system)
+    # Compute surface forces and moments in geometry axes
+    surf_forces = surface_forces(system)
     surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
 
     surf_forces, surf_moments
@@ -208,12 +216,14 @@ end
 """
     surface_dynamics(
         system :: VortexLatticeSystem; 
-        axes   :: AbstractAxisSystem = Geometry()
+        axes :: AbstractAxisSystem = system.axes
     )
 
-Compute the forces and moments for all components of the `VortexLatticeSystem` in the reference axis system.
+Compute the forces and moments for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
+
+The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_dynamics(system; axes :: AbstractAxisSystem = Wind()) = surface_dynamics(system, axes)
+surface_dynamics(system; axes :: AbstractAxisSystem = system.axes) = surface_dynamics(system, axes)
 
 surface_dynamics(system :: VortexLatticeSystem, ::Geometry) = surface_dynamics(system)
 
@@ -247,7 +257,7 @@ function surface_dynamics(system :: VortexLatticeSystem, ::Wind)
     α = system.freestream.alpha
     β = system.freestream.beta
 
-    # Compute nearfield forces and moments
+    # Compute surface forces and moments
     surface_forces, surface_moments = surface_dynamics(system)
 
     # Transform to wind axes
@@ -260,12 +270,14 @@ end
 """
     surface_coefficients(
         system :: VortexLatticeSystem; 
-        axes   :: AbstractAxisSystem = Wind()
+        axes :: AbstractAxisSystem = system.axes
     )
 
-Compute the force and moment coefficients on the surface given the `VortexLatticeSystem` in the reference axis system.
+Compute the force and moment coefficients of the surfaces over all components in a given `VortexLatticeSystem`, in a specified reference axis system as a named argument.
+
+The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Wind()) 
+function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = system.axes) 
     # Compute surface forces in whichever axes
     forces, moments = surface_dynamics(system, axes)
     refs = system.reference
@@ -283,31 +295,30 @@ const FF_COEFFS = @SLArray (3) (:CDi,:CY,:CL)
 """
     nearfield_coefficients(system :: VortexLatticeSystem)
 
-Compute the force and moment coefficients in **wind axes** for all components of the `VortexLatticeSystem`.
+Compute the nearfield force and moment coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by default.
 """
-function nearfield_coefficients(system :: VortexLatticeSystem) 
+@views function nearfield_coefficients(system :: VortexLatticeSystem)
+    # Compute surface force and moment coefficients in wind axes
     CFs, CMs = surface_coefficients(system; axes = Wind())
  
-    @views NamedTuple(key => NF_COEFFS(sum(CFs[key])..., sum(CMs[key])...) for key in keys(CFs))
+    # Construct NamedTuple with ComponentArray keys for each component
+    return NamedTuple(key => NF_COEFFS(sum(CFs[key])..., sum(CMs[key])...) for key in keys(CFs))
 end
 
 """
     nearfield(system :: VortexLatticeSystem)
 
-Compute the **total** force and moment coefficients in **wind axes** for all components of the `VortexLatticeSystem`.
+Compute the **total** nearfield force and moment coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by default.
 """
-function nearfield(system :: VortexLatticeSystem)
-    CX, CY, CZ, Cl, Cm, Cn = mapreduce(sum, vcat, surface_coefficients(system; axes = Wind()))
- 
-    return NF_COEFFS(CX, CY, CZ, Cl, Cm, Cn)
-end
+nearfield(system :: VortexLatticeSystem) = NF_COEFFS(mapreduce(sum, vcat, surface_coefficients(system; axes = Wind())))
+
 
 """
     farfield_forces(system :: VortexLatticeSystem)
 
 Compute the **farfield** forces in **wind axes** for all components of the `VortexLatticeSystem`.
 """
-function farfield_forces(system :: VortexLatticeSystem)
+@views function farfield_forces(system :: VortexLatticeSystem)
     hs = system.vortices 
     Γs = system.circulations
     α  = system.freestream.alpha
@@ -315,7 +326,8 @@ function farfield_forces(system :: VortexLatticeSystem)
     V  = system.reference.speed
     ρ  = system.reference.density
     
-    @views NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
+    # Construct NamedTuple with ComponentArray keys for each component
+    return NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
 end
 
 """
@@ -323,30 +335,30 @@ end
 
 Compute the **total farfield** force coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by definition.
 """
-farfield_coefficients(system :: VortexLatticeSystem) = let ; 
-    map(farfield_forces(system)) do ff
-        FF_COEFFS(force_coefficient(ff, dynamic_pressure(system.reference.density, system.reference.speed), system.reference.area))
+farfield_coefficients(system :: VortexLatticeSystem) = map(farfield_forces(system)) do ff
+        FF_COEFFS(force_coefficient(ff, system.reference))
     end
-end
 
 """
     farfield(system :: VortexLatticeSystem)
 
-Compute the **total farfield** force coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by definition.
+Compute the **total farfield** force coefficients of the `VortexLatticeSystem`. These are in **wind axes** by definition.
 """
-function farfield(system :: VortexLatticeSystem)
-    q = dynamic_pressure(system.reference.density, system.reference.speed)
-    coeffs = force_coefficient(sum(farfield_forces(system)), q, system.reference.area)
+farfield(system :: VortexLatticeSystem) = FF_COEFFS(force_coefficient(sum(farfield_forces(system)), system.reference))
 
-    return FF_COEFFS(coeffs...)
-end
+"""
+    center_of_pressure(system :: VortexLatticeSystem)
 
+Determine the center of pressure ``x_{cp}`` of the `VortexLatticeSystem`. 
+
+This is computed based on the nearfield lift ``C_L`` and moment ``Cₘ`` coefficients, and the reference location ``xᵣ`` and chord length ``cᵣ`` from `References`: ``x_{cp} = xᵣ -cᵣ(Cₘ / C_L)``
+"""
 function center_of_pressure(system :: VortexLatticeSystem)
-    x_AC = system.reference.location[1]
+    x_ref = system.reference.location[1]
     c_ref = system.reference.chord
     nf = nearfield(system)
 
-    x_CP = x_AC - c_ref * nf.Cm / nf.CZ
+    x_CP = x_ref - c_ref * nf.Cm / nf.CZ
 
     return x_CP
 end
