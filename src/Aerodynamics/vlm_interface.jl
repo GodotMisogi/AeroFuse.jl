@@ -31,7 +31,7 @@ control_point(panel :: Panel3D) = control_point(panel.p1, panel.p2, panel.p3, pa
 
 Generate a `Horseshoe` corresponding to a `Panel3D`, an associated normal vector, and a "drift velocity".
 """
-function Horseshoe(panel :: Panel3D, normal, drift = SVector(0., 0., 0.); core_size = 0.)
+function Horseshoe(panel :: Panel3D, normal, drift = @SVector zeros(3); core_size = 0.)
     r1, r2 = bound_leg(panel)
     rc = control_point(panel) + drift
     Horseshoe(r1, r2, rc, normal, core_size)
@@ -48,7 +48,7 @@ left leg       right leg
     p2 —back leg-→ p3
 ```
 """
-function VortexRing(panel :: Panel3D{T}, rc, normal, trailing = false; core_size = 0.) where T <: Real
+function VortexRing(panel :: Panel3D{T}, rc, normal, trailing = false; core_size = zero(T)) where T <: Number
     # r1 = quarter_point(panel.p1, panel.p2)
     # r4 = quarter_point(panel.p4, panel.p3)
     # r2 = normalize(panel.p2 - panel.p1) * 0.25 + r1
@@ -71,7 +71,7 @@ Generate an array of `VortexRing`s defined by the camber coordinates and normal 
 """
 @views make_vortex_rings(wing_mesh :: WingMesh) = make_vortex_rings(camber_coordinates(wing_mesh))
 
-function make_vortex_rings(cam_coo)
+@views function make_vortex_rings(cam_coo)
     # Generate vortex ring mesh
     cams = combinedimsview(cam_coo, (1,2))
     vor_cams = similar(cams)

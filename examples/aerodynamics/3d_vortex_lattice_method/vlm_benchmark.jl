@@ -2,7 +2,7 @@
 using BenchmarkTools
 
 ## BYU Flow
-using VortexLattice
+import VortexLattice
 
 function vlm_byu()
     # Simple Wing with Uniform Spacing
@@ -24,8 +24,8 @@ function vlm_byu()
     Vinf = 1.0
     ref = VortexLattice.Reference(Sref, cref, bref, rref, Vinf)
 
-    alpha = 1.0*pi/180
-    beta = 0.0
+    alpha = 2.0*pi/180
+    beta = 4.0*pi/180
     Omega = [0.0; 0.0; 0.0]
     fs = VortexLattice.Freestream(Vinf, alpha, beta, Omega)
 
@@ -33,23 +33,21 @@ function vlm_byu()
     mirror = true
     symmetric = false
 
-    _, surface = wing_to_surface_panels(xle, yle, zle, chord, theta, phi, ns, nc;
+    _, surface = VortexLattice.wing_to_surface_panels(xle, yle, zle, chord, theta, phi, ns, nc;
     mirror=mirror, spacing_s=spacing_s, spacing_c=spacing_c)
 
     surfaces = [surface]
 
-    system = steady_analysis(surfaces, ref, fs; symmetric=symmetric)
+    system = VortexLattice.steady_analysis(surfaces, ref, fs; symmetric=symmetric)
 
-    CF, CM = body_forces(system; frame=VortexLattice.Stability())
-    CDiff = far_field_drag(system)
+    CF, CM = VortexLattice.body_forces(system; frame=VortexLattice.Stability())
+    CDiff = VortexLattice.far_field_drag(system)
 
     return CF, CM, CDiff, system
 end 
 
 ##
 @time CF, CM, CDiff, byu_sys = vlm_byu();
-
-print_coefficients([CF; CM], [CDiff,"—","—"], "BYU")
 
 ## AeroFuse.jl
 using AeroFuse
@@ -72,8 +70,8 @@ function vlm_aerofuse()
 
     # Freestream conditions
     fs  = Freestream(
-        alpha = 1.0, # deg
-        beta  = 0.0, # deg
+        alpha = 2.0, # deg
+        beta  = 4.0, # deg
         omega = [0.,0.,0.]
     )
 
@@ -89,7 +87,7 @@ function vlm_aerofuse()
     )
 
     ## Horseshoes
-    ac_hs = ComponentVector(wing = make_horseshoes(wing_mesh))
+    ac_hs = ComponentVector(wing = make_vortex_rings(wing_mesh))
     system = VortexLatticeSystem(ac_hs, fs, ref)
 
     ## Vortex rings
@@ -102,6 +100,8 @@ end
 ##
 @time nfs, ffs, sys = vlm_aerofuse();
 
+##
+print_coefficients([CF; CM], [CDiff,"—","—"], "BYU")
 print_coefficients(nfs, ffs, "AeroFuse")
 
 ## Results
