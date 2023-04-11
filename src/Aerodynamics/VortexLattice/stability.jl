@@ -26,17 +26,18 @@ scale_freestream(fs :: Freestream, refs :: References) =
     ]
 
 # Closure to generate results with input vector
-function freestream_derivatives!(y, x, aircraft, fs, ref, compressible = false, axes = Wind())
+@views function freestream_derivatives!(y, x, aircraft, fs, ref, compressible, axes)
     # Scale Mach number
     ref = @views setproperties(ref, 
         speed = x[1] * ref.sound_speed
     )
 
     # Transform angles and scale rotation vector
+    α, β = map(rad2deg, x[2:3])
     fs = @views setproperties(fs, 
-        alpha = rad2deg(x[2]), 
-        beta = rad2deg(x[3]), 
-        omega = x[4:end] ./ rate_coefficient(1, ref.speed, ref.span, ref.chord)
+        alpha = α, 
+        beta = β, 
+        omega = geometry_to_stability_axes(flip_xz(x[4:end]), α) ./ rate_coefficient(1, ref.speed, ref.span, ref.chord)
     )
 
     # Solve system
@@ -95,11 +96,12 @@ end
         name = :aircraft,
         axes = Wind(),
         print = false,
-        print_components = false
+        print_components = false,
+        farfield = false
     )
 
-Obtain the force and moment coefficients of the components of a `VortexLatticeSystem` and their derivatives with respect to freestream values: Mach ``M`` (if compressible), angles of attack ``α`` and sideslip ``β``, and non-dimensionalized angular velocity rates ``p̄, q̄, r̄``.
+Obtain the force and moment coefficients of the components of a `VortexLatticeSystem` and their derivatives with respect to freestream values: Mach ``M`` (if compressible), angles of attack ``α`` and sideslip ``β``, and non-dimensionalized rotation rates ``p̄, q̄, r̄`` (in stability axes).
 
-The axes can be changed by passing any axis system (such as `Body(), Geometry(), Wind(), Stability()`) to the named `axes` argument. The force and moment coefficients are reported in wind axes by default.
+The axes of the force and moment coefficients can be changed by passing any axis system (such as `Body(), Geometry(), Wind(), Stability()`) to the named `axes` argument. The force and moment coefficients are reported in wind axes by default. Note that the rotation rates will still refer to the rotation vector in stability axes.
 """
-freestream_derivatives(system :: VortexLatticeSystem; axes = Wind(), name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; axes = axes, name = name, compressible = system.compressible, print = print, print_components = print_components, farfield = farfield)
+freestream_derivatives(system :: VortexLatticeSystem; axes = system.axes, name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; compressible = system.compressible, axes, name, print, print_components, farfield)
