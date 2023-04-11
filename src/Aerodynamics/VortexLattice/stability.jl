@@ -64,7 +64,7 @@ scale_freestream(fs :: Freestream, refs :: References) =
     # return nothing
 end
 
-function freestream_derivatives(aircraft, fs, ref; axes = Wind(), name = :aircraft, compressible = false, print = false, print_components = false, farfield = false)
+function freestream_derivatives(aircraft, fs, ref; axes = Stability(), name = :aircraft, compressible = false, print = false, print_components = false, farfield = false)
     # Reference values and scaling inputs
     x = scale_freestream(fs, ref)
 
@@ -94,7 +94,7 @@ end
     freestream_derivatives(
         system :: VortexLatticeSystem,
         name = :aircraft,
-        axes = Wind(),
+        axes = system.axes,
         print = false,
         print_components = false,
         farfield = false
@@ -102,6 +102,6 @@ end
 
 Obtain the force and moment coefficients of the components of a `VortexLatticeSystem` and their derivatives with respect to freestream values: Mach ``M`` (if compressible), angles of attack ``α`` and sideslip ``β``, and non-dimensionalized rotation rates ``p̄, q̄, r̄`` (in stability axes).
 
-The axes of the force and moment coefficients can be changed by passing any axis system (such as `Body(), Geometry(), Wind(), Stability()`) to the named `axes` argument. The force and moment coefficients are reported in wind axes by default. Note that the rotation rates will still refer to the rotation vector in stability axes.
+The axes of the force and moment coefficients can be changed by passing any axis system (such as `Body(), Geometry(), Wind(), Stability()`) to the named `axes` argument. The nearfield force and moment coefficients are reported in stability axes by default. Note that the derivatives with respect to the rotation rates will still refer to the rotation vector in stability axes.
 """
-freestream_derivatives(system :: VortexLatticeSystem; axes = system.axes, name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; compressible = system.compressible, axes, name, print, print_components, farfield)
+freestream_derivatives(system :: VortexLatticeSystem; axes = Stability(), name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; compressible = system.compressible, axes, name, print, print_components, farfield)

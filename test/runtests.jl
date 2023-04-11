@@ -1,7 +1,6 @@
 using AeroFuse
 using Test
 using StaticArrays
-using ComponentArrays
 
 @testset "Loading Airfoil Coordinates" begin
     foil = read_foil(string(@__DIR__, "/e49.dat"))
@@ -168,7 +167,7 @@ end
 
     ts = 0:0.1:1                # Distribution of sections
     S_f = wetted_area(fuse, ts) # Surface area, m²
-    V_f = volume(fuse, ts)      # Volume, m³
+    V_f = AeroFuse.volume(fuse, ts)      # Volume, m³
 
     @test S_f ≈ 91.1407334 atol = 1e-6
     @test V_f ≈ 38.0380653 atol = 1e-6
@@ -385,7 +384,11 @@ end
     )
 
     ## Stability case
-    dv_data = freestream_derivatives(aircraft, fs, refs, name = :aircraft, compressible = true)
+    dv_data = freestream_derivatives(aircraft, fs, refs;
+                axes = Wind(), 
+                name = :aircraft, 
+                compressible = true
+            )
 
     dcf = dv_data.aircraft
     nfs = @views dcf[1:6,1]
