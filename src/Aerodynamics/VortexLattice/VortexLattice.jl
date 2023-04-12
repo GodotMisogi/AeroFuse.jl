@@ -20,7 +20,7 @@ import ..NonDimensional: dynamic_pressure, aerodynamic_coefficients, force_coeff
 # Some tools
 import ..Laplace: AbstractFreestream, Freestream
 
-import ..AeroFuse: velocity, solve_system, solve_linear, solve_nonlinear, solve_nonlinear!, surface_velocities, surface_coefficients
+import ..AeroFuse: velocity, solve_linear, solve_nonlinear, solve_nonlinear!, surface_velocities, surface_coefficients
 
 ## Vortex types and methods
 #==========================================================================================#

@@ -111,8 +111,6 @@ export Fuselage, projected_area, length, cosine_interpolation, volume, HyperElli
 # Wing
 import .AircraftGeometry: Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, make_panels, mesh_chords, mesh_wing, mesh_cambers, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio
 
-# export Wing, WingSection
-
 export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, make_panels, mesh_chords, mesh_wing, mesh_cambers, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio
 
 # Surfaces
@@ -145,9 +143,36 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
 ## Vortex lattice
 
 include("Aerodynamics/VortexLattice/VortexLattice.jl")
-import .VortexLattice: Horseshoe, AbstractPotentialFlowSystem, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, bound_leg_center, bound_leg_vector, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
 
-export Horseshoe, VortexLatticeSystem, References, AbstractAxisSystem, Stability, Wind, Body, Geometry, streamlines, influence_coefficient, influence_matrix, boundary_condition, solve_system, bound_leg_center, bound_leg_vector, control_point, Horseshoe, surface_velocity, surface_forces, surface_moments, nearfield_drag, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, VortexRing, velocity, kinematic_viscosity, mach_number, stream_velocity, center_of_pressure, freestream_derivatives!, freestream_derivatives, print_coefficients, print_derivatives
+# Vortex types
+import .VortexLattice: Horseshoe, VortexRing, velocity, bound_leg_center, bound_leg_vector, control_point
+
+export Horseshoe, VortexRing, velocity, bound_leg_center, bound_leg_vector, control_point
+
+# Reference values
+import .VortexLattice: References, kinematic_viscosity, mach_number
+
+export References, kinematic_viscosity, mach_number
+
+# Reference frames and traits
+import .VortexLattice: AbstractAxisSystem, Stability, Wind, Body, Geometry, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, wind_to_body_axes
+
+export AbstractAxisSystem, Stability, Wind, Body, Geometry, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, wind_to_body_axes
+
+# System methods
+import .VortexLattice: AbstractPotentialFlowSystem, VortexLatticeSystem, surface_velocity, surface_forces, surface_moments, nearfield_drag, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, center_of_pressure
+
+export AbstractPotentialFlowSystem, VortexLatticeSystem, surface_velocity, surface_forces, surface_moments, nearfield_drag, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, center_of_pressure
+
+# Derivatives
+import .VortexLattice: freestream_derivatives
+
+export freestream_derivatives
+
+# Post-prrocessing
+import .VortexLattice: print_coefficients, print_derivatives, streamlines
+
+export print_coefficients, print_derivatives, streamlines
 
 ## Panel-VLM interface
 include("Aerodynamics/vlm_interface.jl")

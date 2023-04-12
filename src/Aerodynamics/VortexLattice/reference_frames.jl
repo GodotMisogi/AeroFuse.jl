@@ -4,7 +4,6 @@
 # Reflect the ``y``-coordinate of a given 3-dimensional vector about the ``x``-``z`` plane.
 reflect_xz(vector) = SVector(vector[1], -vector[2], vector[3])
 
-
 # Project a given 3-dimensional vector or into the ``y``-``z`` plane.
 project_yz(vector) = SVector(0, vector[2], vector[3])
 
@@ -29,5 +28,7 @@ geometry_to_wind_axes(xyz, α, β) = let T = promote_type(eltype(α), eltype(β)
 ## Check order
 function wind_to_geometry_axes(xyz, α, β) 
     T = promote_type(eltype(α), eltype(β))
-    return RotYZ{T}(-α, -β) * xyz
+    return RotYZ{T}(α, β) * xyz
 end
+
+wind_to_body_axes(xyz, α, β) = flip_xz(wind_to_geometry_axes(xyz, α, β))
