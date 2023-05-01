@@ -150,7 +150,13 @@ function curve(fuse :: HyperEllipseFuselage, ts)
     z_nose += LinRange(fuse.d_nose, 0, length(x_nose))
     z_rear += LinRange(0, fuse.d_rear, length(x_rear))
 
-    return x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear
+    xzs = [
+        x_nose  z_nose; 
+        x_cabin z_cabin; 
+        x_rear  z_rear;
+    ]
+
+    return xzs
 end
 
 """
@@ -186,12 +192,9 @@ end
 Compute the wetted area of a `HyperEllipseFuselage` given the parameter distribution ``t``. Note that the distribution must have endpoints `0` and `1`.
 """
 @views function wetted_area(fuse :: HyperEllipseFuselage, ts) 
-    x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = curve(fuse, ts)
+    xzs = curve(fuse, ts)
 
-    xs = [x_nose; x_cabin; x_rear]
-    zs = [z_nose; z_cabin; z_rear]
-
-    return sum(x -> truncated_cone_curved_area(x...), zip(zs[1:end-1], zs[2:end], diff(xs)))
+    return sum(x -> truncated_cone_curved_area(x...), zip(xzs[1:end-1,2], xzs[2:end,2], diff(xzs[:,1])))
 end
 
 """
@@ -200,10 +203,7 @@ end
 Compute the volume of a `HyperEllipseFuselage` given the parameter distribution ``t``. Note that the distribution must have endpoints `0` and `1`.
 """
 @views function volume(fuse :: HyperEllipseFuselage, ts)
-    x_nose, x_cabin, x_rear, z_nose, z_cabin, z_rear = curve(fuse, ts)
+    xzs = curve(fuse, ts)
 
-    xs = [x_nose; x_cabin; x_rear]
-    zs = [z_nose; z_cabin; z_rear]
-
-    return sum(x -> truncated_cone_volume(x...), zip(zs[1:end-1], zs[2:end], diff(xs)))
+    return sum(x -> truncated_cone_volume(x...), zip(xzs[1:end-1,2], xzs[2:end,2], diff(xzs[:,1])))
 end
