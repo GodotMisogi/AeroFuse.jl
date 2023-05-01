@@ -36,7 +36,7 @@ end
 
 function References(V, ρ, μ, a, S, b, c, r)
     T = promote_type(eltype(V), eltype(ρ), eltype(μ), eltype(a), eltype(S), eltype(b), eltype(c), eltype(r))
-    References{T}(V, ρ, μ, a, S, b, c, r) 
+    return References{T}(V, ρ, μ, a, S, b, c, r) 
 end
 
 # References(; V, rho, mu, a, S, b, c, r) = References(V, rho, mu, a, S, b, c, r)
@@ -81,8 +81,7 @@ struct VortexLatticeSystem{
     R,
     S,
     P <: AbstractFreestream,
-    Q <: AbstractReferences,
-    T <: AbstractAxisSystem} <: AbstractPotentialFlowSystem
+    Q <: AbstractReferences} <: AbstractPotentialFlowSystem
     vortices          :: M
     circulations      :: N 
     influence_matrix  :: R
@@ -90,7 +89,6 @@ struct VortexLatticeSystem{
     freestream        :: P
     reference         :: Q
     compressible      :: Bool
-    axes              :: T
 end
 
 """
@@ -99,19 +97,20 @@ end
         fs :: Freestream, 
         refs :: References, 
         compressible = false, 
-        axes = Geometry()
     )
 
 Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an aircraft (must be a `ComponentArray` of `Horseshoe`s or `VortexRing`s) with `Freestream` conditions and `References` for non-dimensionalization. Options are provided for compressibility corrections via the Prandtl-Glauert transformation (false by default) and axis system for computing velocities and forces (`Geometry` by default).
 """
-function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, axes = Geometry(), warn = true)
+function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, warn = true)
 
     M = mach_number(refs) # For Mach number bound checks
 
     # Compressible mode
     if compressible
         @assert M < 1. "Only compressible subsonic flow conditions (M < 1) are valid!"
-        if M > 0.7 @warn "Results in transonic to sonic flow conditions (0.7 < M < 1) are most likely incorrect!" end
+        if M > 0.7 && warn
+            @warn "Results in transonic to sonic flow conditions (0.7 < M < 1) are most likely incorrect!" 
+        end
 
         # (Prandtl-Glauert ∘ Wind axis) transformation
         β_pg = √(1 - M^2)
@@ -132,7 +131,7 @@ function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, com
     # Solve system
     Γs, AIC, boco = solve_linear(ac, U, Ω)
 
-    return VortexLatticeSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible, axes)
+    return VortexLatticeSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible)
 end
 
 # Miscellaneous
@@ -144,14 +143,14 @@ rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freest
 """
     surface_velocities(
         system :: VortexLatticeSystem; 
-        axes :: AbstractAxisSystem = system.axes
+        axes :: AbstractAxisSystem = Geometry()
     )
 
 Compute the induced velocities for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
 
-The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_velocities(system :: VortexLatticeSystem; axes = system.axes) = surface_velocities(system, axes)
+surface_velocities(system :: VortexLatticeSystem; axes = Geometry()) = surface_velocities(system, axes)
 
 surface_velocities(system :: VortexLatticeSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega)
 
@@ -165,14 +164,14 @@ surface_velocities(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axe
 """
     surface_forces(
         system :: VortexLatticeSystem; 
-        axes :: AbstractAxisSystem = system.axes
+        axes :: AbstractAxisSystem = Geometry()
     )
 
 Compute the forces for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
 
-The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_forces(system; axes :: AbstractAxisSystem = system.axes) = surface_forces(system, axes)
+surface_forces(system; axes :: AbstractAxisSystem = Geometry()) = surface_forces(system, axes)
 
 surface_forces(system :: VortexLatticeSystem, ::Geometry) = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
 
@@ -186,14 +185,14 @@ surface_forces(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(s
 """
     surface_moments(
         system :: VortexLatticeSystem; 
-        axes :: AbstractAxisSystem = system.axes
+        axes :: AbstractAxisSystem = Geometry()
     )
 
 Compute the moments for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
 
-The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_moments(system; axes :: AbstractAxisSystem = system.axes) = surface_moments(system, axes)
+surface_moments(system; axes :: AbstractAxisSystem = Geometry()) = surface_moments(system, axes)
 
 surface_moments(system :: VortexLatticeSystem, ::Geometry) = surface_moments(system.vortices, surface_forces(system, Geometry()), system.reference.location)
 
@@ -210,20 +209,20 @@ function surface_dynamics(system :: VortexLatticeSystem)
     surf_forces = surface_forces(system)
     surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
 
-    surf_forces, surf_moments
+    return surf_forces, surf_moments
 end
 
 """
     surface_dynamics(
         system :: VortexLatticeSystem; 
-        axes :: AbstractAxisSystem = system.axes
+        axes :: AbstractAxisSystem = Geometry()
     )
 
 Compute the forces and moments for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
 
-The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_dynamics(system; axes :: AbstractAxisSystem = system.axes) = surface_dynamics(system, axes)
+surface_dynamics(system; axes :: AbstractAxisSystem = Geometry()) = surface_dynamics(system, axes)
 
 surface_dynamics(system :: VortexLatticeSystem, ::Geometry) = surface_dynamics(system)
 
@@ -235,7 +234,7 @@ function surface_dynamics(system :: VortexLatticeSystem, ::Body)
     stability_forces  = @. geometry_to_body_axes(surface_forces)
     stability_moments = @. geometry_to_body_axes(surface_moments)
 
-    stability_forces, stability_moments
+    return stability_forces, stability_moments
 end
 
 function surface_dynamics(system :: VortexLatticeSystem, ::Stability)
@@ -249,7 +248,7 @@ function surface_dynamics(system :: VortexLatticeSystem, ::Stability)
     stability_forces  = @. geometry_to_stability_axes(surface_forces, α)
     stability_moments = @. geometry_to_stability_axes(flip_xz(surface_moments), α)
 
-    stability_forces, stability_moments
+    return stability_forces, stability_moments
 end
 
 function surface_dynamics(system :: VortexLatticeSystem, ::Wind)
@@ -264,20 +263,20 @@ function surface_dynamics(system :: VortexLatticeSystem, ::Wind)
     wind_forces  = @. geometry_to_wind_axes(surface_forces, α, β)
     wind_moments = @. geometry_to_wind_axes(flip_xz(surface_moments), α, β)
 
-    wind_forces, wind_moments
+    return wind_forces, wind_moments
 end
 
 """
     surface_coefficients(
         system :: VortexLatticeSystem; 
-        axes :: AbstractAxisSystem = system.axes
+        axes :: AbstractAxisSystem = Geometry()
     )
 
 Compute the force and moment coefficients of the surfaces over all components in a given `VortexLatticeSystem`, in a specified reference axis system as a named argument.
 
-The reference axis system is set to the axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = system.axes) 
+function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry()) 
     # Compute surface forces in whichever axes
     forces, moments = surface_dynamics(system, axes)
     refs = system.reference
@@ -286,7 +285,7 @@ function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxi
     CFs = @. force_coefficient(forces, refs)
     CMs = @. moment_coefficient(moments, dynamic_pressure(refs), refs.area, refs.span, refs.chord)
 
-    CFs, CMs
+    return CFs, CMs
 end
 
 const NF_COEFFS = @SLArray (6) (:CX,:CY,:CZ,:Cl,:Cm,:Cn)
@@ -363,4 +362,7 @@ function center_of_pressure(system :: VortexLatticeSystem)
     return x_CP
 end
 
+# Consider adding spanwise loading later
+
+# Residual equation for nonlinear analysis
 residual!(R, Γ, system :: VortexLatticeSystem) = solve_nonlinear!(R, system.vortices, Γ, -velocity(system.freestream), system.freestream.omega)
