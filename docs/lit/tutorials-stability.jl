@@ -205,7 +205,7 @@ ac_dvs = dvs.aircraft
 keys(dvs.aircraft)
 
 # These can be accessed either like a dictionary, or by 'dot' syntax.
-ac_dvs[:CZ_al], ac_dvs.CZ_al, ac_dvs.CLff_al # Lift coefficient derivative wrt. alpha 
+ac_dvs[:CZ_al], ac_dvs.CZ_al, ac_dvs.CL_al # Lift coefficient derivative wrt. alpha 
 
 # Note that the nearfield forces and moments $(C_X, C_Y, C_Z, C_l, C_m, C_n)$ depend on the axis system used ($C_Z$ is not lift if body axes are used!). You can also pretty-print the derivatives for each surface.
 print_derivatives(dvs.aircraft, "Aircraft", farfield = true)
@@ -241,7 +241,7 @@ stab_plt = plot(
     xaxis = L"x", yaxis = L"y", zaxis = L"z",
     aspect_ratio = 1, 
     zlim = (-0.5, 0.5) .* span(wing_mesh),
-    camera = (0,90),
+    camera = (30,60),
 )
 plot!(fuse, label = "Fuselage", alpha = 0.6)
 plot!(stab_plt, wing_mesh, label = "Wing", mac = false)

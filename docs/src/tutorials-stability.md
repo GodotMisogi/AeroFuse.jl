@@ -201,7 +201,7 @@ Similarly, define the reference values. Here, the reference flight condition wil
 ````@example tutorials-stability
 M = 0.84 # Mach number
 refs = References(
-    speed    = 0.84 * 330.,
+    speed    = M * 330.,
     density  = 1.225,
     span     = b_w,
     area     = S_w,
@@ -253,16 +253,16 @@ keys(dvs.aircraft)
 These can be accessed either like a dictionary, or by 'dot' syntax.
 
 ````@example tutorials-stability
-ac_dvs[:CZ_al], ac_dvs.CZ_al, ac_dvs.CLff_al # Lift coefficient derivative wrt. alpha
+ac_dvs[:CZ_al], ac_dvs.CZ_al, ac_dvs.CL_al # Lift coefficient derivative wrt. alpha
 ````
 
 Note that the nearfield forces and moments $(C_X, C_Y, C_Z, C_l, C_m, C_n)$ depend on the axis system used ($C_Z$ is not lift if body axes are used!). You can also pretty-print the derivatives for each surface.
 
 ````@example tutorials-stability
-print_derivatives(dvs.aircraft, "Aircraft")
-print_derivatives(dvs.wing, "Wing")
-print_derivatives(dvs.htail, "Horizontal Tail")
-print_derivatives(dvs.vtail, "Vertical Tail")
+print_derivatives(dvs.aircraft, "Aircraft", farfield = true)
+print_derivatives(dvs.wing, "Wing", farfield = true)
+print_derivatives(dvs.htail, "Horizontal Tail", farfield = true)
+print_derivatives(dvs.vtail, "Vertical Tail", farfield = true)
 ````
 
 ## Static Stability Analysis
@@ -298,7 +298,7 @@ stab_plt = plot(
     xaxis = L"x", yaxis = L"y", zaxis = L"z",
     aspect_ratio = 1,
     zlim = (-0.5, 0.5) .* span(wing_mesh),
-    camera = (0,90),
+    camera = (30,60),
 )
 plot!(fuse, label = "Fuselage", alpha = 0.6)
 plot!(stab_plt, wing_mesh, label = "Wing", mac = false)
