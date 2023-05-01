@@ -170,6 +170,7 @@ fs  = Freestream(
 # Similarly, define the reference values. Here, the reference flight condition will be set to Mach number $M = 0.84$.
 M = 0.84 # Mach number
 refs = References(
+    sound_speed = 330.,
     speed    = M * 330., 
     density  = 1.225,
     span     = b_w,
@@ -201,7 +202,7 @@ dvs = freestream_derivatives(
 # You can access the derivatives of each lifting surface based on the keys defined in the `ComponentVector`.
 ac_dvs = dvs.aircraft
 
-# These quantities are the force and moment coefficients $(C_X, C_Y, C_Z, C_l, C_m, C_n, C_{D_{i,ff}}, C_{Y_{ff}} C_{L_{ff}})$ generated from the nearfield and farfield analyses, and their derivatives respect to the Mach number $M$, freestream angles of attack and sideslip $(\alpha, \beta)$, and the non-dimensional angular velocity rates $(\bar{p}, \bar{q}, \bar{r})$. The keys corresponding to the freestream derivatives should be evident:
+# These quantities are the force and moment coefficients $(C_X, C_Y, C_Z, C_l, C_m, C_n, C_{D_{i,ff}}, C_{Y_{ff}} C_{L_{ff}})$ generated from the nearfield and farfield analyses, and their derivatives respect to the Mach number $M$, freestream angles of attack and sideslip $(\alpha, \beta)$, and the non-dimensional angular velocity rates in stability axes $(\bar{p}, \bar{q}, \bar{r})$. The keys corresponding to the freestream derivatives should be evident:
 keys(dvs.aircraft)
 
 # These can be accessed either like a dictionary, or by 'dot' syntax.
