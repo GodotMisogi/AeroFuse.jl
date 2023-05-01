@@ -123,8 +123,8 @@ function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
     # Check if lengths are positive
     @assert any(x -> x >= zero(eltype(x)), chords) | any(x -> x >= zero(eltype(x)), spans) "Chord and span lengths must be positive."
     # Check if dihedrals and sweeps are within bounds
-    @assert all(x -> x > -convert(typeof(x), 90) && x < convert(typeof(x), 90), dihedrals) && 
-        all(x -> x > -convert(typeof(x), 90) && x < convert(typeof(x), 90), sweeps) 
+    @assert all(x -> x > -convert(typeof(x), 90.) && x < convert(typeof(x), 90.), dihedrals) && 
+        all(x -> x > -convert(typeof(x), 90.) && x < convert(typeof(x), 90.), sweeps) 
         "Dihedrals and sweep angles must not exceed ±90ᵒ."
 end
 

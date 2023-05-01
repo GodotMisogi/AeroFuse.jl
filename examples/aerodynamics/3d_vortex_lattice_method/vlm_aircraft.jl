@@ -27,7 +27,7 @@ htail = Wing(
     dihedrals = [0.],
     sweeps    = [6.39],
     position  = [4., 0, -0.1],
-    angle     = -2.,
+    angle     = -2,
     axis      = [0., 1., 0.],
     symmetry  = true
 )
@@ -64,7 +64,7 @@ aircraft =  ComponentVector(
 
 ## Case
 fs  = Freestream(
-    alpha = 4.0, 
+    alpha = 3.0, 
     beta  = 0.0, 
     omega = [0., 0., 0.]
 );
@@ -85,15 +85,21 @@ ref = References(
     compressible     = true, # Compressibility correction flag
     print            = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
-);
+)
 
 ## Compute forces, moments and velocities over each surface
-ax_sys = Wind() # Axis systems: Geometry(), Stability(), Body()
-@time CFs, CMs = surface_coefficients(sys; axes = ax_sys) # Coefficients
+
+# Axis system for reporting forces and moments of surfaces (not nearfield and farfield)
+# Available axis systems: Geometry(), Stability(), Body(), Wind()
+ax = Wind() # Custom choice of axes
+
+@time CFs, CMs = surface_coefficients(sys;
+    axes = ax
+) # Coefficients
 # Fs, Ms   = surface_dynamics(sys; axes = ax) # Forces and moments
 # Fs       = surface_forces(sys; axes = ax) # Forces only
 # vels     = surface_velocities(sys) # Velocities
-
+;
 ## Aerodynamic coefficients
 nf  = nearfield(sys)
 ff  = farfield(sys)
@@ -103,35 +109,35 @@ ffs = farfield_coefficients(sys)
     
 ## Force/moment coefficients and derivatives
 @time dvs = freestream_derivatives(sys; 
-    axes = ax_sys,
+    axes  = Stability(),  # Optional for changing the axes
     print = true,
     print_components = true,
-    farfield = true
+    farfield = true # Farfield coefficients and derivatives
 );
 
-## Viscous drag prediction
+## Parasitic drag estimation
 
-# Equivalent flat-plate skin friction estimation
-CDv_wing  = parasitic_drag_coefficient(wing,  sys.reference, 0.8)
-CDv_htail = parasitic_drag_coefficient(htail, sys.reference, 0.6)
-CDv_vtail = parasitic_drag_coefficient(vtail, sys.reference, 0.6)
+# Wetted-area method via equivalent flat-plate skin-friction
+CDp_wing  = parasitic_drag_coefficient(wing,  sys.reference, 0.5)
+CDp_htail = parasitic_drag_coefficient(htail, sys.reference, 0.0)
+CDp_vtail = parasitic_drag_coefficient(vtail, sys.reference, 0.0)
 
-CDv_plate = CDv_wing + CDv_htail + CDv_vtail
+CDp_plate = CDp_wing + CDp_htail + CDp_vtail
 
-## Local dissipation form factor friction estimation
+## Wetted-area method via local-friction and local-dissipation
 import LinearAlgebra: norm
 
 edge_speeds = norm.(surface_velocities(sys)); # Inviscid speeds on the surfaces
 
 # Drag coefficients
-CDvd_wing  = parasitic_drag_coefficient(wing_mesh,  sys.reference, 0.8, edge_speeds.wing)
-CDvd_htail = parasitic_drag_coefficient(htail_mesh, sys.reference, 0.6, edge_speeds.htail)
-CDvd_vtail = parasitic_drag_coefficient(vtail_mesh, sys.reference, 0.6, edge_speeds.vtail)
+CDpd_wing  = parasitic_drag_coefficient(wing_mesh,  sys.reference, 0.5, edge_speeds.wing)
+CDpd_htail = parasitic_drag_coefficient(htail_mesh, sys.reference, 0.0, edge_speeds.htail)
+CDpd_vtail = parasitic_drag_coefficient(vtail_mesh, sys.reference, 0.0, edge_speeds.vtail)
 
-CDv_diss = CDvd_wing + CDvd_htail + CDvd_vtail
+CDp_diss = CDpd_wing + CDpd_htail + CDpd_vtail
 
 ## Viscous drag coefficient
-CDv = CDv_diss
+CDp = CDp_diss
 
 ## Total force coefficients with empirical viscous drag prediction
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(sys) 
@@ -141,6 +147,8 @@ nf_v = [ CDi_nf + CDv; CDv; nf ]
 ff_v = [ CDi_ff + CDv; CDv; ff ]
 
 print_coefficients(nf_v, ff_v)
+
+@info "L/D" ff_v[5] / ff_v[1]
 
 ## Plotting
 #=========================================================#

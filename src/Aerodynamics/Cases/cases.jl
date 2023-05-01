@@ -24,7 +24,7 @@ function solve_case(components :: DenseArray, freestream :: Freestream, refs :: 
         print_coefficients(system, name)
     end
 
-    system
+    return system
 end
 
 solve_case(meshes, freestream :: Freestream, refs :: References; name = :aircraft, print = false, print_components = false) = solve_case(ComponentVector(meshes), freestream, refs; name = name, print = print, print_components = print_components)
@@ -72,7 +72,7 @@ function spanwise_loading(panels, CFs, S)
     # Compute spanwise coefficients
     span_CFs = permutedims(combinedimsview(_spanwise_loading(CFs, area_scale)))
 
-    [ ys span_CFs ]
+    return [ ys span_CFs ]
 end
 
 spanwise_loading(wing :: WingMesh, CFs, S) = spanwise_loading(chord_panels(wing), CFs, S)
@@ -90,7 +90,7 @@ function spanwise_loading(wing_mesh :: WingMesh, ref :: References, CFs, Γs)
     span_loads = spanwise_loading(wing_mesh, CFs, ref.area) # 
     CL_loads = vec(sum(Γs, dims = 1)) / (0.5 * ref.speed * ref.chord) # Normalized CL loading
 
-    [ span_loads CL_loads ]
+    return [ span_loads CL_loads ]
 end
 
 ## Mesh connectivities
@@ -110,5 +110,5 @@ function extrapolate_point_mesh(mesh, weight = 0.75)
     @. points[2:end,1:end-1]   += (1 - weight) / 2 * mesh
     @. points[2:end,2:end]     += (1 - weight) / 2 * mesh
 
-    points
+    return points
 end

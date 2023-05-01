@@ -93,7 +93,7 @@ locs     = panel_location.(panels);   # Upper or lower surface
 # 
 # To define a wing, AeroFuse provides a `Wing` constructor based on the following parametrization. The named arguments correspond to the foil shapes, chord and span lengths, twist, dihedral and sweep angles.
 # !!! info
-#    A **wing section** consists of two foil profiles and their chord lengths and twist angles. Between them is their span length with associated _leading-edge_ dihedral and sweep angles. So a general half-wing consisting of ``n`` sections will have ``n`` entries for spans $b$, dihedrals $\delta$, sweeps $\Lambda$, and ``n+1`` entries for foils, chords $c$, and twists $\iota$, for some ``n \in \mathbb N``.
+#     A **wing section** consists of two foil profiles and their chord lengths and twist angles. Between them is their span length with associated _leading-edge_ dihedral and sweep angles. So a general half-wing consisting of ``n`` sections will have ``n`` entries for spans $b$, dihedrals $\delta$, sweeps $\Lambda$, and ``n+1`` entries for foils, chords $c$, and twists $\iota$, for some ``n \in \mathbb N``.
 # 
 # ![](https://godot-bloggy.xyz/post/diagrams/WingGeometry.svg)
 airfoil = naca4((2,4,1,2))
@@ -302,8 +302,7 @@ Fs, Ms = surface_dynamics(system; axes = ax)
 # A Trefftz plane integration is performed to compute farfield forces.
 # 
 # !!! note
-#     The farfield forces are usually more accurate compared to nearfield forces. 
-#     (This is because the components do not interact as in the evaluation of the Biot-Savart integrals for the latter.)
+#     The farfield forces are usually more accurate compared to nearfield forces.
 # 
 # To obtain the nearfield coefficients of the components (in wind axes by definition):
 nfs = nearfield_coefficients(system)

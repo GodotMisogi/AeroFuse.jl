@@ -28,7 +28,6 @@ end
 function Base.show(io :: IO, sys :: VortexLatticeSystem)     
     println(io, "VortexLatticeSystem -")
     println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements")
-    println(io, "Axes: ", sys.axes)
     show(io, sys.freestream)
     show(io, sys.reference)
 end
@@ -62,14 +61,13 @@ end
     print_derivatives(
         nf_coeffs, ff_coeffs, name = "";
         farfield = false,
-        axes = ""
     )
 
-Print a pretty table of the aerodynamic coefficients and derivatives with an optional name and named arguments for enabling printing of farfield coefficients and the axis name.
+Print a pretty table of the aerodynamic coefficients and derivatives with an optional name, and a named argument for enabling printing of farfield coefficients.
 """
-function print_derivatives(comp, name = ""; farfield = false, axes = "")
-    coeffs  = ["CX", "CY", "CZ", "Cℓ", "Cm", "Cn", "CDi ff", "CY ff", "CL ff"]
-    nf_vars = (["$name" "Values" "" "" "Freestream" "Derivatives" "" ""], ["" "$axes" "∂/∂M" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ])
+function print_derivatives(comp, name = ""; farfield = false)
+    coeffs  = ["CX", "CY", "CZ", "Cℓ", "Cm", "Cn", "CDi", "CY", "CL"]
+    nf_vars = (["$name" "Values" "" "" "Freestream" "Derivatives" "" ""], ["" "" "∂/∂M" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ])
     ff_index = ifelse(farfield, 9, 6)
     nf_rows = @views [ coeffs[1:ff_index] comp[1:ff_index,:] ]
 

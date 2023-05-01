@@ -236,7 +236,7 @@ abstract type AbstractFreestream end
         omega = [0,0,0]
     )
 
-Define freestream conditions with angle of attack ``α`` (degrees), sideslip angle ``β`` (degrees), and (quasi-steady) rotation vector ``Ω`` for a vortex lattice analysis.
+Define freestream conditions with angle of attack ``α`` (degrees), sideslip angle ``β`` (degrees), and (quasi-steady) rotation vector ``Ω`` (in geometry axes).
 
 Alternatively, provide the velocity vector ``U``, which is normalized to determine the angles.
 """
