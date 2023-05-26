@@ -35,22 +35,22 @@ boundary_condition(vortices, U, Ups, Ω) = map((hs, Up) -> dot(U + Ω × control
 # Matrix-free setup for nonlinear analyses
 #==========================================================================================#
 
-induced_velocity(r, horseshoes, Γs, U_hat) = sum(x -> velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+induced_velocity(r, vortices, Γs, U_hat) = sum(x -> velocity(r, x[1], x[2], U_hat), zip(vortices, Γs))
 
-induced_trailing_velocity(r, horseshoes, Γs, U_hat) = sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(horseshoes, Γs))
+induced_trailing_velocity(r, vortices, Γs, U_hat) = sum(x -> trailing_velocity(r, x[1], x[2], U_hat), zip(vortices, Γs))
 
 # In-place versions
-@views function induced_velocity!(vel, r, horseshoes, Γs, U_hat)
-    for i in eachindex(horseshoes)
-        vel += velocity(r, horseshoes[i], Γs[i], U_hat)
+@views function induced_velocity!(vel, r, vortices, Γs, U_hat)
+    for i in eachindex(vortices)
+        vel += velocity(r, vortices[i], Γs[i], U_hat)
     end
 
     return vel
 end
 
-@views function induced_trailing_velocity!(vel, r, horseshoes, Γs, U_hat)
-    for i in eachindex(horseshoes)
-        vel += trailing_velocity(r, horseshoes[i], Γs[i], U_hat)
+@views function induced_trailing_velocity!(vel, r, vortices, Γs, U_hat)
+    for i in eachindex(vortices)
+        vel += trailing_velocity(r, vortices[i], Γs[i], U_hat)
     end
 
     return vel
@@ -62,15 +62,15 @@ function induced_velocity(r, hs, Γs, U, Ω)
     # @timeit "Induced Velocity" induced_velocity(r, hs, Γs, -normalize(U)) - (U + Ω × r)
 end
 
-function induced_trailing_velocity(r, horseshoes, Γs, U, Ω) 
+function induced_trailing_velocity(r, vortices, Γs, U, Ω) 
     vel = zero(r)
-    induced_trailing_velocity!(vel, r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
-    # induced_trailing_velocity(r, horseshoes, Γs, -normalize(U)) - (U + Ω × r)
+    induced_trailing_velocity!(vel, r, vortices, Γs, -normalize(U)) - (U + Ω × r)
+    # induced_trailing_velocity(r, vortices, Γs, -normalize(U)) - (U + Ω × r)
 end
 
 # Residual computations
 residual(r, n, hs, Γs, U, Ω) = dot(induced_velocity(r, hs, Γs, U, Ω), n)
 
-solve_nonlinear(horseshoes, Γs, U_hat, Ω_hat) = map(hs -> residual(control_point(hs), normal_vector(hs), horseshoes, Γs, U_hat, Ω_hat), horseshoes)
+solve_nonlinear(vortices, Γs, U_hat, Ω_hat) = map(hs -> residual(control_point(hs), normal_vector(hs), vortices, Γs, U_hat, Ω_hat), vortices)
 
-solve_nonlinear!(R, horseshoes, Γs, U_hat, Ω_hat) = map!(hs -> residual(control_point(hs), normal_vector(hs), horseshoes, Γs, U_hat, Ω_hat), R, horseshoes)
+solve_nonlinear!(R, vortices, Γs, U_hat, Ω_hat) = map!(hs -> residual(control_point(hs), normal_vector(hs), vortices, Γs, U_hat, Ω_hat), R, vortices)
