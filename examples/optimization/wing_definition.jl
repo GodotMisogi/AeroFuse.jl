@@ -9,7 +9,7 @@ function make_wing(xc, w = 0.25)
         foils     = fill(naca4(4,4,1,2), n_vars),
         chords    = xc, # Design variables
         spans     = bs, # Normalizing halfspan to 1
-        w_sweep   = w, # Quarter-chord sweep
+        chord_ratio   = w, # Quarter-chord sweep
         symmetry  = true
     )
 

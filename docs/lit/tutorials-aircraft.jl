@@ -42,7 +42,7 @@ wing = Wing(
     spans     = [4.0],       # Section span lengths
     dihedrals = [5.],        # Dihedral angles (degrees)
     sweeps    = [5.],        # Sweep angles (degrees)
-    w_sweep   = 0.,          # Sweep angle location w.r.t. 
+    chord_ratio   = 0.,          # Sweep angle location w.r.t. 
                              ## normalized chord lengths ∈ [0,1]
     symmetry  = true,        # Whether wing is symmetric
     ## flip      = false      # Whether wing is reflected
@@ -79,7 +79,7 @@ htail = Wing(
     spans     = [1.25],
     dihedrals = [0.],
     sweeps    = [6.39],
-    w_sweep   = 0.,
+    chord_ratio   = 0.,
     position  = [4., 0, 0],
     angle     = -2.,
     axis      = [0., 1., 0.],
@@ -95,7 +95,7 @@ vtail = Wing(
     spans     = [1.0],
     dihedrals = [0.],
     sweeps    = [7.97],
-    w_sweep   = 0.,
+    chord_ratio   = 0.,
     position  = [4., 0, 0],
     angle     = 90.,
     axis      = [1., 0., 0.]
@@ -213,7 +213,7 @@ data = permutedims(
 
 ## Plot
 plot(
-    data[:,1],  # Angle of attack
+    rad2deg.(data[:,1]),  # Angle of attack
     round.(data[:,2:end], digits = 4), # Aerodynamic coefficients
     layout = (3,2),
     xlabel = L"\alpha",

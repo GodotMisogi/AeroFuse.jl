@@ -143,14 +143,14 @@ wing = Wing(
     spans     = [1.0, 0.1],       # Section span lengths
     dihedrals = [0., 60.],        # Dihedral angles (degrees)
     sweeps    = [0., 30.],        # Sweep angles (degrees)
-    w_sweep   = 0.25,             # Sweep angle location w.r.t.
+    chord_ratio   = 0.25,             # Sweep angle location w.r.t.
                                   # normalized chord lengths ∈ [0,1]
     symmetry  = true,             # Whether wing is symmetric
     # flip      = false           # Whether wing is flipped in x-z plane
 )
 ````
 
-The `symmetry` Boolean argument specifies whether the geometry should be reflected in the ``x``-``z`` plane. The `flip` Boolean argument specifies whether the coordinates should be flipped in the ``x``-``z`` plane. The `w_sweep` argument specifies the chordwise-ratio of the sweep angles, e.g. 0. = leading edge sweep angle (default), 1. = trailing edge, 0.25 = quarter-chord.
+The `symmetry` Boolean argument specifies whether the geometry should be reflected in the ``x``-``z`` plane. The `flip` Boolean argument specifies whether the coordinates should be flipped in the ``x``-``z`` plane. The `chord_ratio` argument specifies the chordwise-ratio of the sweep angles, e.g. 0. = leading edge sweep angle (default), 1. = trailing edge, 0.25 = quarter-chord.
 
 The following "getter" functions provide quantities of interest such as chord lengths, spans, twist, dihedral, and sweep angles.
 

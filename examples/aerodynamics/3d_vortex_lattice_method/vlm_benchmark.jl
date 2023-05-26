@@ -62,7 +62,7 @@ function vlm_aerofuse()
         spans     = [7.5],
         dihedrals = [0.],
         sweeps    = [3.0528],
-        w_sweep   = 0., # Quarter-chord sweep
+        chord_ratio   = 0., # Quarter-chord sweep
         symmetry  = true,
     )
 

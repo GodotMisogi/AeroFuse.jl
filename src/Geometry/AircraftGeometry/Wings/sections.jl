@@ -8,7 +8,7 @@ span_length(b, AR) = √(b * AR)
 root_chord(S, b, λ) = (2 * S) / (b * (1 + λ))
 
 # Single-section constructor
-function Wing(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
+function Wing(span, dihedral, sweep, chord_ratio, taper, root_chord, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 
     # Control surface deflections at root and tip
     root_foil = control_surface(
@@ -30,7 +30,7 @@ function Wing(span, dihedral, sweep, w_sweep, taper, root_chord, root_twist, tip
         spans     = [span],
         dihedrals = [dihedral],
         sweeps    = [sweep],
-        w_sweep   = w_sweep,
+        chord_ratio   = chord_ratio,
         affine    = affine,
         symmetry  = symmetry,
         flip      = flip
@@ -42,7 +42,7 @@ end
 """
     WingSection(; 
         area, aspect, taper
-        dihedral, sweep, w_sweep,
+        dihedral, sweep, chord_ratio,
         root_twist, tip_twist,
         position, angle, axis,
         symmetry, flip,
@@ -58,7 +58,7 @@ Define a `Wing` in the ``x``-``z`` plane, with optional Boolean arguments for sy
 - `taper :: Real = 1.`: Taper ratio of tip to root chord
 - `dihedral :: Real = 1.`: Dihedral angle (degrees)
 - `sweep :: Real = 0.`: Sweep angle (degrees)
-- `w_sweep :: Real = 0.`: Chord ratio for sweep angle 
+- `chord_ratio :: Real = 0.`: Chord ratio for sweep angle 
                           e.g., 0    = Leading-edge sweep, 
                                 1    = Trailing-edge sweep,
                                 0.25 = Quarter-chord sweep
@@ -80,7 +80,7 @@ function WingSection(;
         aspect       = 6.,
         dihedral     = 0.,
         sweep        = 0.,
-        w_sweep      = 0.,
+        chord_ratio      = 0.,
         taper        = 1.,
         root_twist   = 0.,
         tip_twist    = 0.,
@@ -103,12 +103,12 @@ function WingSection(;
         b_w /= 2
     end
     
-    return Wing(b_w, dihedral, sweep, w_sweep, taper, c_root_w, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
+    return Wing(b_w, dihedral, sweep, chord_ratio, taper, c_root_w, root_twist, tip_twist, root_control, tip_control, root_foil, tip_foil, affine, symmetry, flip)
 end
 
 ## Standard stabilizers (non-exhaustive)
 #==========================================================================================#
 
-# HorizontalTail(; root_chord = 1.0, taper = 1.0, span = 1.0, sweep = 0., w_sweep = 0., root_twist = 0., tip_twist = 0., root_foil = naca4(0,0,1,2), tip_foil = root_foil, angle = 0.) = WingSection(root_chord = root_chord, taper = taper, span = span, sweep = sweep, w_sweep = w_sweep, root_twist = root_twist, tip_twist = tip_twist, root_foil = naca4(0,0,1,2), tip_foil = tip_foil, angle = angle, axis = [0., 1., 0.])
+# HorizontalTail(; root_chord = 1.0, taper = 1.0, span = 1.0, sweep = 0., chord_ratio = 0., root_twist = 0., tip_twist = 0., root_foil = naca4(0,0,1,2), tip_foil = root_foil, angle = 0.) = WingSection(root_chord = root_chord, taper = taper, span = span, sweep = sweep, chord_ratio = chord_ratio, root_twist = root_twist, tip_twist = tip_twist, root_foil = naca4(0,0,1,2), tip_foil = tip_foil, angle = angle, axis = [0., 1., 0.])
 
-# VerticalTail(; root_chord = 1.0, taper = 1.0, span = 1.0, sweep = 0., w_sweep = 0., root_foil = naca4(0,0,1,2), tip_foil = root_foil) = HalfWingSection(root_chord = root_chord, taper = taper, span = span, sweep = sweep, w_sweep = w_sweep, tip_foil = tip_foil, angle = 90., axis = [1., 0., 0.])
+# VerticalTail(; root_chord = 1.0, taper = 1.0, span = 1.0, sweep = 0., chord_ratio = 0., root_foil = naca4(0,0,1,2), tip_foil = root_foil) = HalfWingSection(root_chord = root_chord, taper = taper, span = span, sweep = sweep, chord_ratio = chord_ratio, tip_foil = tip_foil, angle = 90., axis = [1., 0., 0.])

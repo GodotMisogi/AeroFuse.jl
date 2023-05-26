@@ -74,7 +74,7 @@ Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord le
 - `spans :: Vector{Real} = ones(length(chords) - 1) / (length(chords) - 1)`: Span lengths (m), default yields total span length 1.
 - `dihedrals :: Vector{Real} = zero(spans)`: Dihedral angles (deg), default is zero.
 - `sweeps :: Vector{Real} = zero(spans)`: Sweep angles (deg), default is zero.
-- `w_sweep :: Real = 0.`: Chord ratio for sweep angle 
+- `chord_ratio :: Real = 0.`: Chord ratio for sweep angle 
                           e.g., 0    = Leading-edge sweep, 
                                 1    = Trailing-edge sweep,
                                 0.25 = Quarter-chord sweep
@@ -92,7 +92,7 @@ function Wing(;
     spans     = ones(length(chords) - 1) / (length(chords) - 1),
     dihedrals = zero(spans),
     sweeps    = zero(spans),
-    w_sweep   = 0.0,
+    chord_ratio   = 0.0,
     position  = zeros(3),
     angle     = 0.,
     axis      = [0., 1., 0.],
@@ -106,7 +106,7 @@ function Wing(;
         chords[2:end] / chords[1:end-1], # Section tapers
         aspect_ratio(spans, chords[2:end], chords[1:end-1]), # Section aspect ratios
         sweeps, # Sweep angles at desired normalized location
-        -w_sweep # Normalized sweep angle location ∈ [0,1]
+        -chord_ratio # Normalized sweep angle location ∈ [0,1]
     )
 
     Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip)
