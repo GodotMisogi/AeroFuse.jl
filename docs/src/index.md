@@ -4,6 +4,23 @@ AeroFuse is meant to be a toolbox for aircraft design analyses. It currently pro
 
 **Authors**: Arjit Seth and Rhea P. Liem
 
+### Citation
+
+If you use AeroFuse in your research, please cite the following until any relevant material is actually published:
+
+```bibtex
+@article{Seth.IEEETrans.2023,
+  author={Seth, Arjit and Redonnet, Stephane and Liem, Rhea P.},
+  journal={IEEE Transactions on Education}, 
+  title={MADE: A Multidisciplinary Computational Framework for Aerospace Engineering Education}, 
+  year={2023},
+  volume={},
+  number={},
+  pages={1-10},
+  doi={10.1109/TE.2023.3281825}
+}
+```
+
 ## Objectives
 
 The current focus is to enable tutorials in computation in an aerospace educational curriculum, particularly at The Hong Kong University of Science and Technology. An additional aim is to write code compatible with automatic differentiation libraries written in Julia for enabling multidisciplinary studies.
@@ -50,22 +67,6 @@ Please install the current stable release of [Julia](https://julialang.org/downl
 julia> using Pkg; Pkg.add("AeroFuse")
 julia> Pkg.test("AeroFuse")
 julia> using AeroFuse
-```
-
-## Citation
-
-If you use AeroFuse in your research, please cite the following until any relevant material is actually published:
-
-```bibtex
-@article{Seth.IEEETrans.2023,
-  author={Seth, Arjit and Redonnet, Stephane and Liem, Rhea P.},
-  journal={IEEE Transactions on Education}, 
-  title={MADE: A Multidisciplinary Computational Framework for Aerospace Engineering Education}, 
-  year={2023},
-  volume={},
-  number={},
-  pages={1-10},
-  doi={10.1109/TE.2023.3281825}}
 ```
 
 ## Contents
