@@ -65,11 +65,13 @@ julia> using AeroFuse
 If you use AeroFuse in your research, please cite the following until any relevant material is actually published:
 
 ```bibtex
-@software{AeroFuse,
-  author  = {Arjit Seth, Rhea P. Liem},
-  title   = {AeroFuse},
-  url     = {https://github.com/GodotMisogi/AeroFuse},
-  version = {0.4.10},
-  date    = {2023-05-02},
-}
+@article{Seth.IEEETrans.2023,
+  author={Seth, Arjit and Redonnet, Stephane and Liem, Rhea P.},
+  journal={IEEE Transactions on Education}, 
+  title={MADE: A Multidisciplinary Computational Framework for Aerospace Engineering Education}, 
+  year={2023},
+  volume={},
+  number={},
+  pages={1-10},
+  doi={10.1109/TE.2023.3281825}}
 ```
