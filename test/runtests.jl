@@ -5,7 +5,7 @@ using StaticArrays
 @testset "Loading Airfoil Coordinates" begin
     foil = read_foil(string(@__DIR__, "/e49.dat"))
 
-    test_foil = Foil(Float16[ 
+    test_foil = Foil([ 
         1.0000000 0.0000000
         0.9966400 0.0016100
         0.9873600 0.0066800

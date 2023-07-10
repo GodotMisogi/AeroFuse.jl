@@ -47,9 +47,9 @@ By default, the header is assumed to exist and should contain the airfoil name, 
 function read_foil(path :: String; name = "") 
     coords, foil_name = readdlm(path, header = true)
     if name != ""
-        return Foil(Float16.(coords[:,1:2]), name)
+        return Foil(Float64.(coords[:,1:2]), name)
     else
-        return Foil(Float16.(coords[:,1:2]), strip(join(foil_name, " ")))
+        return Foil(Float64.(coords[:,1:2]), strip(join(foil_name, " ")))
     end
 end
 
@@ -140,7 +140,7 @@ affine(foil :: Foil; angle, vector) = translate(rotate(foil; angle = angle); vec
 
 Compute the camber-thickness distribution of a `Foil` with cosine interpolation. Optionally specify the number of points for interpolation, default is 40.
 """
-camber_thickness(foil :: Foil, num = 40) = coordinates_to_camber_thickness(foil, num + 1)
+camber_thickness(foil, num = 40) = coordinates_to_camber_thickness(foil, num + 1)
 
 """
     leading_edge_index(foil :: Foil)
@@ -175,7 +175,7 @@ split_surface(foil :: Foil) = upper_surface(foil), lower_surface(foil)
 
 Interpolate a `Foil` profile's coordinates to a cosine by projecting the x-coordinates of a circle onto the geometry with ``2n`` points.
 """
-function cosine_interpolation(foil :: Foil, n :: Integer = 40)
+function cosine_interpolation(foil, n :: Integer = 40)
     x_min, x_max = extrema(foil.x)
     x_circ = cosine_spacing((x_min + x_max) / 2, x_max - x_min, n)
 
@@ -262,7 +262,7 @@ maximum_thickness_to_chord(foil :: Foil, n = 40) = maximum_thickness_to_chord(co
 ## Camber-thickness representation
 #==========================================================================================#
 
-function coordinates_to_camber_thickness(foil :: Foil, n = 40)
+function coordinates_to_camber_thickness(foil, n = 40)
     # Cosine interpolation and splitting
     upper, lower = split_surface(cosine_interpolation(foil, n))
 

@@ -143,8 +143,8 @@ CDp = CDp_diss
 CDi_nf, CY_nf, CL_nf, Cl, Cm, Cn = nf = nearfield(sys) 
 CDi_ff, CY_ff, CL_ff = ff = farfield(sys)
 
-nf_v = [ CDi_nf + CDv; CDv; nf ]
-ff_v = [ CDi_ff + CDv; CDv; ff ]
+nf_v = [ CDi_nf + CDp; CDp; nf ]
+ff_v = [ CDi_ff + CDp; CDp; ff ]
 
 print_coefficients(nf_v, ff_v)
 

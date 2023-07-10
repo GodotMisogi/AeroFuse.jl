@@ -52,7 +52,7 @@ function get_res(x, chord_ratio = 0.25, ref=  refs)
 end
 
 # Objective
-function opt_drag(x, p) 
+function opt_drag(x, p = nothing) 
     sys, mesh = get_res(x)
 
     # Get forces

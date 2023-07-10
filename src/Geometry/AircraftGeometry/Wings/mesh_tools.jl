@@ -39,7 +39,6 @@ chop_spans(xyzs, span_num, spacing) = combinedimsview(map(xyz -> chop_coordinate
 chop_chords(xyzs, div, spacing) = combinedimsview(map(xyz -> chop_coordinates(xyz, div, spacing), eachcol(xyzs)))
 
 function chop_wing(xyz_coords, span_nums, chord_num; span_spacing, chord_spacing)
-
     # Chordwise chop
     xyz_coords = chop_chords(xyz_coords, chord_num, chord_spacing)
     
@@ -49,14 +48,14 @@ function chop_wing(xyz_coords, span_nums, chord_num; span_spacing, chord_spacing
     return xyz_coords
 end
 
-# Rotation uses StaticArrays which doesn't appear to be compatible with the pullbacks in ReverseDiff.
+# Rotations.jl uses StaticArrays which doesn't appear to be compatible with the pullbacks in ReverseDiff.
 y_rotation(θ) = ((sθ, cθ) = sincos(θ);
     [ cθ 0 -sθ;
       0  1   0;
       sθ 0  cθ ]
 )
 
-# Maybe switch to multidimensional arrays
+# TODO: Maybe switch to multidimensional arrays
 transform_coordinates(xyz, rot, section) = eachrow(xyz * rot) .+ Ref(section)
 
 function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, spacings, symmetry = false, flip = false)
@@ -74,7 +73,8 @@ function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, 
     foil_coords = @. transform_coordinates(scaled_foils, permutedims(y_rotation(-twisties)), leading_xyz)
 
     # Chop up spanwise sections
-    xyz_span = chop_spans(combinedimsview(foil_coords), span_nums, spacings)
+    foil_coords = combinedimsview(foil_coords)
+    xyz_span = chop_spans(foil_coords, span_nums, spacings)
 
     return xyz_span
 end

@@ -105,21 +105,23 @@ function form_factor(wing :: Wing, num :: Integer)
 end
 
 # Wetted area calculation based on planform area, form factors Kf, and Mach number correction fM.
-function wetted_area_drag_coefficient(wing :: Wing, x_tr, ρ, V, M, μ, S_ref, num)
+@views function wetted_area_drag_coefficient(wing :: Wing, x_tr, ρ, V, M, μ, S_ref, num)
     # Averaging chords over spans
-    mean_chords = @views (wing.chords[1:end-1] + wing.chords[2:end]) / 2
+    mean_chords = (wing.chords[1:end-1] + wing.chords[2:end]) / 2
 
     # Wetted areas for integration over averaged chords
-    S_wets = mean_chords .* spans(wing) ./ cos.(dihedrals(wing))
+    S_wets = @. mean_chords * wing.spans / cos(wing.dihedrals)
 
     K_fs = form_factor(wing, num) # Form factors
     fM = 1.34M^0.18  # Mach number correction
 
     # Calculate wetted area drag coefficient with wetted areas and form factors
-    CDp = sum(@. parasitic_drag_coefficient(mean_chords, x_tr, ρ, V, M, μ, S_ref, S_wets, K_fs, fM))
+    CDp = sum(zip(mean_chords, S_wets, K_fs)) do (c, S_wet, K_f)
+        parasitic_drag_coefficient(c, x_tr, ρ, V, M, μ, S_ref, S_wet, K_f, fM)
+    end
 
     # Double if symmetric
-    CDp = ifelse(wing.symmetry, 2CDp, CDp) 
+    CDp = ifelse(wing.symmetry, 2CDp, CDp)
 
     return CDp
 end
