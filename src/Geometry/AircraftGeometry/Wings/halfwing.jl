@@ -23,31 +23,32 @@ aspect_ratio(b, c1, c2) = 2b / (c1 + c2)
 sweep_angle(λ, AR, Λ_LE, w) = Λ_LE - atand(2w * (1 - λ), AR * (1 + λ))
 
 # Wing type definition
-struct Wing{T <: Number, N <: AbstractAffineMap} <: AbstractWing
-    foils      :: Vector{<: AbstractFoil}
-    chords     :: Vector{T}
-    twists     :: Vector{T}
-    spans      :: Vector{T}
-    dihedrals  :: Vector{T}
-    sweeps     :: Vector{T}
+struct Wing{V,N <: AbstractAffineMap} <: AbstractWing
+    foils      :: Vector{<:AbstractFoil}
+    chords     :: V
+    twists     :: V
+    spans      :: V
+    dihedrals  :: V
+    sweeps     :: V
     affine     :: N
     symmetry   :: Bool
     flip       :: Bool
+    controls   :: Vector{<:AbstractControlSurface}
+end
 
-    # Default constructor
-    function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip)
-        # Error handling
-        check_wing(foils, chords, twists, spans, dihedrals, sweeps)
+# Default constructor
+function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip, controls)
+    # Error handling
+    check_wing(foils, chords, twists, spans, dihedrals, sweeps, controls)
 
-        # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
-        # foils = cosine_interpolation.(foils, 60)
+    # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
+    # foils = cosine_interpolation.(foils, 60)
 
-        T = promote_type(eltype(chords), eltype(twists), eltype(spans), eltype(dihedrals), eltype(sweeps))
-        N = typeof(affine)
+    T = promote_type(typeof(chords), typeof(twists), typeof(spans), typeof(dihedrals), typeof(sweeps))
+    N = typeof(affine)
 
-        # Convert angles to radians, adjust twists to leading edge, and generate Wing
-        new{T,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip)
-    end
+    # Convert angles to radians, adjust twists to leading edge, and generate Wing
+    Wing{T,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip, controls)
 end
 
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
@@ -59,6 +60,7 @@ end
         spans, 
         dihedrals, 
         sweeps,
+        controls = [],
         symmetry = false,
         flip     = false,
         position = zeros(3),
@@ -85,40 +87,43 @@ Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord le
 - `axis :: Vector{Real} = [0.,1.,0.]`: Axis of rotation
 - `affine :: AffineMap = AffineMap(AngleAxis(deg2rad(angle), axis...), position)`: Affine mapping for the position and orientation via `CoordinateTransformations.jl` (overrides `angle` and `axis` if specified)
 """
-function Wing(;
-    chords, 
-    foils     = fill(naca4(0,0,1,2), length(chords)),
-    twists    = zero(chords),
-    spans     = ones(length(chords) - 1) / (length(chords) - 1),
-    dihedrals = zero(spans),
-    sweeps    = zero(spans),
-    chord_ratio   = 0.0,
-    position  = zeros(3),
-    angle     = 0.,
-    axis      = [0., 1., 0.],
-    affine    = AffineMap(AngleAxis(deg2rad(angle), axis...), SVector(position...)),
-    symmetry  = false,
-    flip      = false
-)
+@views function Wing(;
+        chords, 
+        foils     = fill(naca4(0,0,1,2), length(chords)),
+        twists    = zeros(eltype(chords), length(chords)),
+        spans     = ones(eltype(chords), length(chords) - 1) / (length(chords) - 1),
+        dihedrals = zeros(eltype(chords), length(spans)),
+        sweeps    = zeros(eltype(chords), length(spans)),
+        controls  = fill(Flap(0), length(spans)),
+        chord_ratio = 0.0,
+        position  = zeros(eltype(chords), 3),
+        angle     = 0.,
+        axis      = eltype(chords)[0., 1., 0.],
+        affine    = AffineMap(AngleAxis(deg2rad(angle), axis...), SVector{3}(position)),
+        symmetry  = false,
+        flip      = false
+    )
 
     # Convert sweep angles to leading-edge
     sweeps = @. sweep_angle(
-        chords[2:end] / chords[1:end-1], # Section tapers
-        aspect_ratio(spans, chords[2:end], chords[1:end-1]), # Section aspect ratios
+        chords[2:end] / chords[1:end-1], # Section taper ratios
+        2spans / (chords[2:end] + chords[1:end-1]), # Section aspect ratios
         sweeps, # Sweep angles at desired normalized location
         -chord_ratio # Normalized sweep angle location ∈ [0,1]
     )
 
-    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip)
+    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip, controls)
 end
 
-function check_wing(foils, chords, twists, spans, dihedrals, sweeps)
+function check_wing(foils, chords, twists, spans, dihedrals, sweeps, controls)
     # Check if number of sections match up with number of edges
     nf, nc, nt = length(foils), length(chords), length(twists)
     nb, nd, ns = length(spans), length(dihedrals), length(spans)
+    ncon = length(controls)
     @assert nf == nc == nt "Number of foils, chords and twists specified must be the same!"
     @assert nb == nd == ns "Number of spans, dihedrals, and sweeps specified must be the same!"
-    @assert nf == ns + 1 "$(nf+1) foils, chords and twists are required for $ns spanwise section(s)."
+    @assert nf == ns + 1 "$(ns+1) foils, chords and twists are required for $ns spanwise section(s)."
+    @assert ncon == ns "Number of control surfaces must be the same as number of spanwise section(s)."
 
     # Check if lengths are positive
     @assert any(x -> x >= zero(eltype(x)), chords) | any(x -> x >= zero(eltype(x)), spans) "Chord and span lengths must be positive."

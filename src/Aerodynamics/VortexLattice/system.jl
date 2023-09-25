@@ -77,11 +77,11 @@ The accessible fields are:
 """
 struct VortexLatticeSystem{
     M <: DenseArray{<: AbstractVortex},
-    N <: DenseArray{<: Real},
+    N,
     R,
     S,
-    P <: AbstractFreestream,
-    Q <: AbstractReferences} <: AbstractPotentialFlowSystem
+    P,
+    Q} <: AbstractPotentialFlowSystem
     vortices          :: M
     circulations      :: N 
     influence_matrix  :: R
