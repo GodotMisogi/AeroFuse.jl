@@ -44,10 +44,10 @@ include("fuselage.jl")
 ## Wing geometry
 #==========================================================================================#
 
+# include("Wings/controls.jl")
 include("Wings/halfwing.jl")
 include("Wings/mesh_tools.jl")
 include("Wings/mesh_wing.jl")
-include("Wings/controls.jl")
 include("Wings/sections.jl")
 
 end

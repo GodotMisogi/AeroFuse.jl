@@ -58,7 +58,7 @@ y_rotation(θ) = ((sθ, cθ) = sincos(θ);
 # TODO: Maybe switch to multidimensional arrays
 transform_coordinates(xyz, rot, section) = eachrow(xyz * rot) .+ Ref(section)
 
-function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, spacings, symmetry = false, flip = false)
+@views function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, spacings, symmetry = false, flip = false)
 
     if symmetry
         scaled_foils = [ scaled_foils[end:-1:2]; scaled_foils ]
@@ -78,3 +78,35 @@ function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, 
 
     return xyz_span
 end
+
+# @views function chop_spanwise_sections(scaled_foils, twisties, leading_xyz, span_nums, spacings, symmetry = false, flip = false)
+
+#     # if symmetry
+#     #     scaled_foils = [ scaled_foils[end:-1:2]; scaled_foils ]
+#     #     twisties     = [ twisties[end:-1:2]; twisties ]
+#     # elseif flip
+#     #     scaled_foils = reverse(scaled_foils)
+#     #     twisties     = reverse(twisties)
+#     #     spacings     = reverse(spacings)
+#     # end
+
+#     # Rotate and translate coordinates
+#     # foil_coords = @. transform_coordinates(scaled_foils, permutedims(y_rotation(-twisties)), leading_xyz)
+
+#     # Chop up spanwise sections
+#     # foil_coords = combinedimsview(foil_coords)
+#     # xyz_span = chop_spans(foil_coords, span_nums, spacings)
+
+#     # @show length(scaled_foils), length(twisties), length(leading_xyz), span_nums, spacings
+
+#     xyz_span = reduce(hcat, map(enumerate(zip(scaled_foils[1:end-1], scaled_foils[2:end], twisties[1:end-1], twisties[2:end], leading_xyz[1:end-1], leading_xyz[2:end]))) do (n, (f1, f2, t1, t2, l1, l2))
+#         # Rotate and translate airfoils of current spanwise section
+#         bf1 = transform_coordinates(f1, permutedims(y_rotation(-t1)), l1)
+#         bf2 = transform_coordinates(f2, permutedims(y_rotation(-t2)), l2)
+
+#         # Chop spanwise section
+#         chop_spans(combinedimsview([bf1, bf2]), span_nums[n], spacings[n])
+#     end)
+
+#     return [ reverse(xyz_span, dims=2) xyz_span ]
+# end

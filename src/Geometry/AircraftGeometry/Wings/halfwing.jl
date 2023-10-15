@@ -33,7 +33,7 @@ struct Wing{V,N <: AbstractAffineMap} <: AbstractWing
     affine     :: N
     symmetry   :: Bool
     flip       :: Bool
-    controls   :: Vector{<:AbstractControlSurface}
+    # controls   :: Vector{<:AbstractControlSurface}
 end
 
 # Default constructor
@@ -48,7 +48,7 @@ function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry,
     N = typeof(affine)
 
     # Convert angles to radians, adjust twists to leading edge, and generate Wing
-    Wing{T,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip, controls)
+    Wing{T,N}(foils, chords, -twists, spans, dihedrals, sweeps, affine, symmetry, flip)#, controls)
 end
 
 # Named arguments version for ease, with default NACA-4 0012 airfoil shape
@@ -94,7 +94,7 @@ Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord le
         spans     = ones(eltype(chords), length(chords) - 1) / (length(chords) - 1),
         dihedrals = zeros(eltype(chords), length(spans)),
         sweeps    = zeros(eltype(chords), length(spans)),
-        controls  = fill(Flap(0), length(spans)),
+        # controls  = fill(Flap(0), length(spans)),
         chord_ratio = 0.0,
         position  = zeros(eltype(chords), 3),
         angle     = 0.,
@@ -112,7 +112,7 @@ Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord le
         -chord_ratio # Normalized sweep angle location ∈ [0,1]
     )
 
-    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip, controls)
+    Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip)#, controls)
 end
 
 function check_wing(foils, chords, twists, spans, dihedrals, sweeps, controls)

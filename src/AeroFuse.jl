@@ -119,9 +119,9 @@ export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, a
 # export HorizontalTail, VerticalTail
 
 # Controls
-# import .AircraftGeometry: WingControlSurface
+# import .AircraftGeometry: Flap, Aileron
 
-# export WingControlSurface
+# export Flap, Aileron
 
 ## Aerodynamic analyses
 #==========================================================================================#

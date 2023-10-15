@@ -15,3 +15,20 @@ struct BoundingBox{T <: Real} <: AbstractControlSurface
         new{T}(x_o, s_r, c_r)
     end
 end
+
+@Base.kwdef struct Flap{T} <: AbstractControlSurface
+    angle = zero(T)
+    hinge = convert(T, 0.75)
+end
+
+Flap(ang=0, hin=0.75) = Flap{promote_type(eltype(ang), eltype(hin))}(ang, hin)
+
+@Base.kwdef struct Aileron{T} <: AbstractControlSurface
+    angle = zero(T)
+    hinge = convert(T, 0.75)
+end
+
+Aileron(ang=0, hin=0.75)  = Aileron{promote_type(eltype(ang), eltype(hin))}(ang, hin)
+
+const Elevator = Flap
+const Rudder = Flap

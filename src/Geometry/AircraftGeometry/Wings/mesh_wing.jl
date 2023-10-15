@@ -4,6 +4,7 @@
 chop_leading_edge(obj :: Wing, span_num) = @views chop_coordinates(coordinates(obj)[1,:], span_num, Uniform())
 chop_trailing_edge(obj :: Wing, span_num) = @views chop_coordinates(coordinates(obj)[end,:], span_num, Uniform())
 
+# Generate coordinates of wing geometric envelope
 function coordinates(wing :: Wing, affine = true)
     bounds = permutedims(wing_bounds(wing), (3,2,1))
 
@@ -48,16 +49,18 @@ end
 
 function camber_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; span_spacing = symmetric_spacing(wing))
     # Get leading edge coordinates
-    leading_xyz = @views coordinates(wing, false)[1,:]
+    leading_xyz = @views coordinates(wing, false)[1,:] # splitdimsview(leading_edge(wing), 1) 
 
     # Scale camber distribution of airfoil
     # scaled_foils = @. wing.chords * camber_coordinates(camber_thickness(wing.foils, chord_num))
-    scaled_foils =  map((c, foil) -> c * camber_coordinates(camber_thickness(foil, chord_num)), wing.chords, wing.foils) 
+    scaled_foils = map(zip(wing.chords, wing.foils)) do (chord, foil)
+        chord * camber_coordinates(camber_thickness(foil, chord_num))
+    end
 
-    # # Discretize spanwise sections
+    # Discretize spanwise sections
     coords = chop_spanwise_sections(scaled_foils, -deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
 
-    # # Transform
+    # Transform
     return map(wing.affine, coords)
 end
 
@@ -66,7 +69,7 @@ function surface_coordinates(wing :: Wing, span_num :: Vector{<: Integer}, chord
     leading_xyz  = @views coordinates(wing, false)[1,:]
 
     # Scale airfoil coordinates
-    scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_interpolation)(reflect.(wing.foils), chord_num)
+    scaled_foils = @. wing.chords * (extend_yz ∘ coordinates ∘ cosine_interpolation)(wing.foils, chord_num)
 
     # Discretize spanwise sections
     coords = chop_spanwise_sections(scaled_foils, -deg2rad.(wing.twists), leading_xyz, span_num, span_spacing, wing.symmetry, wing.flip)
@@ -93,7 +96,7 @@ function number_of_spanwise_panels(wing :: Wing, span_num :: Vector{<: Integer})
     return span_num
 end
 
-# Spacing
+# Symmetric spacing distribution
 function symmetric_spacing(wing :: Wing)
     sins = AbstractSpacing[Sine(1); Sine(0)]
     if length(wing.spans) == 1 
@@ -108,7 +111,7 @@ function symmetric_spacing(wing :: Wing)
     end
 end
 
-## Panelling
+## Meshing methods for Wing directly
 #==========================================================================================#
 
 mesh_chords(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(chord_coordinates(wing, span_num, chord_num; span_spacing = spacings))
@@ -120,12 +123,11 @@ mesh_cambers(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer;
 function make_panels(wing :: Wing, span_num :: Vector{<: Integer}, chord_num :: Integer; spacings = symmetric_spacing(wing))
     horseshoe_panels = mesh_chords(wing, span_num, chord_num; spacings = spacings)
     camber_panels = mesh_cambers(wing, span_num, chord_num; spacings = spacings)
-    horseshoe_panels, normal_vector.(camber_panels)
+    
+    return horseshoe_panels, normal_vector.(camber_panels)
 end
 
 make_panels(wing :: Wing, span_num :: Integer, chord_num :: Integer; spacings = symmetric_spacing(wing)) = make_panels(wing, [span_num], chord_num; spacings = spacings)
-
-panel_wing(comp :: AbstractWing, span_panels :: Union{Integer, Vector{<: Integer}}, chord_panels :: Integer; spacing = symmetric_spacing(comp)) = make_panels(comp, span_panels, chord_panels, spacings = spacing)
 
 ## Meshing type for convenience
 #==========================================================================================#
@@ -154,13 +156,16 @@ struct WingMesh{M <: AbstractWing, N <: Integer, P, Q} <: AbstractWing
     WingMesh(surface :: M, n_span :: AbstractVector{N}, n_chord :: N, chord_spacing :: P, span_spacing :: Q) where {M <: AbstractWing, N <: Integer, P <: AbstractSpacing, Q <: Union{AbstractSpacing, Vector{<:AbstractSpacing}}} = new{M,N,P,Q}(surface, n_span, n_chord, chord_spacing, span_spacing)
 end
 
+# Check if specified length of vector of number of spanwise panels is equal to the number of wing sections
 function check_definition(surf :: Wing, n_span) 
     @assert length(n_span) == length(surf.spans) "$(length(n_span)) ≂̸ $(length(surf.spans)), the spanwise number vector's length must be the same as the number of sections of the surface."
 end
 
+# Constructor for the wing mesh "creator"
 function WingMesh(surface, n_span, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) 
     check_definition(surface, n_span)
 
+    # Accounting for symmetry or "flipping"
     if surface.symmetry
         n_span = [ reverse(n_span); n_span ] .÷ 2
     elseif surface.flip
@@ -171,6 +176,8 @@ function WingMesh(surface, n_span, n_chord :: Integer; chord_spacing = Cosine(),
 end
 
 WingMesh(surface, n_span :: Integer, n_chord :: Integer; chord_spacing = Cosine(), span_spacing = symmetric_spacing(surface)) = WingMesh(surface, number_of_spanwise_panels(surface, n_span), n_chord, chord_spacing, span_spacing)
+
+WingMesh(; n_span, n_chord, args...) = WingMesh(Wing(args...), n_span, n_chord)
 
 # Forwarding functions for Wing type
 MacroTools.@forward WingMesh.surface foils, chords, spans, twists, sweeps, dihedrals, mean_aerodynamic_chord, camber_thickness, leading_edge, trailing_edge, wing_bounds, mean_aerodynamic_center, projected_area, span, position, orientation, affine_transformation, maximum_thickness_to_chord, chop_leading_edge
@@ -205,7 +212,7 @@ surface_coordinates(wing :: WingMesh, n_span = wing.num_span, n_chord = wing.num
 
 Generate the surface panel distribution from a `WingMesh` with the default spanwise ``n_s`` panel distribution from the mesh and the chordwise panel ``n_c`` distribution from the number of points defining the root airfoil.
 
-In case of strange results, provide a higher number of chordwise panels to represent the airfoils more accurately
+In case of strange results, provide a higher number of chordwise panels ``n_c`` to represent the airfoil shapes with greater detail.
 """ 
 surface_panels(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foils(wing.surface)).x))  = (make_panels ∘ surface_coordinates)(wing, n_span, n_chord)
 
@@ -238,7 +245,7 @@ wetted_area(wing :: WingMesh, n_span = wing.num_span, n_chord = length(first(foi
     wetted_area_ratio(
         wing_mesh :: WingMesh, 
         n_s = wing_mesh.num_span, 
-        n_c = length(first(foils(wing_mesh.surface))).x
+        n_c = length(first(foils(wing_mesh.surface)).x)
     )
 
 Determine the wetted area ratio ``S_{wet}/S`` of a `WingMesh` by calculating the ratio of the total area of the surface panels to the projected area of the `Wing`.
