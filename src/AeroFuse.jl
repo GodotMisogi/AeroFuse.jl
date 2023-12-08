@@ -12,7 +12,6 @@ using RecipesBase
 using MacroTools
 
 using Statistics: mean
-using StatsBase: weights
 
 using SplitApplyCombine: combinedimsview, combinedims, splitdimsview, splitdims
 export combinedimsview, combinedims, splitdimsview, splitdims
