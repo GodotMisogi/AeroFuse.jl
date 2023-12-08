@@ -1,6 +1,10 @@
 # Velocity kernels
 #==========================================================================================#
 
+# For ModelingToolkit.jl/Symbolics.jl support with StaticArrays.jl norm method (see https://github.com/JuliaSymbolics/Symbolics.jl/issues/888)
+# norm(v) = sqrt(sum(abs2, v))
+# normalize(v) = v / norm(v)
+
 bound_leg_velocity(a, b, Γ)    = Γ/4π * (1/norm(a) + 1/norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
 trailing_leg_velocity(r, Γ, u) = Γ/4π * normalize(r) × normalize(u) / (norm(r) - dot(r, u))
 
@@ -35,7 +39,7 @@ Define a horseshoe vortex with a start and endpoints ``r₁, r₂`` for the boun
 
 The finite core setup is not implemented for now.
 """
-struct Horseshoe{T <: Real} <: AbstractVortex
+struct Horseshoe{T} <: AbstractVortex
     r1 :: SVector{3,T}
     r2 :: SVector{3,T}
     rc :: SVector{3,T}
@@ -124,7 +128,7 @@ left leg       right leg
     r2 —back leg-→ r3
 ```
 """
-struct VortexRing{T <: Real} <: AbstractVortex
+struct VortexRing{T} <: AbstractVortex
     r1 :: SVector{3,T}
     r2 :: SVector{3,T}
     r3 :: SVector{3,T}

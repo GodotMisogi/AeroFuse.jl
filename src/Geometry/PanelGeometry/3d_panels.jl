@@ -2,6 +2,10 @@
 #==========================================================================================#
 abstract type AbstractPanel3D <: AbstractPanel end
 
+# For ModelingToolkit.jl/Symbolics.jl support with StaticArrays.jl norm method (see https://github.com/JuliaSymbolics/Symbolics.jl/issues/888)
+# norm(v) = sqrt(sum(abs2, v))
+# normalize(v) = v / norm(v)
+
 """
     Panel3D(p1, p2, p3, p4)
 
@@ -18,14 +22,14 @@ x
         p2 —→— p3
 ```
 """
-struct Panel3D{T <: Real} <: AbstractPanel3D
+struct Panel3D{T} <: AbstractPanel3D
     p1 :: SVector{3,T}
     p2 :: SVector{3,T}
     p3 :: SVector{3,T}
     p4 :: SVector{3,T}
 end
 
-struct WakePanel3D{T <: Real} <: AbstractPanel3D
+struct WakePanel3D{T} <: AbstractPanel3D
     p1 :: SVector{3,T}
     p2 :: SVector{3,T}
     p3 :: SVector{3,T}

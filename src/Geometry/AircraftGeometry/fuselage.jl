@@ -131,9 +131,9 @@ function undrooped_curve(fuse :: HyperEllipseFuselage, ts)
     L_rear  = (1 - x_b) * L_f   # Rear length
 
     # x-coordinates
-    x_nose  = @. ts * L_nose
-    x_cabin = @. ts * L_cabin + x_nose[end]
-    x_rear  = @. ts * L_rear + x_cabin[end]
+    x_nose  = [ t * L_nose for t in ts ] 
+    x_cabin = [ t * L_cabin + x_nose[end] for t in ts ] 
+    x_rear  = [ t * L_rear + x_cabin[end] for t in ts ] 
 
     # y-coordinates
     y_nose  = @. R_f * hyperellipse(ts, fuse.xi_a)[end:-1:1]
