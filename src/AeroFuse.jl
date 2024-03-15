@@ -228,4 +228,17 @@ include("Tools/plot_tools.jl")
 
 export plot_panel, plot_panels, plot_streamlines, plot_planform, plot_surface, plot_spanload
 
+using PrecompileTools
+
+@setup_workload begin
+    # Putting some things in `@setup_workload` instead of `@compile_workload` can reduce the size of the
+    # precompile file and potentially make loading faster.
+    @compile_workload begin
+        # all calls in this block will be precompiled, regardless of whether
+        # they belong to your package or not (on Julia 1.8 and higher)
+        include("precompile.jl")
+    end
+end
+
+
 end
