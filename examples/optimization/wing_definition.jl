@@ -2,22 +2,22 @@
 function make_wing(xc, w = 0.25)
     # Planform geometry
     n_vars = length(xc)
-    bs = fill(1., n_vars - 1)
+    bs = fill(1.0, n_vars - 1)
     # bs = AeroFuse.MathTools.sine_spacing(0., 1., n_vars)[end:-1:2]
     bs = bs / sum(bs)
     wing = Wing(
-        foils     = fill(naca4(4,4,1,2), n_vars),
-        chords    = xc, # Design variables
-        spans     = bs, # Normalizing halfspan to 1
-        chord_ratio   = w, # Quarter-chord sweep
-        symmetry  = true
+        foils = fill(naca4(4, 4, 1, 2), n_vars),
+        chords = xc, # Design variables
+        spans = bs, # Normalizing halfspan to 1
+        sweep_ratio = w, # Quarter-chord sweep
+        symmetry = true,
     )
 
     # Meshing
     wing_mesh = WingMesh(
-        wing, fill(2, n_vars - 1), 1, 
+        wing, fill(2, n_vars - 1), 1,
         span_spacing = Uniform(),
-    );
+    )
 
     return wing_mesh
 end

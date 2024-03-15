@@ -40,12 +40,12 @@ init = get_forces(sys, wing_init)
 print_coefficients(sys)
 
 # Common
-function get_res(x, chord_ratio = 0.25, ref=  refs)
+function get_res(x, sweep_ratio = 0.25, ref=  refs)
     α = x[1]
     c_w = @view x[2:end]
 
     # Setup
-    wing_mesh = make_wing(c_w, chord_ratio)
+    wing_mesh = make_wing(c_w, sweep_ratio)
     system = make_case(α, wing_mesh, ref)
 
     return system, wing_mesh

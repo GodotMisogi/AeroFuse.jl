@@ -2,15 +2,16 @@
 using AeroFuse
 
 wing = Wing(
-    foils     = fill(naca4((2,4,1,2)), 3),  # Airfoils, type Foil
-    chords    = [2.0, 1.6, 0.2],            # Chord lengths (m)
-    twists    = [0.0, 0.0, 0.0],            # Twist angles (deg)
-    spans     = [5., 0.6],                  # Span lengths (m)
-    dihedrals = [5., 5.],                   # Dihedral angles (deg)
-    sweeps    = [20.,20.],                  # Sweep angles (deg)
-    chord_ratio   = 0.25,                       # Chord length fraction of sweep location
-    # symmetry  = true,                       # Symmetry in x-z plane
-    # flip      = true                        # Reflection about x-z plane
+    foils = fill(naca4((2, 4, 1, 2)), 3),   # Airfoils, type Foil
+    chords = [2.0, 1.6, 0.8],                # Chord lengths (m)
+    twists = [0.0, 0.0, 0.0],                # Twist angles (deg)
+    spans = [3.0, 1.2],                     # Span lengths (m)
+    dihedrals = [5.0, 5.0],                     # Dihedral angles (deg)
+    sweeps = [20.0, 40.0],                   # Sweep angles (deg)
+    # controls  = [Flap(0, 0.75), Aileron(-30, 0.75)],
+    sweep_ratio = 0.25,                         # Chord length fraction of sweep location
+    symmetry = true,                            # Symmetry in x-z plane
+    # flip      = true                          # Reflection about x-z plane
 )
 
 ## Create symmetric wing instead
@@ -35,12 +36,16 @@ coords = coordinates(wing) # Leading and trailing edge coordinates
 using Plots
 plt = plot(
     size = (800, 600),
-    aspect_ratio = 1, 
+    aspect_ratio = 1,
     zlim = (-0.5, 0.5) .* span(wing),
-    camera = (30, 60)
+    camera = (30, 60),
 )
-plot!(wing, label = "Wing", 
+plot!(
+    wing,
+    label = "Wing",
     # mac = false # Disable mean aerodynamic center plot
 )
 
 # savefig(plt, "plots/wing_geom.pdf")
+
+##
