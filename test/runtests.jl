@@ -226,7 +226,7 @@ end
         aspect = 6.,
         taper = 1.0,
         sweep = 0.,
-        chord_ratio = 0.25,
+        sweep_ratio = 0.25,
     )
 
     # Get maximum (t/c) of root and tip

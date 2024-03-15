@@ -37,9 +37,9 @@ struct Wing{V,N <: AbstractAffineMap} <: AbstractWing
 end
 
 # Default constructor
-function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip, controls)
+function Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip)#, controls)
     # Error handling
-    check_wing(foils, chords, twists, spans, dihedrals, sweeps, controls)
+    check_wing(foils, chords, twists, spans, dihedrals, sweeps)#, controls)
 
     # TODO: Perform automatic cosine interpolation of foils with minimum number of points for surface construction?
     # foils = cosine_interpolation.(foils, 60)
@@ -68,7 +68,7 @@ end
         axis     = [0.,1.,0.],
     )
 
-Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees. Optionally, specify translation and a rotation in angle-axis representation for defining coordinates in a global axis system. Additionally, specify Boolean arguments for symmetry or reflecting in the ``x``-``z`` plane.
+Define a `Wing` consisting of ``N+1`` `Foil`s, their associated chord lengths ``c`` and twist angles ``ι``, for ``N`` sections with span lengths ``b``, dihedrals ``δ`` and leading-edge sweep angles ``Λ_{LE}``, with all angles in degrees. Optionally, specify translation and a rotation in angle-axis representation for defining coordinates in a global axis system. Additionally, specify Boolean arguments for symmetry or reflecting in the ``x``-``z`` plane.
 
 # Arguments
 - `chords :: Vector{Real}`: Chord lengths (m)
@@ -76,7 +76,7 @@ Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord le
 - `spans :: Vector{Real} = ones(length(chords) - 1) / (length(chords) - 1)`: Span lengths (m), default yields total span length 1.
 - `dihedrals :: Vector{Real} = zero(spans)`: Dihedral angles (deg), default is zero.
 - `sweeps :: Vector{Real} = zero(spans)`: Sweep angles (deg), default is zero.
-- `chord_ratio :: Real = 0.`: Chord ratio for sweep angle 
+- `sweep_ratio :: Real = 0.`: Chord ratio for sweep angle 
                           e.g., 0    = Leading-edge sweep, 
                                 1    = Trailing-edge sweep,
                                 0.25 = Quarter-chord sweep
@@ -95,9 +95,9 @@ Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord le
         dihedrals = zeros(eltype(chords), length(spans)),
         sweeps    = zeros(eltype(chords), length(spans)),
         # controls  = fill(Flap(0), length(spans)),
-        chord_ratio = 0.0,
+        sweep_ratio = zero(eltype(chords)),
         position  = zeros(eltype(chords), 3),
-        angle     = 0.,
+        angle     = zero(eltype(chords)),
         axis      = eltype(chords)[0., 1., 0.],
         affine    = AffineMap(AngleAxis(deg2rad(angle), axis...), SVector{3}(position)),
         symmetry  = false,
@@ -109,21 +109,21 @@ Definition for a `Wing` consisting of ``N+1`` `Foil`s, their associated chord le
         chords[2:end] / chords[1:end-1], # Section taper ratios
         2spans / (chords[2:end] + chords[1:end-1]), # Section aspect ratios
         sweeps, # Sweep angles at desired normalized location
-        -chord_ratio # Normalized sweep angle location ∈ [0,1]
+        -sweep_ratio # Normalized sweep angle location ∈ [0,1]
     )
 
     Wing(foils, chords, twists, spans, dihedrals, sweeps, affine, symmetry, flip)#, controls)
 end
 
-function check_wing(foils, chords, twists, spans, dihedrals, sweeps, controls)
+function check_wing(foils, chords, twists, spans, dihedrals, sweeps)#, controls)
     # Check if number of sections match up with number of edges
     nf, nc, nt = length(foils), length(chords), length(twists)
     nb, nd, ns = length(spans), length(dihedrals), length(spans)
-    ncon = length(controls)
+    # ncon = length(controls)
     @assert nf == nc == nt "Number of foils, chords and twists specified must be the same!"
     @assert nb == nd == ns "Number of spans, dihedrals, and sweeps specified must be the same!"
     @assert nf == ns + 1 "$(ns+1) foils, chords and twists are required for $ns spanwise section(s)."
-    @assert ncon == ns "Number of control surfaces must be the same as number of spanwise section(s)."
+    # @assert ncon == ns "Number of control surfaces must be the same as number of spanwise section(s)."
 
     # Check if lengths are positive
     @assert any(x -> x >= zero(eltype(x)), chords) | any(x -> x >= zero(eltype(x)), spans) "Chord and span lengths must be positive."

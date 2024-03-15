@@ -62,7 +62,7 @@ wing = Wing(
     spans       = [14.0, 46.9] / 2,             # Span lengths
     dihedrals   = fill(6, 2),                   # Dihedral angles (deg)
     sweeps      = fill(35.6, 2),                # Sweep angles (deg )
-    chord_ratio     = 0.,                           # Leading-edge sweep
+    sweep_ratio     = 0.,                           # Leading-edge sweep
     position    = [19.51, 0., -2.5],            # Position
     symmetry    = true                          # Symmetry
 )
@@ -91,7 +91,7 @@ htail = WingSection(
     taper       = 0.4,  # Taper ratio
     dihedral    = 7.,   # Dihedral angle (deg)
     sweep       = 35.,  # Sweep angle (deg)
-    chord_ratio     = 0.,   # Leading-edge sweep
+    sweep_ratio     = 0.,   # Leading-edge sweep
     root_foil   = naca4(0,0,1,2),
     symmetry    = true,
     
@@ -112,7 +112,7 @@ vtail = WingSection(
     aspect      = 1.5,  # Aspect ratio
     taper       = 0.4,  # Taper ratio
     sweep       = 44.4, # Sweep angle (deg)
-    chord_ratio     = 0.,   # Leading-edge sweep
+    sweep_ratio     = 0.,   # Leading-edge sweep
     root_foil   = naca4(0,0,0,9),
     
     ## Orientation
