@@ -76,7 +76,7 @@ end
     xs = @. le[:,1] + wing.chords * xs_temp # Determine max. thickness x-coordinates in geometry frame
     ds = xs[2:end] - xs[1:end-1] # Compute differences between max. thickness x-coordinates between sections
     widths = @. wing.spans / cosd(wing.dihedrals) # Project planform span onto geometry based on dihedral angles
-    Λs = @. atan(ds, widths) # Now compute sweep angles at max. thickness locations
+    Λs = @. atand(ds, widths) # Now compute sweep angles at max. thickness locations
 
     # Average chord lengths for sections
     xs = (xs_temp[1:end-1] + xs_temp[2:end]) / 2
@@ -86,7 +86,7 @@ end
 end
 
 # Raymer form factor for wing, tail, strut, and pylon, 4th edition (Eq. 12.30). "_m" refers to corresonding values at (t/c)_max here.
-form_factor_wing(x_c_m, t_c_max, Λ_m) = (1 + 0.6t_c_max / x_c_m + 100t_c_max^4) * cos(Λ_m)^0.28
+form_factor_wing(x_c_m, t_c_max, Λ_m) = (1 + 0.6t_c_max / x_c_m + 100t_c_max^4) * cosd(Λ_m)^0.28
 
 """
     form_factor(wing :: Wing, M, num)
@@ -110,7 +110,7 @@ function wetted_area_drag_coefficient(wing :: Wing, x_tr, ρ, V, M, μ, S_ref, n
     mean_chords = @views (wing.chords[1:end-1] + wing.chords[2:end]) / 2
 
     # Wetted areas for integration over averaged chords
-    S_wets = mean_chords .* spans(wing) ./ cos.(dihedrals(wing))
+    S_wets = @. mean_chords * wing.spans / cosd(wing.dihedrals)
 
     K_fs = form_factor(wing, num) # Form factors
     fM = 1.34M^0.18  # Mach number correction
