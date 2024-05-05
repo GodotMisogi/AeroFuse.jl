@@ -225,8 +225,8 @@ end
         area = 10.,
         aspect = 6.,
         taper = 1.0,
-        sweep = 0.,
-        sweep_ratio = 0.25,
+        sweep = 10.,
+        w_sweep = 0.25,
     )
 
     # Get maximum (t/c) of root and tip
@@ -261,7 +261,7 @@ end
     )
 
     L_wing = avg_c # Length
-    Kf_wing = (1 + 0.6tbyc_r / xbyc_r + 100tbyc_r^4) * cos(Λ)^0.28 # Wing form factor
+    Kf_wing = (1 + 0.6tbyc_r / xbyc_r + 100tbyc_r^4) * cosd(Λ)^0.28 # Wing form factor
     fM_wing = 1.34M^0.18
 
     CD0_wing = parasitic_drag_coefficient(L_wing, x_tr, ρ, V, M, μ, S_ref, S_wet, Kf_wing, fM_wing)

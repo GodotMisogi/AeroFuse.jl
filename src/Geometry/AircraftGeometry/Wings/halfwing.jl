@@ -142,7 +142,7 @@ spans(wing :: Wing) = wing.spans
 dihedrals(wing :: Wing) = wing.dihedrals
 
 """
-    sweeps(wing :: AbstractWing, w = 0.)
+    sweeps(wing :: Wing, w = 0.)
 
 Obtain the sweep angles (in radians) at the corresponding normalized chord length ratio ``w ∈ [0,1]``.
 """

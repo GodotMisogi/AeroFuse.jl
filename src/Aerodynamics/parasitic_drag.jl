@@ -76,7 +76,7 @@ end
     xs = @. le[:,1] + wing.chords * xs_temp # Determine max. thickness x-coordinates in geometry frame
     ds = xs[2:end] - xs[1:end-1] # Compute differences between max. thickness x-coordinates between sections
     widths = @. wing.spans / cosd(wing.dihedrals) # Project planform span onto geometry based on dihedral angles
-    Λs = @. atan(ds, widths) # Now compute sweep angles at max. thickness locations
+    Λs = @. atand(ds, widths) # Now compute sweep angles at max. thickness locations
 
     # Average chord lengths for sections
     xs = (xs_temp[1:end-1] + xs_temp[2:end]) / 2
