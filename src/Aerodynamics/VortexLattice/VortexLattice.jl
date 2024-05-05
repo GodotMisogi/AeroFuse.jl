@@ -33,36 +33,36 @@ include("vortices.jl")
 ## Axis transformations with respect to freestream
 abstract type AbstractAxisSystem end
 
-struct Geometry  <: AbstractAxisSystem end
-struct Body      <: AbstractAxisSystem end
+struct Geometry <: AbstractAxisSystem end
+struct Body <: AbstractAxisSystem end
 struct Stability <: AbstractAxisSystem end
-struct Wind      <: AbstractAxisSystem end
+struct Wind <: AbstractAxisSystem end
 
 """
     velocity(freestream :: Freestream, ::Geometry)
 
 Compute the velocity of Freestream in the geometry axis system.
 """
-velocity(fs :: Freestream, ::Geometry) = velocity(fs)
+velocity(fs::Freestream, ::Geometry) = velocity(fs)
 # velocity(fs :: Freestream, ::Body) = flip_xz(velocity(fs, Geometry()))
 # velocity(fs :: Freestream, ::Stability) = 
 # velocity(fs :: Freestream, ::Wind) = 
 
 include("reference_frames.jl")
 
-geometry_to_wind_axes(xyz, fs :: Freestream) = geometry_to_wind_axes(xyz, fs.alpha, fs.beta)
-geometry_to_wind_axes(vor :: AbstractVortex, fs :: Freestream) = geometry_to_wind_axes(vor, fs.alpha, fs.beta)
+geometry_to_wind_axes(xyz, fs::Freestream) = geometry_to_wind_axes(xyz, fs.alpha, fs.beta)
+geometry_to_wind_axes(vor::AbstractVortex, fs::Freestream) =
+    geometry_to_wind_axes(vor, fs.alpha, fs.beta)
 
-function geometry_to_wind_axes(vortex :: AbstractVortex, α, β) 
+function geometry_to_wind_axes(vortex::AbstractVortex, α, β)
     T = promote_type(eltype(α), eltype(β))
     return transform(vortex, LinearMap(RotZY{T}(β, α)))
 end
 
-function wind_to_geometry_axes(vor :: AbstractVortex, α, β) 
+function wind_to_geometry_axes(vor::AbstractVortex, α, β)
     T = promote_type(eltype(α), eltype(β))
     return transform(vor, LinearMap(RotYZ{T}(-α, -β)))
 end
-
 
 # Prandl-Glauert transformation
 include("prandtl_glauert.jl")
@@ -82,7 +82,7 @@ function solve_linear(horseshoes, U, Ω)
     boco = boundary_condition(horseshoes, U, Ω)
     Γs   = AIC \ boco
 
-    Γs, AIC, boco
+    return Γs, AIC, boco
 end
 
 ## Force evaluations
