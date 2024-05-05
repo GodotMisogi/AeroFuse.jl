@@ -289,7 +289,6 @@ end
     @test CD0_fuse ≈ parasitic_drag_coefficient(fuse, refs, x_tr)
 end
 
-# %%
 @testset "Vortex Lattice Method (Horseshoes, Incompressible) - NACA 0012 Tapered Wing" begin
     # Define wing
     wing = Wing(
