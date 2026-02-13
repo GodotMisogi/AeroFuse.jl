@@ -19,6 +19,15 @@ naca4_camberline(pos, cam, xc) =
 naca4_gradient(pos, cam, xc) =
     atan(2 * cam / (ifelse(xc < pos, pos^2, (1 - pos)^2)) * (pos - xc))
 
+function _enforce_strictly_increasing!(xs)
+    @inbounds for i in 2:length(xs)
+        if xs[i] <= xs[i - 1]
+            xs[i] = nextfloat(xs[i - 1])
+        end
+    end
+    xs
+end
+
 """
     naca4_coordinates(digits :: NTuple{4, <: Real}, n :: Integer, sharp_TE :: Bool)
 
@@ -53,6 +62,14 @@ function naca4_coordinates(digits::NTuple{4, <:Real}, n::Integer, sharp_TE::Bool
         # Lower surface
         x_lower = @. xs + thickness * sin(grads)
         y_lower = @. camber - thickness * cos(grads)
+
+        # For cambered foils, finite-thickness offset can create non-monotone x near
+        # the LE/TE. Downstream interpolation assumes each surface is
+        # strictly increasing in x
+        x_upper = clamp.(x_upper, 0.0, 1.0)
+        x_lower = clamp.(x_lower, 0.0, 1.0)
+        _enforce_strictly_increasing!(x_upper)
+        _enforce_strictly_increasing!(x_lower)
     end
 
     # Assemble coordinates without repeating leading edge point
