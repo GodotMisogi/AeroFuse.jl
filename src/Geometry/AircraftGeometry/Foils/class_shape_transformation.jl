@@ -87,7 +87,9 @@ Convert coordinates to a specified number of Bernstein polynomial coefficients u
 """
 function coordinates_to_CST(coords, num_dvs)
     xs       = @views coords[:,1]
-    S_matrix = reduce(hcat, @. bernstein_class(xs, 0.5, 1.0) * bernstein_basis(xs, num_dvs - 1, i) for i in 0:num_dvs - 1)
+    S_matrix = mapreduce(hcat, 0:num_dvs - 1) do i
+        @. bernstein_class(xs, 0.5, 1.0) * bernstein_basis(xs, num_dvs - 1, i)
+    end
     alphas   = @views S_matrix \ coords[:,2]
 end
 
