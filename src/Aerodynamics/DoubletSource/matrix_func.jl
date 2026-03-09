@@ -186,14 +186,6 @@ function influence_matrix(panels :: DenseArray{<:AbstractPanel3D}, wakes)
     return AIC
 end
 
-function boundary_vector(panels :: AbstractMatrix{<: AbstractPanel3D}, wakes, V∞)
-    panelview = @view permutedims(panels)[:]
-    B = source_matrix(panelview, panelview)
-    σ = dot.(Ref(V∞), normal_vector.(panelview))
-
-    return -vcat(B * σ, zeros(length(wakes)))
-end
-
 # ==========================
 #   Needs to be optimised
 # ==========================

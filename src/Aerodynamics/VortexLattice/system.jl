@@ -150,15 +150,11 @@ Compute the induced velocities for all components of the `VortexLatticeSystem` i
 
 The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_velocities(system :: VortexLatticeSystem; axes = Geometry()) = surface_velocities(system, axes)
-
-surface_velocities(system :: VortexLatticeSystem, ::Geometry) = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega)
-
-surface_velocities(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
-
-surface_velocities(system :: VortexLatticeSystem, ::Stability) = geometry_to_stability_axes.(surface_velocities(system, Geometry()), system.freestream.alpha)
-
-surface_velocities(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(surface_velocities(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+function surface_velocities(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
+    α, β = system.freestream.alpha, system.freestream.beta
+    vels = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega)
+    return _vector_to_axes.(vels, Ref(axes), α, β)
+end
 
 ## Forces
 """
@@ -171,15 +167,11 @@ Compute the forces for all components of the `VortexLatticeSystem` in a specifie
 
 The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_forces(system; axes :: AbstractAxisSystem = Geometry()) = surface_forces(system, axes)
-
-surface_forces(system :: VortexLatticeSystem, ::Geometry) = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
-
-surface_forces(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_forces(system, Geometry()))
-
-surface_forces(system :: VortexLatticeSystem, ::Stability) = geometry_to_stability_axes.(surface_forces(system, Geometry()), system.freestream.alpha)
-
-surface_forces(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(surface_forces(system, Geometry()), system.freestream.alpha, system.freestream.beta)
+function surface_forces(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
+    α, β = system.freestream.alpha, system.freestream.beta
+    forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
+    return _vector_to_axes.(forces, Ref(axes), α, β)
+end
 
 ## Moments
 """
@@ -192,26 +184,14 @@ Compute the moments for all components of the `VortexLatticeSystem` in a specifi
 
 The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_moments(system; axes :: AbstractAxisSystem = Geometry()) = surface_moments(system, axes)
-
-surface_moments(system :: VortexLatticeSystem, ::Geometry) = surface_moments(system.vortices, surface_forces(system, Geometry()), system.reference.location)
-
-surface_moments(system :: VortexLatticeSystem, ::Body) = geometry_to_body_axes.(surface_moments(system.vortices, surface_forces(system), system.reference.location))
-
-surface_moments(system :: VortexLatticeSystem, ::Stability) = geometry_to_stability_axes.(flip_xz.(surface_moments(system.vortices, surface_forces(system), system.reference.location)), system.freestream.alpha)
-
-surface_moments(system :: VortexLatticeSystem, ::Wind) = geometry_to_wind_axes.(flip_xz.(surface_moments(system.vortices, surface_forces(system), system.reference.location)), system.freestream.alpha, system.freestream.beta)
-
-
-## Dynamics
-function surface_dynamics(system :: VortexLatticeSystem)
-    # Compute surface forces and moments in geometry axes
-    surf_forces = surface_forces(system)
-    surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
-
-    return surf_forces, surf_moments
+function surface_moments(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
+    α, β = system.freestream.alpha, system.freestream.beta
+    geo_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
+    moments = surface_moments(system.vortices, geo_forces, system.reference.location)
+    return _moment_to_axes.(moments, Ref(axes), α, β)
 end
 
+## Dynamics
 """
     surface_dynamics(
         system :: VortexLatticeSystem; 
@@ -222,48 +202,13 @@ Compute the forces and moments for all components of the `VortexLatticeSystem` i
 
 The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
 """
-surface_dynamics(system; axes :: AbstractAxisSystem = Geometry()) = surface_dynamics(system, axes)
-
-surface_dynamics(system :: VortexLatticeSystem, ::Geometry) = surface_dynamics(system)
-
-function surface_dynamics(system :: VortexLatticeSystem, ::Body)
+function surface_dynamics(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
+    α, β = system.freestream.alpha, system.freestream.beta
     # Compute surface forces and moments in geometry axes
-    surface_forces, surface_moments = surface_dynamics(system)
-
-    # Transform to body axes
-    stability_forces  = @. geometry_to_body_axes(surface_forces)
-    stability_moments = @. geometry_to_body_axes(surface_moments)
-
-    return stability_forces, stability_moments
-end
-
-function surface_dynamics(system :: VortexLatticeSystem, ::Stability)
-    # Get angle of attack
-    α = system.freestream.alpha
-
-    # Compute surface forces and moments
-    surface_forces, surface_moments = surface_dynamics(system)
-
-    # Transform to stability axes
-    stability_forces  = @. geometry_to_stability_axes(surface_forces, α)
-    stability_moments = @. geometry_to_stability_axes(flip_xz(surface_moments), α)
-
-    return stability_forces, stability_moments
-end
-
-function surface_dynamics(system :: VortexLatticeSystem, ::Wind)
-    # Get angles of attack and sideslip
-    α = system.freestream.alpha
-    β = system.freestream.beta
-
-    # Compute surface forces and moments
-    surface_forces, surface_moments = surface_dynamics(system)
-
-    # Transform to wind axes
-    wind_forces  = @. geometry_to_wind_axes(surface_forces, α, β)
-    wind_moments = @. geometry_to_wind_axes(flip_xz(surface_moments), α, β)
-
-    return wind_forces, wind_moments
+    surf_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
+    surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
+    # Transform to target axes
+    return _vector_to_axes.(surf_forces, Ref(axes), α, β), _moment_to_axes.(surf_moments, Ref(axes), α, β)
 end
 
 """
@@ -278,7 +223,7 @@ The reference axis system is set to the geometry axes defined in the constructio
 """
 function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry()) 
     # Compute surface forces in whichever axes
-    forces, moments = surface_dynamics(system, axes)
+    forces, moments = surface_dynamics(system; axes)
     refs = system.reference
 
     # Compute coefficients
