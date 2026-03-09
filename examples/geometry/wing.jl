@@ -10,7 +10,7 @@ wing = Wing(
     sweeps = [20.0, 40.0],                   # Sweep angles (deg)
     # controls  = [Flap(0, 0.75), Aileron(-30, 0.75)],
     sweep_ratio = 0.25,                         # Chord length fraction of sweep location
-    symmetry = true,                            # Symmetry in x-z plane
+    symmetry = false,                            # Symmetry in x-z plane
     # flip      = true                          # Reflection about x-z plane
 )
 

@@ -8,14 +8,12 @@ chop_trailing_edge(obj :: Wing, span_num) = @views chop_coordinates(coordinates(
 function coordinates(wing :: Wing, affine = true)
     bounds = permutedims(wing_bounds(wing), (3,2,1))
 
-    # Symmetry
-    if wing.symmetry
+    if wing.symmetry # Symmetry
         sym_bounds = bounds[:,:,end:-1:2]
         sym_bounds[:,2,:] .*= -1
 
-        bounds = cat(sym_bounds, bounds, dims = Val(3))
-    # Reflection
-    elseif wing.flip
+        bounds = [ sym_bounds ;;; bounds ]
+    elseif wing.flip # Reflection
         sym_bounds = bounds[:,:,end:-1:1]
         sym_bounds[:,2,:] .*= -1
 

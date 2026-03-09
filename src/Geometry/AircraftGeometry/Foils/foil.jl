@@ -183,7 +183,7 @@ split_surface(foil::Foil) = upper_surface(foil), lower_surface(foil)
 
 Interpolate a `Foil` profile's coordinates to a cosine by projecting the x-coordinates of a circle onto the geometry with ``2n`` points.
 """
-function cosine_interpolation(foil, n::Integer = 40)
+function cosine_interpolation(foil :: Foil, n::Integer = 40)
     x_min, x_max = extrema(foil.x)
     x_circ = cosine_spacing((x_min + x_max) / 2, x_max - x_min, n)
 
@@ -207,7 +207,7 @@ end
 """
     thickness_line(foil :: Foil, n :: Integer = 40)
 
-Get the thickness line of a `Foil`. Optionally specify the number of points for linear interpolation, default is 40.
+Get the thickness line of a `Foil`. Optionally, specify the number of points for linear interpolation, default is 40.
 """
 function thickness_line(foil::Foil, n = 60)
     upper, lower = split_surface(foil)

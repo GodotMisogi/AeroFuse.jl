@@ -29,7 +29,7 @@ truncated_cone_volume(r, R, H) = H * π/3 * (R^2 + R * r + r^2)
     [ ws_rads[:,1] .* fuse.length ws_rads[:,2] ]
 end
 
-function cosine_interpolation(fuse :: Fuselage, n)
+function cosine_interpolation(fuse :: Fuselage, n :: Integer)
     xs = fuse.weights
     ys = fuse.radii
 

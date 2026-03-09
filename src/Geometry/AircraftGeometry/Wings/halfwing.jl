@@ -60,7 +60,6 @@ end
         spans, 
         dihedrals, 
         sweeps,
-        controls = [],
         symmetry = false,
         flip     = false,
         position = zeros(3),
@@ -211,8 +210,10 @@ section_macs(wing :: Wing) = @views @. mean_aerodynamic_chord(wing.chords[1:end-
 Compute the mean aerodynamic chord of a `Wing`.
 """
 function mean_aerodynamic_chord(wing :: Wing)
+    # Compute mean aerodynamic chords and projected areas of each section
     areas = section_projected_areas(wing)
     macs = section_macs(wing)
+    # Calculate mean MAC weighted by section areas
     sum(macs .* areas) / sum(areas)
 end
 
@@ -236,8 +237,8 @@ Compute the mean aerodynamic center of a `Wing`. By default, the factor is assum
     y_LEs = wing_LE[:,2]
 
     # Compute x-y locations of section MACs
-    x_mac_LEs = @views @. y_mac(x_LEs[1:end-1], x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
-    y_macs = @views @. y_mac(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
+    x_mac_LEs = @. y_mac(x_LEs[1:end-1], x_LEs[2:end], wing.chords[2:end] / wing.chords[1:end-1])
+    y_macs = @. y_mac(y_LEs[1:end-1], wing.spans, wing.chords[2:end] / wing.chords[1:end-1])
 
     # Calculate section MAC coords
     mac_coords = @. SVector(x_mac_LEs + factor * macs, y_macs, 0.)
@@ -293,7 +294,7 @@ function wing_bounds(wing :: Wing)
 
     # Get actual bounds by sum-cumming, hehe I wanna die
     # Indexing: [section,xyz,le/te]
-    bounds = cumsum(cat(le, te, dims = Val(3)), dims = 3)
+    bounds = cumsum([ le ;;; te ], dims = 3)
 
     return bounds
 end

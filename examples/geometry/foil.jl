@@ -1,8 +1,9 @@
+# %%
 using AeroFuse
 using Plots
 
 ## NACA
-naca_foil = naca4(4,6,3,6) # NACA 4-digit
+naca_foil = naca4(2,4,1,2) # NACA 4-digit
 
 ## Plot
 plot(naca_foil, 
@@ -21,8 +22,8 @@ alpha_l  = coordinates_to_CST(low, num_dv)
 cst_foil = kulfan_CST(alpha_u, alpha_l, (0., 0.), (0., 0.))
 
 ## Plot
-plot(cst_foil)
-plot!(naca_foil)
+plot(cst_foil, lw = 2)
+plot!(naca_foil, lw = 2, ls = :dash)
 
 ## Control surface
 cst_foil_flap = control_surface(cst_foil, 
