@@ -37,10 +37,10 @@ wind_to_body_axes(xyz, α, β) = flip_xz(wind_to_geometry_axes(xyz, α, β))
 #==========================================================================================#
 
 # Transform a vector (force/velocity) from geometry axes to the target axis system.
-_to_axes(v, ::Geometry, α, β) = v
-_to_axes(v, ::Body, α, β) = geometry_to_body_axes(v)
-_to_axes(v, ::Stability, α, β) = geometry_to_stability_axes(v, α)
-_to_axes(v, ::Wind, α, β) = geometry_to_wind_axes(v, α, β)
+_vector_to_axes(v, ::Geometry, α, β) = v
+_vector_to_axes(v, ::Body, α, β) = geometry_to_body_axes(v)
+_vector_to_axes(v, ::Stability, α, β) = geometry_to_stability_axes(v, α)
+_vector_to_axes(v, ::Wind, α, β) = geometry_to_wind_axes(v, α, β)
 
 # Transform a moment vector from geometry axes to the target axis system, applying the sign flip convention for stability and wind axes.
 _moment_to_axes(m, ::Geometry, α, β) = m

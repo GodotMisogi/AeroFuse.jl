@@ -153,7 +153,7 @@ The reference axis system is set to the geometry axes defined in the constructio
 function surface_velocities(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
     vels = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega)
-    return _to_axes.(vels, Ref(axes), α, β)
+    return _vector_to_axes.(vels, Ref(axes), α, β)
 end
 
 ## Forces
@@ -170,7 +170,7 @@ The reference axis system is set to the geometry axes defined in the constructio
 function surface_forces(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
     forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
-    return _to_axes.(forces, Ref(axes), α, β)
+    return _vector_to_axes.(forces, Ref(axes), α, β)
 end
 
 ## Moments
@@ -208,7 +208,7 @@ function surface_dynamics(system :: VortexLatticeSystem; axes :: AbstractAxisSys
     surf_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
     surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
     # Transform to target axes
-    return _to_axes.(surf_forces, Ref(axes), α, β), _moment_to_axes.(surf_moments, Ref(axes), α, β)
+    return _vector_to_axes.(surf_forces, Ref(axes), α, β), _moment_to_axes.(surf_moments, Ref(axes), α, β)
 end
 
 """
