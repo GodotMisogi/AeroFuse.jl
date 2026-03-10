@@ -46,14 +46,14 @@ function print_coefficients(nf_coeffs, ff_coeffs, name = "")
     coeffs = [ [ visc; "CX"; "CY"; "CZ"; "Cl"; "Cm"; "Cn" ] [ visc; "CDi"; "CYff"; "CL"; ""; ""; "" ] ]
     data = [ coeffs[:,1] [ nf_coeffs... ] coeffs[:,2] [ [ ff_coeffs...]; fill("—", 3) ] ]
     head = [ name, "Nearfield", "", "Farfield" ]
-    h1 = Highlighter( (data,i,j) -> (j == 1) || (j == 3), foreground = :cyan, bold = true)
+    h1 = TextHighlighter( (data,i,j) -> (j == 1) || (j == 3), foreground = :cyan, bold = true)
 
     pretty_table(data, 
-        header = head, 
+        column_labels = head, 
         alignment = [:c, :c, :c, :c], 
-        highlighters = h1, 
-        vlines = :none, 
-        formatters = ft_round(8)
+        highlighters = [h1], 
+        table_format = TextTableFormat(; @text__no_vertical_lines),
+        formatters = [fmt__round(8)]
     )
 end
 
@@ -72,12 +72,12 @@ function print_derivatives(comp, name = ""; farfield = false)
     nf_rows = @views [ coeffs[1:ff_index] comp[1:ff_index,:] ]
 
     pretty_table(nf_rows, 
-        header = nf_vars, 
+        column_labels = nf_vars, 
         alignment = :c, 
         header_crayon = Crayon(bold = true), 
         subheader_crayon = Crayon(foreground = :yellow, bold = true), 
-        highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), 
-        vlines = :none, formatters = ft_round(8)
+        highlighters = [TextHighlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)], formatters = [fmt__round(8)],
+        table_format = TextTableFormat(; @text__no_vertical_lines),
     )
 end
 
