@@ -139,7 +139,7 @@ make_panels(wing::Wing, span_num::Integer, chord_num::Integer; spacings=symmetri
 
 Define a container to generate meshes and panels for a given `Wing` with a specified distribution of number of spanwise panels, and a number of chordwise panels.
 
-Optionally, a combination of `AbstractSpacing` types (`Sine(), Cosine(), Uniform()`) can be provided to the **named argument** `span_spacing`, either as a singleton or as a vector with length equal to the number of spanwise sections. By default, the combination is `[Sine(), Cosine(), ..., Cosine()]`.
+Optionally a combination of `AbstractSpacing` types (`Sine(), Cosine(), Uniform()`) can be provided to the **named argument** `span_spacing`, either as a singleton or as a vector with length equal to the number of spanwise sections. By default, the combination is `[Sine(), Cosine(), ..., Cosine()]`.
 
 For surface coordinates, the wing mesh will have (n_chord - 1) * 2 chordwise panels from TE-LE-TE and (n_span * 2) spanwise panels.
 """
@@ -165,14 +165,12 @@ function WingMesh(surface, n_span, n_chord::Integer; chord_spacing=Cosine(), spa
 
     # Accounting for symmetry or "flipping"
     if surface.symmetry
-        n_span_new = [reverse(n_span); n_span] .÷ 2
-        return WingMesh(surface, n_span_new, n_chord, chord_spacing, span_spacing)
+        n_span = [reverse(n_span); n_span] .÷ 2
     elseif surface.flip
-        n_span_new = reverse(n_span)
-        return WingMesh(surface, n_span_new, n_chord, chord_spacing, span_spacing)
-    else
-        return WingMesh(surface, n_span, n_chord, chord_spacing, span_spacing)
+        n_span = reverse(n_span)
     end
+
+    WingMesh(surface, n_span, n_chord, chord_spacing, span_spacing)
 end
 
 WingMesh(surface, n_span::Integer, n_chord::Integer; chord_spacing=Cosine(), span_spacing=symmetric_spacing(surface)) = WingMesh(surface, number_of_spanwise_panels(surface, n_span), n_chord, chord_spacing, span_spacing)
