@@ -294,7 +294,7 @@ function wing_bounds(wing :: Wing)
 
     # Get actual bounds by sum-cumming, hehe I wanna die
     # Indexing: [section,xyz,le/te]
-    bounds = cumsum([ le ;;; te ], dims = 3)
+    bounds = cumsum(cat(le, te, dims=3), dims = 3)
 
     return bounds
 end

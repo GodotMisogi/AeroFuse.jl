@@ -67,15 +67,15 @@ Print a pretty table of the aerodynamic coefficients and derivatives with an opt
 """
 function print_derivatives(comp, name = ""; farfield = false)
     coeffs  = ["CX", "CY", "CZ", "Cℓ", "Cm", "Cn", "CDi", "CY", "CL"]
-    nf_vars = (["$name" "Values" "" "" "Freestream" "Derivatives" "" ""], ["" "" "∂/∂M" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ])
+    nf_vars = [["$name","Values", "", "", "Freestream", "Derivatives", "", ""], ["", "", "∂/∂M", "∂/∂α, 1/rad", "∂/∂β, 1/rad", "∂/∂p̄", "∂/∂q̄", "∂/∂r̄" ]]
     ff_index = ifelse(farfield, 9, 6)
     nf_rows = @views [ coeffs[1:ff_index] comp[1:ff_index,:] ]
 
     pretty_table(nf_rows, 
         column_labels = nf_vars, 
         alignment = :c, 
-        header_crayon = Crayon(bold = true), 
-        subheader_crayon = Crayon(foreground = :yellow, bold = true), 
+        # header_crayon = Crayon(bold = true), 
+        # subheader_crayon = Crayon(foreground = :yellow, bold = true), 
         highlighters = [TextHighlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)], formatters = [fmt__round(8)],
         table_format = TextTableFormat(; @text__no_vertical_lines),
     )

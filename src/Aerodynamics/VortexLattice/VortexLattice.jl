@@ -78,9 +78,9 @@ include("residuals.jl")
 Evaluate and return the vortex strengths ``Γ``s given an array of `Horseshoes`, their associated normal vectors, the velocity vector ``U``, and the quasi-steady rotation vector ``Ω``.
 """
 function solve_linear(horseshoes, U, Ω)
-    AIC  = influence_matrix(horseshoes)
+    AIC = influence_matrix(horseshoes)
     boco = boundary_condition(horseshoes, U, Ω)
-    Γs   = AIC \ boco
+    Γs = AIC \ boco
 
     return Γs, AIC, boco
 end
