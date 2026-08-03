@@ -1,22 +1,35 @@
-## Wing planform optimization with SciML framework
+## Wing planform optimization with SciML framework using B-splines
 using AeroFuse
 using Roots
 using LinearAlgebra
 using Optimization, OptimizationIpopt
 using ComponentArrays
-# import Zygote
+using BSplineKit
+
+import Plots: plot, plot!, scatter!, savefig
+
 ## Elliptic wing planform prediction test
 #==========================================================================================#
 
 include("wing_definition.jl")
 
 ## Initial guess
-n_vars = 32 # Number of spanwise stations
-c = 0.125 # Fixed chord
-c_w = LinRange(c, c, n_vars) # Constant distribution
+n_vars = 64 # Number of spanwise evaluation stations
+n_cp = 6 # Number of control points for B-spline
+c = 0.125 # Fixed chord initial guess
+c_cp_init = fill(c, n_cp) # Constant distribution for control points
 CL_tgt = 1.6 # Target lift coefficient
-nc = length(c_w)
 
+# B-spline parameterization
+y_cp = LinRange(0, 1, n_cp) # Normalized spanwise control points
+y_eval = LinRange(0, 1, n_vars) # Normalized evaluation stations
+
+function evaluate_chords(c_cp, y_cp, y_eval)
+    itp = BSplineKit.interpolate(y_cp, c_cp, BSplineOrder(4))
+    return itp.(y_eval)
+end
+
+c_w = evaluate_chords(c_cp_init, y_cp, y_eval)
 wing_init = make_wing(c_w)
 Sw = projected_area(wing_init) # Reference area
 
@@ -42,18 +55,21 @@ print_coefficients(sys)
 # Common
 function get_res(x, sweep_ratio=0.25, ref=refs)
     α = x[1]
-    c_w = @view x[2:end]
+    c_cp = @view x[2:end]
+
+    # Evaluate chords using B-Spline
+    c_w = evaluate_chords(c_cp, y_cp, y_eval)
 
     # Setup
     wing_mesh = make_wing(c_w, sweep_ratio)
     system = make_case(α, wing_mesh, ref)
 
-    return system, wing_mesh
+    return system, wing_mesh, c_w
 end
 
 # Objective
 function opt_drag(x, p=nothing)
-    sys, mesh = get_res(x)
+    sys, mesh, c_w = get_res(x)
 
     # Get forces
     res = get_forces(sys, mesh)
@@ -63,37 +79,36 @@ end
 
 # Constraints
 function con_all(R, x, p)
-    c_w = @view x[2:end]
-    sys, mesh = get_res(x)
+    sys, mesh, c_w = get_res(x)
 
     _, _, CL = farfield(sys)
 
     R[1] = CL # Lift coefficient
     R[2] = projected_area(mesh) # Area
-    R[3:end] = -diff(c_w) # Chord length differences along span
 
-    # @info "Variables": x
-    # @info "Constraints:" R
+    # Apply monotonicity constraint directly to control points
+    c_cp = @view x[2:end]
+    R[3:end] = -diff(c_cp) # Control point differences along span must be negative/zero
 
     return nothing
 end
 
 ## Initial setup and test
-x0 = ComponentVector(alpha=α0, chords=c_w)  # Initial guess
+x0 = ComponentVector(alpha=α0, chords=c_cp_init)  # Initial guess
 cons = ComponentVector( # Constraints
     CL=0.,
     Sw=0.,
-    chords=zeros(nc - 1)
+    chords=zeros(n_cp - 1)
 )
 
 CD = opt_drag(x0, nothing)
 con_all(cons, x0, nothing)
 
-# Bounds
-lx = [-Inf; zeros(nc)]
-ux = [Inf; Inf * ones(nc)]
-lg = [CL_tgt; Sw; zeros(nc - 1)]
-ug = [CL_tgt; Sw; Inf * ones(nc - 1)]
+# Bounds for control points
+lx = [-Inf; zeros(n_cp)]
+ux = [Inf; Inf * ones(n_cp)]
+lg = [CL_tgt; Sw; zeros(n_cp - 1)]
+ug = [CL_tgt; Sw; Inf * ones(n_cp - 1)]
 
 ng = length(x0) # Number of constraints
 
@@ -106,16 +121,15 @@ opt = IpoptOptimizer(;
     hessian_approximation="limited-memory"
 )
 
-# opt = IPNewton()
-
 ## Solve
 @time sol = solve(prob, opt; verbose=true);
 
 ## Substitute
 xopt = ComponentArray(sol.u, getaxes(x0))
-wing_opt = make_wing(xopt.chords)
+c_w_opt = evaluate_chords(xopt.chords, y_cp, y_eval)
+wing_opt = make_wing(c_w_opt)
 sys_opt = make_case(xopt.alpha, wing_opt, refs)
-opt = get_forces(sys_opt, wing_opt)
+opt_forces = get_forces(sys_opt, wing_opt)
 print_coefficients(sys_opt)
 
 # Exact solution
@@ -139,9 +153,7 @@ ll_exact = spanwise_loading(wing_exact, sys_exact.reference, surface_coefficient
 using Plots, LaTeXStrings
 
 pgfplotsx() # Needs LaTeX
-# gr()
-# plotlyjs()
-##
+
 plt_opt = plot(
     camera=(90, 90),
     legend=:bottom,
@@ -149,8 +161,6 @@ plt_opt = plot(
     guidefontrotation=90.0,
     title=LaTeXString("Planform, \$ S = $(round(Sw; digits = 4)),~C_{L_{req}} = $(round(CL_tgt; digits = 4)) \$"),
     grid=false,
-    # aspect_ratio = 1,
-    # zlim = (-0.5, 0.5) .* span(wing_init)
 )
 
 # Initial planform
@@ -196,7 +206,7 @@ plot!(
     [-cumsum(wing_opt.surface.spans)[end:-1:1]; 0; cumsum(wing_opt.surface.spans)],
     [wing_opt.surface.chords[end:-1:2]; wing_opt.surface.chords],
     lc=:cornflowerblue,
-    label=LaTeXString("Optimized Wing: \$ (C_{D_i}, C_{D_v}, C_D, C_L) = $(round.([opt.CDi;opt.CDv;opt.CD;opt.CL]; digits = 4)) \$"),
+    label=LaTeXString("Optimized Wing: \$ (C_{D_i}, C_{D_v}, C_D, C_L) = $(round.([opt_forces.CDi;opt_forces.CDv;opt_forces.CD;opt_forces.CL]; digits = 4)) \$"),
 )
 plot!(
     [-cumsum(wing_exact.surface.spans)[end:-1:1]; 0; cumsum(wing_exact.surface.spans)],
@@ -230,5 +240,5 @@ plt_wing = plot(
     size=(700, 700)
 )
 
-##
-savefig(plt_wing, "plots/SciMLWingOptimization.pdf")
+mkpath("plots")
+savefig(plt_wing, "plots/SciMLBSplineWingOptimization.pdf")
