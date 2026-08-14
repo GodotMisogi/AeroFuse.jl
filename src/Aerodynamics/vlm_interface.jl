@@ -94,3 +94,51 @@ Generate an array of `VortexRing`s defined by the camber coordinates and normal 
 end
 
 reynolds_number(refs :: References) = refs.density * refs.speed * refs.chord / refs.viscosity
+
+"""
+    make_fuselage_line(fuse :: HyperEllipseFuselage; n = 20)
+
+Generate an array of `FuselageLine` singularity segments modelling a `HyperEllipseFuselage`
+as a slender body along its axis, for coupling into a `VortexLatticeSystem`. Each segment
+carries a prescribed source (thickness) strength `ΔS = π ΔR²` from the cross-sectional area
+distribution and an unknown doublet (cross-flow lift) whose strength solves in the AIC. `n`
+sets the number of stations per section (nose, cabin, rear).
+
+Assemble the returned vector into the aircraft as a `:fuse` block, e.g.
+`ComponentVector(wing = make_horseshoes(mesh), fuse = make_fuselage_line(fuse))`.
+"""
+function make_fuselage_line(fuse :: HyperEllipseFuselage; n = 20)
+    ts = LinRange(0., 1., n)
+
+    # Radius distribution R(x) and axis x-stations in the local (pre-affine) frame
+    xn, xc, xr, Rn, Rc, Rr = undrooped_curve(fuse, ts)
+    xs = [ xn; xc; xr ]   # x-stations
+    Rs = [ Rn; Rc; Rr ]   # radii R(x)
+
+    # Centerline droop = top-surface profile (R + droop, from `curve`) − R
+    z_cen = @views curve(fuse, ts)[:,2] .- Rs
+
+    # Local direction → world direction (the affine translation cancels in the difference)
+    aff = fuse.affine
+    to_world_dir(d) = aff(SVector(d...)) - aff(SVector(0., 0., 0.))
+    normal = normalize(to_world_dir(SVector(0., 0., 1.))) # Vertical (cross-flow / doublet) axis
+
+    # Skip the zero-length segments at the nose/cabin and cabin/rear junctions (shared points)
+    N    = length(xs)
+    segs = [ i for i in 1:N-1 if xs[i+1] - xs[i] > 1e-9 ]
+
+    return map(segs) do i
+        # Axis segment endpoints (centerline) and midpoint, mapped to world coordinates
+        r1 = aff(SVector(xs[i],   0., z_cen[i]))
+        r2 = aff(SVector(xs[i+1], 0., z_cen[i+1]))
+        rc = (r1 + r2) / 2
+
+        # Prescribed source (thickness) strength ΔS = π ΔR², per unit freestream speed
+        sigma = π * (Rs[i+1]^2 - Rs[i]^2)
+
+        # Local body radius for the 2-D cross-flow cylinder condition
+        radius = (Rs[i] + Rs[i+1]) / 2
+
+        FuselageLine(r1, r2, rc, normal, sigma, radius)
+    end
+end

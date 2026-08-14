@@ -101,6 +101,9 @@ end
 
 Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an aircraft (must be a `ComponentArray` of `Horseshoe`s or `VortexRing`s) with `Freestream` conditions and `References` for non-dimensionalization. Options are provided for compressibility corrections via the Prandtl-Glauert transformation (false by default) and axis system for computing velocities and forces (`Geometry` by default).
 """
+# Whether an assembled aircraft carries a fuselage line singularity block (`:fuse`).
+has_fuselage(ac) = :fuse in propertynames(ac)
+
 function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, warn = true)
 
     M = mach_number(refs) # For Mach number bound checks
@@ -109,7 +112,7 @@ function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, com
     if compressible
         @assert M < 1. "Only compressible subsonic flow conditions (M < 1) are valid!"
         if M > 0.7 && warn
-            @warn "Results in transonic to sonic flow conditions (0.7 < M < 1) are most likely incorrect!" 
+            # @warn "Results in transonic to sonic flow conditions (0.7 < M < 1) are most likely incorrect!" 
         end
 
         # (Prandtl-Glauert ∘ Wind axis) transformation
@@ -117,7 +120,7 @@ function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, com
         ac = @. prandtl_glauert_scale_coordinates(geometry_to_wind_axes(aircraft, fs), β_pg)
     else # Incompressible mode
         if warn 
-            if M > 0.3 @warn "Compressible regime (M > 0.3) but compressibility correction is off, be wary of the analysis!" end
+            # if M > 0.3 @warn "Compressible regime (M > 0.3) but compressibility correction is off, be wary of the analysis!" end
         end
 
         β_pg = 1
@@ -128,8 +131,15 @@ function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, com
     U = geometry_to_wind_axes(-velocity(fs), fs.alpha, fs.beta)
     Ω = geometry_to_wind_axes(fs.omega, fs) / refs.speed
 
-    # Solve system
-    Γs, AIC, boco = solve_linear(ac, U, Ω)
+    # Solve system. If a fuselage line (`:fuse` block) is present, inject its prescribed
+    # source (thickness) field into every collocation point's boundary condition, and solve
+    # the fuselage doublet strengths together with the lifting-surface circulations.
+    if has_fuselage(ac)
+        Ups = map(el -> source_line_velocity(control_point(el), ac.fuse, U), ac)
+        Γs, AIC, boco = solve_linear_fuselage(ac, U, Ups, Ω)
+    else
+        Γs, AIC, boco = solve_linear(ac, U, Ω)
+    end
 
     return VortexLatticeSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible)
 end
@@ -206,9 +216,42 @@ function surface_dynamics(system :: VortexLatticeSystem; axes :: AbstractAxisSys
     α, β = system.freestream.alpha, system.freestream.beta
     # Compute surface forces and moments in geometry axes
     surf_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
+    # The fuselage line carries no Kutta–Joukowsky force; substitute its slender-body
+    # (Munk) sectional forces so the fuselage's own lift and destabilizing pitching moment
+    # enter the nearfield, centre of pressure and stability derivatives.
+    if has_fuselage(system.vortices)
+        surf_forces.fuse .= fuselage_munk_forces(system)
+    end
     surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
     # Transform to target axes
     return _vector_to_axes.(surf_forces, Ref(axes), α, β), _moment_to_axes.(surf_moments, Ref(axes), α, β)
+end
+
+"""
+    fuselage_munk_forces(system :: VortexLatticeSystem)
+
+Slender-body (Munk) sectional force on each `FuselageLine` segment, in geometry axes. From
+apparent-mass theory the sectional normal force is ``N'(x) = -\\tfrac{1}{2}\\rho U_\\infty\\,
+d\\kappa/dx``, where ``\\kappa`` is the segment's cross-flow doublet strength (its stored,
+dimensional circulation). Integrated over a closed body this gives zero net lift but a
+destabilizing pitching moment.
+"""
+function fuselage_munk_forces(system :: VortexLatticeSystem)
+    fuse = system.vortices.fuse
+    κ    = system.circulations.fuse
+    ρ    = system.reference.density
+    U    = system.reference.speed
+    n    = length(fuse)
+    xs   = [ el.rc[1] for el in fuse ] # Axial stations (geometry axes)
+
+    return map(1:n) do i
+        # dκ/dx by finite difference (one-sided at the ends)
+        dκdx = i == 1 ? (κ[2] - κ[1]) / (xs[2] - xs[1]) :
+               i == n ? (κ[n] - κ[n-1]) / (xs[n] - xs[n-1]) :
+                        (κ[i+1] - κ[i-1]) / (xs[i+1] - xs[i-1])
+        Nʹ = -ρ * U / 2 * dκdx * segment_length(fuse[i])
+        Nʹ * fuse[i].normal # Vertical (cross-flow) force in geometry axes
+    end
 end
 
 """
@@ -254,7 +297,10 @@ end
 
 Compute the **total** nearfield force and moment coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by default.
 """
-nearfield(system :: VortexLatticeSystem) = NF_COEFFS(mapreduce(sum, vcat, surface_coefficients(system; axes = Wind())))
+function nearfield(system :: VortexLatticeSystem)
+    CFs, CMs = surface_coefficients(system; axes = Wind())
+    return NF_COEFFS(vcat(sum(CFs), sum(CMs)))
+end
 
 
 """
@@ -270,8 +316,14 @@ Compute the **farfield** forces in **wind axes** for all components of the `Vort
     V  = system.reference.speed
     ρ  = system.reference.density
     
-    # Construct NamedTuple with ComponentArray keys for each component
-    return NamedTuple(key => farfield_forces(Γs[key], hs[key], V, α, β, ρ) for key in keys(hs))
+    # Construct NamedTuple with ComponentArray keys for each component. The fuselage line
+    # (`:fuse`) has no trailing wake, so it contributes zero in the Trefftz plane — its
+    # farfield force is handled by slender-body integration, not here. The key is kept (with a
+    # zero force) so nearfield and farfield share the same component keys downstream.
+    return NamedTuple(
+        key => key == :fuse ? zero(SVector{3, typeof(V)}) : farfield_forces(Γs[key], hs[key], V, α, β, ρ)
+        for key in keys(hs)
+    )
 end
 
 """

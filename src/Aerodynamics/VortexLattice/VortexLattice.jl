@@ -72,14 +72,33 @@ include("prandtl_glauert.jl")
 
 include("residuals.jl")
 
+## Fuselage line singularity (slender-body coupling)
+include("fuselage_line.jl")
+
 """
-    solve_linear(horseshoes, normals, U, Ω) 
+    solve_linear(horseshoes, normals, U, Ω)
 
 Evaluate and return the vortex strengths ``Γ``s given an array of `Horseshoes`, their associated normal vectors, the velocity vector ``U``, and the quasi-steady rotation vector ``Ω``.
 """
 function solve_linear(horseshoes, U, Ω)
     AIC = influence_matrix(horseshoes)
     boco = boundary_condition(horseshoes, U, Ω)
+    Γs = AIC \ boco
+
+    return Γs, AIC, boco
+end
+
+"""
+    solve_linear(horseshoes, U, Ups, Ω)
+
+Variant of [`solve_linear`](@ref) that injects an extra per-collocation-point velocity
+field ``U_{ps}`` into the boundary condition. Used to couple the prescribed fuselage source
+(thickness) line into the system while the fuselage doublet strengths solve as unknowns in
+the AIC. `Ups` must share the layout of `horseshoes`.
+"""
+function solve_linear(horseshoes, U, Ups, Ω)
+    AIC = influence_matrix(horseshoes)
+    boco = boundary_condition(horseshoes, U, Ups, Ω)
     Γs = AIC \ boco
 
     return Γs, AIC, boco

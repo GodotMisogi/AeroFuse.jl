@@ -147,7 +147,7 @@ export Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil,
 
 # Fuselage
 import .AircraftGeometry: Fuselage, projected_area, length, cosine_interpolation, volume,
-                          HyperEllipseFuselage, curve
+                          HyperEllipseFuselage, curve, undrooped_curve
 
 export Fuselage,
        projected_area, length, cosine_interpolation, volume, HyperEllipseFuselage, curve
@@ -232,10 +232,10 @@ include("Aerodynamics/VortexLattice/VortexLattice.jl")
 
 # Vortex types
 import .VortexLattice:
-                       Horseshoe, VortexRing, velocity, bound_leg_center, bound_leg_vector,
-                       control_point
+                       Horseshoe, VortexRing, FuselageLine, velocity, bound_leg_center,
+                       bound_leg_vector, control_point, source_line_velocity
 
-export Horseshoe, VortexRing, velocity, bound_leg_center, bound_leg_vector, control_point
+export Horseshoe, VortexRing, FuselageLine, velocity, bound_leg_center, bound_leg_vector, control_point
 
 # Reference values
 import .VortexLattice: References, kinematic_viscosity, mach_number
@@ -280,7 +280,7 @@ export print_coefficients, print_derivatives, streamlines
 ## Panel-VLM interface
 include("Aerodynamics/vlm_interface.jl")
 
-export make_horseshoes, make_vortex_rings
+export make_horseshoes, make_vortex_rings, make_fuselage_line
 
 ## Profile drag estimation
 include("Aerodynamics/parasitic_drag.jl")
