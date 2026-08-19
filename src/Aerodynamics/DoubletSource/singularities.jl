@@ -34,10 +34,8 @@ function quadrilateral_doublet_potential(μ, panel :: AbstractPanel3D, point)
 
     ε = 1e-10
     if abs(z) <= ε
-        g = p - midpoint(panel)
-        sgn = sign(dot(g, normal_vector(panel)))
-        return sgn * μ / 2
-    else 
+        return (abs(x) <= ε && abs(y) <= ε) ? μ / 2 : zero(μ)
+    else
         # LESS READABLE, BUT CORRECT
 
         # Initial condition for first point
@@ -62,7 +60,7 @@ function quadrilateral_doublet_potential(μ, panel :: AbstractPanel3D, point)
             hi = hj
         end
 
-        return μ / 4π * inf
+        return -μ / 4π * inf
     end
 end
 

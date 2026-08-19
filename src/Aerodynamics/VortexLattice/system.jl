@@ -64,7 +64,7 @@ abstract type AbstractPotentialFlowSystem end
 """
     VortexLatticeSystem
 
-A system consisting of the relevant variables for a vortex lattice analysis for post-processing.
+A system consisting of the relevant variables in a vortex lattice analysis for post-processing.
 
 # Arguments
 The accessible fields are:
@@ -99,7 +99,7 @@ end
         compressible = false, 
     )
 
-Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an aircraft (must be a `ComponentArray` of `Horseshoe`s or `VortexRing`s) with `Freestream` conditions and `References` for non-dimensionalization. Options are provided for compressibility corrections via the Prandtl-Glauert transformation (false by default) and axis system for computing velocities and forces (`Geometry` by default).
+Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an aircraft (must be a `ComponentArray` of `Horseshoe`s or `VortexRing`s) with `Freestream` conditions and `References` for non-dimensionalization. Options are provided for compressibility corrections via the Prandtl-Glauert transformation (`false` by default) and axis system for computing velocities and forces (`Geometry` by default).
 """
 # Whether an assembled aircraft carries a fuselage line singularity block (`:fuse`).
 has_fuselage(ac) = :fuse in propertynames(ac)

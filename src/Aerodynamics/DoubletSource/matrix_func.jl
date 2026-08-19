@@ -5,25 +5,15 @@ Create the matrix of doublet potential influence coefficients between pairs of `
 """
 doublet_matrix(panels_1 :: AbstractArray{T}, panels_2 :: AbstractArray{T}) where T <: AbstractPanel2D = [ doublet_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
 
-function doublet_matrix(panels_1, panels_2) 
-    # Axis permutation
-    P = @SMatrix [ 0  1  0 ;
-                   1  0  0 ;
-                   0  0 -1 ]
-    
-    # Pre-allocated loop
-    # A = zeros(eltype(panels_1[1].p1), length(panels_1), length(panels_2))
-    # doublet_matrix!(A, panels_1, panels_2, P)
-    # A
-
-    # Mapping
+function doublet_matrix(panels_1, panels_2)
+    # `quadrilateral_doublet_potential` transforms the panel and evaluation point
+    # into the panel-local frame itself, so pass GLOBAL geometry. The old code
+    # pre-transformed with `get_transformation(panel_j, P)` and then the kernel
+    # transformed AGAIN — a double rotation (P²=I swaps axes back, flips z) that
+    # corrupted the near-field coefficients and drove an odd-even doublet mode.
     map(product(panels_1, panels_2)) do (panel_j, panel_i)
-        T = get_transformation(panel_j, P)
-        quadrilateral_doublet_potential(1., T(panel_j), T(collocation_point(panel_i)))
+        quadrilateral_doublet_potential(1., panel_j, collocation_point(panel_i))
     end
-
-    # Comprehension
-    # [ doublet_influence(panel_j, panel_i) for panel_i in panels_1, panel_j in panels_2 ]
 end
 
 # function doublet_matrix!(A, panels_1, panels_2, P)
@@ -49,7 +39,7 @@ Create the vector describing Morino's Kutta condition given `Panel2D`s.
 """
 kutta_condition(panels :: AbstractVector{<:AbstractPanel2D}) = [ 1 zeros(length(panels) - 2)' -1 ]
 
-kutta_condition(Nf, Nw) = Matrix([ I(Nw) zeros(Nw, Nf-2*Nw) -I(Nw) -I(Nw) ])
+kutta_condition(Nf, Nw) = Matrix([ I(Nw) zeros(Nw, Nf-2*Nw) -I(Nw) I(Nw) ])
 
 """
     wake_vector(woke_panel :: AbstractPanel2D, panels)
@@ -92,16 +82,15 @@ end
 
 function boundary_vector(panels :: AbstractArray{<: AbstractPanel3D}, wakes, V∞)
     panelview = @view permutedims(panels)[:]
-    B = source_matrix(panelview, panelview)
-    σ = source_strengths(panelview, V∞)
+    Φ∞ = [ dot(V∞, collocation_point(p)) for p in panelview ]
 
-    return [ -B * σ; zeros(length(wakes)) ]
+    return [ Φ∞; zeros(length(wakes)) ]
 end
 
 """
     solve_linear(panels, u, sources, bound)
 
-Solve the system of equations ``[AIC][φ] = [\\vec{U} ⋅ n̂] - B[σ]`` condition given the array of `Panel2D`s, a velocity ``\\vec U``, a condition whether to disable source terms (``σ = 0``), and an optional named bound for the length of the wake.
+Solve the system of equations ``[AIC][φ] = [\\vec{U} ⋅ n̂] - B[σ]`` condition given the array of `Panel2D`s, a velocity ``\\vec U``, a condition whether to disable source terms (``σ = 0``), and an optional named `bound` variable expressing the length of the wake.
 """
 function solve_linear(panels, u, α, r_te, sources :: Bool; bound = 1e2)
     # Wake
@@ -171,17 +160,12 @@ end
 function influence_matrix(panels :: DenseArray{<:AbstractPanel3D}, wakes)
     panelview = @view permutedims(panels)[:]
 
-    # Foil-Foil interactions
-    AIC_ff = doublet_matrix(panelview, panelview)
-
-    # Wake-Foil interactions
-    AIC_wf = doublet_matrix(panelview, wakes)
+    AIC_ff = permutedims(doublet_matrix(panelview, panelview))   # foil source → foil field
+    AIC_wf = permutedims(doublet_matrix(wakes, panelview))       # wake source → foil field
 
     # Kutta condition
     AIC = [   AIC_ff     AIC_wf  ;
       kutta_condition(length(panels), length(wakes)) ]
-    
-    #   AIC[ abs.(AIC) .<= 1e-15] .= 0.0
 
     return AIC
 end

@@ -48,6 +48,7 @@ export solve_linear, solve_nonlinear, solve_linear!, solve_nonlinear!
 #==========================================================================================#
 
 include("Tools/MathTools.jl")
+import .MathTools: midpair_map
 # import .MathTools: weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
 
 # export forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_interpolation, sine_spacing
@@ -104,7 +105,7 @@ import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D,
                        make_panels,
                        local_coordinate_system, get_transformation, trailing_edge_info,
                        panel_coordinates,
-                       collocation_point
+                       collocation_point, WakePanel3D, p1, p2, p3, p4
 
 export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D,
        transform, normal_vector, midpoint, panel_location, tangent_vector, panel_points,
@@ -233,7 +234,9 @@ include("Aerodynamics/VortexLattice/VortexLattice.jl")
 # Vortex types
 import .VortexLattice:
                        Horseshoe, VortexRing, FuselageLine, velocity, bound_leg_center,
-                       bound_leg_vector, control_point, source_line_velocity
+                       bound_leg_vector, control_point, source_line_velocity,
+                       bound_leg_velocity, point_source_velocity, point_doublet_velocity,
+                       segment_length
 
 export Horseshoe, VortexRing, FuselageLine, velocity, bound_leg_center, bound_leg_vector, control_point
 
@@ -246,7 +249,9 @@ export References, kinematic_viscosity, mach_number
 import .VortexLattice: AbstractAxisSystem, Stability, Wind, Body, Geometry,
                        geometry_to_wind_axes, geometry_to_stability_axes,
                        stability_to_geometry_axes,
-                       wind_to_geometry_axes, wind_to_body_axes
+                       wind_to_geometry_axes, wind_to_body_axes,
+                       _vector_to_axes, _moment_to_axes, flip_xz,
+                       NF_COEFFS, FF_COEFFS, Derivs
 
 export AbstractAxisSystem, Stability, Wind, Body, Geometry, geometry_to_wind_axes,
        geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,
@@ -281,6 +286,11 @@ export print_coefficients, print_derivatives, streamlines
 include("Aerodynamics/vlm_interface.jl")
 
 export make_horseshoes, make_vortex_rings, make_fuselage_line
+
+## Generic doublet-source panel aircraft solver (needs References + FuselageLine + VLM kernels)
+include("Aerodynamics/doublet_source_panel_aircraft.jl")
+
+export DoubletSourcePanelSystem, lift_coefficients, field_velocity
 
 ## Profile drag estimation
 include("Aerodynamics/parasitic_drag.jl")

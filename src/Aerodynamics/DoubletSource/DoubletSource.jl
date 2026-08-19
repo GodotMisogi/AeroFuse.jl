@@ -42,8 +42,10 @@ function doublet_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2
 end
 
 function doublet_influence(panel_j :: AbstractPanel3D, panel_i :: AbstractPanel3D)
-    # panel, point = transform_panel(panel_j, panel_i)
-    ifelse(panel_i == panel_j, 0.5, quadrilateral_doublet_potential(1., panel, point))
+    # `quadrilateral_doublet_potential` transforms the panel and evaluation point into
+    # the panel-local frame itself, so pass GLOBAL geometry (it also returns the +½
+    # self-term when the field point coincides with the panel's own collocation point).
+    quadrilateral_doublet_potential(1., panel_j, collocation_point(panel_i))
 end
 
 function source_influence(panel_j :: AbstractPanel2D, panel_i :: AbstractPanel2D)
@@ -108,7 +110,7 @@ end
 
 function Base.show(io :: IO, sys :: DoubletSourceSystem3D)
     println(io, "---------------- DoubletSourceSystem3D ----------------")
-    println(io, "Freestream velocity:   ", sys.Umag * velocity(sys.freestream))
+    println(io, "Freestream velocity:   ", velocity(sys.freestream))
     println(io, "Panels:                ", size(sys.surface_panels), " of type ", eltype(sys.surface_panels))
     println(io, "Wake panels:           ", size(sys.wake_panels), " of type ", eltype(sys.wake_panels))
 end
@@ -189,7 +191,6 @@ end
     φypair = midpair_map(make_tuple, φs; dims=2)
 
     vs = zeros(npancd, npansp, 3)
-    V∞ = velocity(prob.freestream)
 
     for i=1:npancd
         for j=1:npansp
@@ -199,14 +200,27 @@ end
             φnbx1, φnbx2 = φxpair[i,j]
             φnby1, φnby2 = φypair[i,j]
 
-            vx = -(φnbx1 - φnbx2) / (nbx1.x - nbx2.x)
+            # Total surface velocity = ∇(total potential) tangent to the panel. In the
+            # Morino formulation the doublet strength IS the total surface potential, so
+            # the tangential velocity is its surface gradient — NO separate freestream
+            # term is added (that would double-count, cancelling to ≈0 and giving cp≈1
+            # everywhere). `tr` returns an SVector of local coords (index [1]=x̂, [2]=ŷ).
+            # Chordwise neighbours lie ~along x̂; spanwise neighbours are generally
+            # non-orthogonal (offset in both x̂ and ŷ), so ∂φ/∂y is recovered from the
+            # directional derivative:
+            #   φnby1-φnby2 = ∂φ/∂x·Δxs + ∂φ/∂y·Δys = -vx·Δxs - vy·Δys.
+            dxx = nbx1[1] - nbx2[1]
+            vx  = -(φnbx1 - φnbx2) / dxx
 
-            vyt = (φnby1 - φnby2) / norm(nby1.y - nby2.y, nby1.x - nby2.x)
-            vy = -(vyt - vx * (nby1.x - nby2.x)) / (nby1.y - nby2.y)
+            dsx = nby1[1] - nby2[1]      # spanwise neighbour local-x̂ offset
+            dsy = nby1[2] - nby2[2]      # spanwise neighbour local-ŷ offset
+            vy  = -((φnby1 - φnby2) + vx * dsx) / dsy
 
-            vs[i,j,1] = vx + tr(V∞).x
-            vs[i,j,2] = vy + tr(V∞).y
-            vs[i,j,3] = dot(V∞, normal_vector(ps[i,j]))
+            # Tangential components in the panel-local frame; the normal (out-of-plane)
+            # component vanishes by the flow-tangency boundary condition.
+            vs[i,j,1] = vx
+            vs[i,j,2] = vy
+            vs[i,j,3] = zero(eltype(vs))
         end
     end
 
@@ -234,18 +248,24 @@ end
 function surface_coefficients(prob :: DoubletSourceSystem3D, A)
     # Panel properties
     ps = prob.surface_panels
-    ns = normal_vector.(ps)
+    Vmag = norm(velocity(prob.freestream))
+
+    # Inviscid edge velocities: local-frame components vs[i,j,:] = [vx, vy, vz]
+    vs = surface_velocities(prob)
+
+    # Pressure coefficient from the local surface speed
+    cps = map(CartesianIndices(ps)) do I
+        i, j = Tuple(I)
+        pressure_coefficient(Vmag, @view vs[i,j,:])
+    end
+
+    # Panel pressure force acts along −n̂_out; lift is its z-component per unit reference
+    # area. `surface_panels` winds the panels so `normal_vector` points INWARD (verified
+    # against the section centroid), so the outward normal is its negation. Using the
+    # unit outward normal, cl_panel = −cp·A·n̂_out_z / A_ref.
+    n̂_out = map(p -> -normalize(normal_vector(p)), ps)
     As = panel_area.(ps)
-    
-    # xs   = @views combinedimsview(panel_points(ps)[2:end-1])[1,:]
-
-    # Inviscid edge velocities
-    us, vs = surface_velocities(prob)
-
-    # Aerodynamic coefficients
-    cps  = pressure_coefficient.(1., map((x,y)->norm([x,y]), us, vs))
-    cls  = -cps .* As .* ns .⋅ Ref([0.,0.,1.]) / A
-    # cms  = @. -cls * xs * cos(prob.freestream.angle)
+    cls = map((cp, n, a) -> -cp * a * n[3], cps, n̂_out, As) / A
 
     cls, cps
 end

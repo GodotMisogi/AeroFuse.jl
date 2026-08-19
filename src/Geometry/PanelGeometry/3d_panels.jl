@@ -53,7 +53,7 @@ collocation_point(panel :: AbstractPanel3D, a = 0.5) = (p1(panel) + p2(panel) + 
 (T :: AffineMap)(p :: AbstractPanel3D) = typeof(p)(T(p.p1), T(p.p2), T(p.p3), T(p.p4))
 (T :: LinearMap)(p :: AbstractPanel3D) = typeof(p)(T(p.p1), T(p.p2), T(p.p3), T(p.p4))
 
-Base.length(:: Panel3D) = 1
+Base.length(:: AbstractPanel3D) = 1
 
 average_chord(panel :: Panel3D) = (p2(panel) - p1(panel) + p3(panel) - p4(panel)) / 2
 average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)) / 2
