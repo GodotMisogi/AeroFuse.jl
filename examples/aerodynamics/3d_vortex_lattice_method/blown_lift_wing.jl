@@ -20,7 +20,7 @@ wing = Wing(
     symmetry  = true,
 )
 
-wing_mesh  = WingMesh(wing, [12], 6)
+wing_mesh  = WingMesh(wing, [35], 12)
 wing_rings = make_vortex_rings(wing_mesh)
 aircraft   = ComponentVector(wing = wing_rings)
 
