@@ -264,13 +264,14 @@ import .VortexLattice: AbstractPotentialFlowSystem, VortexLatticeSystem, surface
                        farfield_forces, surface_velocities, surface_forces,
                        surface_dynamics,
                        surface_coefficients, nearfield_coefficients, farfield_coefficients,
-                       center_of_pressure
+                       center_of_pressure, PropellerDisk, slipstream_velocity, auto_turn
 
 export AbstractPotentialFlowSystem, VortexLatticeSystem, surface_velocity, surface_forces,
        surface_moments, nearfield_drag, rate_coefficient, nearfield, farfield,
        farfield_forces,
        surface_velocities, surface_forces, surface_dynamics, surface_coefficients,
-       nearfield_coefficients, farfield_coefficients, center_of_pressure
+       nearfield_coefficients, farfield_coefficients, center_of_pressure,
+       PropellerDisk, slipstream_velocity, auto_turn
 
 # Derivatives
 import .VortexLattice: freestream_derivatives

@@ -31,7 +31,7 @@ scale_freestream(fs :: Freestream, refs :: References) = [
     ]
 
 # Closure to generate results with input vector
-@views function freestream_derivatives!(y, x, aircraft, fs, ref, compressible, axes)
+@views function freestream_derivatives!(y, x, aircraft, fs, ref, compressible, axes, slipstream = nothing)
     # Scale Mach number
     ref = @views setproperties(ref, 
         speed = x[1] * ref.sound_speed
@@ -50,7 +50,7 @@ scale_freestream(fs :: Freestream, refs :: References) = [
     )
 
     # Solve system
-    system = VortexLatticeSystem(aircraft, fs, ref, compressible)
+    system = VortexLatticeSystem(aircraft, fs, ref, compressible; slipstream)
 
     # Evaluate nearfield coefficients
     CFs, CMs = surface_coefficients(system; axes)
@@ -73,7 +73,7 @@ scale_freestream(fs :: Freestream, refs :: References) = [
     return nothing
 end
 
-function freestream_derivatives(aircraft, fs, ref; axes = Stability(), name = :aircraft, compressible = false, print = false, print_components = false, farfield = false)
+function freestream_derivatives(aircraft, fs, ref; axes = Stability(), name = :aircraft, compressible = false, print = false, print_components = false, farfield = false, slipstream = nothing)
     # Reference values and scaling inputs
     x = scale_freestream(fs, ref)
 
@@ -82,7 +82,7 @@ function freestream_derivatives(aircraft, fs, ref; axes = Stability(), name = :a
 
     y = zeros(eltype(x), 9, num_comps)
     ∂y∂x = zeros(eltype(x), 9, num_comps, length(x))
-    jacobian!(∂y∂x, (y, x) -> freestream_derivatives!(y, x, aircraft, fs, ref, compressible, axes), y, x)
+    jacobian!(∂y∂x, (y, x) -> freestream_derivatives!(y, x, aircraft, fs, ref, compressible, axes, slipstream), y, x)
     
     data = cat(y, ∂y∂x, dims = 3) # Appending outputs with derivatives
 
@@ -115,4 +115,4 @@ The axes of the force and moment coefficients can be changed by passing any `Abs
 
 Optional printing arguments are provided for the components and the entire system, along with the corresponding farfield coefficients if needed.
 """
-freestream_derivatives(system :: VortexLatticeSystem; axes = Stability(), name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; compressible = system.compressible, axes, name, print, print_components, farfield)
+freestream_derivatives(system :: VortexLatticeSystem; axes = Stability(), name = :aircraft, print = false, print_components = false, farfield = false) = freestream_derivatives(system.vortices, system.freestream, system.reference; compressible = system.compressible, axes, name, print, print_components, farfield, slipstream = system.slipstream)

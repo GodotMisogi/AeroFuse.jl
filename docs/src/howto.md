@@ -425,6 +425,36 @@ print_coefficients(nfs.wing, ffs.wing, :wing)
 print_coefficients(nf, ff, :aircraft)
 ````
 
+### Blown Lift (Propeller Slipstream)
+
+To model powered/blown lift, define one or more `PropellerDisk`s and pass them to `VortexLatticeSystem` with the `slipstream` keyword. Each disk prescribes an actuator-disk slipstream (a tube of accelerated, swirling flow) from its centre, thrust `axis`, `radius`, `thrust`, and — for the swirl — `torque` and rotation `sense`. The slipstream is injected into both the boundary condition and the nearfield forces, so it changes the circulation and the local dynamic pressure over any surface it washes.
+
+````@example howto
+b = span(wing)
+prop = PropellerDisk(
+    center = [-0.5, b / 4, 0.0], # Disk centre (m), ahead of the wing
+    axis   = [1.0, 0.0, 0.0],    # Thrust direction (≈ freestream)
+    radius = b / 8,              # Disk radius (m)
+    thrust = 3000.0,             # Thrust (N) — sets the axial increment
+    torque = 100.0,              # Torque (N·m) — sets the swirl
+    sense  = 1.0,                # Rotation sense ±1
+)
+
+blown = VortexLatticeSystem(aircraft, fs, refs; slipstream = prop)
+nearfield(blown)
+````
+
+For a **deflected slipstream (jet flap)** — where a deflected flap turns the high-momentum jet downward to produce large powered-flap lift — use `auto_turn` to derive the jet turning from the trailing-edge deflection of the panels immersed in the tube, then pass the turned disk(s). Provide the surface panels (a chordwise×spanwise array, e.g. from `make_horseshoes`).
+
+````@example howto
+turned = auto_turn(prop, wing_horsies, refs)
+blown_flap = VortexLatticeSystem(aircraft, fs, refs; slipstream = turned);
+nothing #hide
+````
+
+!!! note
+    `slipstream` also accepts a vector of `PropellerDisk`s for multiple propellers. Mirror the rotation `sense` across a pair to cancel the swirl-induced rolling moment.
+
 ## Aerodynamic Stability Analyses
 The derivatives of the aerodynamic coefficients with respect to the freestream values are obtained by automatic differentiation enabled by [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl). The following function evaluates the derivatives of the aerodynamic coefficients with respect to the freestream values. You can also optionally provide the axes for the reference frame of the coefficients.
 

@@ -7,12 +7,24 @@ surface_velocity(h, horseshoes, Γs, U, Ω) = induced_trailing_velocity(bound_le
 
 surface_velocities(hs_comp, horseshoes, Γs, U, Ω) = map(h -> surface_velocity(h, horseshoes, Γs, U, Ω), hs_comp)
 
+# Slipstream (blown-lift) variant: add a prescribed per-panel velocity `Vps` (evaluated at the
+# bound-leg centres, in the same axes as `U`) to the local flow. This is the dynamic-pressure
+# boost seen by panels inside a propeller slipstream.
+surface_velocities(hs_comp, horseshoes, Γs, U, Ω, Vps) = map((h, Vp) -> surface_velocity(h, horseshoes, Γs, U, Ω) + Vp, hs_comp, Vps)
+
 # Compute the surface forces via the local Kutta-Jowkowsky theorem. 
 # For a given array of vortex type `hs_comp` and their associated vortex strengths ``Γ_c`` for which to compute the forces, the arrays of horseshoes and vortex strengths ``Γ``s  of the entire aircraft, the freestream flow vector ``U``, rotation rates ``Ω``, and a density ``ρ``, the velocities are evaluated at the midpoint of the bound leg of each horseshoe, excluding the contribution of the bound leg vortex.
 surface_forces(hs_comp, Γ_comp, horseshoes, Γs, U, Ω, ρ) = map((h, Γ) -> kutta_joukowsky(ρ, surface_velocity(h, horseshoes, Γs, U, Ω), bound_leg_vector(h), Γ), hs_comp, Γ_comp)
 
 # This second variant simply sets `hs_comp = horseshoes` and `Γ_comp = Γs`.
 surface_forces(horseshoes, Γs, U, Ω, ρ) = surface_forces(horseshoes, Γs, horseshoes, Γs, U, Ω, ρ)
+
+# Slipstream (blown-lift) variants: the prescribed per-panel slipstream velocity `Vps` is added
+# to the local Kutta–Joukowsky velocity, so panels inside the slipstream feel its higher
+# dynamic pressure. `Vps` is evaluated at the bound-leg centres in the same axes as `U`.
+surface_forces(hs_comp, Γ_comp, horseshoes, Γs, U, Ω, ρ, Vps) = map((h, Γ, Vp) -> kutta_joukowsky(ρ, surface_velocity(h, horseshoes, Γs, U, Ω) + Vp, bound_leg_vector(h), Γ), hs_comp, Γ_comp, Vps)
+
+surface_forces(horseshoes, Γs, U, Ω, ρ, Vps) = surface_forces(horseshoes, Γs, horseshoes, Γs, U, Ω, ρ, Vps)
 
 nearfield_drag(force, U) = -dot(force, normalize(U))
 
