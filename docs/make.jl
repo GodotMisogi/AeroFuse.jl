@@ -1,17 +1,10 @@
 using AeroFuse
 using Documenter
-using DocumenterTools: Themes
 using Literate
 
-## Generate theme
-for w in ("light",)
-    header = read(joinpath(@__DIR__, "theme/style.scss"), String)
-    theme = read(joinpath(@__DIR__, "theme/$(w)defs.scss"), String)
-    write(joinpath(@__DIR__, "theme/$(w).scss"), header*"\n"*theme)
-end
-
-Themes.compile(joinpath(@__DIR__, "theme/light.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-light.css"))
-Themes.compile(joinpath(@__DIR__, "theme/dark.scss"), joinpath(@__DIR__, "src/assets/themes/documenter-dark.css"))
+# NOTE: The old custom Documenter theme (theme/*.scss) targeted Documenter 0.27's Bulma SCSS
+# variables and no longer compiles under Documenter 1.x, so the build uses Documenter's
+# built-in light/dark themes. Re-port the SCSS to the 1.x variables to restore it.
 
 ## Generate Markdown files using Literate.jl
 src = joinpath(@__DIR__, "src")
@@ -53,10 +46,13 @@ makedocs(
             "assets/logo.ico",
             asset("https://fonts.googleapis.com/css?family=Montesserat|Fira+Code&display=swap", class=:css),
         ],
-        analytics = "UA-89998292-1"
         # highlightjs = "theme/highlight.js",
     ),
     checkdocs = :exports,
+    # Documenter 1.x makes @example failures fatal by default. Some tutorials download airfoil
+    # data over HTTP, so a flaky network would abort the whole build; keep those non-fatal
+    # (0.27 behaviour) while leaving doctests, cross-references and docstring checks strict.
+    warnonly = [:example_block],
 )
 
 ## Deployment
