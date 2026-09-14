@@ -74,6 +74,7 @@ The accessible fields are:
 - `boundary_vector`: The boundary condition corresponding to the right-hand-side of the linear system.
 - `freestream :: Freestream`: The freestream conditions.
 - `reference :: References`: The reference values.
+- `slipstream`: The prescribed propeller slipstream(s) for blown-lift analyses (`nothing` if absent).
 """
 struct VortexLatticeSystem{
     M <: DenseArray{<: AbstractVortex},
@@ -81,14 +82,16 @@ struct VortexLatticeSystem{
     R,
     S,
     P,
-    Q} <: AbstractPotentialFlowSystem
+    Q,
+    W} <: AbstractPotentialFlowSystem
     vortices          :: M
-    circulations      :: N 
+    circulations      :: N
     influence_matrix  :: R
     boundary_vector   :: S
     freestream        :: P
     reference         :: Q
     compressible      :: Bool
+    slipstream        :: W
 end
 
 """
@@ -104,9 +107,13 @@ Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an airc
 # Whether an assembled aircraft carries a fuselage line singularity block (`:fuse`).
 has_fuselage(ac) = :fuse in propertynames(ac)
 
-function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, warn = true)
+function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, warn = true; slipstream = nothing)
 
     M = mach_number(refs) # For Mach number bound checks
+
+    # Normalize the slipstream input to a collection of disks (or `nothing`) so it can be
+    # broadcast/summed uniformly downstream.
+    slips = slipstream isa PropellerDisk ? [slipstream] : slipstream
 
     # Compressible mode
     if compressible
@@ -131,23 +138,46 @@ function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, com
     U = geometry_to_wind_axes(-velocity(fs), fs.alpha, fs.beta)
     Ω = geometry_to_wind_axes(fs.omega, fs) / refs.speed
 
-    # Solve system. If a fuselage line (`:fuse` block) is present, inject its prescribed
-    # source (thickness) field into every collocation point's boundary condition, and solve
-    # the fuselage doublet strengths together with the lifting-surface circulations.
-    if has_fuselage(ac)
-        Ups = map(el -> source_line_velocity(control_point(el), ac.fuse, U), ac)
-        Γs, AIC, boco = solve_linear_fuselage(ac, U, Ups, Ω)
+    # Solve system. Prescribed onset-flow fields are injected into every collocation point's
+    # boundary condition (per unit freestream speed, in the solved wind/PG axes): the fuselage
+    # thickness source (a `:fuse` block) and/or the propeller slipstream(s). The slipstream
+    # disks are transformed into the same axes as `ac` so they can be evaluated at its
+    # collocation points. If a fuselage line is present, the fuselage doublet strengths solve
+    # together with the lifting-surface circulations.
+    has_slip = !isnothing(slips)
+    if has_fuselage(ac) || has_slip
+        slips_ac = has_slip ? map(d -> prandtl_glauert_scale_coordinates(geometry_to_wind_axes(d, fs.alpha, fs.beta), β_pg), slips) : slips
+        Ups = map(ac) do el
+            cp = control_point(el)
+            v_fuse = has_fuselage(ac) ? source_line_velocity(cp, ac.fuse, U) : zero(cp)
+            v_slip = has_slip ? slipstream_velocity(cp, slips_ac, refs) / refs.speed : zero(cp)
+            v_fuse + v_slip
+        end
+        if has_fuselage(ac)
+            Γs, AIC, boco = solve_linear_fuselage(ac, U, Ups, Ω)
+        else
+            Γs, AIC, boco = solve_linear(ac, U, Ups, Ω)
+        end
     else
         Γs, AIC, boco = solve_linear(ac, U, Ω)
     end
 
-    return VortexLatticeSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible)
+    return VortexLatticeSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible, slips)
 end
 
 # Miscellaneous
 rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freestream, system.reference)
 
 ## THINK ABOUT USING ONLY WIND AXES FOR PG-TRANSFORMATION AND MAPPING BACK
+
+## Slipstream (blown lift)
+# Per-panel propeller-slipstream velocity at the bound-leg centres (geometry axes), added to
+# the nearfield Kutta–Joukowsky velocity for the local dynamic-pressure boost. Zero everywhere
+# when the system carries no slipstream.
+_slipstream_velocity(r, ::Nothing, refs) = zero(r)
+_slipstream_velocity(r, slips, refs) = slipstream_velocity(r, slips, refs)
+
+bound_slipstream_velocities(system :: VortexLatticeSystem) = map(el -> _slipstream_velocity(bound_leg_center(el), system.slipstream, system.reference), system.vortices)
 
 ## Velocities
 """
@@ -162,7 +192,8 @@ The reference axis system is set to the geometry axes defined in the constructio
 """
 function surface_velocities(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
-    vels = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega)
+    Vps = bound_slipstream_velocities(system)
+    vels = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, Vps)
     return _vector_to_axes.(vels, Ref(axes), α, β)
 end
 
@@ -179,7 +210,8 @@ The reference axis system is set to the geometry axes defined in the constructio
 """
 function surface_forces(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
-    forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
+    Vps = bound_slipstream_velocities(system)
+    forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
     return _vector_to_axes.(forces, Ref(axes), α, β)
 end
 
@@ -196,7 +228,8 @@ The reference axis system is set to the geometry axes defined in the constructio
 """
 function surface_moments(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
-    geo_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
+    Vps = bound_slipstream_velocities(system)
+    geo_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
     moments = surface_moments(system.vortices, geo_forces, system.reference.location)
     return _moment_to_axes.(moments, Ref(axes), α, β)
 end
@@ -215,7 +248,8 @@ The reference axis system is set to the geometry axes defined in the constructio
 function surface_dynamics(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
     # Compute surface forces and moments in geometry axes
-    surf_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density)
+    Vps = bound_slipstream_velocities(system)
+    surf_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
     # The fuselage line carries no Kutta–Joukowsky force; substitute its slender-body
     # (Munk) sectional forces so the fuselage's own lift and destabilizing pitching moment
     # enter the nearfield, centre of pressure and stability derivatives.

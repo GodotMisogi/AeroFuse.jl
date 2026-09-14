@@ -102,6 +102,42 @@ As the circulation is a scalar (hence invariant of the coordinate transformation
 ```
 Hence the solution of the resultant incompressible system in transformed coordinates provides the necessary quantities of interest for calculating the dynamics.
 
+### Blown Lift (Propeller Slipstream)
+
+A propeller immersed ahead of a lifting surface accelerates the flow over it, augmenting the lift — "blown" or powered lift. AeroFuse models this with a **prescribed actuator-disk slipstream**: a known onset-flow field $\mathbf V_s(\mathbf r)$ which, unlike a lifting surface, is *not* an unknown of the system but is injected wherever the flow is evaluated. Each `PropellerDisk` (centre $\mathbf r_0$, thrust axis $\hat{\mathbf a}$, radius $R$, thrust $T$, torque $Q$) produces a tube of accelerated, swirling flow downstream of the disk.
+
+From actuator-disk momentum theory the fully-developed axial speed inside the slipstream, and the increment $\Delta u$ over the freestream, are
+
+```math
+V_s = \sqrt{V_\infty^2 + \frac{2T}{\rho A}}, \quad \Delta u = V_s - V_\infty, \quad A = \pi R^2,
+```
+
+and mass continuity contracts the tube from the disk radius $R$ to the developed radius $R_s = R\sqrt{(V_\infty + V_s)/2V_s}$. The disk torque $Q$ spins the slipstream with a solid-body swirl $V_\theta(r) = \omega_s r$ that conserves angular momentum in the developed tube,
+
+```math
+\omega_s = \frac{2Q}{\pi \rho V_s R_s^4},
+```
+
+directed about $\hat{\mathbf a}$ by the sense of rotation $s = \pm 1$. A flap immersed in the slipstream turns the high-momentum jet (the deflected-slipstream or _jet-flap_ effect): the axial jet is rotated about a hinge axis $\hat{\mathbf h}$ by an angle $\delta(x)$ that ramps smoothly across the flap station $x_t$, where $x = (\mathbf r - \mathbf r_0)\cdot\hat{\mathbf a}$ is the axial distance from the disk,
+
+```math
+\delta(x) = \delta_{\max}\,\tfrac12\!\left[1 + \tanh\!\left(\frac{x - x_t}{\ell_t}\right)\right].
+```
+
+The turning $\delta_{\max}$ may be prescribed or derived from the trailing-edge deflection of the immersed panels (`auto_turn`). Collecting the terms, the slipstream field inside the tube is
+
+```math
+\mathbf V_s(\mathbf r) = \Delta u \, \mathbf R_{\hat{\mathbf h}}(\delta)\,\hat{\mathbf a} + s\,\omega_s r\,\hat{\boldsymbol\theta},
+```
+
+where $\mathbf R_{\hat{\mathbf h}}(\delta)$ is the rotation about $\hat{\mathbf h}$, and $\mathbf V_s = \mathbf 0$ ahead of the disk or outside the tube ($r > R_s$). Being prescribed, the field enters the analysis in two places. First it is added to the onset flow in the boundary condition, so the right-hand side becomes
+
+```math
+\mathbf A\boldsymbol\Gamma = -\left[(\mathbf V_\infty + \mathbf V_s)\cdot\hat{\mathbf n}_i\right]_{i = 1, \ldots, N},
+```
+
+and second it is added to the local velocity in the Kutta–Joukowsky force at each bound leg, $\mathbf F_i = \rho\,(\mathbf V_i + \mathbf V_s)\times\boldsymbol\ell_i\,\Gamma_i$. For a purely axial slipstream these two roles oppose: the higher axial speed lowers the effective incidence and hence the bound circulation $\Gamma$, while the higher local dynamic pressure raises the force. A turned jet adds a downward component that raises the effective incidence, producing the large powered-flap lift.
+
 ## Structures
 
 The structural analyses in AeroFuse utilize _linear finite-element methods_.

@@ -119,6 +119,9 @@ include("farfield.jl")
 # System
 include("system.jl")
 
+# Propeller slipstream (blown lift)
+include("slipstream.jl")
+
 # Derivatives
 include("stability.jl")
 

@@ -118,8 +118,7 @@ end
 
 function volume(tube :: Tube)
     r1, r2 = radii(tube)
-    V = 2π * (r1 + r2) * (r1 - r2 + length(tube))
-    return V
+    return π * (r2^2 - r1^2) * length(tube)
 end
 
 beam_weight(tube :: Tube) = tube.material.density * volume(tube)

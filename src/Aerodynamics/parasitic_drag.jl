@@ -176,7 +176,7 @@ MacroTools.@forward WingMesh.surface parasitic_drag_coefficient, form_factor
 """
     parasitic_drag_coefficient(
         wing :: WingMesh, 
-        refs :: References
+        refs :: References,
         x_tr :: Real, 
         u_es, 
     )
