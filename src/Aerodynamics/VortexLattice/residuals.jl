@@ -32,6 +32,25 @@ boundary_condition(vortices, U, Ω) = map(hs -> dot(U + Ω × control_point(hs),
 # Added velocity for slipstream model
 boundary_condition(vortices, U, Ups, Ω) = map((hs, Up) -> dot(U + Ω × control_point(hs) + Up, normal_vector(hs)), vortices, Ups)
 
+"""
+    apply_bc_rows!(AIC, boco, vortices, U, Ups, Ω)
+
+After the generic `velocity·normal` AIC and boundary-condition vector are assembled, give each
+collocation element a chance to rewrite its own row and right-hand side to impose a
+non-standard boundary condition. Dispatched per element via [`apply_bc_row!`]; standard Neumann
+elements leave their row untouched, so this is a no-op unless the system carries an element
+type that overrides it (e.g. the slender-body cylinder condition of a `FuselageLine`).
+"""
+function apply_bc_rows!(AIC, boco, vortices, U, Ups, Ω)
+    for i in eachindex(vortices)
+        apply_bc_row!(AIC, boco, i, vortices[i], vortices, U, Ups, Ω)
+    end
+    return AIC, boco
+end
+
+# Default: the standard Neumann row already assembled stands unchanged.
+apply_bc_row!(AIC, boco, i, vor_i :: AbstractVortex, vortices, U, Ups, Ω) = nothing
+
 # Matrix-free setup for nonlinear analyses
 #==========================================================================================#
 

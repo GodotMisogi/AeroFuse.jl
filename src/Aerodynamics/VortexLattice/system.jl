@@ -104,9 +104,6 @@ end
 
 Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an aircraft (must be a `ComponentArray` of `Horseshoe`s or `VortexRing`s) with `Freestream` conditions and `References` for non-dimensionalization. Options are provided for compressibility corrections via the Prandtl-Glauert transformation (`false` by default) and axis system for computing velocities and forces (`Geometry` by default).
 """
-# Whether an assembled aircraft carries a fuselage line singularity block (`:fuse`).
-has_fuselage(ac) = :fuse in propertynames(ac)
-
 function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, warn = true; slipstream = nothing)
 
     M = mach_number(refs) # For Mach number bound checks
@@ -140,27 +137,21 @@ function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, com
 
     # Solve system. Prescribed onset-flow fields are injected into every collocation point's
     # boundary condition (per unit freestream speed, in the solved wind/PG axes): the fuselage
-    # thickness source (a `:fuse` block) and/or the propeller slipstream(s). The slipstream
-    # disks are transformed into the same axes as `ac` so they can be evaluated at its
-    # collocation points. If a fuselage line is present, the fuselage doublet strengths solve
-    # together with the lifting-surface circulations.
-    has_slip = !isnothing(slips)
-    if has_fuselage(ac) || has_slip
-        slips_ac = has_slip ? map(d -> prandtl_glauert_scale_coordinates(geometry_to_wind_axes(d, fs.alpha, fs.beta), β_pg), slips) : slips
-        Ups = map(ac) do el
-            cp = control_point(el)
-            v_fuse = has_fuselage(ac) ? source_line_velocity(cp, ac.fuse, U) : zero(cp)
-            v_slip = has_slip ? slipstream_velocity(cp, slips_ac, refs) / refs.speed : zero(cp)
-            v_fuse + v_slip
-        end
-        if has_fuselage(ac)
-            Γs, AIC, boco = solve_linear_fuselage(ac, U, Ups, Ω)
-        else
-            Γs, AIC, boco = solve_linear(ac, U, Ups, Ω)
-        end
-    else
-        Γs, AIC, boco = solve_linear(ac, U, Ω)
+    # thickness source (from any `FuselageLine` elements) and/or the propeller slipstream(s). The
+    # slipstream disks are transformed into the same axes as `ac` so they can be evaluated at its
+    # collocation points. Any element with a non-standard boundary condition (e.g. a
+    # `FuselageLine`'s slender-body cylinder relation) rewrites its own row inside `solve_linear`,
+    # so a single generic solve handles every combination — the block names carry no behaviour.
+    has_slip   = !isnothing(slips)
+    slips_ac   = has_slip ? map(d -> prandtl_glauert_scale_coordinates(geometry_to_wind_axes(d, fs.alpha, fs.beta), β_pg), slips) : slips
+    fuse_elems = filter(el -> el isa FuselageLine, ac)   # prescribed thickness-source line, if any
+    Ups = map(ac) do el
+        cp = control_point(el)
+        v_fuse = isempty(fuse_elems) ? zero(cp) : source_line_velocity(cp, fuse_elems, U)
+        v_slip = has_slip ? slipstream_velocity(cp, slips_ac, refs) / refs.speed : zero(cp)
+        v_fuse + v_slip
     end
+    Γs, AIC, boco = solve_linear(ac, U, Ups, Ω)
 
     return VortexLatticeSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible, slips)
 end
@@ -250,11 +241,15 @@ function surface_dynamics(system :: VortexLatticeSystem; axes :: AbstractAxisSys
     # Compute surface forces and moments in geometry axes
     Vps = bound_slipstream_velocities(system)
     surf_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
-    # The fuselage line carries no Kutta–Joukowsky force; substitute its slender-body
-    # (Munk) sectional forces so the fuselage's own lift and destabilizing pitching moment
-    # enter the nearfield, centre of pressure and stability derivatives.
-    if has_fuselage(system.vortices)
-        surf_forces.fuse .= fuselage_munk_forces(system)
+    # Elements that carry no Kutta–Joukowsky force (source panels, slender-body lines) substitute
+    # their own nearfield force model so their lift, pressure drag and pitching moment enter the
+    # nearfield, centre of pressure and stability derivatives. The substitution is dispatched on
+    # the block's element type (via `first`), not its name, so component names stay cosmetic.
+    for key in propertynames(system.vortices)
+        block = getproperty(system.vortices, key)
+        isempty(block) && continue
+        forces = block_force_override(first(block), system, key)
+        isnothing(forces) || (getproperty(surf_forces, key) .= forces)
     end
     surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
     # Transform to target axes
@@ -262,17 +257,31 @@ function surface_dynamics(system :: VortexLatticeSystem; axes :: AbstractAxisSys
 end
 
 """
-    fuselage_munk_forces(system :: VortexLatticeSystem)
+    block_force_override(element, system :: VortexLatticeSystem, key)
 
-Slender-body (Munk) sectional force on each `FuselageLine` segment, in geometry axes. From
-apparent-mass theory the sectional normal force is ``N'(x) = -\\tfrac{1}{2}\\rho U_\\infty\\,
-d\\kappa/dx``, where ``\\kappa`` is the segment's cross-flow doublet strength (its stored,
-dimensional circulation). Integrated over a closed body this gives zero net lift but a
-destabilizing pitching moment.
+Nearfield surface force for the component block named `key`, when its elements do not obey the
+Kutta–Joukowsky force model assumed by the generic nearfield loop. Dispatched on the block's
+element type (`element`, the first element of the block) rather than the block name, so
+component names carry no behaviour. Returns `nothing` for standard lifting vortices (the
+Kutta–Joukowsky force already computed for the block stands), or the substituted per-element
+forces (geometry axes) otherwise.
 """
-function fuselage_munk_forces(system :: VortexLatticeSystem)
-    fuse = system.vortices.fuse
-    κ    = system.circulations.fuse
+block_force_override(::AbstractVortex, system :: VortexLatticeSystem, key) = nothing
+block_force_override(::FuselageLine, system :: VortexLatticeSystem, key)   = fuselage_munk_forces(system, key)
+block_force_override(::SourcePanel3D, system :: VortexLatticeSystem, key)  = body_forces(system, key)
+
+"""
+    fuselage_munk_forces(system :: VortexLatticeSystem, key = :fuse)
+
+Slender-body (Munk) sectional force on each `FuselageLine` segment in the block `key`, in
+geometry axes. From apparent-mass theory the sectional normal force is
+``N'(x) = -\\tfrac{1}{2}\\rho U_\\infty\\, d\\kappa/dx``, where ``\\kappa`` is the segment's
+cross-flow doublet strength (its stored, dimensional circulation). Integrated over a closed
+body this gives zero net lift but a destabilizing pitching moment.
+"""
+function fuselage_munk_forces(system :: VortexLatticeSystem, key = :fuse)
+    fuse = getproperty(system.vortices, key)
+    κ    = getproperty(system.circulations, key)
     ρ    = system.reference.density
     U    = system.reference.speed
     n    = length(fuse)
@@ -285,6 +294,69 @@ function fuselage_munk_forces(system :: VortexLatticeSystem)
                         (κ[i+1] - κ[i-1]) / (xs[i+1] - xs[i-1])
         Nʹ = -ρ * U / 2 * dκdx * segment_length(fuse[i])
         Nʹ * fuse[i].normal # Vertical (cross-flow) force in geometry axes
+    end
+end
+
+"""
+    body_surface_velocities(system :: VortexLatticeSystem, key = :body)
+
+Total flow velocity (freestream + all induced contributions) at the control point of every
+`SourcePanel3D` in the block `key`, in geometry axes. On a converged Neumann body the normal
+component is ≈ 0, so this is essentially the tangential surface velocity.
+"""
+function body_surface_velocities(system :: VortexLatticeSystem, key = :body)
+    U = system.reference.speed * -velocity(system.freestream)
+    Ω = system.freestream.omega
+    return map(el -> induced_velocity(control_point(el), system.vortices, system.circulations, U, Ω), getproperty(system.vortices, key))
+end
+
+"""
+    body_pressure_coefficients(system :: VortexLatticeSystem, key = :body)
+
+Incompressible pressure coefficient ``C_p = 1 - (V_t/V_\\infty)^2`` at each body source panel
+in the block `key`, from the tangential surface velocity ``V_t`` (see
+[`body_surface_velocities`]).
+"""
+function body_pressure_coefficients(system :: VortexLatticeSystem, key = :body)
+    V    = system.reference.speed
+    vels = body_surface_velocities(system, key)
+    return map(getproperty(system.vortices, key), vels) do el, vel
+        Vt² = dot(vel, vel) - dot(vel, normal_vector(el))^2
+        1 - Vt² / V^2
+    end
+end
+
+"""
+    body_forces(system :: VortexLatticeSystem, key = :body)
+
+Pressure force ``F = -C_p\\, q_\\infty A\\, n̂`` on each body source panel in the block `key`, in
+geometry axes, from the surface pressure coefficients (see [`body_pressure_coefficients`]).
+Summed over the closed body these give its lift, pressure drag and Munk pitching moment.
+"""
+function body_forces(system :: VortexLatticeSystem, key = :body)
+    q   = dynamic_pressure(system.reference)
+    Cps = body_pressure_coefficients(system, key)
+    return map((el, Cp) -> -Cp * q * el.area * normal_vector(el), getproperty(system.vortices, key), Cps)
+end
+
+"""
+    body_forces(panels, vortices, Γ, U, Ω, V, q)
+
+Pressure force ``F = -C_p\\, q\\, A\\, n̂`` (geometry axes) on each body source panel in `panels`,
+evaluated directly from a raw induced field rather than a solved `VortexLatticeSystem`: the
+total velocity at each panel control point is induced by the full vortex list `vortices` with
+strengths `Γ` in the freestream `U`/`Ω`, giving ``C_p = 1 - V_t^2/V^2`` from the tangential
+speed. `V` is the freestream speed and `q` the dynamic pressure.
+
+This is the low-level twin of [`body_forces`](@ref)`(system)`, for coupled solvers that carry
+the deformed lifting vortices and rigid body panels in one shared influence system.
+"""
+function body_forces(panels, vortices, Γ, U, Ω, V, q)
+    map(panels) do el
+        vel = induced_velocity(control_point(el), vortices, Γ, U, Ω)
+        Vt² = dot(vel, vel) - dot(vel, normal_vector(el))^2
+        Cp  = 1 - Vt² / V^2
+        -Cp * q * el.area * normal_vector(el)
     end
 end
 
@@ -350,12 +422,13 @@ Compute the **farfield** forces in **wind axes** for all components of the `Vort
     V  = system.reference.speed
     ρ  = system.reference.density
     
-    # Construct NamedTuple with ComponentArray keys for each component. The fuselage line
-    # (`:fuse`) has no trailing wake, so it contributes zero in the Trefftz plane — its
-    # farfield force is handled by slender-body integration, not here. The key is kept (with a
-    # zero force) so nearfield and farfield share the same component keys downstream.
+    # Construct NamedTuple with ComponentArray keys for each component. Elements with no
+    # trailing wake (source panels, slender-body lines) contribute zero in the Trefftz plane —
+    # their farfield force is handled separately (or is identically zero). The key is kept (with
+    # a zero force) so nearfield and farfield share the same component keys downstream. The wake
+    # test is dispatched on the block's element type (via `first`), not its name.
     return NamedTuple(
-        key => key == :fuse ? zero(SVector{3, typeof(V)}) : farfield_forces(Γs[key], hs[key], V, α, β, ρ)
+        key => (isempty(hs[key]) || !has_wake(first(hs[key]))) ? zero(SVector{3, typeof(V)}) : farfield_forces(Γs[key], hs[key], V, α, β, ρ)
         for key in keys(hs)
     )
 end

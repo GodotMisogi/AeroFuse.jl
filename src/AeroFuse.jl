@@ -233,12 +233,18 @@ include("Aerodynamics/VortexLattice/VortexLattice.jl")
 
 # Vortex types
 import .VortexLattice:
-                       Horseshoe, VortexRing, FuselageLine, velocity, bound_leg_center,
+                       AbstractElementModel, Horseshoe, VortexRing, SourcePanel,
+                       HorseshoeVortex, RingVortex, FuselageLine, SourcePanel3D, velocity,
+                       bound_leg_center,
                        bound_leg_vector, control_point, source_line_velocity,
                        bound_leg_velocity, point_source_velocity, point_doublet_velocity,
-                       segment_length
+                       segment_length, quadrilateral_source_velocity,
+                       body_surface_velocities, body_pressure_coefficients, body_forces
 
-export Horseshoe, VortexRing, FuselageLine, velocity, bound_leg_center, bound_leg_vector, control_point
+export AbstractElementModel, Horseshoe, VortexRing, SourcePanel,
+       HorseshoeVortex, RingVortex, FuselageLine, SourcePanel3D, velocity, bound_leg_center,
+       bound_leg_vector, control_point, quadrilateral_source_velocity,
+       body_surface_velocities, body_pressure_coefficients, body_forces
 
 # Reference values
 import .VortexLattice: References, kinematic_viscosity, mach_number
@@ -286,7 +292,8 @@ export print_coefficients, print_derivatives, streamlines
 ## Panel-VLM interface
 include("Aerodynamics/vlm_interface.jl")
 
-export make_horseshoes, make_vortex_rings, make_fuselage_line
+export elements, make_horseshoes, make_vortex_rings, make_fuselage_line, make_fuselage_panels,
+       make_body_panels, deflect_normals
 
 ## Generic doublet-source panel aircraft solver (needs References + FuselageLine + VLM kernels)
 include("Aerodynamics/doublet_source_panel_aircraft.jl")
@@ -324,14 +331,21 @@ import .Beams: Material, Tube, Beam, radii, area, moment_of_inertia,
                tube_stiffness_matrix,
                bending_stiffness_matrix, axial_stiffness_matrix, solve_cantilever_beam,
                elastic_modulus, shear_modulus, yield_stress, density, principal_stress,
-               torsional_stress, von_mises_stress, beam_weight, structural_loads!,
+               torsional_stress, hoop_stress, von_mises_stress, beam_weight, structural_loads!,
                structural_loads
 
 export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia,
        J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix,
        axial_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus,
-       yield_stress, density, principal_stress, torsional_stress, von_mises_stress,
+       yield_stress, density, principal_stress, torsional_stress, hoop_stress, von_mises_stress,
        beam_weight, structural_loads!, structural_loads
+
+## Fuselage structural weight
+#==========================================================================================#
+
+include("Structures/fuselage_weight.jl")
+
+export fuselage_structural_mass
 
 ## Propulsion analyses
 #==========================================================================================#

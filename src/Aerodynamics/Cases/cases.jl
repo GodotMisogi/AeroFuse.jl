@@ -3,16 +3,17 @@
 
 """
     solve_case(
-        components :: Vector{Horseshoe}, 
-        fs :: Freestream, 
+        components :: ComponentVector,
+        fs :: Freestream,
         refs :: References;
-        name = :aircraft :: Symbol, 
+        name = :aircraft :: Symbol,
         compressible = false :: Boolean,
         print = false :: Boolean,
         print_components = false :: Boolean
     )
 
-Perform a vortex lattice analysis given a vector of `Horseshoe`s, a `Freestream` condition, and `References` values.
+Perform a vortex lattice analysis given a `ComponentVector` of populated elements (e.g.
+`HorseshoeVortex`, `RingVortex`, `SourcePanel3D`), a `Freestream` condition, and `References` values.
 """
 function solve_case(components :: ComponentVector, freestream :: Freestream, refs :: References; name = :aircraft, compressible = false, print = false, print_components = false)
     system = VortexLatticeSystem(components, freestream, refs, compressible)

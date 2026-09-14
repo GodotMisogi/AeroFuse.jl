@@ -99,46 +99,30 @@ end
 #==========================================================================================#
 
 """
-    solve_linear_fuselage(vortices, U, Ups, Ω)
+    apply_bc_row!(AIC, boco, i, el :: FuselageLine, vortices, U, Ups, Ω)
 
-Solve the coupled lifting-surface + fuselage system. The generic AIC and boundary condition
-are assembled first (this gives the correct wing rows, including the fuselage doublet
-columns). The fuselage rows are then overwritten with the slender-body 2-D cross-flow
-cylinder condition `λ_i = -2π R_i² W_i`: each fuselage row equals `-2π R_i²` times its
-generic (`velocity · ẑ`) row, and the fuselage-fuselage block is set to the identity because
-slender-body cross-planes are independent.
+Rewrite the row of the assembled system belonging to a `FuselageLine` collocation station with
+the slender-body 2-D cross-flow cylinder condition `λ_i = -2π R_i² W_i`, where
+`W_i = (V∞ + Ω×r_c + source)·ẑ + (wing-induced)·ẑ` is the external cross-flow. Each non-fuselage
+(wing) column is scaled by `2π R_i²` (the wing-induced normal velocity is exactly the generic
+`velocity·ẑ` influence, moved to the left-hand side), and the fuselage–fuselage block is set to
+the identity because slender-body cross-planes are independent. `V∞ = -U` (the boundary
+condition stores `U = -freestream`).
 """
-function solve_linear_fuselage(vortices, U, Ups, Ω)
-    AIC  = influence_matrix(vortices)
-    boco = boundary_condition(vortices, U, Ups, Ω)
-
-    N        = length(vortices)
-    fuse_col = [ vortices[j] isa FuselageLine for j in 1:N ]
-
-    # Overwrite each fuselage row with the cylinder condition  λ_i = -2π R_i² W_i,
-    # where W_i = (V∞ + Ω×r_c + source)·ẑ + (wing-induced)·ẑ is the external cross-flow.
-    # Note V∞ = -U (the boundary condition stores U = -freestream), and the wing-induced
-    # normal velocity is exactly the generic influence AIC[i, wing_j], so the wing columns are
-    # scaled by +2π R_i² and moved to the left-hand side.
-    @views for i in 1:N
-        el = vortices[i]
-        el isa FuselageLine || continue
-        s  = 2π * el.radius^2
-        rc = control_point(el)
-        ni = normal_vector(el)
-        for j in 1:N
-            if fuse_col[j]
-                AIC[i, j] = ifelse(i == j, one(eltype(AIC)), zero(eltype(AIC)))
-            else
-                AIC[i, j] *= s
-            end
+function apply_bc_row!(AIC, boco, i, el :: FuselageLine, vortices, U, Ups, Ω)
+    s  = 2π * el.radius^2
+    rc = control_point(el)
+    ni = normal_vector(el)
+    N  = length(vortices)
+    @views for j in 1:N
+        if vortices[j] isa FuselageLine
+            AIC[i, j] = ifelse(i == j, one(eltype(AIC)), zero(eltype(AIC)))
+        else
+            AIC[i, j] *= s
         end
-        boco[i] = -s * dot(-U + Ω × rc + Ups[i], ni)
     end
-
-    Γs = AIC \ boco
-
-    return Γs, AIC, boco
+    boco[i] = -s * dot(-U + Ω × rc + Ups[i], ni)
+    return nothing
 end
 
 ## Nearfield force hooks (no-ops)
@@ -151,6 +135,10 @@ end
 bound_leg_center(el::FuselageLine) = el.rc
 bound_leg_vector(el::FuselageLine{T}) where T = zero(SVector{3,T})
 trailing_velocity(r, el::FuselageLine, Γ, V) = zero(SVector{3, promote_type(eltype(r), typeof(Γ))})
+
+# Slender-body line has no trailing wake; its farfield force is handled by slender-body
+# integration, not the Trefftz plane.
+has_wake(::FuselageLine) = false
 
 ## Axis transforms (wind-axis rotation and Prandtl-Glauert scaling)
 #==========================================================================================#
