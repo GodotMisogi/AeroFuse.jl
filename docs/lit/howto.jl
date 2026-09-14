@@ -322,7 +322,7 @@ print_coefficients(nf, ff, :aircraft)
 
 # ### Blown Lift (Propeller Slipstream)
 
-# To model powered/blown lift, define one or more `PropellerDisk`s and pass them to `VortexLatticeSystem` with the `slipstream` keyword. Each disk prescribes an actuator-disk slipstream (a tube of accelerated, swirling flow) from its centre, thrust `axis`, `radius`, `thrust`, and — for the swirl — `torque` and rotation `sense`. The slipstream is injected into both the boundary condition and the nearfield forces, so it changes the circulation and the local dynamic pressure over any surface it washes.
+# To model powered/blown lift, define one or more `PropellerDisk`s and pass them to `PotentialFlowSystem` with the `slipstream` keyword. Each disk prescribes an actuator-disk slipstream (a tube of accelerated, swirling flow) from its centre, thrust `axis`, `radius`, `thrust`, and — for the swirl — `torque` and rotation `sense`. The slipstream is injected into both the boundary condition and the nearfield forces, so it changes the circulation and the local dynamic pressure over any surface it washes.
 
 b = span(wing)
 prop = PropellerDisk(
@@ -334,13 +334,13 @@ prop = PropellerDisk(
     sense  = 1.0,                # Rotation sense ±1
 )
 
-blown = VortexLatticeSystem(aircraft, fs, refs; slipstream = prop)
+blown = PotentialFlowSystem(aircraft, fs, refs; slipstream = prop)
 nearfield(blown)
 
 # For a **deflected slipstream (jet flap)** — where a deflected flap turns the high-momentum jet downward to produce large powered-flap lift — use `auto_turn` to derive the jet turning from the trailing-edge deflection of the panels immersed in the tube, then pass the turned disk(s). Provide the surface panels (a chordwise×spanwise array, e.g. from `make_horseshoes`).
 
 turned = auto_turn(prop, wing_horsies, refs)
-blown_flap = VortexLatticeSystem(aircraft, fs, refs; slipstream = turned);
+blown_flap = PotentialFlowSystem(aircraft, fs, refs; slipstream = turned);
 
 #md # !!! note
 #md #     `slipstream` also accepts a vector of `PropellerDisk`s for multiple propellers. Mirror the rotation `sense` across a pair to cancel the swirl-induced rolling moment.

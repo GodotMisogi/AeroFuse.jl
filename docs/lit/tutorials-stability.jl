@@ -192,7 +192,7 @@ system = solve_case(
 
 # The freestream derivatives can be obtained by passing the resultant system as follows:
 dvs = freestream_derivatives(
-    system,                     # VortexLatticeSystem
+    system,                     # PotentialFlowSystem
     axes             = Wind(),  # Specify axis system for nearfield forces (wind by default)
     ## print            = true,    # Prints the results for only the aircraft
     ## print_components = true,    # Prints the results for all components
