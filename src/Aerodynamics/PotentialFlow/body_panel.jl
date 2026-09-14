@@ -15,7 +15,7 @@
     SourcePanel(; min_area = 1e-8)
 
 Element-model specification selecting constant-strength source-panel (Hess–Smith non-lifting
-body) discretization. Pass it to [`elements`](@ref) to build `SourcePanel3D` elements from a
+body) discretization. Pass it to [`elements`](@ref AeroFuse.elements) to build `SourcePanel3D` elements from a
 `Panel3D` skin mesh or a `HyperEllipseFuselage`, e.g. `elements(fuse, SourcePanel())`. Panels
 with area below `min_area` (the collapsed nose/tail rings) are dropped.
 """
@@ -29,7 +29,7 @@ SourcePanel(; min_area = 1e-8) = SourcePanel(min_area)
     SourcePanel3D(p1, p2, p3, p4, rc, normal, area, core)
 
 A constant-strength source panel modelling one quadrilateral of a fuselage skin, coupled into
-a `VortexLatticeSystem`. `p1…p4` are the panel corners (wound so `cross(p3-p1, p4-p2)` points
+a `PotentialFlowSystem`. `p1…p4` are the panel corners (wound so `cross(p3-p1, p4-p2)` points
 outward), `rc` is the centroid (control point), `normal` the **unit outward** normal, `area`
 the panel area, and `core` a finite-core size (unused, kept for interface symmetry). The
 unknown solved in the AIC is the panel source strength.
@@ -37,7 +37,7 @@ unknown solved in the AIC is the panel source strength.
 Assemble the returned vector into the aircraft as a `:body` block, e.g.
 `ComponentVector(wing = make_horseshoes(mesh), body = make_body_panels(fuse))`.
 """
-struct SourcePanel3D{T} <: AbstractVortex
+struct SourcePanel3D{T} <: AbstractPotentialFlowElement
     p1     :: SVector{3,T}
     p2     :: SVector{3,T}
     p3     :: SVector{3,T}
@@ -55,7 +55,7 @@ end
 
 Base.length(::SourcePanel3D) = 1
 
-# `control_point`/`normal_vector` are inherited from the AbstractVortex accessors (fields rc/normal).
+# `control_point`/`normal_vector` are inherited from the AbstractPotentialFlowElement accessors (fields rc/normal).
 
 ## Constant-source quadrilateral velocity kernel (Hess–Smith)
 #==========================================================================================#

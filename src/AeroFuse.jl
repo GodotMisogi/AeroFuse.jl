@@ -227,12 +227,16 @@ export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix
        constant_quadrilateral_doublet_velocity,
        constant_quadrilateral_doublet_velocity_farfield
 
-## Vortex lattice
+## Coupled potential flow
 
-include("Aerodynamics/VortexLattice/VortexLattice.jl")
+include("Aerodynamics/PotentialFlow/PotentialFlow.jl")
 
-# Vortex types
-import .VortexLattice:
+const VortexLattice = PotentialFlow
+const VortexLatticeSystem = PotentialFlow.VortexLatticeSystem
+
+# Element types
+import .PotentialFlow:
+                       AbstractPotentialFlowElement, AbstractVortex,
                        AbstractElementModel, Horseshoe, VortexRing, SourcePanel,
                        HorseshoeVortex, RingVortex, FuselageLine, SourcePanel3D, velocity,
                        bound_leg_center,
@@ -241,18 +245,19 @@ import .VortexLattice:
                        segment_length, quadrilateral_source_velocity,
                        body_surface_velocities, body_pressure_coefficients, body_forces
 
-export AbstractElementModel, Horseshoe, VortexRing, SourcePanel,
+export AbstractPotentialFlowElement, AbstractVortex, VortexLatticeSystem,
+       AbstractElementModel, Horseshoe, VortexRing, SourcePanel,
        HorseshoeVortex, RingVortex, FuselageLine, SourcePanel3D, velocity, bound_leg_center,
        bound_leg_vector, control_point, quadrilateral_source_velocity,
        body_surface_velocities, body_pressure_coefficients, body_forces
 
 # Reference values
-import .VortexLattice: References, kinematic_viscosity, mach_number
+import .PotentialFlow: References, kinematic_viscosity, mach_number
 
 export References, kinematic_viscosity, mach_number
 
 # Reference frames and traits
-import .VortexLattice: AbstractAxisSystem, Stability, Wind, Body, Geometry,
+import .PotentialFlow: AbstractAxisSystem, Stability, Wind, Body, Geometry,
                        geometry_to_wind_axes, geometry_to_stability_axes,
                        stability_to_geometry_axes,
                        wind_to_geometry_axes, wind_to_body_axes,
@@ -264,7 +269,7 @@ export AbstractAxisSystem, Stability, Wind, Body, Geometry, geometry_to_wind_axe
        wind_to_body_axes
 
 # System methods
-import .VortexLattice: AbstractPotentialFlowSystem, VortexLatticeSystem, surface_velocity,
+import .PotentialFlow: AbstractPotentialFlowSystem, PotentialFlowSystem, surface_velocity,
                        surface_forces, surface_moments, nearfield_drag, rate_coefficient,
                        nearfield, farfield,
                        farfield_forces, surface_velocities, surface_forces,
@@ -272,7 +277,7 @@ import .VortexLattice: AbstractPotentialFlowSystem, VortexLatticeSystem, surface
                        surface_coefficients, nearfield_coefficients, farfield_coefficients,
                        center_of_pressure, PropellerDisk, slipstream_velocity, auto_turn
 
-export AbstractPotentialFlowSystem, VortexLatticeSystem, surface_velocity, surface_forces,
+export AbstractPotentialFlowSystem, PotentialFlowSystem, surface_velocity, surface_forces,
        surface_moments, nearfield_drag, rate_coefficient, nearfield, farfield,
        farfield_forces,
        surface_velocities, surface_forces, surface_dynamics, surface_coefficients,
@@ -280,17 +285,17 @@ export AbstractPotentialFlowSystem, VortexLatticeSystem, surface_velocity, surfa
        PropellerDisk, slipstream_velocity, auto_turn
 
 # Derivatives
-import .VortexLattice: freestream_derivatives
+import .PotentialFlow: freestream_derivatives
 
 export freestream_derivatives
 
 # Post-prrocessing
-import .VortexLattice: print_coefficients, print_derivatives, streamlines
+import .PotentialFlow: print_coefficients, print_derivatives, streamlines
 
 export print_coefficients, print_derivatives, streamlines
 
 ## Panel-VLM interface
-include("Aerodynamics/vlm_interface.jl")
+include("Aerodynamics/potential_flow_interface.jl")
 
 export elements, make_horseshoes, make_vortex_rings, make_fuselage_line, make_fuselage_panels,
        make_body_panels, deflect_normals

@@ -30,7 +30,7 @@ function make_case(α, wing_mesh, refs)
     fs = Freestream(alpha=α)  # Design variable: Angle of attack
 
     # Solve system
-    return VortexLatticeSystem(aircraft, fs, refs)
+    return PotentialFlowSystem(aircraft, fs, refs)
 end
 
 # Aerodynamic forces

@@ -4,7 +4,7 @@
 # Assembles and solves an aircraft made of several lifting/closed surfaces (matrices of
 # `Panel3D`) and, optionally, a slender-body fuselage line (`make_fuselage_line`), in a
 # single coupled linear system — mirroring the `ComponentVector`-of-components style of the
-# `VortexLatticeSystem`. Each surface contributes constant-strength doublet panels with a
+# `PotentialFlowSystem`. Each surface contributes constant-strength doublet panels with a
 # Morino/Kutta wake; the fuselage contributes a prescribed source (thickness) field plus
 # unknown cross-flow doublets closed by the slender-body 2-D cylinder condition.
 #

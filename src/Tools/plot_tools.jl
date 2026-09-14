@@ -29,7 +29,7 @@ Get the planform coordinates of an `AbstractWing` for plotting.
 """
 plot_planform(wing::Wing) = plot_planform(coordinates(wing))
 
-plot_streamlines(system::VortexLatticeSystem, points, length, num_steps) =
+plot_streamlines(system::PotentialFlowSystem, points, length, num_steps) =
     combinedimsview(streamlines(system, points, length, num_steps), (1, 3))
 
 """
@@ -241,7 +241,7 @@ end
 end
 
 @recipe function streamline_plot(
-    system::VortexLatticeSystem,
+    system::PotentialFlowSystem,
     seed,
     distance,
     num_stream_points = 100,
@@ -259,7 +259,7 @@ end
 end
 
 @recipe function streamline_plot(
-    system::VortexLatticeSystem,
+    system::PotentialFlowSystem,
     wing::AbstractWing;
     dist = 5 * mean_aerodynamic_chord(wing),
     num = 100,

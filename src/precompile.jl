@@ -32,6 +32,6 @@ refs = References(
 aircraft = ComponentArray(wing = make_horseshoes(WingMesh(wing, [20], 5, span_spacing = [Sine(1); Sine()])))
 
 # Evaluate stability case
-system = VortexLatticeSystem(aircraft, fs, refs, false)
+system = PotentialFlowSystem(aircraft, fs, refs, false)
 dv_data = freestream_derivatives(system)
 dv_data = freestream_derivatives(system; axes = Wind())

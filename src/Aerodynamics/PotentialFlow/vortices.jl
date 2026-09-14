@@ -27,7 +27,7 @@ total_horseshoe_velocity(a, b, Γ, u, ε) = bound_leg_velocity(a, b, Γ, ε) + t
 ## Arrays of vortex lines
 #==========================================================================================#
 
-abstract type AbstractVortex end
+
 
 ## Element models (solver-facing specifications)
 #==========================================================================================#
@@ -35,10 +35,10 @@ abstract type AbstractVortex end
 """
     AbstractElementModel
 
-Supertype for the element-model specifications passed to [`elements`](@ref) to select the
+Supertype for the element-model specifications passed to [`elements`](@ref AeroFuse.elements) to select the
 singularity discretization for a component (e.g. [`Horseshoe`](@ref), [`VortexRing`](@ref),
 [`SourcePanel`](@ref)). Each model is a lightweight, option-carrying tag; the populated
-`AbstractVortex` elements it produces (`HorseshoeVortex`, `RingVortex`, `SourcePanel3D`) are
+`AbstractPotentialFlowElement` elements it produces (`HorseshoeVortex`, `RingVortex`, `SourcePanel3D`) are
 what the solver assembles into the influence system.
 """
 abstract type AbstractElementModel end
@@ -50,7 +50,7 @@ abstract type AbstractElementModel end
     Horseshoe(; core_size = 0.)
 
 Element-model specification selecting horseshoe-vortex discretization. Pass it to
-[`elements`](@ref) to build `HorseshoeVortex` elements from a mesh, e.g.
+[`elements`](@ref AeroFuse.elements) to build `HorseshoeVortex` elements from a mesh, e.g.
 `elements(wing_mesh, Horseshoe())`. `core_size` sets the finite vortex-core radius.
 """
 struct Horseshoe <: AbstractElementModel
@@ -66,7 +66,7 @@ Define a horseshoe vortex with a start and endpoints ``r₁, r₂`` for the boun
 
 The finite core setup is not implemented for now.
 """
-struct HorseshoeVortex{T} <: AbstractVortex
+struct HorseshoeVortex{T} <: AbstractPotentialFlowElement
     r1::SVector{3,T}
     r2::SVector{3,T}
     rc::SVector{3,T}
@@ -84,17 +84,18 @@ function HorseshoeVortex(r1, r2, rc, n, c)
     HorseshoeVortex{T}(r1, r2, rc, n, c)
 end
 
-control_point(hs::AbstractVortex) = hs.rc
-normal_vector(hs::AbstractVortex) = hs.normal
+control_point(hs::AbstractPotentialFlowElement) = hs.rc
+normal_vector(hs::AbstractPotentialFlowElement) = hs.normal
 
 """
-    has_wake(:: AbstractVortex)
+    has_wake(:: AbstractPotentialFlowElement)
 
 Whether an element sheds a trailing wake and therefore contributes to the Trefftz-plane
-farfield (induced-drag) integration. Lifting vortices shed a wake (`true`, the default);
-non-lifting elements such as source panels and slender-body lines do not.
+farfield (induced-drag) integration. Lifting vortices explicitly opt into a wake; the default is `false`.
+Non-lifting elements such as source panels and slender-body lines do not shed wakes.
 """
-has_wake(::AbstractVortex) = true
+has_wake(::AbstractPotentialFlowElement) = false
+has_wake(::HorseshoeVortex) = true
 
 r1(r, hs::HorseshoeVortex) = r - hs.r1
 r2(r, hs::HorseshoeVortex) = r - hs.r2
@@ -155,7 +156,7 @@ trailing_velocity(r, hs::HorseshoeVortex, Γ, V) = trailing_legs_velocities(r - 
     VortexRing(; core_size = 0., trailing = :auto)
 
 Element-model specification selecting vortex-ring (lattice) discretization. Pass it to
-[`elements`](@ref) to build `RingVortex` elements from a mesh, e.g.
+[`elements`](@ref AeroFuse.elements) to build `RingVortex` elements from a mesh, e.g.
 `elements(wing_mesh, VortexRing())`. `core_size` sets the finite vortex-core radius;
 `trailing` controls trailing-edge wake identification (`:auto` detects the trailing row of
 the mesh, matching the historical behaviour).
@@ -180,7 +181,7 @@ left leg       right leg
     r2 —back leg-→ r3
 ```
 """
-struct RingVortex{T} <: AbstractVortex
+struct RingVortex{T} <: AbstractPotentialFlowElement
     r1::SVector{3,T}
     r2::SVector{3,T}
     r3::SVector{3,T}
@@ -250,3 +251,5 @@ bound_leg_vector(ring::RingVortex) = ring.r4 - ring.r1
 
 r1(ring::RingVortex) = ring.r1
 r2(ring::RingVortex) = ring.r4
+
+has_wake(::RingVortex) = true

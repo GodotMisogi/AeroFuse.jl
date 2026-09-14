@@ -11,7 +11,7 @@ abstract type AbstractReferences end
         chord, location
     )
 
-Define reference values with speed ``V``, density ``ρ``, dynamic viscosity ``μ``, area ``S``, span ``b``, chord ``c``, location ``r`` for a vortex lattice analysis. A constructor with named arguments is provided for convenience:
+Define reference values with speed ``V``, density ``ρ``, dynamic viscosity ``μ``, area ``S``, span ``b``, chord ``c``, location ``r`` for a potential-flow analysis. A constructor with named arguments is provided for convenience:
 
 # Arguments
 - `speed       :: Real         = 1.`: Speed (m/s)
@@ -62,30 +62,32 @@ rate_coefficient(fs :: Freestream, refs :: References) = rate_coefficient(fs.ome
 abstract type AbstractPotentialFlowSystem end
 
 """
-    VortexLatticeSystem
+    PotentialFlowSystem
 
-A system consisting of the relevant variables in a vortex lattice analysis for post-processing.
+A coupled velocity-based potential-flow solution for aerodynamic post-processing.
 
 # Arguments
 The accessible fields are:
-- `vortices`:  The array of vortices, presently of `AbstractVortex` types.
-- `circulations`: The circulation strengths of the vortices obtained by solving the linear system.
+- `elements`: Named component arrays of populated `AbstractPotentialFlowElement`s.
+- `strengths`: Solved strengths with the same component layout as `elements`.
+  Horseshoes and rings store circulation, source panels store source density,
+  and fuselage lines store cross-flow doublet-line strength.
 - `influence_matrix`: The influence matrix of the linear system.
 - `boundary_vector`: The boundary condition corresponding to the right-hand-side of the linear system.
 - `freestream :: Freestream`: The freestream conditions.
 - `reference :: References`: The reference values.
 - `slipstream`: The prescribed propeller slipstream(s) for blown-lift analyses (`nothing` if absent).
 """
-struct VortexLatticeSystem{
-    M <: DenseArray{<: AbstractVortex},
+struct PotentialFlowSystem{
+    M <: DenseArray{<: AbstractPotentialFlowElement},
     N,
     R,
     S,
     P,
     Q,
     W} <: AbstractPotentialFlowSystem
-    vortices          :: M
-    circulations      :: N
+    elements          :: M
+    strengths         :: N
     influence_matrix  :: R
     boundary_vector   :: S
     freestream        :: P
@@ -94,17 +96,66 @@ struct VortexLatticeSystem{
     slipstream        :: W
 end
 
+# Property aliases preserve existing source-level access without changing field layout.
+@inline function Base.getproperty(system::PotentialFlowSystem, name::Symbol)
+    field = name === :vortices ? :elements :
+            name === :circulations ? :strengths : name
+    return getfield(system, field)
+end
+
+Base.propertynames(system::PotentialFlowSystem, private::Bool = false) =
+    (fieldnames(typeof(system))..., :vortices, :circulations)
+
+function _validate_fuselage_stations(block, key)
+    length(block) >= 2 || throw(ArgumentError(
+        "Fuselage component $key requires at least two axial stations."))
+    xs = map(el -> control_point(el)[1], block)
+    all(isfinite, xs) && all(>(0), diff(vec(xs))) || throw(ArgumentError(
+        "Fuselage component $key requires finite, strictly increasing axial stations."))
+    return nothing
+end
+
+function _validate_components(aircraft)
+    aircraft isa ComponentArray || throw(ArgumentError(
+        "Aircraft must be a ComponentArray of named potential-flow element arrays."))
+    isempty(aircraft) && throw(ArgumentError("Aircraft must contain at least one element."))
+    for key in keys(aircraft)
+        block = aircraft[key]
+        block isa AbstractArray || throw(ArgumentError(
+            "Component $key must be an array of populated potential-flow elements."))
+        isempty(block) && continue
+        element = first(block)
+        element isa AbstractPotentialFlowElement || throw(ArgumentError(
+            "Component $key must contain populated potential-flow elements, not model tags."))
+        all(el -> typeof(el) === typeof(element), block) || throw(ArgumentError(
+            "Component $key must contain one concrete element type; split mixed types into separate components."))
+        element isa FuselageLine && _validate_fuselage_stations(block, key)
+    end
+    return nothing
+end
+
 """
-    VortexLatticeSystem(
+    PotentialFlowSystem(
         aircraft, 
         fs :: Freestream, 
         refs :: References, 
         compressible = false, 
     )
 
-Construct a `VortexLatticeSystem` for analyzing inviscid aerodynamics of an aircraft (must be a `ComponentArray` of `Horseshoe`s or `VortexRing`s) with `Freestream` conditions and `References` for non-dimensionalization. Options are provided for compressibility corrections via the Prandtl-Glauert transformation (`false` by default) and axis system for computing velocities and forces (`Geometry` by default).
+Solve inviscid aerodynamics for named `ComponentArray` components of populated
+potential-flow elements, such as `HorseshoeVortex`, `RingVortex`, `SourcePanel3D`,
+and `FuselageLine`. Each component contains one concrete element type. Fuselage
+lines require at least two strictly increasing axial stations.
+
+`compressible` enables the subsonic Prandtl–Glauert transformation; `warn`
+controls regime warnings. `slipstream` supplies prescribed propeller disks.
+Post-processing axes are chosen on the evaluation methods, not the constructor.
+The current solver applies the same speed/PG strength scaling to all families;
+compressible non-vortex strength recovery has not been independently validated.
 """
-function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, warn = true; slipstream = nothing)
+function PotentialFlowSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, warn = true; slipstream = nothing)
+
+    _validate_components(aircraft)
 
     M = mach_number(refs) # For Mach number bound checks
 
@@ -153,11 +204,11 @@ function VortexLatticeSystem(aircraft, fs :: Freestream, refs :: References, com
     end
     Γs, AIC, boco = solve_linear(ac, U, Ups, Ω)
 
-    return VortexLatticeSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible, slips)
+    return PotentialFlowSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible, slips)
 end
 
 # Miscellaneous
-rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freestream, system.reference)
+rate_coefficient(system :: PotentialFlowSystem) = rate_coefficient(system.freestream, system.reference)
 
 ## THINK ABOUT USING ONLY WIND AXES FOR PG-TRANSFORMATION AND MAPPING BACK
 
@@ -168,96 +219,102 @@ rate_coefficient(system :: VortexLatticeSystem) = rate_coefficient(system.freest
 _slipstream_velocity(r, ::Nothing, refs) = zero(r)
 _slipstream_velocity(r, slips, refs) = slipstream_velocity(r, slips, refs)
 
-bound_slipstream_velocities(system :: VortexLatticeSystem) = map(el -> _slipstream_velocity(bound_leg_center(el), system.slipstream, system.reference), system.vortices)
+bound_slipstream_velocities(system :: PotentialFlowSystem) = map(el -> _slipstream_velocity(bound_leg_center(el), system.slipstream, system.reference), system.elements)
 
 ## Velocities
 """
     surface_velocities(
-        system :: VortexLatticeSystem; 
+        system :: PotentialFlowSystem; 
         axes :: AbstractAxisSystem = Geometry()
     )
 
-Compute the induced velocities for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
+Evaluate freestream, rotation, trailing-induced flow, and propeller slipstream
+at each element's bound-leg centre (control point for non-vortex adapters).
+Bound-vortex induction and prescribed fuselage thickness sources are excluded.
+Use `body_surface_velocities` for source-panel pressure evaluation.
 
-The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `PotentialFlowSystem` by default.
 """
-function surface_velocities(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
+function surface_velocities(system :: PotentialFlowSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
     Vps = bound_slipstream_velocities(system)
-    vels = surface_velocities(system.vortices, system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, Vps)
+    vels = surface_velocities(system.elements, system.elements, system.strengths, system.reference.speed * -velocity(system.freestream), system.freestream.omega, Vps)
     return _vector_to_axes.(vels, Ref(axes), α, β)
 end
 
 ## Forces
 """
     surface_forces(
-        system :: VortexLatticeSystem; 
+        system :: PotentialFlowSystem; 
         axes :: AbstractAxisSystem = Geometry()
     )
 
-Compute the forces for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
+Compute the forces for all components of the `PotentialFlowSystem` in a specified reference axis system as a named argument.
 
-The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `PotentialFlowSystem` by default.
 """
-function surface_forces(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
+function surface_forces(system :: PotentialFlowSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
-    Vps = bound_slipstream_velocities(system)
-    forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
+    forces = _geometry_surface_forces(system)
     return _vector_to_axes.(forces, Ref(axes), α, β)
 end
 
 ## Moments
 """
     surface_moments(
-        system :: VortexLatticeSystem; 
+        system :: PotentialFlowSystem; 
         axes :: AbstractAxisSystem = Geometry()
     )
 
-Compute the moments for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
+Compute the moments for all components of the `PotentialFlowSystem` in a specified reference axis system as a named argument.
 
-The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `PotentialFlowSystem` by default.
 """
-function surface_moments(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
+function surface_moments(system :: PotentialFlowSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
-    Vps = bound_slipstream_velocities(system)
-    geo_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
-    moments = surface_moments(system.vortices, geo_forces, system.reference.location)
+    geo_forces = _geometry_surface_forces(system)
+    moments = surface_moments(system.elements, geo_forces, system.reference.location)
     return _moment_to_axes.(moments, Ref(axes), α, β)
 end
 
 ## Dynamics
 """
     surface_dynamics(
-        system :: VortexLatticeSystem; 
+        system :: PotentialFlowSystem; 
         axes :: AbstractAxisSystem = Geometry()
     )
 
-Compute the forces and moments for all components of the `VortexLatticeSystem` in a specified reference axis system as a named argument.
+Compute the forces and moments for all components of the `PotentialFlowSystem` in a specified reference axis system as a named argument.
 
-The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `PotentialFlowSystem` by default.
 """
-function surface_dynamics(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry())
+function surface_dynamics(system :: PotentialFlowSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
-    # Compute surface forces and moments in geometry axes
-    Vps = bound_slipstream_velocities(system)
-    surf_forces = surface_forces(system.vortices, system.circulations, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
-    # Elements that carry no Kutta–Joukowsky force (source panels, slender-body lines) substitute
-    # their own nearfield force model so their lift, pressure drag and pitching moment enter the
-    # nearfield, centre of pressure and stability derivatives. The substitution is dispatched on
-    # the block's element type (via `first`), not its name, so component names stay cosmetic.
-    for key in propertynames(system.vortices)
-        block = getproperty(system.vortices, key)
-        isempty(block) && continue
-        forces = block_force_override(first(block), system, key)
-        isnothing(forces) || (getproperty(surf_forces, key) .= forces)
-    end
-    surf_moments = surface_moments(system.vortices, surf_forces, system.reference.location)
+    surf_forces = _geometry_surface_forces(system)
+    surf_moments = surface_moments(system.elements, surf_forces, system.reference.location)
     # Transform to target axes
     return _vector_to_axes.(surf_forces, Ref(axes), α, β), _moment_to_axes.(surf_moments, Ref(axes), α, β)
 end
 
+function _geometry_surface_forces(system::PotentialFlowSystem)
+    # Compute surface forces and moments in geometry axes
+    Vps = bound_slipstream_velocities(system)
+    surf_forces = surface_forces(system.elements, system.strengths, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
+    # Elements that carry no Kutta–Joukowsky force (source panels, slender-body lines) substitute
+    # their own nearfield force model so their lift, pressure drag and pitching moment enter the
+    # nearfield, centre of pressure and stability derivatives. The substitution is dispatched on
+    # the block's element type (via `first`), not its name, so component names stay cosmetic.
+    for key in propertynames(system.elements)
+        block = getproperty(system.elements, key)
+        isempty(block) && continue
+        forces = block_force_override(first(block), system, key)
+        isnothing(forces) || (getproperty(surf_forces, key) .= forces)
+    end
+    return surf_forces
+end
+
 """
-    block_force_override(element, system :: VortexLatticeSystem, key)
+    block_force_override(element, system :: PotentialFlowSystem, key)
 
 Nearfield surface force for the component block named `key`, when its elements do not obey the
 Kutta–Joukowsky force model assumed by the generic nearfield loop. Dispatched on the block's
@@ -266,22 +323,23 @@ component names carry no behaviour. Returns `nothing` for standard lifting vorti
 Kutta–Joukowsky force already computed for the block stands), or the substituted per-element
 forces (geometry axes) otherwise.
 """
-block_force_override(::AbstractVortex, system :: VortexLatticeSystem, key) = nothing
-block_force_override(::FuselageLine, system :: VortexLatticeSystem, key)   = fuselage_munk_forces(system, key)
-block_force_override(::SourcePanel3D, system :: VortexLatticeSystem, key)  = body_forces(system, key)
+block_force_override(::AbstractPotentialFlowElement, system :: PotentialFlowSystem, key) = nothing
+block_force_override(::FuselageLine, system :: PotentialFlowSystem, key)   = fuselage_munk_forces(system, key)
+block_force_override(::SourcePanel3D, system :: PotentialFlowSystem, key)  = body_forces(system, key)
 
 """
-    fuselage_munk_forces(system :: VortexLatticeSystem, key = :fuse)
+    fuselage_munk_forces(system :: PotentialFlowSystem, key = :fuse)
 
 Slender-body (Munk) sectional force on each `FuselageLine` segment in the block `key`, in
 geometry axes. From apparent-mass theory the sectional normal force is
 ``N'(x) = -\\tfrac{1}{2}\\rho U_\\infty\\, d\\kappa/dx``, where ``\\kappa`` is the segment's
-cross-flow doublet strength (its stored, dimensional circulation). Integrated over a closed
+stored dimensional cross-flow doublet-line strength. Integrated over a closed
 body this gives zero net lift but a destabilizing pitching moment.
 """
-function fuselage_munk_forces(system :: VortexLatticeSystem, key = :fuse)
-    fuse = getproperty(system.vortices, key)
-    κ    = getproperty(system.circulations, key)
+function fuselage_munk_forces(system :: PotentialFlowSystem, key = :fuse)
+    fuse = getproperty(system.elements, key)
+    _validate_fuselage_stations(fuse, key)
+    κ    = getproperty(system.strengths, key)
     ρ    = system.reference.density
     U    = system.reference.speed
     n    = length(fuse)
@@ -298,62 +356,63 @@ function fuselage_munk_forces(system :: VortexLatticeSystem, key = :fuse)
 end
 
 """
-    body_surface_velocities(system :: VortexLatticeSystem, key = :body)
+    body_surface_velocities(system :: PotentialFlowSystem, key = :body)
 
-Total flow velocity (freestream + all induced contributions) at the control point of every
-`SourcePanel3D` in the block `key`, in geometry axes. On a converged Neumann body the normal
+Flow velocity from freestream, rotation, and solved element strengths at the control point of every
+`SourcePanel3D` in the block `key`, in geometry axes. Prescribed fuselage thickness sources and
+propeller slipstreams are excluded. On a converged Neumann body the normal
 component is ≈ 0, so this is essentially the tangential surface velocity.
 """
-function body_surface_velocities(system :: VortexLatticeSystem, key = :body)
+function body_surface_velocities(system :: PotentialFlowSystem, key = :body)
     U = system.reference.speed * -velocity(system.freestream)
     Ω = system.freestream.omega
-    return map(el -> induced_velocity(control_point(el), system.vortices, system.circulations, U, Ω), getproperty(system.vortices, key))
+    return map(el -> induced_velocity(control_point(el), system.elements, system.strengths, U, Ω), getproperty(system.elements, key))
 end
 
 """
-    body_pressure_coefficients(system :: VortexLatticeSystem, key = :body)
+    body_pressure_coefficients(system :: PotentialFlowSystem, key = :body)
 
 Incompressible pressure coefficient ``C_p = 1 - (V_t/V_\\infty)^2`` at each body source panel
 in the block `key`, from the tangential surface velocity ``V_t`` (see
 [`body_surface_velocities`]).
 """
-function body_pressure_coefficients(system :: VortexLatticeSystem, key = :body)
+function body_pressure_coefficients(system :: PotentialFlowSystem, key = :body)
     V    = system.reference.speed
     vels = body_surface_velocities(system, key)
-    return map(getproperty(system.vortices, key), vels) do el, vel
+    return map(getproperty(system.elements, key), vels) do el, vel
         Vt² = dot(vel, vel) - dot(vel, normal_vector(el))^2
         1 - Vt² / V^2
     end
 end
 
 """
-    body_forces(system :: VortexLatticeSystem, key = :body)
+    body_forces(system :: PotentialFlowSystem, key = :body)
 
 Pressure force ``F = -C_p\\, q_\\infty A\\, n̂`` on each body source panel in the block `key`, in
 geometry axes, from the surface pressure coefficients (see [`body_pressure_coefficients`]).
 Summed over the closed body these give its lift, pressure drag and Munk pitching moment.
 """
-function body_forces(system :: VortexLatticeSystem, key = :body)
+function body_forces(system :: PotentialFlowSystem, key = :body)
     q   = dynamic_pressure(system.reference)
     Cps = body_pressure_coefficients(system, key)
-    return map((el, Cp) -> -Cp * q * el.area * normal_vector(el), getproperty(system.vortices, key), Cps)
+    return map((el, Cp) -> -Cp * q * el.area * normal_vector(el), getproperty(system.elements, key), Cps)
 end
 
 """
-    body_forces(panels, vortices, Γ, U, Ω, V, q)
+    body_forces(panels, elements, strengths, U, Ω, V, q)
 
 Pressure force ``F = -C_p\\, q\\, A\\, n̂`` (geometry axes) on each body source panel in `panels`,
-evaluated directly from a raw induced field rather than a solved `VortexLatticeSystem`: the
-total velocity at each panel control point is induced by the full vortex list `vortices` with
-strengths `Γ` in the freestream `U`/`Ω`, giving ``C_p = 1 - V_t^2/V^2`` from the tangential
+evaluated directly from a raw induced field rather than a solved `PotentialFlowSystem`: the
+total velocity at each panel control point is induced by the full element list `elements` with
+strengths `strengths` in the freestream `U`/`Ω`, giving ``C_p = 1 - V_t^2/V^2`` from the tangential
 speed. `V` is the freestream speed and `q` the dynamic pressure.
 
 This is the low-level twin of [`body_forces`](@ref)`(system)`, for coupled solvers that carry
 the deformed lifting vortices and rigid body panels in one shared influence system.
 """
-function body_forces(panels, vortices, Γ, U, Ω, V, q)
+function body_forces(panels, elements, strengths, U, Ω, V, q)
     map(panels) do el
-        vel = induced_velocity(control_point(el), vortices, Γ, U, Ω)
+        vel = induced_velocity(control_point(el), elements, strengths, U, Ω)
         Vt² = dot(vel, vel) - dot(vel, normal_vector(el))^2
         Cp  = 1 - Vt² / V^2
         -Cp * q * el.area * normal_vector(el)
@@ -362,15 +421,15 @@ end
 
 """
     surface_coefficients(
-        system :: VortexLatticeSystem; 
+        system :: PotentialFlowSystem; 
         axes :: AbstractAxisSystem = Geometry()
     )
 
-Compute the force and moment coefficients of the surfaces over all components in a given `VortexLatticeSystem`, in a specified reference axis system as a named argument.
+Compute the force and moment coefficients of the surfaces over all components in a given `PotentialFlowSystem`, in a specified reference axis system as a named argument.
 
-The reference axis system is set to the geometry axes defined in the construction of the `VortexLatticeSystem` by default.
+The reference axis system is set to the geometry axes defined in the construction of the `PotentialFlowSystem` by default.
 """
-function surface_coefficients(system :: VortexLatticeSystem; axes :: AbstractAxisSystem = Geometry()) 
+function surface_coefficients(system :: PotentialFlowSystem; axes :: AbstractAxisSystem = Geometry()) 
     # Compute surface forces in whichever axes
     forces, moments = surface_dynamics(system; axes)
     refs = system.reference
@@ -386,11 +445,11 @@ const NF_COEFFS = @SLArray (6) (:CX,:CY,:CZ,:Cl,:Cm,:Cn)
 const FF_COEFFS = @SLArray (3) (:CDi,:CY,:CL)
 
 """
-    nearfield_coefficients(system :: VortexLatticeSystem)
+    nearfield_coefficients(system :: PotentialFlowSystem)
 
-Compute the nearfield force and moment coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by default.
+Compute the nearfield force and moment coefficients for all components of the `PotentialFlowSystem`. These are in **wind axes** by default.
 """
-@views function nearfield_coefficients(system :: VortexLatticeSystem)
+@views function nearfield_coefficients(system :: PotentialFlowSystem)
     # Compute surface force and moment coefficients in wind axes
     CFs, CMs = surface_coefficients(system; axes = Wind())
  
@@ -399,24 +458,24 @@ Compute the nearfield force and moment coefficients for all components of the `V
 end
 
 """
-    nearfield(system :: VortexLatticeSystem)
+    nearfield(system :: PotentialFlowSystem)
 
-Compute the **total** nearfield force and moment coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by default.
+Compute the **total** nearfield force and moment coefficients for all components of the `PotentialFlowSystem`. These are in **wind axes** by default.
 """
-function nearfield(system :: VortexLatticeSystem)
+function nearfield(system :: PotentialFlowSystem)
     CFs, CMs = surface_coefficients(system; axes = Wind())
     return NF_COEFFS(vcat(sum(CFs), sum(CMs)))
 end
 
 
 """
-    farfield_forces(system :: VortexLatticeSystem)
+    farfield_forces(system :: PotentialFlowSystem)
 
-Compute the **farfield** forces in **wind axes** for all components of the `VortexLatticeSystem`.
+Compute the **farfield** forces in **wind axes** for all components of the `PotentialFlowSystem`.
 """
-@views function farfield_forces(system :: VortexLatticeSystem)
-    hs = system.vortices 
-    Γs = system.circulations
+@views function farfield_forces(system :: PotentialFlowSystem)
+    hs = system.elements 
+    Γs = system.strengths
     α  = system.freestream.alpha
     β  = system.freestream.beta
     V  = system.reference.speed
@@ -434,29 +493,29 @@ Compute the **farfield** forces in **wind axes** for all components of the `Vort
 end
 
 """
-    farfield_coefficients(system :: VortexLatticeSystem)
+    farfield_coefficients(system :: PotentialFlowSystem)
 
-Compute the **total farfield** force coefficients for all components of the `VortexLatticeSystem`. These are in **wind axes** by definition.
+Compute the **total farfield** force coefficients for all components of the `PotentialFlowSystem`. These are in **wind axes** by definition.
 """
-farfield_coefficients(system :: VortexLatticeSystem) = map(farfield_forces(system)) do ff
+farfield_coefficients(system :: PotentialFlowSystem) = map(farfield_forces(system)) do ff
         FF_COEFFS(force_coefficient(ff, system.reference))
     end
 
 """
-    farfield(system :: VortexLatticeSystem)
+    farfield(system :: PotentialFlowSystem)
 
-Compute the **total farfield** force coefficients of the `VortexLatticeSystem`. These are in **wind axes** by definition.
+Compute the **total farfield** force coefficients of the `PotentialFlowSystem`. These are in **wind axes** by definition.
 """
-farfield(system :: VortexLatticeSystem) = FF_COEFFS(force_coefficient(sum(farfield_forces(system)), system.reference))
+farfield(system :: PotentialFlowSystem) = FF_COEFFS(force_coefficient(sum(farfield_forces(system)), system.reference))
 
 """
-    center_of_pressure(system :: VortexLatticeSystem)
+    center_of_pressure(system :: PotentialFlowSystem)
 
-Determine the center of pressure ``x_{cp}`` of the `VortexLatticeSystem`. 
+Determine the center of pressure ``x_{cp}`` of the `PotentialFlowSystem`. 
 
 This is computed based on the nearfield lift ``C_L`` and moment ``Cₘ`` coefficients, and the reference location ``xᵣ`` and chord length ``cᵣ`` from `References`: ``x_{cp} = xᵣ -cᵣ(Cₘ / C_L)``
 """
-function center_of_pressure(system :: VortexLatticeSystem)
+function center_of_pressure(system :: PotentialFlowSystem)
     x_ref = system.reference.location[1]
     c_ref = system.reference.chord
     nf = nearfield(system)
@@ -469,4 +528,4 @@ end
 # Consider adding spanwise loading later
 
 # Residual equation for nonlinear analysis
-residual!(R, Γ, system :: VortexLatticeSystem) = solve_nonlinear!(R, system.vortices, Γ, -velocity(system.freestream), system.freestream.omega)
+residual!(R, Γ, system :: PotentialFlowSystem) = solve_nonlinear!(R, system.elements, Γ, -velocity(system.freestream), system.freestream.omega)

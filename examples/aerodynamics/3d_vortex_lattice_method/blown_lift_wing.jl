@@ -38,7 +38,7 @@ ref = References(
 )
 
 ## Baseline (unpowered)
-sys_baseline = VortexLatticeSystem(aircraft, fs, ref)
+sys_baseline = PotentialFlowSystem(aircraft, fs, ref)
 nf_baseline  = nearfield(sys_baseline)
 
 ## Propellers: a tractor disk ahead of each half-wing, thrust along the freestream (+x).
@@ -50,7 +50,7 @@ prop_left  = PropellerDisk(center = SVector(-1.0, -1.2, 0.0), axis = SVector(1.0
                            radius = 1.5, thrust = 8000.0, torque = 120.0, sense = -1.0)
 
 ## Blown analysis
-sys_blown = VortexLatticeSystem(aircraft, fs, ref; slipstream = [prop_right, prop_left])
+sys_blown = PotentialFlowSystem(aircraft, fs, ref; slipstream = [prop_right, prop_left])
 nf_blown  = nearfield(sys_blown)
 
 ## Compare
@@ -79,9 +79,9 @@ aircraft_flap = ComponentVector(wing = flapped)
 # Same props, but now turning the jet — derived automatically from the immersed flap panels.
 turn_props = [ auto_turn(p, flapped, ref) for p in (prop_right, prop_left) ]
 
-CL_flap       = nearfield(VortexLatticeSystem(aircraft_flap, fs, ref)).CZ
-CL_flap_axial = nearfield(VortexLatticeSystem(aircraft_flap, fs, ref; slipstream = [prop_right, prop_left])).CZ
-CL_flap_jet   = nearfield(VortexLatticeSystem(aircraft_flap, fs, ref; slipstream = turn_props)).CZ
+CL_flap       = nearfield(PotentialFlowSystem(aircraft_flap, fs, ref)).CZ
+CL_flap_axial = nearfield(PotentialFlowSystem(aircraft_flap, fs, ref; slipstream = [prop_right, prop_left])).CZ
+CL_flap_jet   = nearfield(PotentialFlowSystem(aircraft_flap, fs, ref; slipstream = turn_props)).CZ
 
 println()
 println("Flap 20°, unpowered   : CL = ", round(CL_flap,       digits = 4))

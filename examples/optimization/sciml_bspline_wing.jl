@@ -74,7 +74,7 @@ function opt_drag(x, p=nothing)
     # Get forces
     res = get_forces(sys, mesh)
 
-    res.CD
+    res.CD + norm(x[2:end]) * 1e-1 # Regularization
 end
 
 # Constraints
@@ -114,7 +114,7 @@ ng = length(x0) # Number of constraints
 
 ## Problem construction
 optprob = OptimizationFunction(opt_drag, Optimization.AutoForwardDiff(), cons=con_all)
-prob = OptimizationProblem(optprob, x0[:], lcons=lg, ucons=ug, lb=lx, ub=ux)
+prob = OptimizationProblem(optprob, x0, lcons=lg, ucons=ug, lb=lx, ub=ux)
 
 ## Choose optimizer
 opt = IpoptOptimizer(;
@@ -145,9 +145,9 @@ print_coefficients(sys_exact)
 #==========================================================================================#
 
 ## Plot spanwise loading
-ll_init = spanwise_loading(wing_init, sys.reference, surface_coefficients(sys)[1].wing, sys.circulations.wing)
-ll_opt = spanwise_loading(wing_opt, sys_opt.reference, surface_coefficients(sys_opt)[1].wing, sys_opt.circulations.wing)
-ll_exact = spanwise_loading(wing_exact, sys_exact.reference, surface_coefficients(sys_exact)[1].wing, sys_exact.circulations.wing)
+ll_init = spanwise_loading(wing_init, sys.reference, surface_coefficients(sys)[1].wing, sys.strengths.wing)
+ll_opt = spanwise_loading(wing_opt, sys_opt.reference, surface_coefficients(sys_opt)[1].wing, sys_opt.strengths.wing)
+ll_exact = spanwise_loading(wing_exact, sys_exact.reference, surface_coefficients(sys_exact)[1].wing, sys_exact.strengths.wing)
 
 ##
 using Plots, LaTeXStrings

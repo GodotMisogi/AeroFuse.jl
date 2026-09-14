@@ -315,7 +315,7 @@ end
     aircraft = ComponentArray(wing = make_horseshoes(WingMesh(wing, [20], 5, span_spacing = [Sine(1); Sine()])))
 
     # Evaluate stability case
-    system = VortexLatticeSystem(aircraft, fs, refs, false)
+    system = PotentialFlowSystem(aircraft, fs, refs, false)
     dv_data = freestream_derivatives(system; axes = Wind())
 
     dcf = dv_data.wing
@@ -351,7 +351,7 @@ include(string(@__DIR__, "/aircraft_definition.jl"))
         vtail = make_horseshoes(vtail_mesh),
     )
     ## Stability case
-    system = VortexLatticeSystem(aircraft, fs, refs, true)
+    system = PotentialFlowSystem(aircraft, fs, refs, true)
     dv_data = freestream_derivatives(system; axes = Wind())
 
     dcf = dv_data.aircraft
@@ -452,3 +452,5 @@ end
 
     @test M ≈ [-1000., 1000., 0., 0.] atol = 1e-6
 end;
+# %%
+include("potential_flow.jl")

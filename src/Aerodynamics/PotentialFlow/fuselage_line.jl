@@ -2,7 +2,7 @@
 #==========================================================================================#
 
 # A slender-body model of the fuselage as a line of singularities along its axis, coupled
-# into the same linear system as the lifting-surface vortices. The physics splits in two:
+# into the same linear system as the lifting-surface elements. The physics splits in two:
 #
 #   * Thickness (displacement) is a *source* line whose strength is fixed by the
 #     cross-sectional area distribution, `σ(x) = V∞ · dS/dx`. Because it is prescribed it is
@@ -30,7 +30,7 @@ midpoint (the singularity location and cross-flow evaluation point); `normal` is
 source (thickness) strength `ΔS` per unit freestream speed; `radius` is the local body radius
 `R` used in the 2-D cross-flow cylinder condition.
 """
-struct FuselageLine{T} <: AbstractVortex
+struct FuselageLine{T} <: AbstractPotentialFlowElement
     r1     :: SVector{3,T}   # Axis segment start
     r2     :: SVector{3,T}   # Axis segment end
     rc     :: SVector{3,T}   # Axis midpoint (singularity + cross-flow evaluation point)
@@ -47,7 +47,7 @@ end
 
 Base.length(::FuselageLine) = 1
 
-# `control_point`/`normal_vector` are inherited from the AbstractVortex accessors (fields rc/normal).
+# `control_point`/`normal_vector` are inherited from the AbstractPotentialFlowElement accessors (fields rc/normal).
 
 # Axis segment length, used to lump the cross-flow doublet-line density into a point doublet.
 segment_length(el::FuselageLine) = norm(el.r2 - el.r1)
@@ -99,7 +99,7 @@ end
 #==========================================================================================#
 
 """
-    apply_bc_row!(AIC, boco, i, el :: FuselageLine, vortices, U, Ups, Ω)
+    apply_bc_row!(AIC, boco, i, el :: FuselageLine, elements, U, Ups, Ω)
 
 Rewrite the row of the assembled system belonging to a `FuselageLine` collocation station with
 the slender-body 2-D cross-flow cylinder condition `λ_i = -2π R_i² W_i`, where
@@ -109,13 +109,13 @@ the slender-body 2-D cross-flow cylinder condition `λ_i = -2π R_i² W_i`, wher
 the identity because slender-body cross-planes are independent. `V∞ = -U` (the boundary
 condition stores `U = -freestream`).
 """
-function apply_bc_row!(AIC, boco, i, el :: FuselageLine, vortices, U, Ups, Ω)
+function apply_bc_row!(AIC, boco, i, el :: FuselageLine, elements, U, Ups, Ω)
     s  = 2π * el.radius^2
     rc = control_point(el)
     ni = normal_vector(el)
-    N  = length(vortices)
+    N  = length(elements)
     @views for j in 1:N
-        if vortices[j] isa FuselageLine
+        if elements[j] isa FuselageLine
             AIC[i, j] = ifelse(i == j, one(eltype(AIC)), zero(eltype(AIC)))
         else
             AIC[i, j] *= s

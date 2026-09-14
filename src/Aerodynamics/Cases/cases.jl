@@ -12,11 +12,11 @@
         print_components = false :: Boolean
     )
 
-Perform a vortex lattice analysis given a `ComponentVector` of populated elements (e.g.
+Perform a coupled potential-flow analysis given a `ComponentVector` of populated elements (e.g.
 `HorseshoeVortex`, `RingVortex`, `SourcePanel3D`), a `Freestream` condition, and `References` values.
 """
 function solve_case(components :: ComponentVector, freestream :: Freestream, refs :: References; name = :aircraft, compressible = false, print = false, print_components = false)
-    system = VortexLatticeSystem(components, freestream, refs, compressible)
+    system = PotentialFlowSystem(components, freestream, refs, compressible)
 
     # Printing if needed
     if print_components
@@ -42,12 +42,12 @@ solve_case(meshes, freestream :: Freestream, refs :: References; name = :aircraf
 #       nothing)
 # end
 
-# struct MeshVortexLatticeSystem{M <: WingMesh, VLM <: AbstractVortexLatticeSystem} <: AbstractVortexLatticeSystem
+# struct MeshPotentialFlowSystem{M <: WingMesh, VLM <: AbstractPotentialFlowSystem} <: AbstractPotentialFlowSystem
 #     meshes :: Vector{M}
 #     system :: VLM 
 # end
 
-# @forward MeshVortexLatticeSystem.system surface_coefficients, surface_forces, surface_forces, surface_moments, surface_velocities, surface_dynamics, nearfield_coefficients, farfield_coefficients, farfield_forces, nearfield, farfield
+# @forward MeshPotentialFlowSystem.system surface_coefficients, surface_forces, surface_forces, surface_moments, surface_velocities, surface_dynamics, nearfield_coefficients, farfield_coefficients, farfield_forces, nearfield, farfield
 
 ## Placeholder for functions I'm not sure where to put
 #==========================================================================================#

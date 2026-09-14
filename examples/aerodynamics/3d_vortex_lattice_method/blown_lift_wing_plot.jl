@@ -42,15 +42,15 @@ turned_props = [ auto_turn(p, flapped, ref) for p in props ] # Jet turning auto-
 
 ## Analyses (all on the flapped wing)
 #==========================================================================================#
-sys_flap   = VortexLatticeSystem(ComponentVector(wing = flapped), fs, ref)
-sys_axial  = VortexLatticeSystem(ComponentVector(wing = flapped), fs, ref; slipstream = axial_props)
-sys_turned = VortexLatticeSystem(ComponentVector(wing = flapped), fs, ref; slipstream = turned_props)
+sys_flap   = PotentialFlowSystem(ComponentVector(wing = flapped), fs, ref)
+sys_axial  = PotentialFlowSystem(ComponentVector(wing = flapped), fs, ref; slipstream = axial_props)
+sys_turned = PotentialFlowSystem(ComponentVector(wing = flapped), fs, ref; slipstream = turned_props)
 
 # Spanwise loading: column 1 = y, column 4 = force-based CL (includes local q, wind axes),
 # column 5 = circulation-based CL_norm = 2Γ/ρV∞c (no local-q term).
 function spanload(sys)
     CFs, _ = surface_coefficients(sys; axes = Wind())
-    L = spanwise_loading(wing_mesh, ref, CFs.wing, sys.circulations.wing)
+    L = spanwise_loading(wing_mesh, ref, CFs.wing, sys.strengths.wing)
     return L[:, 1], L[:, 5], L[:, 4] # ys, circulation loading, force loading
 end
 y, g_flap, f_flap     = spanload(sys_flap)

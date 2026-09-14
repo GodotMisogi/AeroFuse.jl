@@ -183,7 +183,7 @@ MacroTools.@forward WingMesh.surface parasitic_drag_coefficient, form_factor
 
 Estimate the profile drag coefficient of a `WingMesh` using the **local-friction and local-dissipation method** based on Schlichting's skin-friction coefficient formula with given `References`, a specified transition ratio ``xₜᵣ``, and edge velocities ``\\mathbf u_e``. 
 
-At present, the edge velocities would be computed using the vortex lattice method via `VortexLatticeSystem`. For this case, the panels corresponding to the camber distribution are used in the calculation. 
+At present, the edge velocities would be computed using the vortex lattice method via `PotentialFlowSystem`. For this case, the panels corresponding to the camber distribution are used in the calculation.
 """
 parasitic_drag_coefficient(wing :: WingMesh, refs :: References, x_tr :: Real, u_es) = local_dissipation_drag_coefficient(wing.surface, map(panel_area, camber_panels(wing)), refs.density, u_es, x_tr, refs.density, refs.speed, mach_number(refs), refs.viscosity, refs.area)
 # Should it be doubled for upper and lower surfaces?

@@ -37,10 +37,10 @@ ref = References(
 
 ## Horseshoes
 ac_hs = ComponentVector(wing = make_horseshoes(wing_mesh))
-system = VortexLatticeSystem(ac_hs, fs, ref, false)
+system = PotentialFlowSystem(ac_hs, fs, ref, false)
 print_coefficients(nearfield(system), farfield(system))
 
 ## Vortex rings
 ac_vs = ComponentVector(wing = make_vortex_rings(wing_mesh))
-sys = VortexLatticeSystem(ac_vs, fs, ref, false)
+sys = PotentialFlowSystem(ac_vs, fs, ref, false)
 print_coefficients(nearfield(sys), farfield(sys))

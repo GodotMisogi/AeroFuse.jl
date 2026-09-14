@@ -183,9 +183,9 @@ Plots.plot!(sys, htail_mesh, dist = 2, num_stream = 50, span = 10, color = :gree
 Plots.plot!(sys, vtail_mesh, dist = 2, num_stream = 50, span = 10, color = :green)
 
 ## Compute spanwise loads
-wing_ll = spanwise_loading(wing_mesh, ref, CFs.wing, sys.circulations.wing)
-htail_ll = spanwise_loading(htail_mesh, ref, CFs.htail, sys.circulations.htail)
-vtail_ll = spanwise_loading(vtail_mesh, ref, CFs.vtail, sys.circulations.vtail);
+wing_ll = spanwise_loading(wing_mesh, ref, CFs.wing, sys.strengths.wing)
+htail_ll = spanwise_loading(htail_mesh, ref, CFs.htail, sys.strengths.htail)
+vtail_ll = spanwise_loading(vtail_mesh, ref, CFs.vtail, sys.strengths.vtail);
 
 ## Plot spanwise loadings
 plot_CD = begin

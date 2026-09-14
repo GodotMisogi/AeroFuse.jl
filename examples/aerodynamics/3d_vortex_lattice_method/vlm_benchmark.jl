@@ -88,11 +88,11 @@ function vlm_aerofuse()
 
     ## Horseshoes
     ac_hs = ComponentVector(wing = make_vortex_rings(wing_mesh))
-    system = VortexLatticeSystem(ac_hs, fs, ref)
+    system = PotentialFlowSystem(ac_hs, fs, ref)
 
     ## Vortex rings
     # ac_vs =  ComponentVector(wing = make_vortex_rings(wing_mesh))
-    # system = VortexLatticeSystem(ac_vs, fs, ref)
+    # system = PotentialFlowSystem(ac_vs, fs, ref)
 
     return nearfield(system), farfield(system), system
 end

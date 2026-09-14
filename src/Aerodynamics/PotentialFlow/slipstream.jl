@@ -151,7 +151,7 @@ panels lying in the tube — i.e. the wing/flap turns the jet by the angle its t
 deflects the flow, read from the panel normals — and it is ramped across the rear of the
 immersed chord so the jet is fully turned by the trailing edge.
 
-`panels` is a chordwise×spanwise array of `AbstractVortex` in geometry axes (e.g. from
+`panels` is a chordwise×spanwise array of `AbstractPotentialFlowElement` in geometry axes (e.g. from
 `make_vortex_rings`/`make_horseshoes`), with the first chordwise index at the leading edge. If
 no trailing-edge panel is immersed, the disk is returned unchanged.
 """

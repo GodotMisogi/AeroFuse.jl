@@ -115,7 +115,7 @@ plot!(wing_mesh)
 # plot!(system, wing, dist = 3, num_stream = 50, span = 10, color = :green)
 
 ## Compute spanwise loads
-span_loads = spanwise_loading(wing_mesh, ref, CFs.wing, system.circulations.wing)
+span_loads = spanwise_loading(wing_mesh, ref, CFs.wing, system.strengths.wing)
 
 ## Plot spanwise loadings
 plot_CD = plot(span_loads[:, 1], span_loads[:, 2], label = :none, ylabel = "CDi")

@@ -72,6 +72,10 @@ Supported combinations:
   panels and camber-surface normals.
 - `elements(wing :: WingMesh, :: VortexRing)` → `RingVortex` lattice from the camber
   coordinates, with trailing-edge wake identification.
+- `elements(panels :: AbstractArray{<:Panel3D}, :: SourcePanel)` → source elements
+  from an outward-oriented skin mesh.
+- `elements(fuselage :: HyperEllipseFuselage, :: SourcePanel)` → source elements
+  from a generated fuselage skin mesh.
 
 See [`Horseshoe`](@ref), [`VortexRing`](@ref) and [`SourcePanel`](@ref) for the models.
 """
@@ -155,7 +159,7 @@ reynolds_number(refs :: References) = refs.density * refs.speed * refs.chord / r
     make_fuselage_line(fuse :: HyperEllipseFuselage; n = 20)
 
 Generate an array of `FuselageLine` singularity segments modelling a `HyperEllipseFuselage`
-as a slender body along its axis, for coupling into a `VortexLatticeSystem`. Each segment
+as a slender body along its axis, for coupling into a `PotentialFlowSystem`. Each segment
 carries a prescribed source (thickness) strength `ΔS = π ΔR²` from the cross-sectional area
 distribution and an unknown doublet (cross-flow lift) whose strength solves in the AIC. `n`
 sets the number of stations per section (nose, cabin, rear).
@@ -252,7 +256,7 @@ end
     elements(fuse :: HyperEllipseFuselage, model :: SourcePanel; n_secs = 20, n_circ = 20)
 
 Panel the skin of a `HyperEllipseFuselage` and build `SourcePanel3D` source panels from it for
-monolithic coupling into a `VortexLatticeSystem`. `n_secs`/`n_circ` set the axial/circumferential
+monolithic coupling into a `PotentialFlowSystem`. `n_secs`/`n_circ` set the axial/circumferential
 panel density (see [`make_fuselage_panels`]).
 """
 elements(fuse :: HyperEllipseFuselage, model :: SourcePanel; n_secs = 20, n_circ = 20) =
@@ -262,7 +266,7 @@ elements(fuse :: HyperEllipseFuselage, model :: SourcePanel; n_secs = 20, n_circ
     make_body_panels(fuse :: HyperEllipseFuselage; n_secs = 20, n_circ = 20, min_area = 1e-8)
 
 Generate a vector of `SourcePanel3D` constant-strength source panels modelling the skin of a
-`HyperEllipseFuselage`, for monolithic coupling into a `VortexLatticeSystem`. Convenience
+`HyperEllipseFuselage`, for monolithic coupling into a `PotentialFlowSystem`. Convenience
 wrapper for `elements(fuse, SourcePanel(; min_area); n_secs, n_circ)`.
 
 Assemble the returned vector into the aircraft as a `:body` block, e.g.

@@ -6,7 +6,7 @@ using LinearAlgebra
 using StaticArrays
 import AeroFuse.PanelGeometry: p1, p2, p3, p4, collocation_point
 import AeroFuse.Laplace: velocity
-import AeroFuse.VortexLattice: bound_leg_velocity
+import AeroFuse.PotentialFlow: bound_leg_velocity
 
 using CairoMakie
 CairoMakie.activate!()
