@@ -14,7 +14,7 @@ AeroFuse is meant to be a toolbox for aircraft design analyses. It currently pro
 
 ### Citation
 
-If you use AeroFuse in your research, please cite the following until any relevant material is actually published:
+If you use AeroFuse in your research, please cite the following paper:
 
 ```bibtex
 @article{Seth.IEEETrans.2023,
