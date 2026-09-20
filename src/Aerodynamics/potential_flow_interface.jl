@@ -101,6 +101,21 @@ vectors of a `WingMesh`. Convenience wrapper for `elements(wing, VortexRing())`.
 """
 make_vortex_rings(wing_mesh :: WingMesh) = elements(wing_mesh, VortexRing())
 
+"""
+    make_vortex_rings!(rings, cam_coo; core_size = 0.)
+
+Overwrite `rings` with the vortex-ring lattice generated from `cam_coo`. `rings` must have
+one entry per aerodynamic panel, and an element type compatible with the coordinates — use a
+promoting element type (e.g. `ForwardDiff.Dual`) for differentiable evaluations.
+"""
+function make_vortex_rings!(rings, cam_coo; core_size = 0.)
+    expected_size = (size(cam_coo, 1) - 1, size(cam_coo, 2) - 1)
+    size(rings) == expected_size ||
+        throw(DimensionMismatch("rings must have one entry per camber panel"))
+    rings .= make_vortex_rings(cam_coo; core_size = core_size)
+    return rings
+end
+
 @views function make_vortex_rings(cam_coo; core_size = 0.)
     # Generate vortex ring mesh
     cams = combinedimsview(cam_coo, (1,2))

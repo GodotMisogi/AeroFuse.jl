@@ -160,6 +160,41 @@ affine_transformation(wing::Wing) = wing.affine
 (f::AffineMap)(wing::Wing) = @set wing.affine = f ∘ wing.affine
 
 """
+    set_incidence(wing :: Wing, i_deg)
+
+Add an incidence angle `i_deg` (degrees) to every twist station of `wing`,
+returning the reoriented `Wing`.
+"""
+set_incidence(wing::Wing, i_deg) = @set wing.twists = wing.twists .+ i_deg
+
+"""
+    exposed_wings(wing :: Wing, radius)
+
+Cut a symmetric single-section `Wing` at the lateral clearance `radius`, returning
+the two exposed half-wings `(left, right)` outboard of that station as separate
+non-symmetric `Wing`s. The buried centre section within `radius` is discarded; the
+root chord, twist, and leading-edge position are interpolated to the cut station,
+and each half is positioned at its inboard root so the halves clear the gap.
+"""
+function exposed_wings(wing::Wing, radius)
+    y_root = radius
+    b_half = only(wing.spans)
+    b_half > y_root || throw(ArgumentError("Wing semispan must exceed the clearance radius."))
+    η = y_root / b_half
+    c_root  = (1 - η) * wing.chords[1] + η * wing.chords[2]
+    tw_root = (1 - η) * wing.twists[1] + η * wing.twists[2]
+    x, _, z = wing.affine.translation
+    x_root = x + y_root * tand(only(wing.sweeps))
+    z_root = z + y_root * tand(only(wing.dihedrals))
+    half(flip) = Wing(foils = wing.foils, chords = [c_root, wing.chords[2]],
+        twists = -[tw_root, wing.twists[2]], spans = [b_half - y_root],
+        dihedrals = wing.dihedrals, sweeps = wing.sweeps, sweep_ratio = 0.0,
+        symmetry = false, flip = flip,
+        position = [x_root, flip ? -y_root : y_root, z_root])
+    return (left = half(true), right = half(false))
+end
+
+"""
     span(wing :: Wing)
 
 Compute the planform span of a `Wing`.

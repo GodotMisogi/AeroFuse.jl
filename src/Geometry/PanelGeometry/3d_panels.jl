@@ -72,6 +72,16 @@ Convert an array of coordinates corresponding to a wing, ordered from root to ti
 """
 make_panels(xyzs) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], xyzs[2:end,2:end], xyzs[1:end-1,2:end])
 
+function make_panels!(panels, xyzs)
+    size(panels) == (size(xyzs, 1) - 1, size(xyzs, 2) - 1) ||
+        throw(DimensionMismatch("panels must have one entry per coordinate cell"))
+    @inbounds for j in axes(panels, 2), i in axes(panels, 1)
+        panels[i, j] = Panel3D(xyzs[i, j], xyzs[i + 1, j], xyzs[i + 1, j + 1],
+                               xyzs[i, j + 1])
+    end
+    return panels
+end
+
 """
     transform(panel :: Panel3D, rotation, translation)
 

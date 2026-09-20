@@ -102,7 +102,7 @@ import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D,
                        reverse_panel, panel_velocity, panel_scalar, trailing_edge_panel,
                        get_surface_values,
                        panel_vector, distance, average_chord, average_width, wetted_area,
-                       make_panels,
+                       make_panels, make_panels!,
                        local_coordinate_system, get_transformation, trailing_edge_info,
                        panel_coordinates,
                        collocation_point, WakePanel3D, p1, p2, p3, p4
@@ -112,7 +112,7 @@ export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Pa
        distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length,
        transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar,
        trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area,
-       make_panels, local_coordinate_system, get_transformation, trailing_edge_info,
+       make_panels, make_panels!, local_coordinate_system, get_transformation, trailing_edge_info,
        panel_coordinates, collocation_point
 
 ## Aircraft geometry
@@ -169,7 +169,7 @@ import .AircraftGeometry: Wing, WingSection, affine_transformation, mean_aerodyn
                           chord_panels,
                           camber_panels, surface_panels, AbstractSpacing, Sine, Cosine,
                           Uniform, properties,
-                          wetted_area_ratio
+                          wetted_area_ratio, set_incidence, exposed_wings
 
 export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio,
        projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge,
@@ -180,7 +180,8 @@ export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, a
        chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists,
        spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels,
        camber_panels,
-       surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio
+       surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio,
+       set_incidence, exposed_wings
 
 # Surfaces
 # import .AircraftGeometry: HorizontalTail, VerticalTail
@@ -297,7 +298,7 @@ export print_coefficients, print_derivatives, streamlines
 ## Panel-VLM interface
 include("Aerodynamics/potential_flow_interface.jl")
 
-export elements, make_horseshoes, make_vortex_rings, make_fuselage_line, make_fuselage_panels,
+export elements, make_horseshoes, make_vortex_rings, make_vortex_rings!, make_fuselage_line, make_fuselage_panels,
        make_body_panels, deflect_normals
 
 ## Generic doublet-source panel aircraft solver (needs References + FuselageLine + VLM kernels)
