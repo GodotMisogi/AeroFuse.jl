@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "<unknown>/docs/lit/tutorials-aircraft.jl"
+EditURL = "../lit/tutorials-aircraft.jl"
 ```
 
 ## Objectives
@@ -220,7 +220,7 @@ A convenience method is also provided for plotting streamlines from the leading 
 
 ````@example tutorials-aircraft
 plot!(plt,
-    system,     # VortexLattice System
+    system,     # PotentialFlowSystem
     wing_mesh,  # Lifting surface (or mesh)
     span = 4,   # Number of streamlines per spanwise section
     dist = 10,  # Distance of streamlines (m)
@@ -237,7 +237,7 @@ Now let's analyze the drag polar of this aircraft configuration by varying the a
 
 ````@example tutorials-aircraft
 # Define function to compute system varying with angle of attack.
-vary_alpha(aircraft, α, refs) = VortexLatticeSystem(aircraft, Freestream(alpha = α), refs)
+vary_alpha(aircraft, α, refs) = PotentialFlowSystem(aircraft, Freestream(alpha = α), refs)
 
 # Run loop
 αs      = -5:0.5:5
@@ -298,7 +298,7 @@ You can compute the aerodynamic coefficients on the panels from the system.
 CFs, CMs = surface_coefficients(system)
 
 # Compute spanwise loads
-span_loads = spanwise_loading(wing_mesh, system.reference, CFs.wing, system.circulations.wing)
+span_loads = spanwise_loading(wing_mesh, system.reference, CFs.wing, system.strengths.wing)
 
 # Plot spanwise loadings
 plot_CD = plot(span_loads[:,1], span_loads[:,2], label = :none, ylabel = L"C_{D_i}")
