@@ -11,7 +11,8 @@ function print_info(wing :: AbstractWing, head = "")
     wing_info = properties(wing)
     data = Any[ labels wing_info ]
     header = [ head, "Value" ]
-    h1 = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
+    h1 = TextHighlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)
 
-    pretty_table(data, header = header, alignment = [:c, :c], highlighters = h1, vlines = :none, formatters = ft_round(8))
+    pretty_table(data; column_labels = header, alignment = [:c, :c], highlighters = [h1], 
+        table_format = TextTableFormat(; @text__no_vertical_lines), formatters = [fmt__round(8)])
 end

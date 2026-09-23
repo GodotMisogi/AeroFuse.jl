@@ -62,7 +62,7 @@ function vlm_aerofuse()
         spans     = [7.5],
         dihedrals = [0.],
         sweeps    = [3.0528],
-        w_sweep   = 0., # Quarter-chord sweep
+        sweep_ratio   = 0., # Quarter-chord sweep
         symmetry  = true,
     )
 
@@ -88,11 +88,11 @@ function vlm_aerofuse()
 
     ## Horseshoes
     ac_hs = ComponentVector(wing = make_vortex_rings(wing_mesh))
-    system = VortexLatticeSystem(ac_hs, fs, ref)
+    system = PotentialFlowSystem(ac_hs, fs, ref)
 
     ## Vortex rings
     # ac_vs =  ComponentVector(wing = make_vortex_rings(wing_mesh))
-    # system = VortexLatticeSystem(ac_vs, fs, ref)
+    # system = PotentialFlowSystem(ac_vs, fs, ref)
 
     return nearfield(system), farfield(system), system
 end

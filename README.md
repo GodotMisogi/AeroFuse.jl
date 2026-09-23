@@ -14,7 +14,7 @@ AeroFuse is meant to be a toolbox for aircraft design analyses. It currently pro
 
 ### Citation
 
-If you use AeroFuse in your research, please cite the following until any relevant material is actually published:
+If you use AeroFuse in your research, please cite the following paper:
 
 ```bibtex
 @article{Seth.IEEETrans.2023,
@@ -22,11 +22,11 @@ If you use AeroFuse in your research, please cite the following until any releva
   journal={IEEE Transactions on Education}, 
   title={MADE: A Multidisciplinary Computational Framework for Aerospace Engineering Education}, 
   year={2023},
-  volume={},
-  number={},
-  pages={1-10},
-  doi={10.1109/TE.2023.3281825}
-}
+  volume={66},
+  number={6},
+  pages={622-631},
+  keywords={Education;Aerospace engineering;Aircraft;Aircraft propulsion;Aerodynamics;Programming profession;Programming;Aerospace engineering;engineering curriculum;multidisciplinary design;reflection},
+  doi={10.1109/TE.2023.3281825}}
 ```
 
 ## Objectives

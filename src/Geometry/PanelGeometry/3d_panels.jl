@@ -2,6 +2,10 @@
 #==========================================================================================#
 abstract type AbstractPanel3D <: AbstractPanel end
 
+# For ModelingToolkit.jl/Symbolics.jl support with StaticArrays.jl norm method (see https://github.com/JuliaSymbolics/Symbolics.jl/issues/888)
+# norm(v) = sqrt(sum(abs2, v))
+# normalize(v) = v / norm(v)
+
 """
     Panel3D(p1, p2, p3, p4)
 
@@ -18,14 +22,14 @@ x
         p2 —→— p3
 ```
 """
-struct Panel3D{T <: Real} <: AbstractPanel3D
+struct Panel3D{T} <: AbstractPanel3D
     p1 :: SVector{3,T}
     p2 :: SVector{3,T}
     p3 :: SVector{3,T}
     p4 :: SVector{3,T}
 end
 
-struct WakePanel3D{T <: Real} <: AbstractPanel3D
+struct WakePanel3D{T} <: AbstractPanel3D
     p1 :: SVector{3,T}
     p2 :: SVector{3,T}
     p3 :: SVector{3,T}
@@ -49,7 +53,7 @@ collocation_point(panel :: AbstractPanel3D, a = 0.5) = (p1(panel) + p2(panel) + 
 (T :: AffineMap)(p :: AbstractPanel3D) = typeof(p)(T(p.p1), T(p.p2), T(p.p3), T(p.p4))
 (T :: LinearMap)(p :: AbstractPanel3D) = typeof(p)(T(p.p1), T(p.p2), T(p.p3), T(p.p4))
 
-Base.length(:: Panel3D) = 1
+Base.length(:: AbstractPanel3D) = 1
 
 average_chord(panel :: Panel3D) = (p2(panel) - p1(panel) + p3(panel) - p4(panel)) / 2
 average_width(panel :: Panel3D) = (p4(panel) - p1(panel) + p3(panel) - p2(panel)) / 2
@@ -67,6 +71,16 @@ panel_coordinates(panel :: AbstractPanel3D) = [ p1(panel), p2(panel), p3(panel),
 Convert an array of coordinates corresponding to a wing, ordered from root to tip and leading-edge to trailing-edge, into panels.
 """
 make_panels(xyzs) = @views Panel3D.(xyzs[1:end-1,1:end-1], xyzs[2:end,1:end-1], xyzs[2:end,2:end], xyzs[1:end-1,2:end])
+
+function make_panels!(panels, xyzs)
+    size(panels) == (size(xyzs, 1) - 1, size(xyzs, 2) - 1) ||
+        throw(DimensionMismatch("panels must have one entry per coordinate cell"))
+    @inbounds for j in axes(panels, 2), i in axes(panels, 1)
+        panels[i, j] = Panel3D(xyzs[i, j], xyzs[i + 1, j], xyzs[i + 1, j + 1],
+                               xyzs[i, j + 1])
+    end
+    return panels
+end
 
 """
     transform(panel :: Panel3D, rotation, translation)

@@ -335,3 +335,11 @@ docs/site/
 Manifest.toml
 
 _research/
+
+# Editor / local environment
+.vscode/
+LocalPreferences.toml
+
+# Scratch notebooks and planning docs
+notebooks/
+*_PLAN.md

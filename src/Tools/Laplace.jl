@@ -38,13 +38,6 @@ end
 # Generic attempt
 abstract type AbstractSingularity <: AbstractLaplace end
 
-# Generic geometric type
-struct GeometricSingularity{T <: Number, K <: AbstractSingularity, P <: Integer, M <: Integer, N <: Integer} <: AbstractLaplace
-    type :: K # Type of singularity (doublet, source, vortex, uniform, etc. if any more exist)
-    strs :: Union{T,SVector{P,T}} # Represents P (constant = 1, linear = 2, quadratic = 3, etc.) singularity strengths
-    rs   :: SMatrix{M,N,T} # Represents M points in N dimensions
-end
-
 ## 2D singularities
 #============================================#
 

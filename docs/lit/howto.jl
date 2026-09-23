@@ -104,13 +104,13 @@ wing = Wing(
     spans     = [1.0, 0.1],       # Section span lengths
     dihedrals = [0., 60.],        # Dihedral angles (degrees)
     sweeps    = [0., 30.],        # Sweep angles (degrees)
-    w_sweep   = 0.25,             # Sweep angle location w.r.t. 
+    sweep_ratio   = 0.25,             # Sweep angle location w.r.t. 
                                   ## normalized chord lengths ∈ [0,1]
     symmetry  = true,             # Whether wing is symmetric
     ## flip      = false           # Whether wing is flipped in x-z plane
 )
 
-# The `symmetry` Boolean argument specifies whether the geometry should be reflected in the ``x``-``z`` plane. The `flip` Boolean argument specifies whether the coordinates should be flipped in the ``x``-``z`` plane. The `w_sweep` argument specifies the chordwise-ratio of the sweep angles, e.g. 0. = leading edge sweep angle (default), 1. = trailing edge, 0.25 = quarter-chord.
+# The `symmetry` Boolean argument specifies whether the geometry should be reflected in the ``x``-``z`` plane. The `flip` Boolean argument specifies whether the coordinates should be flipped in the ``x``-``z`` plane. The `sweep_ratio` argument specifies the chordwise-ratio of the sweep angles, e.g. 0. = leading edge sweep angle (default), 1. = trailing edge, 0.25 = quarter-chord.
 
 # The following "getter" functions provide quantities of interest such as chord lengths, spans, twist, dihedral, and sweep angles.
 
@@ -319,6 +319,31 @@ nf, ff = nearfield(system), farfield(system)
 # You can also print the relevant information as a pretty table, if necessary.
 print_coefficients(nfs.wing, ffs.wing, :wing)
 print_coefficients(nf, ff, :aircraft)
+
+# ### Blown Lift (Propeller Slipstream)
+
+# To model powered/blown lift, define one or more `PropellerDisk`s and pass them to `PotentialFlowSystem` with the `slipstream` keyword. Each disk prescribes an actuator-disk slipstream (a tube of accelerated, swirling flow) from its centre, thrust `axis`, `radius`, `thrust`, and — for the swirl — `torque` and rotation `sense`. The slipstream is injected into both the boundary condition and the nearfield forces, so it changes the circulation and the local dynamic pressure over any surface it washes.
+
+b = span(wing)
+prop = PropellerDisk(
+    center = [-0.5, b / 4, 0.0], # Disk centre (m), ahead of the wing
+    axis   = [1.0, 0.0, 0.0],    # Thrust direction (≈ freestream)
+    radius = b / 8,              # Disk radius (m)
+    thrust = 3000.0,             # Thrust (N) — sets the axial increment
+    torque = 100.0,              # Torque (N·m) — sets the swirl
+    sense  = 1.0,                # Rotation sense ±1
+)
+
+blown = PotentialFlowSystem(aircraft, fs, refs; slipstream = prop)
+nearfield(blown)
+
+# For a **deflected slipstream (jet flap)** — where a deflected flap turns the high-momentum jet downward to produce large powered-flap lift — use `auto_turn` to derive the jet turning from the trailing-edge deflection of the panels immersed in the tube, then pass the turned disk(s). Provide the surface panels (a chordwise×spanwise array, e.g. from `make_horseshoes`).
+
+turned = auto_turn(prop, wing_horsies, refs)
+blown_flap = PotentialFlowSystem(aircraft, fs, refs; slipstream = turned);
+
+#md # !!! note
+#md #     `slipstream` also accepts a vector of `PropellerDisk`s for multiple propellers. Mirror the rotation `sense` across a pair to cancel the swirl-induced rolling moment.
 
 # ## Aerodynamic Stability Analyses
 # The derivatives of the aerodynamic coefficients with respect to the freestream values are obtained by automatic differentiation enabled by [ForwardDiff](https://github.com/JuliaDiff/ForwardDiff.jl). The following function evaluates the derivatives of the aerodynamic coefficients with respect to the freestream values. You can also optionally provide the axes for the reference frame of the coefficients.

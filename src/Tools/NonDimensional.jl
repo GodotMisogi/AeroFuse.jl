@@ -39,9 +39,9 @@ pressure_coefficient(force, ρ, V, S) = force_coefficient(force, dynamic_pressur
 
 pressure_coefficient(mag, vels) = 1 - (norm(vels) / mag)^2
 
-moment_coefficient(moment, q, S, b, c) = moment_coefficient.(moment, q, S, [b, c, b])
+moment_coefficient(moment, q, S, b, c) = moment_coefficient.(moment, q, S, (b, c, b))
 
-rate_coefficient(Ω, V, b, c) = rate_coefficient.(Ω, V, [b, c, b])
+rate_coefficient(Ω, V, b, c) = rate_coefficient.(Ω, V, (b, c, b))
 
 """
     aerodynamic_coefficients(force, moment, Ω, V, S, b, c, ρ)

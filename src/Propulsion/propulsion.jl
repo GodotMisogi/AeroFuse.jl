@@ -75,4 +75,19 @@ function induced_velocity(x, r, a_x, Vx0)
     return SVector(V_r, V_x)
 end
 
+## Turbofan
+#=======================================================#
+
+# Compressor: 
+# Inlet -> Compressor map -> Pressure rise -> Ideal flow thermo -
+# -> Enthalpy rise -> Real flow thermo -> Polytropic efficiency -
+# -> Shaft power and bleed -> 
+#-----------------#
+
+corrected_quantities(Tt, Pt, W_in, Nmech, Wc, Nc) = (Pt / P_STDeng, W_in, ) # Corrected quantities
+polytropic_efficiency(PR, Rt, S_in, S_out) = Rt * log(PR) / (Rt * log(PR) + S_out - S_in) # Polytropic efficiency
+shaft_power(W, ht_in, ht_out) = W * (ht_in - ht_out) * BTU_s2HP # Shaft power
+
+#
+
 end

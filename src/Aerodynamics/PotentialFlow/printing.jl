@@ -17,7 +17,7 @@ function Base.show(io :: IO, refs :: References)
     end
 end
 
-# function Base.show(io :: IO, ring :: AbstractVortex)
+# function Base.show(io :: IO, ring :: AbstractPotentialFlowElement)
 #     println(io, "Vortex: ")
 #     for fname in fieldnames(typeof(ring))
 #         println(io, "    ", fname, " = ", getfield(ring, fname))
@@ -25,9 +25,9 @@ end
 # end
 
 # Vortex lattice system
-function Base.show(io :: IO, sys :: VortexLatticeSystem)     
-    println(io, "VortexLatticeSystem -")
-    println(io, length(sys.vortices), " ", eltype(sys.vortices), " Elements")
+function Base.show(io :: IO, sys :: PotentialFlowSystem)     
+    println(io, "PotentialFlowSystem -")
+    println(io, length(sys.elements), " ", eltype(sys.elements), " Elements")
     show(io, sys.freestream)
     show(io, sys.reference)
 end
@@ -46,14 +46,14 @@ function print_coefficients(nf_coeffs, ff_coeffs, name = "")
     coeffs = [ [ visc; "CX"; "CY"; "CZ"; "Cl"; "Cm"; "Cn" ] [ visc; "CDi"; "CYff"; "CL"; ""; ""; "" ] ]
     data = [ coeffs[:,1] [ nf_coeffs... ] coeffs[:,2] [ [ ff_coeffs...]; fill("—", 3) ] ]
     head = [ name, "Nearfield", "", "Farfield" ]
-    h1 = Highlighter( (data,i,j) -> (j == 1) || (j == 3), foreground = :cyan, bold = true)
+    h1 = TextHighlighter( (data,i,j) -> (j == 1) || (j == 3), foreground = :cyan, bold = true)
 
     pretty_table(data, 
-        header = head, 
+        column_labels = head, 
         alignment = [:c, :c, :c, :c], 
-        highlighters = h1, 
-        vlines = :none, 
-        formatters = ft_round(8)
+        highlighters = [h1], 
+        table_format = TextTableFormat(; @text__no_vertical_lines),
+        formatters = [fmt__round(8)]
     )
 end
 
@@ -67,36 +67,36 @@ Print a pretty table of the aerodynamic coefficients and derivatives with an opt
 """
 function print_derivatives(comp, name = ""; farfield = false)
     coeffs  = ["CX", "CY", "CZ", "Cℓ", "Cm", "Cn", "CDi", "CY", "CL"]
-    nf_vars = (["$name" "Values" "" "" "Freestream" "Derivatives" "" ""], ["" "" "∂/∂M" "∂/∂α, 1/rad" "∂/∂β, 1/rad" "∂/∂p̄" "∂/∂q̄" "∂/∂r̄" ])
+    nf_vars = [["$name","Values", "", "", "Freestream", "Derivatives", "", ""], ["", "", "∂/∂M", "∂/∂α, 1/rad", "∂/∂β, 1/rad", "∂/∂p̄", "∂/∂q̄", "∂/∂r̄" ]]
     ff_index = ifelse(farfield, 9, 6)
     nf_rows = @views [ coeffs[1:ff_index] comp[1:ff_index,:] ]
 
     pretty_table(nf_rows, 
-        header = nf_vars, 
+        column_labels = nf_vars, 
         alignment = :c, 
-        header_crayon = Crayon(bold = true), 
-        subheader_crayon = Crayon(foreground = :yellow, bold = true), 
-        highlighters = Highlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true), 
-        vlines = :none, formatters = ft_round(8)
+        # header_crayon = Crayon(bold = true), 
+        # subheader_crayon = Crayon(foreground = :yellow, bold = true), 
+        highlighters = [TextHighlighter( (data,i,j) -> (j == 1), foreground = :cyan, bold = true)], formatters = [fmt__round(8)],
+        table_format = TextTableFormat(; @text__no_vertical_lines),
     )
 end
 
 """
     print_coefficients(
-        system :: VortexLatticeSystem, 
+        system :: PotentialFlowSystem, 
         name = :aircraft;
         components = false
     )
 
-Print a pretty table of the total nearfield and farfield coefficients of a `VortexLatticeSystem` with an optional name.
+Print a pretty table of the total nearfield and farfield coefficients of a `PotentialFlowSystem` with an optional name.
 
 A named Boolean argument `components` is provided to also enable the printing of any possible components.
 """
-function print_coefficients(system :: VortexLatticeSystem, name = :aircraft; components = false)
+function print_coefficients(system :: PotentialFlowSystem, name = :aircraft; components = false)
     if components
         nf_c = nearfield_coefficients(system)
         ff_c = farfield_coefficients(system) 
-        [ print_coefficients(nf_c[key], ff_c[key], key) for key in keys(system.vortices) ]
+        [ print_coefficients(nf_c[key], ff_c[key], key) for key in keys(system.elements) ]
         print_coefficients(nearfield(system), farfield(system), name)
     else
         print_coefficients(nearfield(system), farfield(system), name)

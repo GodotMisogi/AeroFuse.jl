@@ -33,3 +33,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMPATHELPER_PRIV: ${{ secrets.DOCUMENTER_KEY }}
           # COMPATHELPER_PRIV: ${{ secrets.COMPATHELPER_PRIV }}
+      - uses: julia-actions/julia-downgrade-compat@v1
+        with:
+          # Comma-separated list of packages to not downgrade. This should include any
+          # standard libraries because these have versions tied to the Julia version.
+          # Example: Pkg, TOML
+          # Default: ''
+          skip: ''
+
+          # When strict, a compat entry like "1.2.3" becomes "=1.2.3" so that exactly
+          # v1.2.3 is installed. When not strict, it becomes "~1.2.3" so that patch
+          # upgrades are allowed (v1.2.*). This entry can be 'true' (strict), 'false'
+          # (not strict) or 'v0' (strict for "0.*.*" and not strict otherwise).
+          # Default: 'v0'
+          strict: ''
+
+          # Comma-separated list of Julia projects to modify. The Project.toml files in all of
+          # these directories will be modified.
+          # Example: ., test, docs
+          # Default: .
+          projects: ''

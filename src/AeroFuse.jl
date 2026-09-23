@@ -12,7 +12,6 @@ using RecipesBase
 using MacroTools
 
 using Statistics: mean
-using StatsBase: weights
 
 using SplitApplyCombine: combinedimsview, combinedims, splitdimsview, splitdims
 export combinedimsview, combinedims, splitdimsview, splitdims
@@ -49,6 +48,7 @@ export solve_linear, solve_nonlinear, solve_linear!, solve_nonlinear!
 #==========================================================================================#
 
 include("Tools/MathTools.jl")
+import .MathTools: midpair_map
 # import .MathTools: weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, inverse_rotation, rotation, affine_2D, Point2D, Point3D, x, y, z, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_spacing, sine_spacing
 
 # export forward_sum, forward_difference, forward_division, weighted_vector, vectarray, slope, splitat, adj3, columns, extend_yz, reflect_mapper, cosine_interp, structtolist, inverse_rotation, rotation, affine_2D, Point2D, Point3D, reshape_array, midpair_map, partition, uniform_spacing, linear_spacing, cosine_interpolation, sine_spacing
@@ -57,23 +57,31 @@ include("Tools/MathTools.jl")
 #==========================================================================================#
 
 include("Tools/NonDimensional.jl")
-import .NonDimensional: dynamic_pressure, reynolds_number, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, aerodynamic_coefficients, force, moment
+import .NonDimensional: dynamic_pressure, reynolds_number, force_coefficient,
+                        moment_coefficient, rate_coefficient, pressure_coefficient,
+                        aerodynamic_coefficients,
+                        force, moment
 
-export dynamic_pressure, reynolds_number, force_coefficient, moment_coefficient, rate_coefficient, pressure_coefficient, force, moment
+export dynamic_pressure, reynolds_number, force_coefficient, moment_coefficient,
+       rate_coefficient, pressure_coefficient, force, moment
 
 ## Laplace
 #==========================================================================================#
 
 include("Tools/Laplace.jl")
 
-import .Laplace: PointSingularity2D, PointSingularity3D, ConstantStrengthLineSingularity3D, potential, stream, velocity
+import .Laplace: PointSingularity2D, PointSingularity3D, ConstantStrengthLineSingularity3D,
+                 potential, stream, velocity
 
-export PointSingularity2D, PointSingularity3D, ConstantStrengthLineSingularity3D, potential, stream, velocity
+export PointSingularity2D,
+       PointSingularity3D, ConstantStrengthLineSingularity3D, potential, stream, velocity
 
 # Traits
-import .Laplace: Source2D, Doublet2D, Vortex2D, Uniform2D, Source3D, Doublet3D, SourceLine3D, DoubletLine3D
+import .Laplace: Source2D, Doublet2D, Vortex2D, Uniform2D, Source3D, Doublet3D,
+                 SourceLine3D, DoubletLine3D
 
-export Source2D, Doublet2D, Vortex2D, Uniform2D, Source3D, Doublet3D, SourceLine3D, DoubletLine3D
+export Source2D,
+       Doublet2D, Vortex2D, Uniform2D, Source3D, Doublet3D, SourceLine3D, DoubletLine3D
 
 # Others
 import .Laplace: Freestream, cartesian_to_freestream, freestream_to_cartesian
@@ -84,9 +92,28 @@ export Freestream, cartesian_to_freestream, freestream_to_cartesian
 #==========================================================================================#
 
 include("Geometry/PanelGeometry/PanelGeometry.jl")
-import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, panel_length, transform_panel, transform_panel_points, panel_angle, tangent_vector, normal_vector, panel_location, panel_area, panel_coordinates, transform, midpoint, panel_points, wake_panel, wake_panels, reverse_panel, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, panel_vector, distance, average_chord, average_width, wetted_area, make_panels, local_coordinate_system, get_transformation, trailing_edge_info, panel_coordinates, collocation_point
+import .PanelGeometry: AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D,
+                       AbstractPanel3D, Panel3D, panel_length, transform_panel,
+                       transform_panel_points,
+                       panel_angle, tangent_vector, normal_vector, panel_location,
+                       panel_area,
+                       panel_coordinates, transform, midpoint, panel_points, wake_panel,
+                       wake_panels,
+                       reverse_panel, panel_velocity, panel_scalar, trailing_edge_panel,
+                       get_surface_values,
+                       panel_vector, distance, average_chord, average_width, wetted_area,
+                       make_panels, make_panels!,
+                       local_coordinate_system, get_transformation, trailing_edge_info,
+                       panel_coordinates,
+                       collocation_point, WakePanel3D, p1, p2, p3, p4
 
-export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D, transform, normal_vector, midpoint, panel_location, tangent_vector, panel_points, distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length, transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar, trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area, make_panels, local_coordinate_system, get_transformation, trailing_edge_info, panel_coordinates, collocation_point
+export AbstractPanel, AbstractPanel2D, Panel2D, WakePanel2D, AbstractPanel3D, Panel3D,
+       transform, normal_vector, midpoint, panel_location, tangent_vector, panel_points,
+       distance, wake_panel, wake_panels, panel_area, reverse_panel, panel_length,
+       transform_panel, panel_angle, panel_vector, panel_velocity, panel_scalar,
+       trailing_edge_panel, get_surface_values, average_chord, average_width, wetted_area,
+       make_panels, make_panels!, local_coordinate_system, get_transformation, trailing_edge_info,
+       panel_coordinates, collocation_point
 
 ## Aircraft geometry
 #==========================================================================================#
@@ -99,19 +126,62 @@ import .AircraftGeometry: AbstractAircraft, AbstractWing, AbstractFoil, Abstract
 export AbstractAircraft, AbstractWing, AbstractFoil, AbstractFuselage
 
 # Foil
-import .AircraftGeometry: Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, reflect, camber, camber_line, thickness_line, control_surface
+import .AircraftGeometry: Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels,
+                          read_foil, leading_edge_index, upper_surface, lower_surface,
+                          split_surface,
+                          coordinates_to_camber_thickness, camber_thickness_to_coordinates,
+                          camber_thickness,
+                          camber_thickness_to_coordinates, cosine_interpolation,
+                          camber_thickness_to_CST,
+                          coordinates_to_CST, maximum_thickness_to_chord, translate,
+                          interpolate, rotate, affine,
+                          scale, reflect, camber, camber_line, thickness_line,
+                          control_surface
 
-export Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil, leading_edge_index, upper_surface, lower_surface, split_surface, coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness, camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST, coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate, affine, scale, reflect, camber, camber_line, thickness_line, control_surface
+export Foil, arc_length, kulfan_CST, naca4, camber_CST, make_panels, read_foil,
+       leading_edge_index, upper_surface, lower_surface, split_surface,
+       coordinates_to_camber_thickness, camber_thickness_to_coordinates, camber_thickness,
+       camber_thickness_to_coordinates, cosine_interpolation, camber_thickness_to_CST,
+       coordinates_to_CST, maximum_thickness_to_chord, translate, interpolate, rotate,
+       affine,
+       scale, reflect, camber, camber_line, thickness_line, control_surface
 
 # Fuselage
-import .AircraftGeometry: Fuselage, projected_area, length, cosine_interpolation, volume, HyperEllipseFuselage, curve
+import .AircraftGeometry: Fuselage, projected_area, length, cosine_interpolation, volume,
+                          HyperEllipseFuselage, curve, undrooped_curve
 
-export Fuselage, projected_area, length, cosine_interpolation, volume, HyperEllipseFuselage, curve
+export Fuselage,
+       projected_area, length, cosine_interpolation, volume, HyperEllipseFuselage, curve
 
 # Wing
-import .AircraftGeometry: Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, make_panels, mesh_chords, mesh_wing, mesh_cambers, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio
+import .AircraftGeometry: Wing, WingSection, affine_transformation, mean_aerodynamic_chord,
+                          span, aspect_ratio, projected_area, taper_ratio, leading_edge,
+                          trailing_edge,
+                          chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections,
+                          chop_coordinates,
+                          chop_spanwise_sections, chop_chords, chop_spans, make_panels,
+                          mesh_chords, mesh_wing,
+                          mesh_cambers, mean_aerodynamic_center, number_of_spanwise_panels,
+                          symmetric_spacing,
+                          coordinates, chord_coordinates, camber_coordinates,
+                          surface_coordinates, foils, chords,
+                          twists, spans, dihedrals, sweeps, position, orientation, WingMesh,
+                          chord_panels,
+                          camber_panels, surface_panels, AbstractSpacing, Sine, Cosine,
+                          Uniform, properties,
+                          wetted_area_ratio, set_incidence, exposed_wings
 
-export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio, projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge, chop_trailing_edge, chop_wing, chop_sections, chop_coordinates, chop_spanwise_sections, chop_chords, chop_spans, make_panels, mesh_chords, mesh_wing, mesh_cambers, mean_aerodynamic_center, panel_wing, number_of_spanwise_panels, symmetric_spacing, coordinates, chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists, spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels, camber_panels, surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio
+export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, aspect_ratio,
+       projected_area, taper_ratio, leading_edge, trailing_edge, chop_leading_edge,
+       chop_trailing_edge, chop_wing, chop_sections, chop_coordinates,
+       chop_spanwise_sections,
+       chop_chords, chop_spans, make_panels, mesh_chords, mesh_wing, mesh_cambers,
+       mean_aerodynamic_center, number_of_spanwise_panels, symmetric_spacing, coordinates,
+       chord_coordinates, camber_coordinates, surface_coordinates, foils, chords, twists,
+       spans, dihedrals, sweeps, position, orientation, WingMesh, chord_panels,
+       camber_panels,
+       surface_panels, AbstractSpacing, Sine, Cosine, Uniform, properties, wetted_area_ratio,
+       set_incidence, exposed_wings
 
 # Surfaces
 # import .AircraftGeometry: HorizontalTail, VerticalTail
@@ -119,9 +189,9 @@ export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, a
 # export HorizontalTail, VerticalTail
 
 # Controls
-# import .AircraftGeometry: WingControlSurface
+# import .AircraftGeometry: Flap, Aileron
 
-# export WingControlSurface
+# export Flap, Aileron
 
 ## Aerodynamic analyses
 #==========================================================================================#
@@ -129,55 +199,112 @@ export Wing, WingSection, affine_transformation, mean_aerodynamic_chord, span, a
 ## Doublet-source panel method
 
 include("Aerodynamics/DoubletSource/DoubletSource.jl")
-import .DoubletSource: doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, surface_velocities, lift_coefficient, quadrilateral_source_potential, quadrilateral_doublet_potential
+import .DoubletSource: doublet_matrix, source_matrix, boundary_vector, wake_panels,
+                       source_strengths, surface_velocities, lift_coefficient,
+                       quadrilateral_source_potential,
+                       quadrilateral_doublet_potential
 
-export doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths, surface_velocities, lift_coefficient, quadrilateral_source_potential, quadrilateral_doublet_potential
+export doublet_matrix, source_matrix, boundary_vector, wake_panels, source_strengths,
+       surface_velocities, lift_coefficient, quadrilateral_source_potential,
+       quadrilateral_doublet_potential
 
 ## Linear-strength source and vorticity panel method
 
 include("Aerodynamics/LinearVortexSource/LinearVortexSource.jl")
-import .LinearVortexSource: total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_neumann_matrix, linear_source_neumann_matrix, linear_vortex_neumann_matrix, constant_source_matrix, constant_source_boundary_condition
+import .LinearVortexSource: total_velocity, source_velocity, vortex_velocity,
+                            vortex_influence_matrix, source_influence_matrix,
+                            neumann_boundary_condition,
+                            kutta_condition, two_point_neumann_matrix,
+                            linear_source_neumann_matrix,
+                            linear_vortex_neumann_matrix, constant_source_matrix,
+                            constant_source_boundary_condition
 
-export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix, source_influence_matrix, neumann_boundary_condition, kutta_condition, two_point_matrix, linear_source_matrix, linear_vortex_matrix, constant_source_matrix, constant_source_boundary_condition, constant_quadrilateral_source_velocity, constant_quadrilateral_source_velocity_farfield, constant_quadrilateral_doublet_velocity, constant_quadrilateral_doublet_velocity_farfield
+export total_velocity, source_velocity, vortex_velocity, vortex_influence_matrix,
+       source_influence_matrix, neumann_boundary_condition, kutta_condition,
+       two_point_matrix,
+       linear_source_matrix, linear_vortex_matrix, constant_source_matrix,
+       constant_source_boundary_condition, constant_quadrilateral_source_velocity,
+       constant_quadrilateral_source_velocity_farfield,
+       constant_quadrilateral_doublet_velocity,
+       constant_quadrilateral_doublet_velocity_farfield
 
-## Vortex lattice
+## Coupled potential flow
 
-include("Aerodynamics/VortexLattice/VortexLattice.jl")
+include("Aerodynamics/PotentialFlow/PotentialFlow.jl")
 
-# Vortex types
-import .VortexLattice: Horseshoe, VortexRing, velocity, bound_leg_center, bound_leg_vector, control_point
+const VortexLattice = PotentialFlow
+const VortexLatticeSystem = PotentialFlow.VortexLatticeSystem
 
-export Horseshoe, VortexRing, velocity, bound_leg_center, bound_leg_vector, control_point
+# Element types
+import .PotentialFlow:
+                       AbstractPotentialFlowElement, AbstractVortex,
+                       AbstractElementModel, Horseshoe, VortexRing, SourcePanel,
+                       HorseshoeVortex, RingVortex, FuselageLine, SourcePanel3D, velocity,
+                       bound_leg_center,
+                       bound_leg_vector, control_point, source_line_velocity,
+                       bound_leg_velocity, point_source_velocity, point_doublet_velocity,
+                       segment_length, quadrilateral_source_velocity,
+                       body_surface_velocities, body_pressure_coefficients, body_forces
+
+export AbstractPotentialFlowElement, AbstractVortex, VortexLatticeSystem,
+       AbstractElementModel, Horseshoe, VortexRing, SourcePanel,
+       HorseshoeVortex, RingVortex, FuselageLine, SourcePanel3D, velocity, bound_leg_center,
+       bound_leg_vector, control_point, quadrilateral_source_velocity,
+       body_surface_velocities, body_pressure_coefficients, body_forces
 
 # Reference values
-import .VortexLattice: References, kinematic_viscosity, mach_number
+import .PotentialFlow: References, kinematic_viscosity, mach_number
 
 export References, kinematic_viscosity, mach_number
 
 # Reference frames and traits
-import .VortexLattice: AbstractAxisSystem, Stability, Wind, Body, Geometry, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, wind_to_body_axes
+import .PotentialFlow: AbstractAxisSystem, Stability, Wind, Body, Geometry,
+                       geometry_to_wind_axes, geometry_to_stability_axes,
+                       stability_to_geometry_axes,
+                       wind_to_geometry_axes, wind_to_body_axes,
+                       _vector_to_axes, _moment_to_axes, flip_xz,
+                       NF_COEFFS, FF_COEFFS, Derivs
 
-export AbstractAxisSystem, Stability, Wind, Body, Geometry, geometry_to_wind_axes, geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes, wind_to_body_axes
+export AbstractAxisSystem, Stability, Wind, Body, Geometry, geometry_to_wind_axes,
+       geometry_to_stability_axes, stability_to_geometry_axes, wind_to_geometry_axes,
+       wind_to_body_axes
 
 # System methods
-import .VortexLattice: AbstractPotentialFlowSystem, VortexLatticeSystem, surface_velocity, surface_forces, surface_moments, nearfield_drag, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, center_of_pressure
+import .PotentialFlow: AbstractPotentialFlowSystem, PotentialFlowSystem, surface_velocity,
+                       surface_forces, surface_moments, nearfield_drag, rate_coefficient,
+                       nearfield, farfield,
+                       farfield_forces, surface_velocities, surface_forces,
+                       surface_dynamics,
+                       surface_coefficients, nearfield_coefficients, farfield_coefficients,
+                       center_of_pressure, PropellerDisk, slipstream_velocity, auto_turn
 
-export AbstractPotentialFlowSystem, VortexLatticeSystem, surface_velocity, surface_forces, surface_moments, nearfield_drag, rate_coefficient, nearfield, farfield, farfield_forces, surface_velocities, surface_forces, surface_dynamics, surface_coefficients, nearfield_coefficients, farfield_coefficients, center_of_pressure
+export AbstractPotentialFlowSystem, PotentialFlowSystem, surface_velocity, surface_forces,
+       surface_moments, nearfield_drag, rate_coefficient, nearfield, farfield,
+       farfield_forces,
+       surface_velocities, surface_forces, surface_dynamics, surface_coefficients,
+       nearfield_coefficients, farfield_coefficients, center_of_pressure,
+       PropellerDisk, slipstream_velocity, auto_turn
 
 # Derivatives
-import .VortexLattice: freestream_derivatives
+import .PotentialFlow: freestream_derivatives
 
 export freestream_derivatives
 
 # Post-prrocessing
-import .VortexLattice: print_coefficients, print_derivatives, streamlines
+import .PotentialFlow: print_coefficients, print_derivatives, streamlines
 
 export print_coefficients, print_derivatives, streamlines
 
 ## Panel-VLM interface
-include("Aerodynamics/vlm_interface.jl")
+include("Aerodynamics/potential_flow_interface.jl")
 
-export make_horseshoes, make_vortex_rings
+export elements, make_horseshoes, make_vortex_rings, make_vortex_rings!, make_fuselage_line, make_fuselage_panels,
+       make_body_panels, deflect_normals
+
+## Generic doublet-source panel aircraft solver (needs References + FuselageLine + VLM kernels)
+include("Aerodynamics/doublet_source_panel_aircraft.jl")
+
+export DoubletSourcePanelSystem, lift_coefficients, field_velocity
 
 ## Profile drag estimation
 include("Aerodynamics/parasitic_drag.jl")
@@ -195,7 +322,9 @@ export solve_case, spanwise_loading, triangle_connectivities, extrapolate_point_
 
 include("Aerodynamics/Cases/stability_cases.jl")
 
-export longitudinal_stability_derivatives, longitudinal_stability_matrix, lateral_stability_derivatives, lateral_stability_matrix
+export longitudinal_stability_derivatives,
+       longitudinal_stability_matrix, lateral_stability_derivatives,
+       lateral_stability_matrix
 
 include("Aerodynamics/Cases/foil_cases.jl")
 
@@ -203,9 +332,26 @@ include("Aerodynamics/Cases/foil_cases.jl")
 #==========================================================================================#
 
 include("Structures/Beams.jl")
-import .Beams: Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress, beam_weight, structural_loads!, structural_loads
+import .Beams: Material, Tube, Beam, radii, area, moment_of_inertia,
+               polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs,
+               tube_stiffness_matrix,
+               bending_stiffness_matrix, axial_stiffness_matrix, solve_cantilever_beam,
+               elastic_modulus, shear_modulus, yield_stress, density, principal_stress,
+               torsional_stress, hoop_stress, von_mises_stress, beam_weight, structural_loads!,
+               structural_loads
 
-export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia, J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix, axial_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus, yield_stress, density, principal_stress, torsional_stress, von_mises_stress, beam_weight, structural_loads!, structural_loads
+export Material, Tube, Beam, radii, area, moment_of_inertia, polar_moment_of_inertia,
+       J_coeffs, Iyy_coeffs, Izz_coeffs, tube_stiffness_matrix, bending_stiffness_matrix,
+       axial_stiffness_matrix, solve_cantilever_beam, elastic_modulus, shear_modulus,
+       yield_stress, density, principal_stress, torsional_stress, hoop_stress, von_mises_stress,
+       beam_weight, structural_loads!, structural_loads
+
+## Fuselage structural weight
+#==========================================================================================#
+
+include("Structures/fuselage_weight.jl")
+
+export fuselage_structural_mass
 
 ## Propulsion analyses
 #==========================================================================================#
@@ -218,7 +364,9 @@ import .Propulsion: ActuatorDisc, actuator_disc_induced_velocity
 export ActuatorDisc, actuator_disc_induced_velocity
 
 # Blade-element momentum theory
-import .Propulsion: induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream_contraction
+import .Propulsion:
+                    induced_velocity, induced_speed, inflow_angle, blade_solidity,
+                    slipstream_contraction
 
 export induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream_contraction
 
@@ -228,5 +376,17 @@ export induced_velocity, induced_speed, inflow_angle, blade_solidity, slipstream
 include("Tools/plot_tools.jl")
 
 export plot_panel, plot_panels, plot_streamlines, plot_planform, plot_surface, plot_spanload
+
+using PrecompileTools
+
+@setup_workload begin
+    # Putting some things in `@setup_workload` instead of `@compile_workload` can reduce the size of the
+    # precompile file and potentially make loading faster.
+    @compile_workload begin
+        # all calls in this block will be precompiled, regardless of whether
+        # they belong to your package or not (on Julia 1.8 and higher)
+        include("precompile.jl")
+    end
+end
 
 end

@@ -118,8 +118,7 @@ end
 
 function volume(tube :: Tube)
     r1, r2 = radii(tube)
-    V = 2π * (r1 + r2) * (r1 - r2 + length(tube))
-    return V
+    return π * (r2^2 - r1^2) * length(tube)
 end
 
 beam_weight(tube :: Tube) = tube.material.density * volume(tube)
@@ -129,21 +128,37 @@ beam_weight(tube :: Tube) = tube.material.density * volume(tube)
 
 principal_stress(E, L, R, dx, dθ_yz) = E / L * (dx + R * dθ_yz)
 torsional_stress(G, L, R, dθ_x) = G * R * dθ_x / L
-von_mises_stress(σ_xx, σ_xt) = √(σ_xx^2 + 3σ_xt^2)
+hoop_stress(Δp, R, t) = Δp * R / t
 
-@views function von_mises_stress(tube :: Tube, ds, θs)
+# Plane stress state (axial σ_xx, hoop σ_θθ, shear σ_xt). With σ_θθ = 0 this reduces to the
+# uniaxial-plus-shear form √(σ_xx² + 3σ_xt²).
+von_mises_stress(σ_xx, σ_θθ, σ_xt) = √(σ_xx^2 - σ_xx * σ_θθ + σ_θθ^2 + 3σ_xt^2)
+von_mises_stress(σ_xx, σ_xt) = von_mises_stress(σ_xx, zero(σ_xx), σ_xt)
+
+"""
+    von_mises_stress(tube :: Tube, ds, θs; Δp = 0, n_press = 1)
+
+Per-element von Mises stress at the two extreme axial fibres of a `Tube` from the relative
+nodal displacement `ds` (axial `ds[1]`) and rotation `θs` (torsion `θs[1]`, bending `θs[2:end]`).
+
+A hoop stress from an internal–external pressure differential `Δp` (with proof factor `n_press`)
+is superposed for a pressurised shell; the default `Δp = 0` recovers the unpressurised beam.
+"""
+@views function von_mises_stress(tube :: Tube, ds, θs; Δp = 0, n_press = 1)
     E = (elastic_modulus ∘ material)(tube)
     G = (shear_modulus ∘ material)(tube)
     R = radius(tube)
     L = length(tube)
+    t = thickness(tube)
 
     dx     = ds[1]
     dθ_yz  = norm(θs[2:end])
     σ_xx_1 = principal_stress(E, L, R,  dx, dθ_yz)
     σ_xx_2 = principal_stress(E, L, R, -dx, dθ_yz)
+    σ_θθ   = n_press * hoop_stress(Δp, R, t)
     σ_xt   = torsional_stress(G, L, R, θs[1])
 
-    return von_mises_stress.(MVector(σ_xx_1, σ_xx_2), σ_xt)
+    return von_mises_stress.(MVector(σ_xx_1, σ_xx_2), σ_θθ, σ_xt)
 end
 
 ## Stiffness matrices

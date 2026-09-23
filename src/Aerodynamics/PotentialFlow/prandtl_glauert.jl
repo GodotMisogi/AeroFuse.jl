@@ -7,14 +7,14 @@ prandtl_glauert_scale_coordinates(r, β) = @views prandtl_glauert_scale_coordina
 prandtl_glauert_scale_normal(nx, ny, nz, β) = SVector(β * nx, ny, nz)
 prandtl_glauert_scale_normal(n, β) = @views prandtl_glauert_scale_normal(n[1], n[2], n[3], β)
 
-prandtl_glauert_scale_coordinates(horseshoe :: Horseshoe, β) = setproperties(horseshoe,
+prandtl_glauert_scale_coordinates(horseshoe :: HorseshoeVortex, β) = setproperties(horseshoe,
     r1 = prandtl_glauert_scale_coordinates(horseshoe.r1, β),
     r2 = prandtl_glauert_scale_coordinates(horseshoe.r2, β),
     rc = prandtl_glauert_scale_coordinates(horseshoe.rc, β),
     normal = prandtl_glauert_scale_normal(horseshoe.normal, β),
 )
 
-prandtl_glauert_scale_coordinates(ring :: VortexRing, β) = setproperties(ring,
+prandtl_glauert_scale_coordinates(ring :: RingVortex, β) = setproperties(ring,
     r1 = prandtl_glauert_scale_coordinates(ring.r1, β),
     r2 = prandtl_glauert_scale_coordinates(ring.r2, β),
     r3 = prandtl_glauert_scale_coordinates(ring.r3, β),

@@ -58,10 +58,10 @@ function linear_vortex_velocity_a(γ1, x, z, x1, x2)
     dlogr = log(r1 / r2)
     dθ    = (θ2 - θ1)
 
-    u =     dθ / 2π + (z * dlogr     - x * dθ) / (2π * d)
-    w = -dlogr / 2π + (x * dlogr - d + z * dθ) / (2π * d)
+    u =     dθ + (z * dlogr     - x * dθ) / d
+    w = -dlogr + (x * dlogr - d + z * dθ) / d
     
-    γ1 * SVector(u, w)
+    γ1 / 2π * SVector(u, w)
 end
 
 function linear_vortex_velocity_b(γ2, x, z, x1, x2)
@@ -74,10 +74,10 @@ function linear_vortex_velocity_b(γ2, x, z, x1, x2)
     dlogr = log(r1 / r2)
     dθ    = (θ2 - θ1)
 
-    u = -(z * dlogr     - x * dθ) / (2π * d)
-    w = -(x * dlogr - d + z * dθ) / (2π * d)
+    u = -(z * dlogr     - x * dθ) / d
+    w = -(x * dlogr - d + z * dθ) / d
 
-    γ2 * SVector(u, w)
+    γ2 / 2π * SVector(u, w)
 end
 
 

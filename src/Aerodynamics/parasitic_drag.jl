@@ -105,9 +105,9 @@ function form_factor(wing :: Wing, num :: Integer)
 end
 
 # Wetted area calculation based on planform area, form factors Kf, and Mach number correction fM.
-function wetted_area_drag_coefficient(wing :: Wing, x_tr, ρ, V, M, μ, S_ref, num)
+@views function wetted_area_drag_coefficient(wing :: Wing, x_tr, ρ, V, M, μ, S_ref, num)
     # Averaging chords over spans
-    mean_chords = @views (wing.chords[1:end-1] + wing.chords[2:end]) / 2
+    mean_chords = (wing.chords[1:end-1] + wing.chords[2:end]) / 2
 
     # Wetted areas for integration over averaged chords
     S_wets = @. mean_chords * wing.spans / cosd(wing.dihedrals)
@@ -116,10 +116,12 @@ function wetted_area_drag_coefficient(wing :: Wing, x_tr, ρ, V, M, μ, S_ref, n
     fM = 1.34M^0.18  # Mach number correction
 
     # Calculate wetted area drag coefficient with wetted areas and form factors
-    CDp = sum(@. parasitic_drag_coefficient(mean_chords, x_tr, ρ, V, M, μ, S_ref, S_wets, K_fs, fM))
+    CDp = sum(zip(mean_chords, S_wets, K_fs)) do (c, S_wet, K_f)
+        parasitic_drag_coefficient(c, x_tr, ρ, V, M, μ, S_ref, S_wet, K_f, fM)
+    end
 
     # Double if symmetric
-    CDp = ifelse(wing.symmetry, 2CDp, CDp) 
+    CDp = ifelse(wing.symmetry, 2CDp, CDp)
 
     return CDp
 end
@@ -174,14 +176,14 @@ MacroTools.@forward WingMesh.surface parasitic_drag_coefficient, form_factor
 """
     parasitic_drag_coefficient(
         wing :: WingMesh, 
-        refs :: References
+        refs :: References,
         x_tr :: Real, 
         u_es, 
     )
 
 Estimate the profile drag coefficient of a `WingMesh` using the **local-friction and local-dissipation method** based on Schlichting's skin-friction coefficient formula with given `References`, a specified transition ratio ``xₜᵣ``, and edge velocities ``\\mathbf u_e``. 
 
-At present, the edge velocities would be computed using the vortex lattice method via `VortexLatticeSystem`. For this case, the panels corresponding to the camber distribution are used in the calculation. 
+At present, the edge velocities would be computed using the vortex lattice method via `PotentialFlowSystem`. For this case, the panels corresponding to the camber distribution are used in the calculation.
 """
 parasitic_drag_coefficient(wing :: WingMesh, refs :: References, x_tr :: Real, u_es) = local_dissipation_drag_coefficient(wing.surface, map(panel_area, camber_panels(wing)), refs.density, u_es, x_tr, refs.density, refs.speed, mach_number(refs), refs.viscosity, refs.area)
 # Should it be doubled for upper and lower surfaces?

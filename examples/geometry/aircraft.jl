@@ -60,14 +60,14 @@ fuse = Fuselage(l_fuselage, lens, rads, [-3.0, 0., 0.])
 using Plots
 
 plt = plot(
-    size = (1000, 600),
+    size = (1920, 1080),
     aspect_ratio = 1,
     zlim = (-0.5, 0.5) .* span(wing),
-    camera = (-60,15)
+    camera = (-70,15)
 )
+plot!(fuse, alpha = 0.2, label = "Fuselage")
 plot!(wing, label = "Wing")
 plot!(htail, label = "Horizontal Tail")
 plot!(vtail, label = "Vertical Tail")
-plot!(fuse, color = :grey, label = "Fuselage")
 
-# savefig(plt, "plots/AircraftGeometry.pdf")
+savefig(plt, "plots/AircraftGeometry.pdf")

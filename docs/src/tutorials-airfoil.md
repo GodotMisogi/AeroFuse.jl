@@ -1,5 +1,5 @@
 ```@meta
-EditURL = "<unknown>/docs/lit/tutorials-airfoil.jl"
+EditURL = "../lit/tutorials-airfoil.jl"
 ```
 
 ## Objectives
