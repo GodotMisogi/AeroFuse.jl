@@ -91,7 +91,7 @@ function quadrilateral_source_velocity(σ, el::SourcePanel3D, r)
     x, y, z = p
 
     T = eltype(p)
-    ε = 1e-10
+    ε = T(1e-10)
 
     # Self term: at the centroid the panel induces only the ±½ normal jump on the outward side.
     if abs(z) <= ε && abs(x) <= ε && abs(y) <= ε
@@ -141,7 +141,7 @@ function quadrilateral_source_velocity(σ, el::SourcePanel3D, r)
     end
 
     # Negated so a positive source blows fluid outward (+n̂ side), matching the +σ/2 self term.
-    return -R * (σ / 4π * SVector(u, v, w))
+    return -R * (σ / 4 / π * SVector(u, v, w))
 end
 
 """

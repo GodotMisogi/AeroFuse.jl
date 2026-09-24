@@ -5,22 +5,39 @@
 # norm(v) = sqrt(sum(abs2, v))
 # normalize(v) = v / norm(v)
 
-bound_leg_velocity(a, b, Γ) = Γ / 4π * (1 / norm(a) + 1 / norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
-trailing_leg_velocity(r, Γ, u) = Γ / 4π * normalize(r) × normalize(u) / (norm(r) - dot(r, u))
+# `Γ / 4 / π` rather than `Γ / 4π`: the `Irrational` π adopts Γ's precision, so Float32 inputs
+# stay Float32 (required by GPU backends without Float64), while Float64 results are bitwise
+# unchanged since division by 4 is exact.
+
+bound_leg_velocity(a, b, Γ) = Γ / 4 / π * (1 / norm(a) + 1 / norm(b)) * a × b / (norm(a) * norm(b) + dot(a, b))
+
+# Denominator `|r| - r·u + ε²/(|r| + r·u)` of the trailing-leg kernel for unit `u`. Near the
+# trailing line `|r| - r·u` cancels downstream (r·u > 0) and `|r| + r·u` upstream (r·u ≤ 0), even
+# to exactly zero in Float32 (0/0 = NaN for ε = 0). The identity `(|r| - r·u)(|r| + r·u) = |r×u|²`
+# replaces each cancelling difference with the directly computed cross product.
+function trailing_leg_denominator(r, u, ε)
+    nr, σ, c² = norm(r), dot(r, u), sum(abs2, r × u)
+    σ > 0 && return (c² + ε^2) / (nr + σ)
+    return iszero(ε) ? nr - σ : (nr - σ) * (1 + ε^2 / c²)
+end
+
+trailing_leg_velocity(r, Γ, u) = Γ / 4 / π * normalize(r) × normalize(u) / trailing_leg_denominator(r, normalize(u), false)
 
 trailing_legs_velocities(a, b, Γ, u) = trailing_leg_velocity(a, Γ, u) - trailing_leg_velocity(b, Γ, u)
 total_horseshoe_velocity(a, b, Γ, u) = bound_leg_velocity(a, b, Γ) + trailing_legs_velocities(a, b, Γ, u)
 
 # Finite-core velocity kernels
 function bound_leg_velocity(a, b, Γ, ε)
-    na, nb, σ = norm(a), norm(b), dot(a, b)
-    term_1 = (na^2 - σ) / √(na^2 + ε^2) + (nb^2 - σ) / √(nb^2 + ε^2)
-    term_2 = a × b / (na^2 * nb^2 - σ^2 + ε^2 * (na^2 + nb^2 - 2 * na * nb))
+    # Cancellation-free forms of `|a|² - a·b`, `|a|²|b|² - (a·b)²` and `|a|² + |b|² - 2|a||b|`,
+    # whose differenced forms lose all significance in Float32 for distant or near-collinear points.
+    na, nb, c = norm(a), norm(b), a × b
+    term_1 = dot(a, a - b) / √(na^2 + ε^2) + dot(b, b - a) / √(nb^2 + ε^2)
+    term_2 = c / (sum(abs2, c) + ε^2 * (na - nb)^2)
 
-    Γ / 4π * term_1 * term_2
+    Γ / 4 / π * term_1 * term_2
 end
 
-trailing_leg_velocity(r, Γ, u, ε) = Γ / 4π * normalize(r) × u / (norm(r) - dot(r, u) + ε^2 / (norm(r) + dot(r, u)))
+trailing_leg_velocity(r, Γ, u, ε) = Γ / 4 / π * normalize(r) × u / trailing_leg_denominator(r, u, ε)
 trailing_legs_velocities(a, b, Γ, u, ε) = trailing_leg_velocity(a, Γ, u, ε) - trailing_leg_velocity(b, Γ, u, ε)
 total_horseshoe_velocity(a, b, Γ, u, ε) = bound_leg_velocity(a, b, Γ, ε) + trailing_legs_velocities(a, b, Γ, u, ε)
 

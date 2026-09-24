@@ -20,6 +20,14 @@
 using AeroFuse
 using ComponentArrays
 
+## Compute backend
+# `nothing` runs the serial host solver. To parallelise the influence-matrix assembly, linear
+# solve and O(N²) post-processing, uncomment one backend (its package must be installed):
+backend = nothing
+# using KernelAbstractions; backend = CPU()          # Multithreaded host (start Julia with `-t auto`)
+# using Metal;              backend = MetalBackend() # Apple GPU (Float32 precision)
+# using CUDA;               backend = CUDABackend()  # NVIDIA GPU
+
 ## Fuselage (paneled skin)
 #=========================================================#
 fuse = HyperEllipseFuselage(
@@ -124,6 +132,7 @@ ref = References(
 #=========================================================#
 @time sys = solve_case(
     aircraft, fs, ref;
+    backend          = backend, # Compute backend (see top of file)
     print            = true,   # Print aircraft totals
     print_components = true,    # Print per-component (incl. body) breakdown
 )
@@ -141,6 +150,7 @@ body_CFs = body_forces(sys)
 @info "Body Cp range" extrema(Cps)
 
 ## Stability derivatives (body is fully differentiable through the coupled solve)
+# Derivatives re-solve on the serial host path (ForwardDiff), whatever `backend` is set above.
 @time dvs = freestream_derivatives(sys;
     axes             = Stability(),
     print            = true,

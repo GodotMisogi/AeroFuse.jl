@@ -11,6 +11,7 @@ DelimitedFiles = "1"
 DiffResults = "1"
 ForwardDiff = "1"
 Interpolations = "0.16"
+KernelAbstractions = "0.9"
 LabelledArrays = "1"
 MacroTools = "0.5"
 PrecompileTools = "1"
@@ -47,3 +48,15 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+
+[weakdeps]
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+
+[extensions]
+AeroFuseKernelAbstractionsExt = "KernelAbstractions"
+
+[extras]
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+
+[targets]
+test = ["KernelAbstractions"]

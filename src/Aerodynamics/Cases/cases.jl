@@ -9,14 +9,16 @@
         name = :aircraft :: Symbol,
         compressible = false :: Boolean,
         print = false :: Boolean,
-        print_components = false :: Boolean
+        print_components = false :: Boolean,
+        backend = nothing
     )
 
 Perform a coupled potential-flow analysis given a `ComponentVector` of populated elements (e.g.
 `HorseshoeVortex`, `RingVortex`, `SourcePanel3D`), a `Freestream` condition, and `References` values.
+`backend` selects the compute backend (see [`PotentialFlowSystem`](@ref)).
 """
-function solve_case(components :: ComponentVector, freestream :: Freestream, refs :: References; name = :aircraft, compressible = false, print = false, print_components = false)
-    system = PotentialFlowSystem(components, freestream, refs, compressible)
+function solve_case(components :: ComponentVector, freestream :: Freestream, refs :: References; name = :aircraft, compressible = false, print = false, print_components = false, backend = nothing)
+    system = PotentialFlowSystem(components, freestream, refs, compressible; backend)
 
     # Printing if needed
     if print_components

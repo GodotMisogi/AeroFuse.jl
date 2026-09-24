@@ -64,10 +64,10 @@ segment_length(el::FuselageLine) = norm(el.r2 - el.r1)
 # Implemented locally rather than reusing `Laplace.Doublet3D`, whose kernel is unreliable.
 function point_doublet_velocity(m, p, d, ε = 0.)
     ρ = sqrt(dot(d, d) + ε^2)
-    return m / 4π * (3 * dot(p, d) * d / ρ^5 - p / ρ^3)
+    return m / 4 / π * (3 * dot(p, d) * d / ρ^5 - p / ρ^3)
 end
 
-point_source_velocity(σ, d, ε = 0.) = σ / 4π * d / sqrt(dot(d, d) + ε^2)^3
+point_source_velocity(σ, d, ε = 0.) = σ / 4 / π * d / sqrt(dot(d, d) + ε^2)^3
 
 """
     velocity(r, el :: FuselageLine, λ, V̂ = x̂)
@@ -139,6 +139,9 @@ trailing_velocity(r, el::FuselageLine, Γ, V) = zero(SVector{3, promote_type(elt
 # Slender-body line has no trailing wake; its farfield force is handled by slender-body
 # integration, not the Trefftz plane.
 has_wake(::FuselageLine) = false
+
+# Its row is rewritten by `apply_bc_row!` above.
+has_bc_override(::FuselageLine) = true
 
 ## Axis transforms (wind-axis rotation and Prandtl-Glauert scaling)
 #==========================================================================================#

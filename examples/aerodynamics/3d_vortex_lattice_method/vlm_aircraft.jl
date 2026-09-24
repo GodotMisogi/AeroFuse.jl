@@ -1,6 +1,14 @@
 ## Wing analysis case
 using AeroFuse
 
+## Compute backend
+# `nothing` runs the serial host solver. To parallelise the influence-matrix assembly, linear
+# solve and O(N²) post-processing, uncomment one backend (its package must be installed):
+backend = nothing
+# using KernelAbstractions; backend = CPU()          # Multithreaded host (start Julia with `-t auto`)
+# using Metal;              backend = MetalBackend() # Apple GPU (Float32 precision)
+# using CUDA;               backend = CUDABackend()  # NVIDIA GPU
+
 ## Surfaces
 
 # Wing
@@ -92,6 +100,7 @@ ref = References(
 @time sys = solve_case(
     aircraft, fs, ref;
     compressible     = true, # Compressibility correction flag
+    backend          = backend, # Compute backend (see top of file)
     print            = true, # Prints the results for only the aircraft
     print_components = true, # Prints the results for all components
 )
@@ -117,6 +126,7 @@ nfs = nearfield_coefficients(sys)
 ffs = farfield_coefficients(sys)
 
 ## Force/moment coefficients and derivatives
+# Derivatives re-solve on the serial host path (ForwardDiff), whatever `backend` is set above.
 @time dvs = freestream_derivatives(sys;
     axes = Stability(),  # Optional for changing the axes
     print = true,
@@ -226,7 +236,7 @@ Vs = 1.0:10:300
 res_Vs = combinedimsview(
     map(Vs) do V
         ref1 = @set ref.speed = V
-        sys = solve_case(aircraft, fs, ref1, compressible = true)
+        sys = solve_case(aircraft, fs, ref1, compressible = true, backend = backend)
         [mach_number(ref1); farfield(sys); nearfield(sys)]
     end, (1),
 )
@@ -244,7 +254,7 @@ Plots.plot(
 res_αs = combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, ref, compressible = true)
+        sys = solve_case(aircraft, fst, ref, compressible = true, backend = backend)
         [α; farfield(sys); nearfield(sys)]
     end, (1),
 )
@@ -262,7 +272,7 @@ res = combinedimsview(
     map(product(Vs, αs)) do (V, α)
         ref1 = @set ref.speed = V
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, ref1, compressible = true)
+        sys = solve_case(aircraft, fst, ref1, compressible = true, backend = backend)
         [mach_number(ref1); α; farfield(sys); nearfield(sys)]
     end,
 )

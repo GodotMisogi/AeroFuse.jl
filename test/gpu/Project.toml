@@ -1,0 +1,10 @@
+[deps]
+AeroFuse = "477c59f4-51f5-487f-bf1e-8db39645b227"
+ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Metal = "dde4c033-4e86-420c-a63e-0dd931031962"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+AeroFuse = {path = "../.."}

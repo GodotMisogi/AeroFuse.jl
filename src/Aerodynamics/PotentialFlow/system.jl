@@ -77,6 +77,8 @@ The accessible fields are:
 - `freestream :: Freestream`: The freestream conditions.
 - `reference :: References`: The reference values.
 - `slipstream`: The prescribed propeller slipstream(s) for blown-lift analyses (`nothing` if absent).
+- `backend`: The compute backend used for the solve and post-processing (`nothing` for the serial host path).
+  With a device backend, `influence_matrix` and `boundary_vector` remain resident on that device.
 """
 struct PotentialFlowSystem{
     M <: DenseArray{<: AbstractPotentialFlowElement},
@@ -85,7 +87,8 @@ struct PotentialFlowSystem{
     S,
     P,
     Q,
-    W} <: AbstractPotentialFlowSystem
+    W,
+    B} <: AbstractPotentialFlowSystem
     elements          :: M
     strengths         :: N
     influence_matrix  :: R
@@ -94,6 +97,7 @@ struct PotentialFlowSystem{
     reference         :: Q
     compressible      :: Bool
     slipstream        :: W
+    backend           :: B
 end
 
 # Property aliases preserve existing source-level access without changing field layout.
@@ -152,8 +156,14 @@ controls regime warnings. `slipstream` supplies prescribed propeller disks.
 Post-processing axes are chosen on the evaluation methods, not the constructor.
 The current solver applies the same speed/PG strength scaling to all families;
 compressible non-vortex strength recovery has not been independently validated.
+
+`backend` selects where the influence matrix is assembled and solved and where the ``O(N^2)``
+induced-velocity post-processing runs: `nothing` (default) is the serial host path; a
+`KernelAbstractions.Backend` (e.g. `CPU()` for multithreading, `MetalBackend()`, `CUDABackend()`)
+requires loading `KernelAbstractions` (or a GPU package providing it). Backends without Float64
+support compute in Float32. Device backends do not support automatic differentiation.
 """
-function PotentialFlowSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, warn = true; slipstream = nothing)
+function PotentialFlowSystem(aircraft, fs :: Freestream, refs :: References, compressible = false, warn = true; slipstream = nothing, backend = nothing)
 
     _validate_components(aircraft)
 
@@ -202,9 +212,9 @@ function PotentialFlowSystem(aircraft, fs :: Freestream, refs :: References, com
         v_slip = has_slip ? slipstream_velocity(cp, slips_ac, refs) / refs.speed : zero(cp)
         v_fuse + v_slip
     end
-    Γs, AIC, boco = solve_linear(ac, U, Ups, Ω)
+    Γs, AIC, boco = device_solve_linear(backend, ac, U, Ups, Ω)
 
-    return PotentialFlowSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible, slips)
+    return PotentialFlowSystem(aircraft, refs.speed * Γs / β_pg^2, AIC, boco, fs, refs, compressible, slips, backend)
 end
 
 # Miscellaneous
@@ -220,6 +230,28 @@ _slipstream_velocity(r, ::Nothing, refs) = zero(r)
 _slipstream_velocity(r, slips, refs) = slipstream_velocity(r, slips, refs)
 
 bound_slipstream_velocities(system :: PotentialFlowSystem) = map(el -> _slipstream_velocity(bound_leg_center(el), system.slipstream, system.reference), system.elements)
+
+## Backend dispatch for O(N²) post-processing
+# `nothing` keeps the serial host path verbatim. Device backends evaluate the induced sums via
+# `device_induced_sum` and apply the same freestream/rotation/slipstream terms on the host.
+
+# Copy device results (possibly lower precision) into the component layout of `like`.
+_with_layout(like, values) = copyto!(similar(like), values)
+
+_nearfield_velocities(::Nothing, system, U, Ω, Vps) = surface_velocities(system.elements, system.elements, system.strengths, U, Ω, Vps)
+
+function _nearfield_velocities(backend, system, U, Ω, Vps)
+    pts = map(bound_leg_center, system.elements)
+    ind = _with_layout(pts, device_induced_sum(backend, trailing_velocity, pts, system.elements, system.strengths, -normalize(U)))
+    return map((v, r, Vp) -> v - (U + Ω × r) + Vp, ind, pts, Vps)
+end
+
+_nearfield_forces(::Nothing, system, U, Ω, ρ, Vps) = surface_forces(system.elements, system.strengths, U, Ω, ρ, Vps)
+
+function _nearfield_forces(backend, system, U, Ω, ρ, Vps)
+    vels = _nearfield_velocities(backend, system, U, Ω, Vps)
+    return map((h, Γ, V) -> kutta_joukowsky(ρ, V, bound_leg_vector(h), Γ), system.elements, system.strengths, vels)
+end
 
 ## Velocities
 """
@@ -238,7 +270,7 @@ The reference axis system is set to the geometry axes defined in the constructio
 function surface_velocities(system :: PotentialFlowSystem; axes :: AbstractAxisSystem = Geometry())
     α, β = system.freestream.alpha, system.freestream.beta
     Vps = bound_slipstream_velocities(system)
-    vels = surface_velocities(system.elements, system.elements, system.strengths, system.reference.speed * -velocity(system.freestream), system.freestream.omega, Vps)
+    vels = _nearfield_velocities(system.backend, system, system.reference.speed * -velocity(system.freestream), system.freestream.omega, Vps)
     return _vector_to_axes.(vels, Ref(axes), α, β)
 end
 
@@ -299,7 +331,7 @@ end
 function _geometry_surface_forces(system::PotentialFlowSystem)
     # Compute surface forces and moments in geometry axes
     Vps = bound_slipstream_velocities(system)
-    surf_forces = surface_forces(system.elements, system.strengths, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
+    surf_forces = _nearfield_forces(system.backend, system, system.reference.speed * -velocity(system.freestream), system.freestream.omega, system.reference.density, Vps)
     # Elements that carry no Kutta–Joukowsky force (source panels, slender-body lines) substitute
     # their own nearfield force model so their lift, pressure drag and pitching moment enter the
     # nearfield, centre of pressure and stability derivatives. The substitution is dispatched on
@@ -366,7 +398,15 @@ component is ≈ 0, so this is essentially the tangential surface velocity.
 function body_surface_velocities(system :: PotentialFlowSystem, key = :body)
     U = system.reference.speed * -velocity(system.freestream)
     Ω = system.freestream.omega
-    return map(el -> induced_velocity(control_point(el), system.elements, system.strengths, U, Ω), getproperty(system.elements, key))
+    return _body_velocities(system.backend, system, getproperty(system.elements, key), U, Ω)
+end
+
+_body_velocities(::Nothing, system, block, U, Ω) = map(el -> induced_velocity(control_point(el), system.elements, system.strengths, U, Ω), block)
+
+function _body_velocities(backend, system, block, U, Ω)
+    pts = map(control_point, block)
+    ind = _with_layout(pts, device_induced_sum(backend, velocity, pts, system.elements, system.strengths, -normalize(U)))
+    return map((v, r) -> v - (U + Ω × r), ind, pts)
 end
 
 """

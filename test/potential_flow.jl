@@ -99,3 +99,68 @@ end
     @test !isapprox(blown.strengths, plain.strengths)
     @test surface_forces(blown) ≈ first(surface_dynamics(blown))
 end
+
+# %%
+using KernelAbstractions: CPU
+
+@testset "Potential-flow compute backends" begin
+    wing = Wing(
+        foils = fill(naca4(0, 0, 1, 2), 2),
+        chords = [0.6, 0.4], spans = [1.0], dihedrals = [5.0], symmetry = true,
+    )
+    mesh = WingMesh(wing, [8], 4)
+    fuselage = HyperEllipseFuselage(
+        radius = 0.15, length = 2.0, c_nose = 2, c_rear = 2,
+        position = [-0.5, 0.0, -0.5],
+    )
+    fs = Freestream(alpha = 5.0, beta = 2.0, omega = [0.1, 0.2, 0.0])
+    refs = References(speed = 10.0, location = [0.1, 0.0, 0.0])
+    prop = PropellerDisk(
+        center = [-1.0, 0.0, 0.0], axis = [1.0, 0.0, 0.0],
+        radius = 1.5, thrust = 10.0, turn = 0.2,
+    )
+
+    @test Base.get_extension(AeroFuse, :AeroFuseKernelAbstractionsExt) !== nothing
+
+    cases = (
+        skin    = (ComponentVector(wing = elements(mesh, Horseshoe()), body = elements(fuselage, SourcePanel(); n_secs = 4, n_circ = 7)), nothing),
+        slender = (ComponentVector(wing = elements(mesh, Horseshoe()), fuse = make_fuselage_line(fuselage; n = 4)), nothing),
+        rings   = (ComponentVector(wing = elements(mesh, VortexRing())), nothing),
+        blown   = (ComponentVector(wing = elements(mesh, Horseshoe())), prop),
+    )
+
+    for (name, (aircraft, slipstream)) in pairs(cases), compressible in (false, true)
+        ref = PotentialFlowSystem(aircraft, fs, refs, compressible; slipstream)
+        sys = PotentialFlowSystem(aircraft, fs, refs, compressible; slipstream, backend = CPU())
+
+        @test sys.backend === CPU()
+        @test keys(sys.strengths) == keys(ref.strengths)
+        @test sys.influence_matrix ≈ ref.influence_matrix rtol = 1e-12
+        @test sys.boundary_vector ≈ ref.boundary_vector rtol = 1e-12
+        @test sys.strengths ≈ ref.strengths rtol = 1e-10
+        @test reduce(vcat, surface_velocities(sys)) ≈ reduce(vcat, surface_velocities(ref)) rtol = 1e-10
+        @test sum(surface_forces(sys)) ≈ sum(surface_forces(ref)) rtol = 1e-10
+        @test sum(surface_moments(sys)) ≈ sum(surface_moments(ref)) rtol = 1e-10
+        @test farfield(sys) ≈ farfield(ref) rtol = 1e-10
+        name === :skin && @test reduce(vcat, body_surface_velocities(sys)) ≈ reduce(vcat, body_surface_velocities(ref)) rtol = 1e-10
+    end
+
+    # Float32 kernels (used by GPU backends without Float64) must stay finite and accurate:
+    # guards the cancellation-free vortex kernel forms.
+    ext = Base.get_extension(AeroFuse, :AeroFuseKernelAbstractionsExt)
+    aircraft = first(cases.skin)
+    wind = map(el -> AeroFuse.PotentialFlow.geometry_to_wind_axes(el, fs), vec(collect(aircraft)))
+    A64 = AeroFuse.PotentialFlow.influence_matrix(wind)
+    A32 = AeroFuse.PotentialFlow.influence_matrix([ ext.convert_element(Float32, el) for el in wind ])
+    @test eltype(A32) == Float32
+    @test all(isfinite, A32)
+    @test norm(A32 - A64) / norm(A64) < 1e-5
+
+    # Points on a trailing line's axis (upstream: |r| + r·u = 0 exactly) induce no velocity,
+    # rather than NaN from the core term 0/0.
+    u = SVector(1f0, 0f0, 0f0)
+    for r in (SVector(-1f0, 0f0, 0f0), SVector(-1.0, 0.0, 0.0))
+        @test AeroFuse.PotentialFlow.trailing_leg_velocity(r, one(eltype(r)), u, zero(eltype(r))) == zero(r)
+        @test AeroFuse.PotentialFlow.trailing_leg_velocity(r, one(eltype(r)), u) == zero(r)
+    end
+end

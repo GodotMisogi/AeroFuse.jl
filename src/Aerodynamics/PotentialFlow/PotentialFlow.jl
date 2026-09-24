@@ -32,7 +32,9 @@ Supertype for populated elements in a coupled velocity-based potential-flow solv
 Elements provide linear-in-strength `velocity`, `control_point`, `normal_vector`,
 and `transform` methods. Compressible analyses also require
 `prandtl_glauert_scale_coordinates`. Non-standard boundary conditions override
-`apply_bc_row!`; wake-producing elements opt in through `has_wake`.
+`apply_bc_row!` and return `true` from `has_bc_override`; wake-producing elements opt in
+through `has_wake`. Device backends additionally require elements to be `isbits` structs
+parametric in their float type `T`, with fields of `SVector{N,T}`, `T`, or `Bool`.
 
 Nearfield evaluation requires `bound_leg_center`, `bound_leg_vector`, and
 `trailing_velocity` adapters and, when needed, a `block_force_override` method.

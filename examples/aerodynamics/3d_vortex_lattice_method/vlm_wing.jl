@@ -1,6 +1,14 @@
 ## Wing analysis case
 using AeroFuse
 
+## Compute backend
+# `nothing` runs the serial host solver. To parallelise the influence-matrix assembly, linear
+# solve and O(N²) post-processing, uncomment one backend (its package must be installed):
+backend = nothing
+# using KernelAbstractions; backend = CPU()          # Multithreaded host (start Julia with `-t auto`)
+# using Metal;              backend = MetalBackend() # Apple GPU (Float32 precision)
+# using CUDA;               backend = CUDABackend()  # NVIDIA GPU
+
 ## Wing section setup
 wing = Wing(
     foils = fill(naca4((2, 4, 1, 2)), 3),  # Airfoils, type Foil
@@ -51,6 +59,7 @@ ref = References(
     system = solve_case(
         aircraft, fs, ref;
         compressible = true, # Compressibility correction option
+        backend = backend,   # Compute backend (see top of file)
         # print            = true, # Prints the results for only the aircraft
         # print_components = true, # Prints the results for all components
     )
@@ -69,6 +78,7 @@ ref = References(
     ffs = farfield_coefficients(system)
 
     # Force/moment coefficients and derivatives
+    # Derivatives re-solve on the serial host path (ForwardDiff), whatever `backend` is set above.
     dvs = freestream_derivatives(system;
         axes = ax,
         print_components = true,
@@ -137,7 +147,7 @@ Vs = 1.0:10:300
 res_Vs = combinedimsview(
     map(Vs) do V
         refs = @set ref.speed = V
-        sys = solve_case(aircraft, fs, refs, compressible = true)
+        sys = solve_case(aircraft, fs, refs, compressible = true, backend = backend)
         [mach_number(refs); farfield(sys)...; nearfield(sys)...]
     end, (1))
 
@@ -153,7 +163,7 @@ plot(
 res_αs = combinedimsview(
     map(αs) do α
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, ref, compressible = true)
+        sys = solve_case(aircraft, fst, ref, compressible = true, backend = backend)
         [α; farfield(sys); nearfield(sys)]
     end, (1),
 )
@@ -170,7 +180,7 @@ res = combinedimsview(
     map(product(Vs, αs)) do (V, α)
         refs = @set ref.speed = V
         fst = @set fs.alpha = deg2rad(α)
-        sys = solve_case(aircraft, fst, refs, compressible = true)
+        sys = solve_case(aircraft, fst, refs, compressible = true, backend = backend)
         [mach_number(refs); α; farfield(sys); nearfield(sys)]
     end,
 )

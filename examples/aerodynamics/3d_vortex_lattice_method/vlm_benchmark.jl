@@ -154,3 +154,49 @@ print_coefficients(nfs, ffs, "AeroFuse")
 #   1.04 ms         Histogram: frequency by time        1.67 ms <
 
 #  Memory estimate: 587.05 KiB, allocs estimate: 1230.
+## Compute backends
+#=========================================================#
+# The same solve on a refined mesh across backends: the serial host path (`nothing`), the
+# multithreaded host (`CPU()`, start Julia with `-t auto`), and the Apple GPU (`MetalBackend()`,
+# Float32). The GPU pays launch/transfer overhead, so it only wins for larger meshes
+# (roughly N > 2000 elements for the solve, N > 1000 for post-processing).
+using KernelAbstractions
+using Metal # Replace with `using CUDA` and `CUDABackend()` on NVIDIA hardware
+
+function vlm_aerofuse_backend(backend; n_span = 96, n_chord = 25)
+    wing = Wing(
+        foils     = fill(naca4((0,0,1,2)), 2),
+        chords    = [2.2, 1.8],
+        twists    = [2.0, 2.0],
+        spans     = [7.5],
+        dihedrals = [0.],
+        sweeps    = [3.0528],
+        sweep_ratio   = 0.,
+        symmetry  = true,
+    )
+    wing_mesh = WingMesh(wing, [n_span], n_chord, span_spacing = AeroFuse.Uniform())
+
+    fs  = Freestream(alpha = 2.0, beta = 4.0, omega = [0.,0.,0.])
+    ref = References(speed = 1., density = 1.225, viscosity = 1.5e-5, area = 30.0, span = 15.0, chord = 2.0, location = [0.50, 0.0, 0.0])
+
+    system = PotentialFlowSystem(ComponentVector(wing = make_vortex_rings(wing_mesh)), fs, ref; backend)
+
+    return nearfield(system), farfield(system), system
+end
+
+##
+backends = (serial = nothing, threads = CPU(), metal = MetalBackend())
+trials = map(backends) do backend
+    vlm_aerofuse_backend(backend) # Warm-up (compilation)
+    @benchmark vlm_aerofuse_backend($backend)
+end
+
+for (name, trial) in pairs(trials)
+    println(rpad(name, 8), " median: ", BenchmarkTools.prettytime(median(trial).time))
+end
+
+## Accuracy of the Float32 GPU solve against the serial Float64 reference
+nfs_ref, ffs_ref, _ = vlm_aerofuse_backend(nothing)
+nfs_gpu, ffs_gpu, _ = vlm_aerofuse_backend(MetalBackend())
+print_coefficients(nfs_ref, ffs_ref, "Serial (Float64)")
+print_coefficients(nfs_gpu, ffs_gpu, "Metal (Float32)")

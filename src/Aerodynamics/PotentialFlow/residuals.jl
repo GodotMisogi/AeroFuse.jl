@@ -1,7 +1,7 @@
 # Matrix setup
 #==========================================================================================#
 
-influence_coefficient(source :: AbstractPotentialFlowElement, target :: AbstractPotentialFlowElement) = dot(velocity(control_point(target), source, 1.), normal_vector(target))
+influence_coefficient(source :: AbstractPotentialFlowElement, target :: AbstractPotentialFlowElement) = dot(velocity(control_point(target), source, one(eltype(control_point(target)))), normal_vector(target))
 
 influence_coefficient(source :: AbstractPotentialFlowElement, target :: AbstractPotentialFlowElement, V_hat) = dot(velocity(control_point(target), source, 1., V_hat), normal_vector(target))
 
@@ -52,6 +52,59 @@ end
 
 # Default: the standard Neumann row already assembled stands unchanged.
 apply_bc_row!(AIC, boco, i, source :: AbstractPotentialFlowElement, elements, U, Ups, Ω) = nothing
+
+"""
+    has_bc_override(element :: AbstractPotentialFlowElement)
+
+Whether `element` overrides [`apply_bc_row!`] with a non-standard boundary condition. Element
+types defining such an override must also return `true` here, so that device solvers know which
+rows to rewrite without downloading the full matrix.
+"""
+has_bc_override(::AbstractPotentialFlowElement) = false
+
+## Backend dispatch
+#==========================================================================================#
+
+"""
+    component_blocks(elements)
+
+Split a named `ComponentArray` of potential-flow elements into `(range, block)` pairs, where
+`range` indexes the block in the flattened array and `block` is a concretely typed vector of its
+elements. A plain array of elements is returned as a single block.
+"""
+function component_blocks(elements :: ComponentArray)
+    offset = 0
+    blocks = map(collect(keys(elements))) do key
+        block = [ el for el in vec(getproperty(elements, key)) ] # Narrow to the concrete element type
+        range = offset + 1 : offset + length(block)
+        offset += length(block)
+        (range, block)
+    end
+    offset == length(elements) || throw(DimensionMismatch("Component blocks do not tile the element array."))
+    return filter(b -> !isempty(b[2]), blocks)
+end
+
+component_blocks(elements :: AbstractArray{<: AbstractPotentialFlowElement}) = [ (1:length(elements), [ el for el in vec(elements) ]) ]
+
+"""
+    device_solve_linear(backend, elements, U, Ups, Ω)
+
+Assemble and solve the influence system of [`solve_linear`](@ref) on a compute `backend`.
+`backend = nothing` runs the serial host implementation; `KernelAbstractions.Backend`
+methods are provided by the `KernelAbstractions` package extension.
+"""
+device_solve_linear(::Nothing, elements, U, Ups, Ω) = solve_linear(elements, U, Ups, Ω)
+
+"""
+    device_induced_sum(backend, f, points, elements, strengths, V_hat)
+
+Evaluate ``∑_j f(r_i, e_j, s_j, V̂)`` at every point ``r_i`` of `points` over `elements` with
+`strengths`, returning a vector of velocities in the layout of `points`. `f` is an element
+velocity kernel such as `velocity` or `trailing_velocity`. `backend = nothing` runs on the host;
+`KernelAbstractions.Backend` methods are provided by the package extension.
+"""
+device_induced_sum(::Nothing, f :: F, points, elements, strengths, V_hat) where F =
+    map(r -> sum(x -> f(r, x[1], x[2], V_hat), zip(elements, strengths)), points)
 
 # Matrix-free setup for nonlinear analyses
 #==========================================================================================#
