@@ -164,3 +164,50 @@ using KernelAbstractions: CPU
         @test AeroFuse.PotentialFlow.trailing_leg_velocity(r, one(eltype(r)), u) == zero(r)
     end
 end
+
+# %%
+@testset "Doublet-source panel compute backends" begin
+    wing = Wing(
+        foils = fill(naca4(0, 0, 1, 2), 2),
+        chords = [1.0, 0.6], twists = [2.0, 0.0], spans = [4.0],
+        dihedrals = [5.0], sweeps = [5.0], symmetry = true,
+    )
+    htail = Wing(
+        foils = fill(naca4(0, 0, 1, 2), 2),
+        chords = [0.7, 0.42], spans = [1.25], sweeps = [6.39],
+        position = [4.0, 0, -0.1], angle = -2.0, axis = [0.0, 1, 0], symmetry = true,
+    )
+    fuselage = HyperEllipseFuselage(
+        radius = 0.5, length = 4.5, x_a = 0.2, x_b = 0.75, d_nose = -0.2,
+        position = [-1.0, 0.0, -0.1],
+    )
+    aircraft = (
+        wing  = surface_panels(WingMesh(wing,  [6], 8), [6], 10),
+        htail = surface_panels(WingMesh(htail, [4], 6), [4], 10),
+        fuse  = make_fuselage_line(fuselage; n = 8),
+    )
+    fs   = Freestream(alpha = 3.0, beta = 1.0)
+    refs = References(speed = 50.0, area = projected_area(wing), span = span(wing), chord = mean_aerodynamic_chord(wing))
+
+    ref = solve_case(aircraft, fs, refs; wake_length = 100.0)
+    sys = solve_case(aircraft, fs, refs; wake_length = 100.0, backend = CPU())
+
+    @test sys.influence_matrix ≈ ref.influence_matrix rtol = 1e-12
+    @test sys.boundary_vector == ref.boundary_vector
+    @test sys.doublets ≈ ref.doublets rtol = 1e-10
+    @test sys.wake_strengths ≈ ref.wake_strengths rtol = 1e-10
+    @test sys.fuse_doublets ≈ ref.fuse_doublets rtol = 1e-10
+    @test nearfield(sys) ≈ nearfield(ref) rtol = 1e-10
+    @test farfield(sys) ≈ farfield(ref) rtol = 1e-10
+
+    # Mixed precision (Float32 factorization + Float64 refinement) recovers Float64 accuracy.
+    mixed = solve_case(aircraft, fs, refs; wake_length = 100.0, backend = CPU(), mixed_precision = true)
+    @test mixed.wake_strengths ≈ ref.wake_strengths rtol = 1e-9
+    @test nearfield(mixed) ≈ nearfield(ref) rtol = 1e-9
+    @test farfield(mixed) ≈ farfield(ref) rtol = 1e-9
+    @test_throws ArgumentError solve_case(aircraft, fs, refs; wake_length = 100.0, mixed_precision = true)
+
+    # Device backends reject dual numbers rather than silently dropping their partials.
+    Dual = typeof(AeroFuse.ForwardDiff.Dual(1.0, 1.0))
+    @test_throws ArgumentError AeroFuse.solve_doublet_system(CPU(), [], [], zeros(Dual, 0, 0), zeros(Dual, 0, 0), zeros(Dual, 0))
+end

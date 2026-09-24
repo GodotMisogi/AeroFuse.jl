@@ -38,7 +38,7 @@ end
 function solidangle_doublet_potential(μ, pan :: AbstractPanel3D, r)
     a1, a2, a3, a4 = p1(pan), p2(pan), p3(pan), p4(pan)
     Ω = _tri_solid_angle(a1 - r, a2 - r, a3 - r) + _tri_solid_angle(a1 - r, a3 - r, a4 - r)
-    -μ / 4π * Ω
+    -μ / 4 / π * Ω
 end
 
 # A constant-strength doublet panel is equivalent to a vortex ring of circulation Γ = μ
@@ -89,11 +89,15 @@ _surfaces_only(aircraft :: NamedTuple) = Base.structdiff(aircraft, NamedTuple{(:
 _panelview(p) = permutedims(p)[:]
 
 """
-    solve_case(aircraft :: NamedTuple, fs :: Freestream, refs :: References; wake_length = 1e3)
+    solve_case(aircraft :: NamedTuple, fs :: Freestream, refs :: References; wake_length = 1e3, backend = nothing, mixed_precision = false)
 
 Solve the coupled 3D doublet-source panel system for an `aircraft` — a `NamedTuple` whose
 entries are surface panel matrices (`surface_panels(mesh)`), plus an optional `fuse` entry
 built with [`make_fuselage_line`](@ref). Returns a [`DoubletSourcePanelSystem`](@ref).
+
+`backend` selects where the dense influence blocks are assembled and the system is factorized,
+and `mixed_precision` enables Float32 factorization for backends without Float64 support (see
+[`solve_doublet_system`](@ref)); `backend = nothing` is the serial host path.
 
 ```julia
 aircraft = (
@@ -104,7 +108,7 @@ aircraft = (
 system = solve_case(aircraft, Freestream(alpha = 3.0), refs)
 ```
 """
-function solve_case(aircraft :: NamedTuple, fs :: Freestream, refs :: References; wake_length = 1e3)
+function solve_case(aircraft :: NamedTuple, fs :: Freestream, refs :: References; wake_length = 1e3, backend = nothing, mixed_precision = false)
     V∞       = velocity(fs)
     surfaces = _surfaces_only(aircraft)
     fuse     = haskey(aircraft, :fuse) ? aircraft.fuse : nothing
@@ -123,15 +127,12 @@ function solve_case(aircraft :: NamedTuple, fs :: Freestream, refs :: References
     # whole assembly and linear solve.
     T = promote_type(eltype(V∞), Float64)
 
-    # Doublet influence blocks (field points on rows).
-    AIC = zeros(T, N, N)
-    AIC[1:Nb, 1:Nb]         .= permutedims(doublet_matrix(B, B))   # body → body (α-independent)
-    # Wake → body: the wake geometry depends on α (shed along V∞), so use the ForwardDiff-safe
-    # solid-angle doublet kernel here (matches the panel-local kernel to ~1e-15).
-    for jw in 1:Nw, ib in 1:Nb
-        AIC[ib, Nb+jw] = solidangle_doublet_potential(1.0, W[jw], collocation_point(B[ib]))
-    end
-    boco = zeros(T, N)
+    # The dense doublet blocks (body → body, wake → body) are assembled by `solve_doublet_system`
+    # on the chosen backend. The sparse/thin couplings below are always host-built: the fuselage
+    # doublet columns on the body rows, and the Kutta and fuselage rows (AIC rows Nb+1:N).
+    fuse_cols = zeros(T, Nb, Nf)
+    rows      = zeros(T, Nw + Nf, N)
+    boco      = zeros(T, N)
     boco[1:Nb] .= [ dot(V∞, collocation_point(p)) for p in B ]     # Φ∞ (Morino RHS)
 
     # Morino–Kutta rows:  μ(first chord panel) − μ(last chord panel) + μ_wake = 0
@@ -140,10 +141,10 @@ function solve_case(aircraft :: NamedTuple, fs :: Freestream, refs :: References
         bidx = ComponentArrays.label2index(bodies, s)
         widx = ComponentArrays.label2index(wakevec, s)
         for j in 1:ns
-            r = Nb + widx[j]
-            AIC[r, bidx[j]]             += 1.0
-            AIC[r, bidx[(nc-1)*ns + j]] -= 1.0
-            AIC[r, Nb + widx[j]]        += 1.0
+            r = widx[j]
+            rows[r, bidx[j]]             += 1.0
+            rows[r, bidx[(nc-1)*ns + j]] -= 1.0
+            rows[r, Nb + widx[j]]        += 1.0
         end
     end
 
@@ -157,7 +158,7 @@ function solve_case(aircraft :: NamedTuple, fs :: Freestream, refs :: References
             # Unknown cross-flow doublet potential column (negated to match the panel kernel).
             for f in 1:Nf
                 el = fuse[f]
-                AIC[i, Nb+Nw+f] = -_point_doublet_potential(seglen[f], el.normal, ri - el.rc, el.radius)
+                fuse_cols[i, f] = -_point_doublet_potential(seglen[f], el.normal, ri - el.rc, el.radius)
             end
         end
         # Cylinder condition  λ_f = -2π R² W_f : the panel/wake-induced cross-flow moves to
@@ -165,17 +166,17 @@ function solve_case(aircraft :: NamedTuple, fs :: Freestream, refs :: References
         # fuselage-fuselage block is the identity (slender-body cross-planes are independent).
         for f in 1:Nf
             el = fuse[f]; c = 2π * el.radius^2; n̂ = el.normal; rc = el.rc
-            r = Nb + Nw + f
-            for j in 1:Nb; AIC[r, j]      = c * dot(panel_ring_velocity(B[j], rc), n̂); end
-            for w in 1:Nw; AIC[r, Nb + w] = c * dot(panel_ring_velocity(W[w], rc), n̂); end
-            AIC[r, r] = 1.0
+            r = Nw + f
+            for j in 1:Nb; rows[r, j]      = c * dot(panel_ring_velocity(B[j], rc), n̂); end
+            for w in 1:Nw; rows[r, Nb + w] = c * dot(panel_ring_velocity(W[w], rc), n̂); end
+            rows[r, Nb + r] = 1.0
             Vsrc = sum(g -> g === el ? zero(SVector{3,Float64}) :
                             point_source_velocity(g.sigma * norm(V∞), rc - g.rc, g.radius), fuse)
-            boco[r] = -c * dot(V∞ + Vsrc, n̂)
+            boco[Nb + r] = -c * dot(V∞ + Vsrc, n̂)
         end
     end
 
-    x = AIC \ boco
+    x, AIC = solve_doublet_system(backend, B, W, fuse_cols, rows, boco; mixed_precision)
 
     # Repack the solution by component.
     ks       = keys(surfaces)
@@ -184,6 +185,36 @@ function solve_case(aircraft :: NamedTuple, fs :: Freestream, refs :: References
     λ        = isnothing(fuse) ? nothing : x[Nb+Nw+1:end]
 
     return DoubletSourcePanelSystem(surfaces, wakes, fuse, doublets, wake_str, λ, AIC, boco, fs, refs)
+end
+
+"""
+    solve_doublet_system(backend, bodies, wakes, fuse_cols, rows, boco; mixed_precision = false)
+
+Assemble and solve the doublet-source influence system. The dense blocks are the body → body
+panel doublet potentials and the wake → body solid-angle potentials, evaluated at the body
+collocation points. `fuse_cols` (body rows × fuselage columns) and `rows` (Kutta and fuselage
+rows, i.e. rows `length(bodies)+1:end`) are prescribed dense blocks, and `boco` is the
+right-hand side. Returns the solution and the assembled influence matrix.
+
+`backend = nothing` assembles and solves on the host. `KernelAbstractions.Backend` methods are
+provided by the `KernelAbstractions` package extension and require Float64 device support, since
+Float32 loses O(1%) accuracy in the trailing-edge doublet jumps. `mixed_precision = true` instead
+assembles in Float64 on the threaded host, factorizes in Float32 on the device, and recovers
+Float64 accuracy by iterative refinement, so Float32-only devices (e.g. Apple Metal) can be used.
+"""
+function solve_doublet_system(::Nothing, B, W, fuse_cols, rows, boco; mixed_precision = false)
+    mixed_precision && throw(ArgumentError("`mixed_precision = true` requires a device `backend`."))
+    Nb, Nw = length(B), length(W)
+    AIC = zeros(eltype(boco), length(boco), length(boco))
+    AIC[1:Nb, 1:Nb] .= permutedims(doublet_matrix(B, B))   # body → body (α-independent)
+    # Wake → body: the wake geometry depends on α (shed along V∞), so use the ForwardDiff-safe
+    # solid-angle doublet kernel here (matches the panel-local kernel to ~1e-15).
+    for jw in 1:Nw, ib in 1:Nb
+        AIC[ib, Nb+jw] = solidangle_doublet_potential(1.0, W[jw], collocation_point(B[ib]))
+    end
+    AIC[1:Nb, Nb+Nw+1:end] .= fuse_cols
+    AIC[Nb+1:end, :]       .= rows
+    return AIC \ boco, AIC
 end
 
 # ---- post-processing --------------------------------------------------------------------

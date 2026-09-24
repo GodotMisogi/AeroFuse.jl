@@ -20,19 +20,19 @@ function potential_processing(p, p_i, p_j)
     mij, dij, ej, hj, rj
 end
 
+# Axis permutation into the kernel's local frame. Static and allocation-free (with the corner
+# tuple below) so the kernel also compiles for GPU backends.
+const DOUBLET_AXIS_PERMUTATION = SMatrix{3,3}(0, 1, 0, 1, 0, 0, 0, 0, -1)
+
 function quadrilateral_doublet_potential(μ, panel :: AbstractPanel3D, point)
-    # Axis permutation
-    P = [ 0  1  0 ;
-          1  0  0 ;
-          0  0 -1 ]
     # Local coordinate system transformation
-    T = get_transformation(panel, P)
+    T = get_transformation(panel, DOUBLET_AXIS_PERMUTATION)
     panel, p = T(panel), T(point)
-    pans = panel_coordinates(panel)
+    pans = (panel.p1, panel.p2, panel.p3, panel.p4)
 
     x, y, z = p
 
-    ε = 1e-10
+    ε = eltype(p)(1e-10)
     if abs(z) <= ε
         return (abs(x) <= ε && abs(y) <= ε) ? μ / 2 : zero(μ)
     else
@@ -60,7 +60,7 @@ function quadrilateral_doublet_potential(μ, panel :: AbstractPanel3D, point)
             hi = hj
         end
 
-        return -μ / 4π * inf
+        return -μ / 4 / π * inf
     end
 end
 

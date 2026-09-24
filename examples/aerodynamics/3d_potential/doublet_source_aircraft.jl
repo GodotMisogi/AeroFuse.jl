@@ -3,6 +3,16 @@
 ## mirroring the vortex-lattice `solve_case` workflow (see `vlm_aircraft.jl`).
 using AeroFuse
 
+## Compute backend
+# `nothing` runs the serial host solver. To parallelise the influence-matrix assembly and linear
+# solve, uncomment one backend (its package must be installed). This solver needs Float64, so
+# Float32-only GPUs (Apple Metal) require `mixed_precision = true`: Float64 assembly on the
+# threaded host, Float32 factorization on the GPU, and Float64 iterative refinement.
+backend, mixed_precision = nothing, false
+# using KernelAbstractions; backend = CPU()                                  # Multithreaded host (start Julia with `-t auto`)
+# using Metal;              backend, mixed_precision = MetalBackend(), true  # Apple GPU
+# using CUDA;               backend = CUDABackend()                          # NVIDIA GPU
+
 ## Surfaces
 #==========================================================================================#
 
@@ -81,7 +91,7 @@ ref = References(
 )
 
 ## Solve
-sys = solve_case(aircraft, fs, ref; wake_length = 100.0)
+sys = solve_case(aircraft, fs, ref; wake_length = 100.0, backend, mixed_precision)
 
 ## Aerodynamic coefficients
 #==========================================================================================#

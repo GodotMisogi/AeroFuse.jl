@@ -79,3 +79,26 @@ end
 
     @test relerr(flatten(body_surface_velocities(sys)), flatten(body_surface_velocities(ref))) < RTOL_SOLVE
 end
+
+# %%
+@testset "Metal backend - doublet-source panel aircraft" begin
+    example = read(joinpath(@__DIR__, "..", "..", "examples", "aerodynamics", "3d_potential", "doublet_source_aircraft.jl"), String)
+    m = Module(:doublet_source_aircraft)
+    Core.eval(m, :(using AeroFuse))
+    include_string(m, example[1:first(findfirst("sys = solve_case", example)) - 1]) # Geometry, freestream, references
+
+    ref = solve_case(m.aircraft, m.fs, m.ref; wake_length = 100.0)
+
+    # Float32 loses O(1%) in the trailing-edge doublet jumps, so Metal needs the opt-in
+    # mixed-precision path (Float32 factorization, Float64 assembly and refinement).
+    @test_throws ArgumentError solve_case(m.aircraft, m.fs, m.ref; wake_length = 100.0, backend = MetalBackend())
+
+    sys = solve_case(m.aircraft, m.fs, m.ref; wake_length = 100.0, backend = MetalBackend(), mixed_precision = true)
+
+    @test sys.influence_matrix ≈ ref.influence_matrix rtol = 1e-12
+    @test sys.doublets ≈ ref.doublets rtol = 1e-9
+    @test sys.wake_strengths ≈ ref.wake_strengths rtol = 1e-9
+    @test sys.fuse_doublets ≈ ref.fuse_doublets rtol = 1e-9
+    @test nearfield(sys) ≈ nearfield(ref) rtol = 1e-9
+    @test farfield(sys) ≈ farfield(ref) rtol = 1e-9
+end
